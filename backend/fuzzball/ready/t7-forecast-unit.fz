@@ -1,0 +1,101 @@
+version: v4
+# t7-forecast: one update of the board's forecast. TEMPLATE: Fuzzball 4.3 Fuzzfiles have no parameters
+# and `workflow start` has no --set (checked against docs.ciq.com/fuzzball/4.3, workflow-syntax and
+# `fuzzball workflow start --help`), so app/dispatcher.py renders a copy per run, replacing
+#   unit  unit | room       0  1..25 (0 for unit)       0  demo-clock hours past the 07:00 cut
+#   --real-ward  empty = the open demo ward (default); "--real-ward" only when lane 2 started the dispatcher
+#                with --real-ward (real MIMIC-IV room views, local only; docs/DECISIONS.md D6)
+#   /data/dashboard_data   CLIF folder of the ward: /store/code/clif_demo by default (the open demo); a cohort folder on a
+#                team volume (the final cohort: /data/dashboard_data on mimic_clif) when the dispatcher runs with --clif-dir. Never the repo.
+#   --names /data/dashboard_data/name.parquet      empty by default (no names on the tiles); "--names <file on a team volume | fake>" when the
+#                dispatcher runs with --names: made-up names only (app/fake_names.py), never in git or a log
+# and starts that copy (docs/DECISIONS.md D9). By hand: replace the six tokens first, e.g.
+#   sed 's/unit/unit/;s/0/0/;s/0/0/;s/--real-ward//;s/--names /data/dashboard_data/name.parquet//;s#/data/dashboard_data#/store/code/clif_demo#' fuzzball/t7-forecast.fz > /tmp/f.fz && fuzzball workflow start /tmp/f.fz --name t7-forecast-manual
+#   or: python scripts/render_fz.py fuzzball/t7-forecast.fz --scope unit -o /tmp/f.fz   (refuses a token left unfilled)
+# Always pass --name t7-forecast-...: the dispatcher's one-run-at-a-time guard goes by the name.
+# A room run needs a whole-ward rooms.json (rooms.py refuses otherwise; the dispatcher refuses first).
+# Jobs: precheck (CPU: probes and stage tokens exist) -> extract (one GPU) -> score (CPU).
+#
+# unit: extract the stage ward, apply the SAVED probes (never refit; fitting is t7-fit, once per model),
+#       write rooms.json, then forecast.json last (the commit marker the page watches).
+# room: same extract (model load dominates; icutwin-extract has no stay filter), apply probes to that one
+#       room's stay, rewrite that room in rooms.json. forecast.json is untouched.
+# One GPU for minutes beside t7-twin (Nemotron holds the other). Counts and open-demo room files only
+# leave the cluster volumes; nothing here prints a row.
+# Storage: mimic_clif (/data) is only read (model, cohort). All writes go to twin-store: /store/stage (features,
+# per-stay scores), then rooms.json and forecast.json, each written to a temporary file and renamed in.
+volumes:
+  data:
+    name: mimic_clif            # persistent, training's volume: READ ONLY here by rule (model, training tokens, cohort)
+    use: team7
+  store:
+    name: twin-store            # persistent: code, packages, and everything written here
+    use: team7
+
+defaults:
+  job:
+    mounts: {/data: data, /store: store}
+    env: [HOME=/tmp, TMPDIR=/tmp, "PYTHONPATH=/store/py:/store/code"]
+
+jobs:
+  precheck:
+    # CPU: fail in seconds, before anything holds the GPU, if the one-time steps (t7-fit) have not run
+    image: {uri: "docker://python:3.12-slim"}
+    resource: {cpu: {cores: 1}, memory: {size: 1GB}}
+    policy: {timeout: {execute: 5m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      test -f /store/probes/mdl-icutwin/manifest.json || { echo "no saved probes: run t7-fit first"; exit 1; }
+      test -d /store/stage/tokenized_output || { echo "no stage ward tokens: run t7-fit first"; exit 1; }
+      test -f /store/stage/stage_ward.csv || { echo "no stage ward list: run t7-fit first"; exit 1; }
+      test -d /data/model_output/final || { echo "no model at /data/model_output/final"; exit 1; }
+      test -f /data/dashboard_data/clif_hospitalization.parquet || { echo "no ward CLIF folder at /data/dashboard_data"; exit 1; }
+      echo "prechecks ok"
+
+  extract:
+    # one forward pass per stage-ward stay (about 100 short passes): icutwin's last hidden state at the cut
+    depends-on: [{name: precheck, status: FINISHED}]
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    # No `exclusive`: in Fuzzball 4.3 it reserves the whole NODE ("If true, job gets exclusive node access",
+    # docs.ciq.com/fuzzball/4.3/appendices/workflow-syntax), and this job must share a node with the board and
+    # dispatcher while Nemotron holds the other. The GPU request alone takes the node's only GPU. 25 stays are
+    # one batch: 8 cores / 48 GB / 10 m are starting values (docs/COMPUTE_PLAN.md), to be measured at rehearsal.
+    resource: {cpu: {cores: 8}, memory: {size: 48GB}, devices: {nvidia.com/gpu: 1}}
+    policy: {timeout: {execute: 10m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      HOURS=0
+      # re-winnow the stage ward at the demo-clock cut (07:00 run: 0 h); writes the at-cut flags too
+      python -c "from icutwin.scoring.winnower import main; main()" /store/stage/tokenized_output \
+        -c /store/code/examples/winnow_24h.yaml --demo-clock-hours "$HOURS"
+      # every cut moved, so the whole ward is re-extracted (about 100 short passes)
+      python -c "from icutwin.scoring.extractor import main; main()" /store/stage/tokenized_output -m /data/model_output/final
+      ls /store/stage/tokenized_output/features-*.parquet | wc -l
+
+  score:
+    # CPU: apply the saved probes, then rooms.json, then (unit only) forecast.json. The pytorch image is
+    # needed because icutwin.common imports transformers; deps come from /store/py (no pip at run time).
+    depends-on: [{name: extract, status: FINISHED}]
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    resource: {cpu: {cores: 4}, memory: {size: 16GB}}
+    policy: {timeout: {execute: 20m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      SCOPE=unit; ROOM=0; HOURS=0
+      WARD="--real-ward"   # empty: open demo ward; --real-ward: real MIMIC-IV rooms (opt-in, local only)
+      STAGE=/store/stage/tokenized_output
+      CLIF=/data/dashboard_data      # the ward's CLIF folder: the open demo, or a cohort folder on a team volume
+      # rooms.py applies the saved probes (never refits) and writes rooms.json; ids stay on the volume
+      COMMON="--model /data/model_output/final --probes /store/probes/mdl-icutwin --stay-ids /store/stage/stage_ward.csv --out /store/rooms.json --demo-clock-hours $HOURS --demographics $CLIF --clif-now $CLIF --tz America/Chicago $WARD --names /data/dashboard_data/name.parquet"
+      if [ "$SCOPE" = "room" ]; then
+        python /store/code/app/rooms.py $STAGE $COMMON --room "$ROOM"   # this room only; the header keeps the unit numbers
+      else
+        python /store/code/app/rooms.py $STAGE $COMMON
+        CAP=""; test -f /store/capacity.json && CAP="--capacity /store/capacity.json"
+        python /store/code/app/aggregate.py $STAGE /store/forecast.json --beds 25 --score rep \
+          --baseline /store/train --stage-csv /store/stage/stage_ward.csv --demo-clock-hours "$HOURS" --clif-now $CLIF --tz America/Chicago $WARD $CAP
+        python -c "import json; d=json.load(open('/store/forecast.json')); print('made_at', d.get('made_at'), 'rows', len(d.get('resources', {})))"
+      fi
