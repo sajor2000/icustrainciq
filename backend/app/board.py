@@ -113,14 +113,27 @@ def make_handler(
     capacity_path = forecast_path.with_name("capacity.json")
     cap_lock = threading.Lock()
 
+    NO_FORECAST = "no forecast yet: the 07:00 run has not finished"
+
     def load():
+        """forecast.json, or a note when it is missing, half-written or not an object"""
         try:
-            return json.loads(forecast_path.read_text())
+            fc = json.loads(forecast_path.read_text())
         except (OSError, ValueError):
-            return {
-                "resources": {},
-                "note": "no forecast yet: the 07:00 run has not finished",
-            }
+            fc = None
+        return fc if isinstance(fc, dict) else {"resources": {}, "note": NO_FORECAST}
+
+    def load_rooms() -> bytes:
+        """rooms.json as stored, or a pending note when it is missing or not an object
+        with a `rooms` list (a broken file is never sent to the page)"""
+        try:
+            data = rooms_path.read_bytes()
+            doc = json.loads(data)
+            if isinstance(doc, dict) and isinstance(doc.get("rooms"), list):
+                return data
+        except (OSError, ValueError):
+            pass
+        return b'{"rooms": [], "note": "pending run"}'
 
     def call_dispatcher(path: str, body: dict | None = None) -> dict:
         """the forecast dispatcher service (app/dispatcher.py) inside the same workflow"""
@@ -140,11 +153,9 @@ def make_handler(
                 return json.load(e)
             except ValueError:
                 return {"started": False, "reason": f"dispatcher error ({e.code})"}
-        except Exception as e:
-            return {
-                "started": False,
-                "reason": f"dispatcher unreachable ({type(e).__name__})",
-            }
+        except Exception as e:  # the error's name goes to the log, not to the page
+            log.info("dispatcher unreachable reason=%s", type(e).__name__)
+            return {"started": False, "reason": "dispatcher unreachable"}
 
     agent = ChatAgent(
         nemotron,
@@ -216,7 +227,8 @@ def make_handler(
                     tmp, capacity_path
                 )  # whole file or nothing, like forecast.json
         except OSError as e:
-            return 500, {"ok": False, "reason": f"could not save ({type(e).__name__})"}
+            log.info("capacity not saved reason=%s", type(e).__name__)
+            return 500, {"ok": False, "reason": "could not save the capacity"}
         # privacy: time and role only; the numbers are not logged
         log.info("capacity set at=%s role=%s", cap["updated_at"], role)
         shown = {**cap, **capacity_mod.view(cap, load())}  # with the free machines
@@ -270,20 +282,36 @@ def make_handler(
         def _json(self, code, obj):
             self._send(code, "application/json", json.dumps(obj).encode())
 
+        def _guard(self, handle):
+            """an unexpected failure is one plain JSON line, never a traceback or a
+            dropped connection; its name goes to the log"""
+            try:
+                return handle()
+            except Exception as e:
+                log.error("request failed reason=%s", type(e).__name__)
+                try:
+                    self._json(
+                        500, {"ok": False, "reason": "the board could not answer"}
+                    )
+                except OSError:
+                    pass  # the client went away
+
         def do_HEAD(self):
             self._head = True
             self.do_GET()
 
         def do_GET(self):
+            return self._guard(self._get)
+
+        def do_POST(self):
+            return self._guard(self._post)
+
+        def _get(self):
             path = self.path.split("?", 1)[0]
             if path == "/api/forecast":
                 return self._json(200, load())
             if path == "/api/rooms":  # stage ward only (D6)
-                try:
-                    data = rooms_path.read_bytes()
-                except OSError:
-                    data = b'{"rooms": [], "note": "pending run"}'
-                return self._send(200, "application/json", data)
+                return self._send(200, "application/json", load_rooms())
             if path == "/api/runs":
                 st = call_dispatcher("/status")
                 if "reason" in st and "next_scheduled" not in st:
@@ -326,7 +354,7 @@ def make_handler(
                 return None, (400, "bad request")
             return req, None
 
-        def do_POST(self):
+        def _post(self):
             if self.path not in ("/api/ask", "/api/rerun", "/api/capacity"):
                 return self._send(404, "text/plain", b"not found")
             ctype = self.headers.get("Content-Type", "").split(";")[0].strip().lower()
