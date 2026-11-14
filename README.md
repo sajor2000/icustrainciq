@@ -2,25 +2,29 @@
 
 *The next 24 hours, in one place.* The command-center board for **Lookahead** (backend working name ICU-Twin), team7's project at the CIQ × NVIDIA Local AI Hackathon (Chicago, Nov 14–15, 2026).
 
-**What Lookahead does.** For 07:00 morning rounds, it forecasts every patient who has been in the ICU at least 24 hours: a small transformer trained on the unit's own CLIF data reads each patient's history in one forward pass, a probe gives the probability of five events in the next 24 hours, and the patients are added up into a **strain panel**: how many patients are on life support now (IMV, vasopressor, CRRT, running at 07:00), how many more are expected, and one word that compares that with tonight's staffing or a typical day. Each room shows a level and a few tags. Pharmacy, respiratory therapy, the ICU team and the bed manager each read their own line first. NVIDIA Nemotron 3 Nano, running locally, answers questions from the counts. Everything runs on two Lenovo ThinkStation PGX (NVIDIA GB10) nodes through CIQ Fuzzball; patient data never leaves them.
+**What Lookahead does.** For 07:00 morning rounds, it forecasts every patient who has been in the ICU at least 24 hours: a small transformer trained on the unit's own CLIF data reads each patient's history in one forward pass, a probe gives the probability of five events in the next 24 hours, and the patients are added up into a **strain panel**: how many patients are on life support now (IMV, vasopressor, CRRT, running at 07:00), how many more are expected, and one word that compares that with tonight's staffing or a typical day. Each bed shows what is running now, what may start, and one status. Pharmacy, respiratory therapy, the ICU team and the bed manager each read their own line first. NVIDIA Nemotron 3 Nano, running locally, answers questions from the counts. Everything runs on two Lenovo ThinkStation PGX (NVIDIA GB10) nodes through CIQ Fuzzball; patient data never leaves them.
 
 **This repo** is the frontend: what the board must do, for whom, and how it should look. The backend (model, Fuzzball workflows, the board server `app/board.py`, the forecast dispatcher) is in [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin).
 
 ## The board
 
-Synthetic data in the mockup ([`mockups/command-center.html`](mockups/command-center.html)); the same page reads the live API when `app/board.py` serves it. All 25 rooms on one screen, each with its room number, a level word (Low, Medium, High, or "On life support") on a white, pale amber or pale red tile, and tags: V, P, C for supports running, OUT for a likely discharge. On the right: the strain panel ("10 patients on life support now · 6 more expected (4 to 9)", with IMV, vasopressor and CRRT lines and a yardstick word), "Check first: rooms 6, 7, 21", and a folded form to set tonight's capacity. A room opens its own page ("Room 12: next 24 hours"); "Update the unit" and "Update this room" start a forecast; "Ask about this forecast" is a chat widget that opens on demand.
+Synthetic data in the mockup ([`mockups/command-center.html`](mockups/command-center.html)); the same page reads the live API when `app/board.py` serves it. Two tabs. **Bed board**: every bed reads now, then the next 24 hours (solid icons for the ventilator, vasopressor or CRRT running at 07:00, an arrow, outline icons for what may start with its chance, "3 in 10"), with one status per bed (Worsening, Watch, Not improving, Leaving, Steady) and a "Worry first" rail on top. **Unit strain**: patients on life support now, how many more are expected, one word against tonight's staffing or a typical day, and a card per support with the beds behind each count. A room opens its own page; "Update the unit" and "Update this room" start a forecast; "Ask" opens a chat panel beside the board. The cluster cards, bed figures and range bars come from Dema's (deetherese) design on the `alternative` branch.
 
-| Day board, 1440 px | Night board, 1440 px |
+| Bed board, 1440 px | Unit strain, 1440 px |
 |---|---|
-| ![Day board](docs/screenshots/board-day-1440.png) | ![Night board](docs/screenshots/board-night-1440.png) |
+| ![Bed board](docs/screenshots/beds-desktop.png) | ![Unit strain](docs/screenshots/strain-desktop.png) |
 
-| Room page | Phone, pharmacy |
+| Night board | Wall screen, 1920 px |
 |---|---|
-| ![Room page](docs/screenshots/board-room-open-1440.png) | ![Phone, pharmacy](docs/screenshots/board-phone-pharmacy-390.png) |
+| ![Night board](docs/screenshots/night.png) | ![Wall screen](docs/screenshots/wall-1920.png) |
 
-| Ask about this forecast (chat widget open) |
-|---|
-| ![Chat widget](docs/screenshots/board-chat-open-1440.png) |
+| Room page | Chat docked beside the board |
+|---|---|
+| ![Room page](docs/screenshots/room-page.png) | ![Chat docked](docs/screenshots/chat-docked.png) |
+
+| Phone, bed board | Phone, unit strain | Icons |
+|---|---|---|
+| ![Phone, bed board](docs/screenshots/beds-phone.png) | ![Phone, unit strain](docs/screenshots/strain-phone.png) | ![Icon family](docs/screenshots/icons.png) |
 
 ## How it runs
 

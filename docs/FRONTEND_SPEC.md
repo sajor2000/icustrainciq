@@ -8,7 +8,7 @@ Lookahead ("The next 24 hours, in one place.") is the ICU team's board for 07:00
 - Served by `app/board.py` (as `app/static/index.html`) on the team's two NVIDIA GB10 nodes. Served over http(s), the page reads the same-origin API below. Only when opened from `file://`, or with `#synthetic`, does it use its built-in synthetic generator, labelled "Demo data". A transient load failure over http(s) never switches a live board to synthetic data: the page retries (3 tries with backoff, then every few seconds), shows "Can't reach the board server — retrying" and keeps the last good data. The data-source label (a small outlined tag in the top strip, not a warning) reads "MIMIC-IV Demo" (`ward.source` `open-demo`, the default), "MIMIC-IV · local" (`mimic-iv`, real MIMIC-IV room views approved for local use) or "Demo data" (synthetic). `forecast.json` and `rooms.json` carry `"ward": {"source": "open-demo"|"mimic-iv", "label": "..."}`.
 - Every server-supplied string reaches the page through one `esc()` helper or `textContent`; numbers are checked with `Number.isFinite`; `level`, `sex`, `age` and yardstick words are checked against fixed sets. The page loads no third-party scripts (CSP: self and Google Fonts only).
 - Every POST (`/api/rerun`, `/api/capacity`, `/api/ask`) is same origin with `Content-Type: application/json` and `X-Lookahead: 1`; a refusal such as `403 {"ok":false,"reason":"request refused"}` shows its reason.
-- Review flags in the URL hash: `#night`, `#room=7`, `#role=pharmacy`, `#fast` (short polls and runs), `#morning` (the scheduled run in progress, fallback only), `#synthetic`.
+- Review flags in the URL hash: `#view=beds`, `#view=strain`, `#night`, `#room=7`, `#role=pharmacy`, `#fast` (short polls and runs), `#morning` (the scheduled run in progress, fallback only), `#synthetic`.
 
 ## What the board predicts
 
@@ -42,7 +42,7 @@ Five predictions only, all for the next 24 h, 07:00 to 07:00: ICU discharge, IMV
   "levels": {"medium": 0.2, "high": 0.4}, "out_tag": 0.6 }
 ```
 
-`now_patients` counts patients with IMV, a vasopressor infusion or CRRT running at the 07:00 cut. `check_first` is the High rooms by combined chance (`any_life_support`), at most three. The board reads only the keys above; anything else is ignored.
+`now_patients` counts patients with IMV, a vasopressor infusion or CRRT running at the 07:00 cut. `check_first` is the High rooms by combined chance (`any_life_support`), at most three; the Bed board does not read it; it builds its Worry first rail from `rooms.json`. The board reads only the keys above; anything else is ignored.
 
 ### rooms.json (stage ward only)
 
@@ -73,49 +73,72 @@ Polling: `/api/runs` every 30 s while a run is going or updating, every 5 min ot
 
 ## Screens and what each must do
 
-1. **Top strip**: unit name (the big title), "Lookahead · The next 24 hours, in one place. · 07:00 to 07:00 · patients in the ICU at least 24 h"; data-source tag ("MIMIC-IV Demo", "MIMIC-IV · local" or, for the file:// fallback, "Demo data"); Day/Night board switch; role picker ("I am"); **Update the unit**; the run line ("Updated 13:05 (unit) · demo clock +6 h", or "Updating the unit for ICU nurse (charge). The last forecast stays on screen."). A scheduled morning run shows the last forecast marked "updating" until it lands.
-2. **Strain panel** (top of the right column; first on a phone). Headline "10 patients on life support now · 6 more expected (4 to 9)". Then three lines, IMV, Vasopressor, CRRT, each "5 on now · +3 expected (1 to 5)", the role's line first (pharmacy: vasopressor; respiratory therapy: IMV; bed manager: the discharge line). Then "expected to leave 10 (7 to 13)" and a small "Deaths expected: 1 (0 to 3)". The yardstick word sits beside the title with its name: "vs tonight's staffing" or "vs a typical day". It always renders white, amber or red with the word ("Not ready yet" when `yardstick` is null; the rest of the panel stays); the load it compares is now plus new life support, with its range.
-   - Capacity set (server rule, `docs/CONTRACT.md`): ON TRACK when p90 <= capacity; TIGHT when p90 > capacity >= p50; SHORT when p50 > capacity. "Ventilators free" is saved and shown; it does not change the word.
-   - No capacity: USUAL, BUSY, VERY BUSY against a typical day (from training data). The yardstick sentence appears only when there is a capacity or a typical-day number to compare with; it is omitted otherwise.
-   - **Set tonight's capacity** (folded; two 44px number inputs: "Life-support patients tonight's staffing covers", "Ventilators free (optional)"; whole numbers 0 to 50). After saving the panel says "Capacity set 07:12 by ICU nurse (charge)" (the server's `set_at`) and the yardstick is recomputed locally with the server's rule until the next forecast. "View against a typical day (staffing number kept)" is a view toggle on this screen only; the saved number is not cleared (the server cannot clear it). It shows only when a typical-day number exists.
-3. **Check first**: one line under the panel, "Check first: rooms 20, 12, 7", each a link; "no room is High" when none is. There is no shift brief.
-4. **Room board** (left two-thirds; all 25 rooms on one screen). A tile shows the room number, one word, and tags:
-   - Word: Low, Medium or High (the combined chance of any new life support in 24 h), or "On life support" when two or more supports are running now. The word is always shown.
-   - Fill: Low white, Medium pale amber, High pale red; High has a 3px red border. "On life support" has a 3px dark-ink border and keeps the fill of its level. Night board has its own versions of the fills, text at 4.5:1 or better. No glyphs, no bars. Death never colours a tile.
-   - Tags: V, P, C for supports running at 07:00; a green-outlined OUT when the chance of leaving the ICU is 6 in 10 or more. No ECMO tag.
-   - A key and one note sit under the grid. A tile opens the room page.
-5. **Room page** (`#room=N`; the browser's back button returns to the board). "← All N rooms" (N from `rooms.json`), previous and next room (rooms missing from the file are skipped); a unit context line ("Unit: 10 on life support now · 6 more expected (4 to 9) · BUSY vs a typical day"); the heading "Room 12: next 24 hours" with its level; its own timestamp line ("updated 13:05 · next 24 h to 13:05 tomorrow"). Fixed groups, each row a level word, a 10-dot icon array and "about N in 10":
-   - **New life support**: IMV, Vasopressor, CRRT. A support running now reads "On now" with no dots; a probability that is `null` while the support is not on (or a missing key) reads "No estimate" with no dots, never Low. A faint note per stopped support: "Ventilator: off (stopped before 07:00)".
-   - **Leaving the ICU**: ICU discharge (with the OUT tag when it applies).
-   - **Death**.
-   - "Last 12 hours" (five, then "Show more"; `h` is hours before the cut, 1 = the last hour); buttons **Update this room** and **Ask about this forecast**. Focus moves to the heading on open and back to the room's tile on return.
-6. **Update flows**. "Update the unit" and "Update this room" send `POST /api/rerun`. While running the button reads "Updating…" (aria-disabled, focus stays), an "updating" tag marks the numbers, and the last forecast stays visible. The numbers refresh in place when the run lands. A refusal shows verbatim in the run line (or the room's status line).
-7. **Ask about this forecast** (floating widget, closed by default). Chips by role (at most three, always including "Summarise the shift"; on a room page the first is "Room N: what is most likely in the next 24 hours?"). Close and Escape close it and return focus to the button. It clears on a room or role change. When the forecast changes while it is open and has messages, one quiet line: "Forecast updated at 13:05. Answers below use it." Treatment questions are declined.
-8. **How this forecast was made** (foot): a plain line, then a folded "The five forecasts, and what each one means" (table, "Life support: IMV, vasopressor infusion or CRRT.", model, method, where and when, "Excludes new admissions from the ED and OR."; a "Model performance (held-out patients)" row appears only once numbers exist) and the intended-use line "For unit planning; the care team makes clinical decisions."
+The board has two tabs under the header, **Bed board** (default) and **Unit strain**, a segmented control. The tab is in the hash (`#view=beds` or `#view=strain`) and remembered in `localStorage` (`lookahead-view`, inside try/catch). The tab bar stays at the top of the screen while scrolling.
+
+1. **Header** (slim): unit name (the big title) and bed count; "Lookahead", "07:00 to 07:00", the data-source tag ("MIMIC-IV Demo", "MIMIC-IV · local" or, for the file:// fallback, "Demo data") and the run line ("Updated 13:05", or "Updating the unit for ICU nurse (charge). The last forecast stays on screen."); a one-line strain summary that links to the Unit strain tab ("10 on life support · +5 expected · USUAL"); Night board / Day board; role picker ("I am"); **Update the unit**; **Ask**. On a phone the night and ask buttons are icons beside the title.
+2. **Bed board tab.** Current state, then the forecast, per bed.
+   - **Bed tile**: room number, sex and age ("F 67"), one trajectory status, then a strip that reads left to right as a change: **Now** (solid icons for life support running at 07:00, or a thin ring for none), an arrow, **Next 24 h** (an outline icon for each new support at 2 in 10 or more with "3 in 10" beside it; the bed-with-arrow icon when leaving the ICU is 6 in 10 or more; a dash when nothing new is flagged). The bed-with-arrow carries its own chance ("7 in 10"). When the room's level is Medium or High but no single support reaches 2 in 10, a plus in a ring carries the combined chance ("3 in 10"). A bed with nothing running and nothing flagged shows no strip.
+   - **Trajectory status**, one per bed, by fill or border, a shape and a word:
+
+     | Status | Rule | Look |
+     |---|---|---|
+     | Worsening | `level` is `high` (any new life support 4 in 10 or more) | full blue tile, solid triangle |
+     | Watch | `level` is `medium` (2 in 10 or more) | light blue tile, outline triangle |
+     | Not improving | on at least one life support now, `p.icu_departure` under 0.2, and no new support flagged | tinted ground, 3px ink border, two bars |
+     | Leaving | `out` is true (leaving 6 in 10 or more) | white tile, 2px green border, bed with arrow |
+     | Steady | everything else | white tile, dot |
+
+     The rules are checked in that order. Death never enters. **Not improving is derived on the page** from the five predictions: there is no coming-off-support forecast, so "on support and unlikely to leave" stands in for lack of improvement. Nothing new is read from the API; `any_life_support` is recomputed from `p` for ordering.
+   - **Worry first** (top of the tab, tiles on the board ground): the Worsening rooms (highest combined chance first), then the Not improving rooms (most supports running first, then lowest chance of leaving), each a full bed tile. "No room is worsening or not improving." when both are empty. It replaces the old "Check first" line. The offline chat answers "Worry first" from the same lists; the live chat answers from the server.
+   - **All N rooms**: every room in room order, five across on a desktop, two on a phone. A tile opens the room page.
+   - **Key** (one line beside the tabs): the four marked statuses, then solid icons "on now", an arrow, outline icons "may start", and the plus in a ring "any of them".
+3. **Unit strain tab.**
+   - **Life support** lead: the yardstick word as a chip with its name ("vs tonight's staffing" or "vs a typical day"), "10 patients on now", "+5 expected" with its range, a range bar of now plus new, and one line ("Now plus new 15 (13 to 18) · typical day 15" or "· staffing covers 14"). The chip is green-outlined for ON TRACK / USUAL, amber for TIGHT / BUSY, solid red for SHORT / VERY BUSY; the card takes an amber or red border to match. "Not ready yet" when `yardstick` is null.
+     - Capacity set (server rule, `docs/CONTRACT.md`): ON TRACK when p90 <= capacity; TIGHT when p90 > capacity >= p50; SHORT when p50 > capacity.
+     - No capacity: USUAL, BUSY, VERY BUSY against a typical day (from training data).
+   - "Deaths expected 1 (0 to 3)", one quiet line.
+   - **Set tonight's capacity** (folded; two 44px number inputs: "Life-support patients tonight's staffing covers", "Ventilators free (optional)"; whole numbers 0 to 50). After saving: "Capacity set 07:12 by ICU nurse (charge)" (the server's `set_at`), and the yardstick is recomputed locally with the server's rule until the next forecast. "View against a typical day" is a view toggle on this screen only; the saved number is not cleared. It shows only when a typical-day number exists.
+   - **One card per support** (IMV, Vasopressor, CRRT) and one for **Leaving the ICU**; the role's card comes first (pharmacy: vasopressor; respiratory therapy: IMV; bed manager: leaving). Each: the icon and name, "N on now", "+N expected" with its range, a range bar, then the beds behind the count as person figures: "On now" (solid ink figures) and "May start" (figures that fill with the chance, 2 in 10 or more, highest first, with "3 in 10" under the room number). Leaving: "N expected to leave", the bar, and "Likely to leave" figures (6 in 10 or more, green fill). A figure opens the room page.
+   - With "ventilators free" saved, the IMV card also shows "N free", an ink line on its bar, and its own ON TRACK / TIGHT / SHORT chip (the server's capacity rule applied on the page to IMV starts against ventilators free); TIGHT gives the card an amber border, SHORT a red one. The unit yardstick word is not changed by it.
+   - **Range bar**: track, the 8-in-10 range in blue, a bead at the median, a solid ink line for what is free or covered, a dashed line for a typical day. The three support bars share one scale.
+4. **Room page** (`#room=N`; the browser's back button returns to the board). "← All N rooms" (or "← Unit strain" when opened from that tab), previous and next room (rooms missing from the file are skipped); the heading "Room 12", its trajectory status chip, and the same Now → Next 24 h strip, labelled; one sub-line with sex, age and the window ("male, age 68 · 07:00 to 07:00 tomorrow · updated 07:00", from the room's own `window` and `updated_at`). The header keeps the unit strain line. Each row is an icon, a level word in its level tint, a 10-dot icon array and "about N in 10" (the room page keeps "about"; tiles and figures drop it for space):
+   - **New life support**: IMV, Vasopressor, CRRT. A support running now has the solid icon and reads "On now" with no dots; a probability that is `null` while the support is not on (or a missing key) reads "No estimate" with no dots, never Low. A faint note per stopped support: "Ventilator: off (stopped before 07:00)".
+   - **Leaving the ICU** (solid bed icon when `out`) and **Death**, two rows under the supports.
+   - "Last 12 hours" (five, then "Show more"; `h` is hours before the cut, 1 = the last hour); buttons **Update this room** and **Ask about this forecast**. Focus moves to the heading on open (programmatic, no visible ring) and back to the room's tile or figure on return.
+5. **Update flows**. "Update the unit" and "Update this room" send `POST /api/rerun`. While running the button reads "Updating…" (aria-disabled, focus stays), an "updating" tag marks the numbers, and the last forecast stays visible. The numbers refresh in place when the run lands. A refusal shows verbatim in the run line (or the room's status line).
+6. **Ask about this forecast**. Opened by **Ask** in the header (never a floating button over content). From 1200 px it docks as a right-hand panel and the board reflows beside it; below that it is a panel at the bottom right, and on a phone a bottom sheet. Chips by role (at most three, always including "Summarise the shift"; on a room page the first is "Room N: what is most likely in the next 24 hours?"). Ask again, Close and Escape close it and return focus to the button. It clears on a room or role change. When the forecast changes while it is open and has messages, one quiet line: "Forecast updated at 13:05. Answers below use it." Treatment questions are declined.
+7. **How this forecast was made** (foot): one folded disclosure. It holds every definition (each bed, Worsening and Watch, Not improving, Leaving and Steady, the icons, the range bar, the status words), the table of the five forecasts, model, method, where and when, "Excludes new admissions from the ED and OR.", a "Model performance (held-out patients)" row only once numbers exist, and "For unit planning; the care team makes clinical decisions."
+
+### Icons
+
+One family drawn for this board, inline as an SVG sprite (24 grid, `currentColor`, 1.75 stroke). Solid means running now, outline means expected. Ventilator: lungs with an airway tube and circuit. Vasopressor: a syringe with a drop. CRRT: a capped filter with blood lines and arrows. A plus in a ring: any new support. Leaving: a bed with an outward arrow. Where an icon stands alone it has an accessible name ("Ventilator running", "Vasopressor expected"); inside a tile the tile's own label says it in words. Sheet: [`screenshots/icons.png`](screenshots/icons.png).
 
 ## Cognitive load
 
-The board is read at 07:00 by a tired team at a workstation or a projector, often mid-conversation. Target: the shift question ("how much life support, and are we covered?") is answered within 10 seconds, without scrolling at 1440 px. Phone order: strain panel, check first, 25 rooms (5 columns), footer, floating chat.
+The board is read at 07:00 by a tired team at a workstation or a wall screen, often mid-conversation and from a few metres. Target: "who do we worry about?" is answered in two seconds from the Worry first rail, and "are we covered?" from the header line; neither needs scrolling at 1440 px. Phone order: header, tabs, Worry first, all rooms (two across), footer.
 
 | What we surface | Rule | Why it lowers load |
 |---|---|---|
-| The answer first | The strain panel is the top of the right column and first on a phone: one sentence of counts, one yardstick word. | The answer comes before the evidence. |
-| One yardstick, named | White, amber or red with a word, and a name ("vs tonight's staffing" or "vs a typical day"). | Nobody guesses what "busy" is measured against. |
-| Each role's line first | The role picker moves that team's line to the top of the breakdown. | Each team reads one line, not the whole unit. |
-| Few tags, one word | A tile is the room number, one level word, and at most V P C OUT. | Twenty-five tiles read at a glance and from a distance. |
-| Exceptions marked | The fill and a 3px border mark High; "Check first" names at most three rooms. | Attention goes to a few rooms. |
-| Natural frequencies | "about 4 in 10" with a 10-dot array; no percentages anywhere on the board. | Plain numbers are read the same by everyone. |
+| Who to worry about, first | The Worry first rail leads the default tab: Worsening, then Not improving. | Attention goes to a few rooms before anything else. |
+| Now, then next | Every bed reads left to right: what is running, an arrow, what may start. | A change is seen as a change, not worked out from two numbers. |
+| Pictures before words | One icon per support, solid for running, outline for expected; a tile carries one status word. | Read from across the room and by people who do not share a first language. |
+| One status per bed | Worsening, Watch, Not improving, Leaving or Steady, by fill or border, shape and word. | No tile needs decoding. |
+| Ink is now, blue is forecast | On every screen. Amber and red appear only on TIGHT / BUSY and SHORT / VERY BUSY. | Colour means one thing. |
+| Strain on its own tab | The header keeps one line and one word; the counts, bars and capacity form live on Unit strain. | The bed board stays a bed board. |
+| One yardstick, named | A chip with a word, and a name ("vs tonight's staffing" or "vs a typical day"). | Nobody guesses what "busy" is measured against. |
+| Each role's card first | The role picker moves that team's card to the front of Unit strain. | Each team reads one card. |
+| Natural frequencies | "3 in 10" on tiles and figures, "about 3 in 10" with a 10-dot array on the room page; no percentages. | Plain numbers are read the same by everyone. |
 | Fixed room page | New life support, Leaving the ICU, Death, always in this order. | The attending knows where to look. |
-| Chat out of the way | Closed floating widget; opens on demand; clears on room or role change; updates only on an explicit ask. | The board stays a board. |
-| One horizon | Next 24 h, 07:00 to 07:00. No tabs, no slider. | Nothing to choose before reading. |
-| Model details folded | The five forecasts and the model details sit in one closed section at the foot. | The curious can look; the 07:00 reader never has to. |
+| Chat out of the way | Closed until asked; docked beside the board, never over it. | The board stays a board. |
+| One horizon | Next 24 h, 07:00 to 07:00. No time slider. | Nothing to choose before reading. |
+| Definitions folded | Every rule and the model details sit in one closed section at the foot. | The curious can look; the 07:00 reader never has to. |
 | Day and night boards | Same layout and words; the user picks the board. | Nothing moves when the lights go down. |
 
 ## States the frontend must handle
 
 | State | Show |
 |---|---|
-| No forecast yet | "No forecast yet. Updates start at 07:00." in the panel, a dash in the footer, "No rooms yet" in the grid, and the update control |
+| No forecast yet | "No forecast yet" on the Unit strain tab, no header strain line, a dash in the footer table, "No rooms yet" on the Bed board, and the update control |
 | Forecast older than 24 h | the age and an update prompt |
 | Run in progress (button, chat or scheduled) | "Updating…", an "updating" tag, the last forecast kept |
 | Update refused | the server's reason, verbatim ("Updated 12 minutes ago. You can update again at 13:17.") |
@@ -124,7 +147,7 @@ The board is read at 07:00 by a tired team at a workstation or a projector, ofte
 | API unreachable (at load or later) | "Can't reach the board server — retrying", retry with backoff, last good data kept; synthetic only for `file://` or `#synthetic` |
 | A room missing from `rooms.json` | no tile and no room page; deep link goes to the board |
 | A room missing from `rooms.json` (link or hash) | "Room N is not in this forecast." on the board |
-| Support already running | "On now" (never a number); two or more: "On life support" tile |
+| Support already running | its solid icon left of the arrow; "On now" on the room page (never a number) |
 
 ## Rules
 
@@ -133,4 +156,4 @@ The board is read at 07:00 by a tired team at a workstation or a projector, ofte
 - **Status never by colour alone**; text at 4.5:1 or better in day and night.
 - **Honest labels, no warnings**: a plain data-source tag ("Demo data", "MIMIC-IV Demo", "MIMIC-IV · local"), "Not ready yet" only as a standalone state where no run has produced a number, and no hedging copy; admissions are excluded from the forecast and the footer says so once.
 - **Decision support, never a treatment recommendation.**
-- **Design**: follow [`../DESIGN.md`](../DESIGN.md) (the unit whiteboard world). Use the Impeccable skill (`/impeccable`) for any UI work.
+- **Design**: follow [`../DESIGN.md`](../DESIGN.md) (the picture board: ink is now, blue is forecast). Use the Impeccable skill (`/impeccable`) for any UI work.

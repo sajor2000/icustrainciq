@@ -1,347 +1,476 @@
 ---
 name: Lookahead (ICU-Twin)
-description: The unit whiteboard nurses already read, made to forecast the next 24 hours.
+description: A picture board for the ICU. Ink means now, blue means the next 24 hours.
 colors:
-  board: "#F4F5F2"
-  board-2: "#E9EBE6"
+  board: "#F3F5F9"
+  board-2: "#E8ECF2"
   surface: "#FFFFFF"
-  ink: "#1E2A33"
-  ink-2: "#4A5862"
-  rule: "rgba(30,42,51,.12)"
-  magnet: "#2F6FB0"
-  magnet-ink: "#FFFFFF"
-  focus: "#2F6FB0"
-  selection: "rgba(47,111,176,.22)"
-  level-low: "#FFFFFF"
-  level-medium: "#FBE6BD"
-  level-high: "#F8D0CB"
-  status-ok: "#2E7D5B"
-  status-tight: "#9A5410"
-  status-short: "#B23A3A"
-  night-board: "#1C2126"
-  night-board-2: "#232A30"
-  night-surface: "#252D34"
-  night-ink: "#E8ECE6"
-  night-ink-2: "#A9B4AE"
-  night-rule: "rgba(232,236,230,.14)"
-  night-magnet: "#7FB2E5"
-  night-magnet-ink: "#10161B"
-  night-focus: "#9CC6EE"
-  night-selection: "rgba(127,178,229,.28)"
-  night-level-low: "#252D34"
-  night-level-medium: "#4D3E1B"
-  night-level-high: "#552B29"
-  night-status-ok: "#6CC59B"
-  night-status-tight: "#E8A85C"
-  night-status-short: "#EE8A80"
+  ink: "#111827"
+  ink-2: "#4A5567"
+  rule: "rgba(17,24,39,.10)"
+  line: "#7A8597"
+  blue: "#1E5BB8"
+  focus: "#1E5BB8"
+  selection: "rgba(30,91,184,.22)"
+  figure: "#DDE2EA"
+  level-medium: "#D2E2F8"
+  on-level-medium: "#111827"
+  level-high: "#1E5BB8"
+  on-level-high: "#FFFFFF"
+  ok: "#18794E"
+  amber: "#8A4B08"
+  amber-bg: "#FCE8C3"
+  amber-edge: "#C27A14"
+  red: "#B3261E"
+  on-red: "#FFFFFF"
+  shadow-04: "rgba(16,24,40,.04)"
+  shadow-06: "rgba(16,24,40,.06)"
+  shadow-12: "rgba(16,24,40,.12)"
+  shadow-18: "rgba(16,24,40,.18)"
+  night-board: "#0E131B"
+  night-board-2: "#1C2533"
+  night-surface: "#151C28"
+  night-ink: "#E6E9EF"
+  night-ink-2: "#A3ADBD"
+  night-rule: "rgba(230,233,239,.13)"
+  night-line: "#667286"
+  night-blue: "#8DBBFF"
+  night-focus: "#A9CCFF"
+  night-selection: "rgba(141,187,255,.3)"
+  night-figure: "#2B3445"
+  night-level-medium: "#1B2E50"
+  night-on-level-medium: "#F1F4F9"
+  night-level-high: "#8DBBFF"
+  night-on-level-high: "#0B1220"
+  night-ok: "#6CC59B"
+  night-amber: "#F0B466"
+  night-amber-bg: "#3B2D12"
+  night-amber-edge: "#C58A2F"
+  night-red: "#F28B82"
+  night-on-red: "#1B0C0A"
 typography:
-  headline:
+  lead-numeral:
     fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "24px"
-    fontWeight: 700
-    lineHeight: 1.1
-    letterSpacing: "-0.01em"
-    fontFeature: "\"tnum\" 1"
-  title:
-    fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "18px"
-    fontWeight: 700
-    lineHeight: 1.45
-    fontFeature: "\"tnum\" 1"
-  numeral:
-    fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "30px"
+    fontSize: "2.75rem"
     fontWeight: 800
-    lineHeight: 1
+    lineHeight: 1.05
+    letterSpacing: "-0.01em"
     fontFeature: "\"tnum\" 1"
   room-heading:
     fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "40px"
+    fontSize: "2.5rem"
     fontWeight: 700
     lineHeight: 1.05
     letterSpacing: "-0.02em"
     fontFeature: "\"tnum\" 1"
-  check-line:
+  numeral:
     fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "16px"
-    fontWeight: 700
-    lineHeight: 1.45
-    fontFeature: "\"tnum\" 1"
-  line:
-    fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "14px"
-    fontWeight: 400
-    lineHeight: 1.45
-    fontFeature: "\"tnum\" 1"
-  tag:
-    fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "11px"
-    fontWeight: 700
-    lineHeight: 1.45
-    letterSpacing: "0.04em"
+    fontSize: "2rem"
+    fontWeight: 800
+    lineHeight: 1.05
+    letterSpacing: "-0.01em"
     fontFeature: "\"tnum\" 1"
   room-number:
     fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "26px"
+    fontSize: "1.75rem"
     fontWeight: 800
     lineHeight: 1
+    letterSpacing: "-0.01em"
+    fontFeature: "\"tnum\" 1"
+  room-number-phone:
+    fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    fontSize: "1.5rem"
+    fontWeight: 800
+    lineHeight: 1
+    letterSpacing: "-0.01em"
+    fontFeature: "\"tnum\" 1"
+  headline:
+    fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    fontSize: "1.375rem"
+    fontWeight: 700
+    lineHeight: 1.15
+    letterSpacing: "-0.01em"
+    fontFeature: "\"tnum\" 1"
+  title:
+    fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    fontSize: "1.125rem"
+    fontWeight: 700
+    lineHeight: 1.2
+    fontFeature: "\"tnum\" 1"
+  body-large:
+    fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    fontSize: "1rem"
+    fontWeight: 600
+    lineHeight: 1.45
     fontFeature: "\"tnum\" 1"
   body:
     fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "15px"
+    fontSize: ".9375rem"
     fontWeight: 400
     lineHeight: 1.45
     fontFeature: "\"tnum\" 1"
-  body-sm:
+  control:
     fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "13px"
+    fontSize: ".875rem"
+    fontWeight: 700
+    lineHeight: 1.45
+    fontFeature: "\"tnum\" 1"
+  caption:
+    fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    fontSize: ".8125rem"
     fontWeight: 400
     lineHeight: 1.45
     fontFeature: "\"tnum\" 1"
   label:
     fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "12px"
-    fontWeight: 800
-    lineHeight: 1.45
-    letterSpacing: "0.05em"
+    fontSize: ".75rem"
+    fontWeight: 600
+    lineHeight: 1.2
     fontFeature: "\"tnum\" 1"
 rounded:
-  tag: "3px"
-  badge: "4px"
-  magnet: "6px"
-  control: "8px"
+  swatch: ".25rem"
+  chip: ".3125rem"
+  focus: ".5rem"
+  control: ".625rem"
+  tile: ".75rem"
+  switch: ".8125rem"
+  card: "1rem"
+  thumb: "6px"
   pill: "999px"
+  dot: "50%"
 spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "12px"
-  lg: "16px"
-  xl: "24px"
-  xxl: "32px"
+  hair: ".125rem"
+  xs: ".25rem"
+  sm: ".375rem"
+  md: ".5rem"
+  tile-gap: ".625rem"
+  grid-gap: ".75rem"
+  card-gap: "1rem"
+  card-pad: "1.25rem"
+  gutter: "1.5rem"
+  page-bottom: "3rem"
 components:
-  magnet:
+  strain-pill:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.magnet}"
-    padding: "8px 10px"
-    height: "92px"
-  board-toggle:
-    backgroundColor: "transparent"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.control}"
-    padding: "7px 12px"
-  status-word:
-    backgroundColor: "transparent"
-    typography: "{typography.label}"
-    rounded: "{rounded.badge}"
-    padding: "3px 4px"
-  status-on-track:
-    textColor: "{colors.status-ok}"
-  status-tight:
-    textColor: "{colors.status-tight}"
-  status-short:
-    textColor: "{colors.status-short}"
-  source-tag:
-    backgroundColor: "transparent"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.badge}"
-    padding: "2px 6px"
-  chip:
-    backgroundColor: "transparent"
-    textColor: "{colors.ink}"
+    typography: "{typography.control}"
     rounded: "{rounded.pill}"
-    padding: "3px 10px"
-  ask-input:
-    backgroundColor: "{colors.board}"
+    padding: ".25rem .875rem"
+    height: "2.75rem"
+  toggle:
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
     rounded: "{rounded.control}"
-    padding: "8px 10px"
-  ask-button:
+    padding: ".375rem .75rem"
+    height: "2.75rem"
+  toggle-hover:
+    backgroundColor: "{colors.board-2}"
+  toggle-expanded:
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.board}"
+  button-primary:
     backgroundColor: "{colors.ink}"
     textColor: "{colors.board}"
     rounded: "{rounded.control}"
-    padding: "8px 14px"
-  chat-question:
+    padding: ".375rem 1rem"
+    height: "2.75rem"
+  segmented-tabs:
+    backgroundColor: "{colors.board-2}"
+    rounded: "{rounded.switch}"
+    padding: ".1875rem"
+  segmented-tab:
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "0 1.125rem"
+    height: "2.75rem"
+  segmented-tab-hover:
+    backgroundColor: "{colors.surface}"
+  segmented-tab-selected:
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.board}"
+  bed-tile-steady:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    typography: "{typography.room-number}"
+    rounded: "{rounded.tile}"
+    padding: ".625rem .75rem"
+    height: "5.75rem"
+  bed-tile-worsening:
+    backgroundColor: "{colors.level-high}"
+    textColor: "{colors.on-level-high}"
+    rounded: "{rounded.tile}"
+    padding: ".625rem .75rem"
+  bed-tile-watch:
+    backgroundColor: "{colors.level-medium}"
+    textColor: "{colors.on-level-medium}"
+    rounded: "{rounded.tile}"
+    padding: ".625rem .75rem"
+  bed-tile-not-improving:
     backgroundColor: "{colors.board-2}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.control}"
-    padding: "8px 10px"
-  chat-answer:
-    backgroundColor: "transparent"
+    rounded: "{rounded.tile}"
+    padding: ".625rem .75rem"
+  bed-tile-leaving:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.tile}"
+    padding: ".625rem .75rem"
+  status-chip-ok:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ok}"
+    typography: "{typography.label}"
+    rounded: "{rounded.chip}"
+    padding: ".1875rem .5rem"
+  status-chip-amber:
+    backgroundColor: "{colors.amber-bg}"
+    textColor: "{colors.amber}"
+    rounded: "{rounded.chip}"
+    padding: ".1875rem .5rem"
+  status-chip-red:
+    backgroundColor: "{colors.red}"
+    textColor: "{colors.on-red}"
+    rounded: "{rounded.chip}"
+    padding: ".1875rem .5rem"
+  lead-card:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.card}"
+    padding: "1rem 1.25rem"
+  support-card:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.card}"
+    padding: "1rem 1.125rem"
+  person-figure:
+    backgroundColor: "{colors.figure}"
+    textColor: "{colors.ink}"
+    width: "3.25rem"
+    size: "2.5rem"
+  input:
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
     rounded: "{rounded.control}"
-    padding: "8px 10px"
+    padding: ".375rem .625rem"
+    height: "2.75rem"
+  room-status-chip:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    typography: "{typography.body-large}"
+    rounded: "{rounded.focus}"
+    padding: ".3125rem .75rem"
+  level-chip:
+    backgroundColor: "{colors.board-2}"
+    textColor: "{colors.ink}"
+    typography: "{typography.caption}"
+    rounded: "{rounded.chip}"
+    padding: ".1875rem .25rem"
+  chat-panel:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.card}"
+    padding: "1rem"
+    width: "26rem"
+  question-chip:
+    textColor: "{colors.ink}"
+    typography: "{typography.caption}"
+    rounded: "{rounded.pill}"
+    padding: ".375rem .875rem"
+    height: "2.75rem"
 ---
 
 # Design System: Lookahead (ICU-Twin)
 
 ## Overview
 
-**Creative North Star: "The Unit Whiteboard"**
+**Creative North Star: "The Picture Board"**
 
-The board is the whiteboard an ICU team already reads at shift change, made to forecast. An enamel-white ground carries marker-navy ink, rooms are flat magnets with ink borders. A magnet is white (Low), pale amber (Medium) or pale red with a thick border (High), always with its word. One blue (the magnet) draws the icon arrays on the room page. Everything else is ink, rules, and words. It refuses the KPI-tile dashboard and the departure board: no hero numbers floating in cards, no flipping split-flap rows.
+The unit is read from three metres as icons, figures and numbers, with almost no sentences. A charge nurse at 07:00 sees which rooms to worry about and what the unit will be short of in the next 24 hours without reading a paragraph. The ground is a cool grey, the cards are white with soft corners, and there is one blue. Everything on the board is either ink or blue: ink means now, blue means forecast.
 
-Density is operational, and the answer comes first. The first viewport holds the strain panel (patients on life support now, more expected, and a one-word yardstick) and a "Check first" line in a ruled right column, and on the left all 25 rooms coded Low, Medium or High, so a charge nurse and an attending can answer "what will we be short of, when, and how sure are we" from across a room or on a projector. Numerals are large, tabular, and heavy; prose is short, plain, and honest about what is mock, synthetic, or not yet run.
+Colour outside that pair is rationed to meaning. Amber appears only for TIGHT and BUSY, red only for SHORT and VERY BUSY, green only for Leaving and for ON TRACK and USUAL. Every status is carried three ways at once, by a fill or border, a drawn shape and a word. There are two boards, day and night, and both are first-class: they swap custom properties and nothing else.
 
-A night board (charcoal ground, chalk ink) is the same grammar with lifted colours, chosen by the user, not by the OS.
+Credit. The cluster cards, the person figure that fills with a bed's chance (a head-and-shoulders path, two stacked SVGs with a clip-path inset), the range bar with an ink line for free capacity, the status chip, the card radius, hairline and shadow language and the segmented view switch come from Dema's (GitHub: deetherese) design on the `alternative` branch (`origin/alternative`, `mockups/command-center.html`). The blue acuity scale comes from the earlier board at commit 65b36c6. The icon family was drawn for this board; no icon was copied or adapted from an external set.
 
 **Key Characteristics:**
-- Two boards, one grammar: day (`data-board="day"`) and night (`data-board="night"`) swap only custom-property values.
-- Flat magnets with 1.5px ink borders (3px for High) and 6px corners; level shown by a pale fill, a border weight and a word. No glyphs, no signal bars.
-- A ruled margin column: 2px ink rules separate regions, 12-14% ink rules separate rows.
-- Every forecast number carries its range, written "(a to b)" and explained once as 8 in 10 likely outcomes; no percentages on screen.
-- Honesty labels are part of the visual system, not footnotes.
+- Ink is now, blue is the next 24 hours.
+- Pictures before words: one drawn icon family, solid for running, outline for expected.
+- Every bed is drawn as a change: Now, an arrow, Next 24 h.
+- Chances are counts out of ten, never percentages.
+- Two boards (day, night) with the same grammar; wall screens scale the root to 120% from 1800px.
+- Two tabs only: Bed board (default) and Unit strain.
 
 ## Colors
 
-A near-monochrome board of ink on enamel, one working blue, and three status inks that are always paired with a word.
+A cool grey ground, white cards, near-black ink and one blue; amber, red and green exist only as status.
 
 ### Primary
-- **Magnet Blue** (`magnet`; night `night-magnet`): the filled dots of the room page's icon arrays, and the day focus ring. It no longer shades tiles.
+- **Forecast Blue** (`blue`, night `night-blue`): everything that is a forecast. Expected counts, the 8-in-10 range on the bar, the fill of a person figure, the filled dots on the room page, the caret and form accent. `level-high` is the same blue used as a full tile fill for Worsening, with `on-level-high` text.
+- **Watch Blue** (`level-medium`, night `night-level-medium`): the light step of the acuity scale. Fills Watch tiles and Medium level chips, with `on-level-medium` text.
 
-### Level
-- **Level fills** (`level-low` white, `level-medium` pale amber, `level-high` pale red; night counterparts): the tile, the legend swatch, the room heading chip and the yardstick word share them. The same three fills mean ON TRACK / TIGHT / SHORT or USUAL / BUSY / VERY BUSY on the strain panel. Ink is picked in code for 4.5:1 on each fill.
+### Secondary
+- **Leaving Green** (`ok`): the 2px border and status word of a Leaving bed, the fill of a leaving figure, and the border and word of the ON TRACK and USUAL chips. Nowhere else.
 
-### Status
-- **On-Track Green** (`status-ok`), **Tight Amber** (`status-tight`), **Short Red** (`status-short`): ink for the status words ON TRACK / TIGHT / SHORT, outlined in the same colour. Each colour means its word and nothing else: red is SHORT only. The capacity line and the data-source tag are ink.
+### Tertiary
+- **Tight Amber** (`amber` text on `amber-bg`, edged `amber-edge`): the TIGHT and BUSY chip, and the 2px border of the card that carries it.
+- **Short Red** (`red` fill with `on-red` text): the SHORT and VERY BUSY chip, and the 2px border of the card that carries it.
 
 ### Neutral
-- **Enamel Board** (`board`): page ground; also the ground of the ask input.
-- **Board Shadow** (`board-2`): hover fill for controls and the fill of the team's own chat messages.
-- **Magnet Surface** (`surface`): the unshaded magnet face that magnet blue mixes into.
-- **Marker Navy** (`ink`): text, magnet borders, 2px region rules, the median tick, the capacity line, the data-source tag, the Ask button.
-- **Faded Marker** (`ink-2`): secondary text, subtitles, ranges, timestamps, "not forecast" rows.
-- **Rule** (`rule`): 1px row dividers, the range-bar track, quiet borders.
-- **Night counterparts** (`night-*`): charcoal ground, chalk ink, lifted blue and status inks; `night-focus` is a lighter blue than the night magnet so the focus ring separates from selected fills.
+- **Board Grey** (`board`): the page ground, the sticky tab bar, and the text colour on ink-filled controls.
+- **Board Grey 2** (`board-2`): the segmented switch trough, control hover, the Not improving tile ground, the asker's chat bubble, the unlevelled level chip.
+- **Card White** (`surface`): cards, tiles, controls, the bead on the range bar.
+- **Ink** (`ink`): text, everything that is running now, selected controls, the free-capacity line.
+- **Ink 2** (`ink-2`): secondary text, labels, ranges, the Steady word.
+- **Hairline** (`rule`): card and tile borders, dividers.
+- **Line** (`line`): control borders, the empty dot outline, scrollbar thumb.
+- **Figure Grey** (`figure`): the empty person figure and the range bar track.
+- **Shadow tints** (`shadow-04`, `shadow-06`, `shadow-12`, `shadow-18`): the four alphas of one shadow colour, used only inside the two shadows below.
+
+Night values carry the same names with a `night-` prefix. On the night board blue lightens, ink and ground invert, the card shadow is removed, and text on the blue and red fills turns dark.
 
 ### Named Rules
-**The Level Rule.** Three fills only: white, pale amber, pale red. High also gets a 3px border in Short Red, so the level never rests on colour alone; the word is always shown. Death never colours a tile. No second accent is introduced.
+**The Ink and Blue Rule.** Ink means now, blue means forecast. A count, icon or figure in ink is happening at 07:00; the same thing in blue is expected in the next 24 hours. Never use blue for decoration or for a link.
 
-**The Word Beside the Colour Rule.** Status is never colour alone. The yardstick word (ON TRACK, TIGHT, SHORT, or USUAL, BUSY, VERY BUSY) sits in a pale fill, with a 3px red border for the worst state, and the panel names what it is measured against ("vs tonight's staffing", "vs a typical day").
+**The Rationed Colour Rule.** Amber only for TIGHT and BUSY. Red only for SHORT and VERY BUSY. Green only for Leaving and for ON TRACK and USUAL. Red never marks a bed.
 
-**The Readable Ink Rule.** Text ink must reach 4.5:1 against its own ground on both boards. Tile ink is chosen in code from the four board inks by contrast against the level fill, which must reach 4.5:1. Status inks are held to the same bar: day Tight Amber is #9A5410 (5.26:1 on the board; the earlier #B8661A measured 3.87:1 and was darkened).
+**The Three Carriers Rule.** Status is never colour alone. Each status has a fill or border, a shape and a word.
 
 ## Typography
 
-**Display Font:** none; the system has no display role.
-**Body Font:** system UI stack (`system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`)
-**Label/Mono Font:** same stack; tabular numerals everywhere (`font-variant-numeric: tabular-nums` on body).
+**Display Font:** system UI stack (system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif)
+**Body Font:** the same stack
+**Label/Mono Font:** none
 
-**Character:** The marker on the board: one plain, legible family that varies only in weight and size, so counts line up in columns and read at distance.
+**Character:** One native sans in every role, so the board looks like the machine it runs on and loads with no network. Hierarchy comes from size and weight (400, 600, 700, 800); numerals are tabular everywhere so counts hold their column.
 
 ### Hierarchy
-- **Headline** (700, 24px, 1.1, -0.01em): the unit name in the top strip only.
-- **Title** (700, 18px): panel headings (rooms, strain, chat). The open room heading is 40px/700 on desktop; group headings and team names sit at 14-15px.
-- **Numeral** (800, 30px headline numbers, 18px in the breakdown lines): the strain panel's counts.
-- **Room Number** (800, 26px, 1): the magnet's room number. Drops to 20px (11px level word and tags) under 560px.
-- **Body** (400, 15px, 1.45): base text; row names at 14px/600, risk table at 14px.
-- **Body small** (13px): subtitles, legend, magnet risk line (600), chips (600), event history.
-- **Label** (800, 12px, 0.05em, uppercase): status words. Related uppercase labels: tile tags V P C and OUT (700, 11px, 0.04em). Plain 12px in Faded Marker carries ranges, captions, and notes.
+- **Lead numeral** (800, 2.75rem, 1.05): the two counts on the Life support lead card.
+- **Room heading** (700, 2.5rem, 1.05, -0.02em): the room number on the room page; 2rem on phone.
+- **Numeral** (800, 2rem, 1.05): counts on support cards, room numbers in the Worry first rail and on wall screens.
+- **Room number** (800, 1.75rem, 1): the room number on a bed tile; 1.5rem on phone.
+- **Headline** (700, 1.375rem, 1.15): the unit name in the header.
+- **Title** (700, 1.125rem, 1.2): section and card headings, the counts in the strain summary pill.
+- **Body large** (600, 1rem): room page rows and the room status chip; the "N in 10" beside icons on wall screens.
+- **Body** (400, .9375rem, 1.45): base text.
+- **Control** (600 to 700, .875rem): buttons, tab labels, chat messages, the "N in 10" on desktop tiles, small headings.
+- **Caption** (400 to 700, .8125rem): ranges, count captions, status words on tiles, notes.
+- **Label** (600 to 800, .75rem): the status chip (800, 0.05em tracking, the word already in capitals), field labels, "N in 10" under figures and on phone tiles.
+
+All sizes are rem. From 1800px the root is 120%, so every size and space on a wall screen grows together.
 
 ### Named Rules
-**The Tabular Rule.** Every numeral is tabular; counts, ranges, and percentages must align in columns without per-element overrides.
+**The Count Rule.** A chance is "N in 10" on tiles and figures, "about N in 10" on the room page, "fewer than 1 in 10" below one, and "No estimate" when it is null. No percentage sign appears anywhere.
 
-**The Weight Ladder Rule.** Hierarchy comes from weight (400, 600, 700, 800) and a short size ladder (11-28px), not from a second family.
+**The Range Rule.** Every forecast count carries its range in Caption weight 400 beside it ("+3" then "1 to 5").
 
 ## Layout
 
-The page is a 1440px-max frame with 16px/24px/32px padding. A top strip (unit name as the big title, the line "Lookahead · The next 24 hours, in one place.", data-source tag, board toggle, role picker, "Update the unit", and the run line) closes with a 2px ink rule. Below it a two-column grid: the room board at `2fr` (sticky at 12px from the top; all 25 magnets in a 5-column grid with 12px gaps, then a tag key and one note) and the right column at `minmax(340px, 1fr)`, divided by a 2px ink rule with 24px gutters. The right column holds the strain panel (headline, breakdown lines, yardstick sentence, the folded "Set tonight's capacity" form) and the "Check first" line under it. A "How this forecast was made" footer closes the page behind a 2px rule.
+One centred column, max 92rem, with a 1.5rem gutter (1rem on phone). The header is a single wrapping row: unit name and run line, then the strain summary pill, Night board, role, Update the unit, Ask. Below it the tab bar is sticky at the top with the one-line key at its right.
 
-The breakdown lines are a two-track grid (7.5rem label, flexible text) separated by 1px rules.
+- **Bed board:** the Worry first rail, then All rooms. The room grid is five across, four below 1200px, three at 960px and below, two at 560px and below, with a .75rem gap (.5rem on phone, .625rem on wall screens). With the chat docked the grid becomes auto-fill at a 12.5rem minimum.
+- **Unit strain:** the Life support lead card (two columns, one at 960px and below), then support cards in an auto-fill grid at an 18.5rem minimum with a 1rem gap. The card for the reader's role is ordered first.
+- **Room page:** two cards, 1.2fr and 1fr, stacking at 960px and below.
+- **Chat:** docked as a 24.5rem right column from 1200px, and the page reflows beside it; a floating panel below that; a bottom sheet at 560px and below.
+- **Wall screens (1800px and up):** root 120%, tiles slightly shorter (5.25rem), larger room numbers and "N in 10".
 
-Rhythm runs on 4/8/12/16/24/32px; component interiors use 6px and 10px half-steps.
-
-Responsive: under 960px the columns stack as strain panel, check first, 25 rooms, footer, with the floating chat button over all of it; the vertical rule becomes a horizontal one. Under 560px magnets shrink (6px gaps, 20px room numbers, 11px words and tags) and stay in 5 columns, and the chat panel spans the width and closes when the page changes.
-
-**The Ruled Margin Rule.** Regions are separated by 2px ink rules; rows by 1px rules at 12% ink (14% at night). No cards, no panel backgrounds.
+Spacing is a short rem scale: .125, .25, .375, .5, .625, .75, 1, 1.25, 1.5. Every interactive target is at least 2.75rem (44px) tall.
 
 ## Elevation & Depth
 
-The board is flat. Depth is carried by ink rules and borders, not by panels. The single exception is the magnet, which carries a faint contact shadow so it reads as a physical piece on the board, and lifts 1px on hover.
+Nearly flat. Depth is one soft two-layer shadow under white cards on a grey ground, plus a hairline border. Dema's card language: radius, hairline, soft shadow. The night board removes the card shadow and relies on surface tone and the hairline.
 
 ### Shadow Vocabulary
-- **Magnet contact** (`box-shadow: 0 1px 1px rgba(0,0,0,.18), 0 2px 4px rgba(0,0,0,.06)`): magnets only.
+- **Card** (`box-shadow: 0 1px 2px rgba(16,24,40,.06), 0 4px 12px rgba(16,24,40,.04)`; `none` at night): bed tiles, cards, the strain summary pill, the room page strip.
+- **Floating panel** (`box-shadow: 0 2px 4px rgba(16,24,40,.12), 0 16px 40px rgba(16,24,40,.18)`): the chat panel below 1200px only. Docked, it has no shadow and a hairline left border.
 
-**The Flat Board Rule.** Only magnets and the two floating chat pieces (launcher and panel, which sit above the board) cast a shadow. Panels, controls and chat messages stay flat.
+### Named Rules
+**The Two Shadows Rule.** There is a card shadow and a floating shadow. Nothing else lifts. Hover moves a tile or figure up 1px over .15s; it does not add shadow.
 
 ## Shapes
 
-Corners are small and practical: 3px on magnet tags and legend swatches, 4px on status words and the data-source tag, 6px on magnets, the close button and the focus ring, 8px on the toggle, the select, the ask input and button, and chat messages, and full pills only on suggested-question chips. Borders are 1.5px solid ink on anything interactive or board-like (magnets, toggle, select, chips, input), 1.5px currentColor on status words and tags, and 1.5px solid Faded Marker on the data-source tag.
+Soft rounded rectangles on a stepped scale: cards 1rem, tiles and chat bubbles .75rem, the tab trough .8125rem around .625rem tabs, controls .625rem, status chips .3125rem, legend swatches .25rem. Pills (999px) are for the strain summary, the ward tag and suggested questions. Circles are for the ten-dot arrays and the bead on the range bar.
+
+Borders carry meaning. A 1px hairline is the default. A 2px green border is Leaving, a 3px ink border is Not improving, a 2px amber or red border is a card whose status is not ON TRACK or USUAL. A 1.5px dashed border is the "updating" tag. Thicker borders reduce padding by the same amount so tiles stay aligned.
 
 ## Components
 
-### Magnet (room tile)
-The signature piece: a flat tile with an ink border, the room number, the level word and tags. Nothing else.
-- **Shape:** 6px corners, 1.5px ink border (3px Short Red for High, padding reduced to keep the size), min-height 96px.
-- **Fill:** Low white, Medium pale amber, High pale red (see Level). Ink is the higher-contrast of the four board inks and must reach 4.5:1.
-- **Level word:** always shown (14px/700): Low, Medium or High. Level is the combined chance of any new life support (IMV, vasopressor, CRRT; ones already on are skipped) in the next 24 hours: High at 4 in 10 or more, Medium at 2 in 10 or more. Death never colours a tile.
-- **Tags** (bottom, 11px/700, 1.5px currentColor outline, 3px corners): V (IMV on now), P (vasopressor on now), C (CRRT on now), and OUT with a 2px green outline when the chance of leaving the ICU is 6 in 10 or more. The tile state comes from `rooms.json` (`on_now`, `level`, `out`), so a new state (for example a room already on two or more supports) is one more branch in `renderGrid`.
-- **States:** hover lifts 1px; the accessible label spells level, supports on and OUT in words.
-- **Legend:** three swatches (Low, Medium, High) and a tag key under the grid, plus one note that says how level is worked out.
+### Header and strain summary pill
+The unit name in Headline, then a caption row: the product name in ink at 800, the 07:00 to 07:00 window, a pill ward tag and the run line. The strain summary is a 2.75rem pill link on the surface with the card shadow: the count on life support in ink, the expected count in blue, then the status chip. It opens Unit strain. Header buttons are surface with a line border; pressed or expanded they turn ink with board text.
 
-### Strain panel
-Top of the right column (first on a phone). Title "Strain · next 24 hours" (18px/700) and the yardstick word beside it with its name ("vs tonight's staffing" or "vs a typical day"). The headline is one sentence, "10 patients on life support now · 6 more expected (4 to 9)", with the counts at 30px/800. Under it three breakdown lines, IMV, Vasopressor, CRRT, each "5 on now · +3 expected (1 to 5)"; the signed-in role's line comes first (pharmacy: vasopressor; respiratory therapy: IMV; bed manager: the "Leaving" line). Then "Leaving: 10 expected to leave (7 to 12) · arrivals not forecast", a small ECMO line ("1 on now · not forecast") and a small "Deaths expected: 1 (0 to 3)". A 14px sentence shows the load (now plus new) against the yardstick, and one caption explains the range. While an update runs, a dashed "updating" tag sits beside the title and the last numbers stay.
+### Segmented tabs
+Dema's segmented view switch. A board-2 trough with a hairline and .1875rem padding holds two 2.75rem buttons, each an icon and a label at 700: Bed board (a 2 by 2 grid) and Unit strain (three bars on a baseline). The selected tab is ink with board text; hover is surface. On phone the two tabs share the full width.
 
-### Yardstick word
-13px/800 uppercase in a 1.5px ink outline on a level fill: white for ON TRACK or USUAL, pale amber for TIGHT or BUSY, pale red with a 3px red border for SHORT or VERY BUSY. With a capacity set (patients tonight's staffing covers, optional ventilators free): SHORT when the median of now-plus-new passes it, TIGHT when the range reaches it, else ON TRACK. Without one: compared with a typical day.
+### Bed tile
+A button, min-height 5.75rem, radius .75rem, with the card shadow. Top row: room number (Room number), age and sex in Caption 600, then one trajectory status at the right as a shape and a word. Bottom row: the Now -> Next 24 h strip. The fill scale is the blue acuity scale from commit 65b36c6.
 
-### Set tonight's capacity
-A folded `details` (44px summary) under the panel with two number inputs (44px tall) and "Save capacity". Once saved the panel says "Capacity set 07:12 by ICU nurse (charge)" and a "Use a typical day" button appears. Mock: saved in this browser; the real board POSTs `/api/capacity`.
+- **Worsening:** full blue fill (`level-high`), text in `on-level-high`, solid triangle.
+- **Watch:** light blue fill (`level-medium`), outline triangle.
+- **Not improving:** board-2 ground, 3px ink border, two horizontal bars.
+- **Leaving:** white, 2px green border, the bed-with-arrow icon and the word in green.
+- **Steady:** white, a small dot, the word in ink-2 at 600.
 
-### Check first
-One 16px line under the panel: "Check first: rooms 20, 12, 7", each number a link (underlined, 44px target). "Check first: no room is High." when none is.
+**Now -> Next 24 h strip.** Left of the arrow: solid icons for the life support running at 07:00, or a ring when there is none. Right: outline icons for new support at 2 in 10 or more, each with "N in 10"; a plus in a ring with the combined chance when no single support reaches 2 in 10; the leaving bed with its chance at 6 in 10 or more; a dash when nothing new is expected. Icons are 1.375rem on phone and 1.75rem from 961px. On a filled tile the knocked-out details of solid icons take the tile colour.
+
+### Worry first rail
+Not a card. A Title heading and two groups set straight on the ground, closed by a hairline: Worsening, then Not improving, each with its shape, word and count. The tiles are the same bed tiles, slightly taller (6.25rem) with a 2rem room number, in an auto-fill grid at a 12rem minimum. When no room qualifies, one ink-2 line says so.
+
+### Status chip
+Dema's status chip. Capitals at Label 800 with 0.05em tracking, radius .3125rem, 1.5px border. ON TRACK and USUAL: surface with a green border and green word. TIGHT and BUSY: amber-bg fill, amber-edge border, amber word. SHORT and VERY BUSY: red fill, on-red word. Not ready: line border, ink-2 word at 600, no tracking. The word is always shown.
+
+### Life support lead card and capacity form
+A Dema cluster card at full width: surface, radius 1rem, hairline, card shadow, two columns. Left: "Life support" with the status chip and what it is measured against, then patients on now in ink and expected in blue at Lead numeral, a tall range bar (1.75rem) and one caption line. Right: a line on expected deaths in plain ink-2 text, then "Set tonight's capacity", a 2.75rem disclosure with a chevron that turns when open. The form is two labelled number inputs (surface, line border, radius .625rem, 2.75rem), an ink Save button, and a live status line. Amber and red statuses add a 2px border to the card.
+
+### Support cards
+Dema's cluster cards, one per support (IMV, Vasopressor, CRRT) and one for Leaving. Header: the support's solid icon at 2.5rem, a Title name, the status chip at the right. Then counts at Numeral: on now and free in ink, expected in blue with its range. Then the range bar, then groups of person figures under small ink-2 labels (On now, May start, Likely to leave) separated by a hairline.
+
+**Range bar** (Dema's, with the ink line for free capacity). A 6-unit rounded track in figure grey; a 10-unit rounded blue segment for the 8-in-10 range; a surface bead with a blue ring at the median; a solid ink line for what is free or what tonight's staffing covers; a dashed ink line for a typical day.
+
+**Person figure** (Dema's). A 2.5rem by 2.625rem head-and-shoulders silhouette above a room number (800) and "N in 10" (Label). It is two stacked SVGs of the same path: a base in figure grey and a fill in blue clipped with `clip-path: inset(calc(100% - var(--p)) 0 0 0)`, so it fills from the bottom to the bed's chance. Solid ink means the support is on now. A green fill means leaving. Each figure is a button that opens the room; hover lifts the silhouette 1px.
 
 ### Room page
-Its own view at `#room=N`: "← All N rooms" and previous / next links (44px targets), a unit-context line, the heading "Room 12: next 24 hours" with the level in a chip using the tile fills, the room's own timestamp line ("updated 13:05 · next 24 h to 13:05 tomorrow") and a status line for updates. Two columns behind a 2px ink rule. Left: three fixed groups, New life support (IMV, Vasopressor, CRRT), Leaving the ICU (with the OUT tag), Death. Each row is a level word, a 10-dot icon array (12px dots; filled magnet, empty outlined in Faded Marker) and "about 4 in 10"; supports already running read "On now" with no dots. Right: "What the forecast read · last 12 h" (five, then "Show more"), the line "These are what the forecast read. They do not show why something happens.", and the buttons "Update this room" and "Ask about this forecast".
+A back link and previous and next room links, underlined ink at 700 with the arrow icon. Then the room number in Room heading, the room status chip (the bed tile's five statuses as a chip at 1rem, radius .5rem), and the Now -> Next 24 h strip in its own small card with "Now" and "Next 24 h" labels. Two cards below. The first lists each event as a row: icon and name, a level chip (Low on board-2, Medium on `level-medium`, High on `level-high`, On now in ink), a ten-dot array (.75rem circles, filled blue to the count, outlined in line otherwise) and "about N in 10". Death is a plain row with no icon and no colour. The second card holds the last 12 hours and the two room actions.
 
-### Chat widget
-A launcher pill "Ask about this forecast" (ink fill, board text, 48px tall) fixed bottom right; the panel (surface, 1.5px ink border, 8px corners, up to 72% of the viewport) opens above it with a heading, Close, chips, the log and the ask form. Closed by default; Escape and Close return focus to the launcher; on a phone it spans the width and closes when the page changes. When the forecast changes while it is open and has messages, one quiet 12px line says "Forecast updated at 13:05. Answers below use it."
+### Chat panel
+Surface, line border, radius 1rem, floating shadow. Heading, a Close button, an optional room scope pill, suggested-question chips (transparent pills with a line border, 2.75rem), a scrolling log and an input with an ink Ask button. The asker's messages are board-2 bubbles on the right; answers are hairline-bordered bubbles on the left. From 1200px it docks as a 24.5rem right column with no radius or shadow; at 560px and below it is a bottom sheet with rounded top corners.
 
-### Suggested questions
-Pill chips (1.5px ink border, 13px/600, 44px tall): at most three by role, always including "Summarise the shift"; with a room open the first chip asks about that room. No chip starts an update. Hover fills Board Shadow.
+### "How this forecast was made" disclosure
+One folded disclosure in the footer above a hairline holds every definition: the tile grammar, the thresholds, the icon key, the five forecasts with median and range in a plain ruled table, and the model facts as short definition lists. The summary is Control 700 in ink-2 and turns ink on hover. Nothing here is shown on the board by default.
 
-### Ask about this forecast (chat)
-- **Messages:** 8px corners, 14px text, max 92% width; the team's questions right-aligned on Board Shadow, answers left-aligned with a 1.5px Rule border; a 12px/700 Faded Marker speaker line.
-- **Input and button:** 44px tall, board ground and ink fill.
-- **Actions:** only on an explicit ask ("update room 12", "update the unit") does the chat start an update; treatment questions are declined.
+### Icon family
+One inline SVG sprite, drawn for this board on a 24 grid: `currentColor`, 1.75 stroke, round caps and joins, no fill by default. Symbols ending in "-on" are solid and mean running now; plain symbols are outline and mean expected. No icon was copied or adapted from an external set. Sheet: `docs/screenshots/icons.png`.
 
-### Board toggle, role picker and update buttons
-- **Board toggle:** 1.5px ink border, 8px corners, `aria-pressed`; the label names the board it switches to.
-- **Role picker:** a native select ("I am ..."). It reorders the strain lines and picks the chips; it never stores a name.
-- **Update the unit / Update this room:** the same outlined button. While running it reads "Updating…" and is `aria-disabled`; focus stays put. A refusal prints in the run line: "Updated 12 minutes ago. You can update again at 13:17."
+- **Ventilator:** lungs under an airway tube and circuit T-piece.
+- **Vasopressor:** a syringe with a drop.
+- **CRRT:** a capped haemofilter with blood lines and arrows.
+- **Leaving:** a bed with an outward arrow.
+- **Trajectory shapes:** solid triangle (Worsening), outline triangle (Watch), two bars (Not improving), dot (Steady).
+- **Marks:** plus in a ring (combined chance), ring (no support now), dash (nothing new).
+- **Interface:** arrow, chevron, moon, chat, bed grid and strain bars, on the same grid and stroke. The person figure is Dema's.
 
-### Run line and demo clock
-13px under the top strip: "Updated 13:05 (unit) · demo clock +6 h". With a demo clock above zero, "Demo clock: recorded patients, time advanced 6 h" follows it.
+### Focus ring
+A 3px outline in `focus` with a 2px offset and a .5rem radius on every focusable element. On the person figure the ring is drawn around the silhouette with a 3px offset.
 
-### Footer: how this forecast was made
-A plain line, then a folded "The five forecasts, and what each one means" (table of median with range and who uses it, the life-support definition, model, method, where and when, "Excludes new admissions from the ED and OR.", and a performance row only once numbers exist), plus the intended-use line "For unit planning; the care team makes clinical decisions.".
-
-### Honesty labels
-- **Data-source tag:** a small outlined ink label in the top strip: "Demo data" (synthetic fallback), "MIMIC-IV Demo" or "MIMIC-IV · local". Plain, never dashed or red; it is a label, not a warning.
-- **Not ready yet:** a standalone state in Faded Marker in place of a measured number that does not exist yet (the yardstick word when `yardstick` is null); never inside a sentence.
-- **No estimate:** a room probability that is null while the support is not on.
-### Focus
-All focusable elements: 3px solid focus colour, 2px offset, 6px corners (`:focus-visible`).
+### Motion
+State changes only: a .2s ease-out on the board colour swap, a .15s ease-out 1px lift on tile and figure hover, a .15s chevron turn. Nothing pulses or loops. Reduced motion removes all of it.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** fill magnets only with the three level fills, always show the level word, and pick the ink by contrast so it reaches 4.5:1.
-- **Do** pair every level or yardstick colour with its word, and name what the yardstick compares against.
-- **Do** lead with the strain panel and the rooms to check first; the role's own line goes first.
-- **Do** give every forecast number its range as "(a to b)", and say numbers as natural frequencies ("about 4 in 10").
-- **Do** separate regions with 2px ink rules and rows with 1px Rule lines.
-- **Do** label the data source plainly and mark missing numbers in place: Demo data, Not ready yet, No estimate. No hedges or disclaimers in the copy.
-- **Do** keep both boards on the same custom properties; a new surface sets values for `data-board="day"` and `data-board="night"`.
-- **Do** keep the 3px focus ring with 2px offset on every focusable element.
+- **Do** draw now in ink and forecast in blue, on every surface.
+- **Do** write chances as "N in 10" on tiles and figures, "about N in 10" on the room page, "fewer than 1 in 10" below one, and "No estimate" for null.
+- **Do** carry every status as a fill or border, a shape and a word.
+- **Do** show the range beside every forecast count.
+- **Do** use solid icons for support running now and outline icons for support expected.
+- **Do** keep every target at least 2.75rem (44px) tall and all text at 4.5:1 or better on both boards.
+- **Do** change only custom properties between the day and night boards.
+- **Do** keep to the five predictions: IMV, vasopressor, CRRT, leaving the ICU, death.
+- **Do** credit Dema (deetherese) wherever the cluster card, person figure, range bar, status chip or segmented switch is reused.
 
 ### Don't:
-- **Don't** build KPI tiles or departure-board rows; counts live in the ruled strain panel.
-- **Don't** use glyphs, signal bars or a watch list; the level word and fill carry the level.
-- **Don't** forecast anything beyond the five predictions, and never colour a tile by death.
-- **Don't** show percentages; use "about N in 10".
-- **Don't** add horizon tabs, time sliders or probability tables: the board has one horizon, the next 24 h.
-- **Don't** introduce a second accent colour or fill panels with colour.
-- **Don't** convey status, risk, or capacity by colour alone.
-- **Don't** add shadows to anything but magnets and the floating chat pieces.
-- **Don't** show a measured number that does not come from a run; use "Not ready yet".
+- **Don't** show a percentage anywhere.
+- **Don't** let death colour or mark a bed. It is a plain count on Unit strain and a plain row on the room page.
+- **Don't** use red for anything but SHORT and VERY BUSY, or amber for anything but TIGHT and BUSY.
+- **Don't** signal status by colour alone.
+- **Don't** use signal-bar glyphs or letter tags (V, P, C) for supports.
+- **Don't** add pulsing or looping animation.
+- **Don't** write hedging or disclaimer copy on the board.
+- **Don't** add a sixth prediction or a forecast count without its range.
+- **Don't** bring in icons from an external set; extend the drawn family on the 24 grid.

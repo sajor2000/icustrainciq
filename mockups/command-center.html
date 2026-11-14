@@ -1,231 +1,390 @@
 <!doctype html>
-<html lang="en" data-board="day">
+<html lang="en" data-board="day" data-view="beds" data-chat="closed">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lookahead · ICU board</title>
 <style>
+/* Ink means now, blue means forecast. Amber is TIGHT / BUSY only, red is SHORT / VERY BUSY only. */
 :root{
-  --board:#F4F5F2; --board-2:#E9EBE6; --ink:#1E2A33; --ink-2:#4A5862; --rule:rgba(30,42,51,.12);
-  --magnet:#2F6FB0; --ok:#2E7D5B; --amber:#9A5410; --red:#B23A3A;
-  --surface:#FFFFFF; --focus:#2F6FB0; --sel:rgba(47,111,176,.22);
-  --lv-low:#FFFFFF; --lv-medium:#FBE6BD; --lv-high:#F8D0CB;
+  --board:#F3F5F9; --board-2:#E8ECF2; --surface:#FFFFFF; --ink:#111827; --ink-2:#4A5567; --rule:rgba(17,24,39,.10); --line:#7A8597;
+  --blue:#1E5BB8; --focus:#1E5BB8; --sel:rgba(30,91,184,.22); --fig:#DDE2EA;
+  --lv-medium:#D2E2F8; --on-medium:#111827; --lv-high:#1E5BB8; --on-high:#FFFFFF;
+  --ok:#18794E; --amber:#8A4B08; --amber-bg:#FCE8C3; --amber-edge:#C27A14; --red:#B3261E; --on-red:#FFFFFF;
+  --card:0 1px 2px rgba(16,24,40,.06),0 4px 12px rgba(16,24,40,.04);
 }
 [data-board="night"]{
-  --board:#1C2126; --board-2:#232A30; --ink:#E8ECE6; --ink-2:#A9B4AE; --rule:rgba(232,236,230,.14);
-  --magnet:#7FB2E5; --ok:#6CC59B; --amber:#E8A85C; --red:#EE8A80;
-  --surface:#252D34; --focus:#9CC6EE; --sel:rgba(127,178,229,.28);
-  --lv-low:#252D34; --lv-medium:#4D3E1B; --lv-high:#552B29;
+  --board:#0E131B; --board-2:#1C2533; --surface:#151C28; --ink:#E6E9EF; --ink-2:#A3ADBD; --rule:rgba(230,233,239,.13); --line:#667286;
+  --blue:#8DBBFF; --focus:#A9CCFF; --sel:rgba(141,187,255,.3); --fig:#2B3445;
+  --lv-medium:#1B2E50; --on-medium:#F1F4F9; --lv-high:#8DBBFF; --on-high:#0B1220;
+  --ok:#6CC59B; --amber:#F0B466; --amber-bg:#3B2D12; --amber-edge:#C58A2F; --red:#F28B82; --on-red:#1B0C0A;
+  --card:none;
 }
 *{box-sizing:border-box}
-html{color-scheme:light}
+html{color-scheme:light;font-size:100%}
 [data-board="night"]{color-scheme:dark}
+@media (min-width:1800px){html{font-size:120%}}
 body{margin:0;background:var(--board);color:var(--ink);
-  font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font:.9375rem/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   font-variant-numeric:tabular-nums;transition:background-color .2s ease-out,color .2s ease-out}
 ::selection{background:var(--sel)}
-:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:.5rem}
 button,input,select{font:inherit;color:inherit}
-.wrap{max-width:1440px;margin:0 auto;padding:16px 24px 96px}
+input,select{caret-color:var(--blue);accent-color:var(--blue)}
+h1,h2,h3,p{margin:0}
+.wrap{max-width:92rem;margin:0 auto;padding:1rem 1.5rem 3rem}
 .sr{position:absolute;left:-9999px}
-.label{font-size:12px;color:var(--ink-2)}
-.note{font-size:12px;color:var(--ink-2);margin:8px 0 0;max-width:62ch}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+.label{font-size:.75rem;color:var(--ink-2)}
+.note{font-size:.8125rem;color:var(--ink-2);margin:.5rem 0 0;max-width:62ch}
+.rg{font-size:.8125rem;color:var(--ink-2);font-weight:400}
 
-/* top strip */
-.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;padding-bottom:12px;border-bottom:2px solid var(--ink)}
-.unit h1{margin:0;font-size:24px;line-height:1.1;letter-spacing:-.01em}
-.unit p{margin:2px 0 0;color:var(--ink-2);font-size:13px}
-.unit .brand{color:var(--ink);font-weight:800}
-.srctag{font-size:12px;font-weight:600;color:var(--ink);border:1.5px solid var(--ink-2);border-radius:4px;padding:2px 6px;white-space:nowrap}
+/* icons: one family on a 24 grid. Outline = expected, "-on" = running now (solid, details knocked out in --ic-k). */
+.ic{width:1.375rem;height:1.375rem;flex:none;display:block;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;padding-bottom:.5rem}
+.unit{margin-right:.5rem}
+.unit h1{font-size:1.375rem;line-height:1.15;letter-spacing:-.01em}
+.unit .sub{margin-top:.125rem;font-size:.8125rem;color:var(--ink-2);display:flex;flex-wrap:wrap;align-items:center;gap:.125rem .5rem}
+.brand{color:var(--ink);font-weight:800}
+.srctag{font-size:.75rem;font-weight:600;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:0 .5rem;white-space:nowrap}
 .srctag[hidden]{display:none}
+.runstate{font-size:.8125rem;color:var(--ink-2)}
+.runstate b{color:var(--ink);font-weight:600}
 .spacer{flex:1}
-.toggle{display:inline-flex;align-items:center;gap:8px;min-height:44px;background:transparent;border:1.5px solid var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600}
+.sline{display:inline-flex;align-items:center;flex-wrap:wrap;gap:.125rem .5rem;min-height:2.75rem;padding:.25rem .875rem;background:var(--surface);border:1px solid var(--rule);border-radius:999px;box-shadow:var(--card);color:var(--ink);text-decoration:none;font-size:.875rem;font-weight:600}
+.sline[hidden]{display:none}
+.sline:hover{border-color:var(--line)}
+.sline b{font-size:1.125rem;font-weight:800;line-height:1}
+.sline .f,.sline .f b{color:var(--blue)}
+.sline .ic{width:1rem;height:1rem;color:var(--ink-2)}
+.toggle{display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem;background:var(--surface);border:1px solid var(--line);border-radius:.625rem;padding:.375rem .75rem;cursor:pointer;font-weight:600;color:var(--ink)}
 .toggle:hover{background:var(--board-2)}
+.toggle .ic{width:1.25rem;height:1.25rem}
 .toggle[aria-disabled="true"]{opacity:.7;cursor:progress}
-.runbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.runbox select{min-height:44px;color:var(--ink);background:var(--board);border:1.5px solid var(--ink);border-radius:8px;padding:7px 8px}
-.runstate{flex-basis:100%;font-size:13px;color:var(--ink-2);margin:0}
-.runstate b{color:var(--ink)}
-.demo{color:var(--ink)}
+.toggle[aria-expanded="true"]{background:var(--ink);color:var(--board);border-color:var(--ink)}
+.runbox{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.runbox select{min-height:2.75rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:.625rem;padding:.375rem .5rem}
 
-/* level colours: the tile, the legend, the heading chip, the yardstick word share them */
-.lv-low{background:var(--lv-low)}
-.lv-medium,.lv-amber{background:var(--lv-medium)}
-.lv-high,.lv-red{background:var(--lv-high)}
-.lv-ok{background:var(--lv-low)}
-
-/* layout: 25 rooms fill the left column; the right column is the strain panel and the check-first line.
-   On a phone: strain panel, check first, 25 rooms (5 columns), footer. Chat floats. */
-.main{display:grid;grid-template-columns:minmax(0,2fr) minmax(340px,1fr);
-  grid-template-areas:"left strain" "left check";grid-template-rows:auto 1fr;margin-top:16px}
-.left{grid-area:left;padding-right:24px;align-self:start;position:sticky;top:12px}
-.strain{grid-area:strain;padding:0 0 16px 24px;border-left:2px solid var(--ink)}
-.check{grid-area:check;padding:12px 0 0 24px;border-left:2px solid var(--ink);margin:0;font-size:16px}
-@media (max-width:960px){
-  .main{grid-template-columns:1fr;grid-template-areas:"strain" "check" "left";grid-template-rows:auto}
-  .strain{padding:0 0 12px;border-left:0;border-bottom:1px solid var(--rule)}
-  .check{padding:8px 0 4px;border-left:0}
-  .left{position:static;padding-right:0;border-top:2px solid var(--ink);padding-top:12px;margin-top:4px}
-}
-
-/* strain panel */
-.strain-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px 12px;flex-wrap:wrap}
-.strain h2{margin:0;font-size:18px}
-.yard{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.band{display:inline-block;font-size:13px;font-weight:800;letter-spacing:.05em;border:1.5px solid var(--ink);border-radius:4px;padding:3px 8px;color:var(--ink)}
-.band.lv-red{border:3px solid var(--red);padding:1.5px 6.5px}
-.yname{font-size:13px;color:var(--ink-2)}
-.upd{font-size:12px;font-weight:700;border:1.5px dashed var(--ink);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:2px;color:var(--ink)}
+/* status chip: the word is always shown; amber and red are fills, not text colours alone */
+.band{display:inline-flex;align-items:center;font-size:.75rem;font-weight:800;letter-spacing:.05em;line-height:1.2;border:1.5px solid var(--ok);border-radius:.3125rem;padding:.1875rem .5rem;color:var(--ok);background:var(--surface);white-space:nowrap}
+.band.lv-amber{background:var(--amber-bg);border-color:var(--amber-edge);color:var(--amber)}
+.band.lv-red{background:var(--red);border-color:var(--red);color:var(--on-red)}
+.band.none{border-color:var(--line);color:var(--ink-2);letter-spacing:0;font-weight:600}
+.upd{font-size:.75rem;font-weight:700;border:1.5px dashed var(--line);border-radius:.3125rem;padding:0 .375rem;color:var(--ink)}
 .upd[hidden]{display:none}
-.headline{margin:10px 0 0;font-size:18px;line-height:1.3;font-weight:600}
-.headline b{font-size:30px;font-weight:800;letter-spacing:-.01em;line-height:1}
-.headline .rg,.rg{font-size:14px;color:var(--ink-2);font-weight:400}
-.lines{list-style:none;margin:10px 0 0;padding:0}
-.lines li{display:grid;grid-template-columns:7.5rem minmax(0,1fr);gap:4px 10px;padding:7px 0;border-top:1px solid var(--rule);font-size:15px;align-items:baseline}
-.lines .ln{font-weight:700}
-.lines b{font-size:18px;font-weight:800}
-.lines .small{font-size:13px;color:var(--ink-2)}
-.lines .small b{font-size:14px;color:var(--ink)}
-.yline{margin:8px 0 0;font-size:14px;color:var(--ink-2);max-width:60ch}
-.yline b{color:var(--ink)}
-.rgnote{margin:6px 0 0;font-size:12px;color:var(--ink-2)}
-.capbox{margin-top:10px;border-top:1px solid var(--rule)}
-.capbox summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:14px;font-weight:600;color:var(--ink)}
+
+/* the two tabs */
+.viewbar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1.25rem;padding:.5rem 0;background:var(--board)}
+.seg{display:inline-flex;padding:.1875rem;background:var(--board-2);border:1px solid var(--rule);border-radius:.8125rem}
+.seg button{display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem;padding:0 1.125rem;border:0;border-radius:.625rem;background:transparent;font-weight:700;cursor:pointer;color:var(--ink)}
+.seg button:hover{background:var(--surface)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--board)}
+.seg .ic{width:1.125rem;height:1.125rem}
+[data-view="beds"] #strainview,[data-view="strain"] #bedsview,[data-view="strain"] #legend{display:none}
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem 1rem;margin-left:auto;font-size:.8125rem;color:var(--ink-2)}
+.legend>span{display:inline-flex;align-items:center;gap:.3125rem}
+.legend .ic{width:1.125rem;height:1.125rem;color:var(--ink)}
+.legend .sw{width:1.125rem;height:1.125rem;border-radius:.25rem;display:grid;place-items:center}
+.legend .sw .ic{width:.75rem;height:.75rem;color:inherit}
+.legend .sw.t-worse{background:var(--lv-high);color:var(--on-high)}
+.legend .sw.t-watch{background:var(--lv-medium);color:var(--on-medium)}
+.legend .sw.t-hold{background:var(--board-2);border:2.5px solid var(--ink);color:var(--ink)}
+.legend .sw.t-leave{border:2px solid var(--ok);color:var(--ok)}
+.legend .sep{width:1px;height:1rem;background:var(--line)}
+.roomnote{margin:0 0 .5rem;font-size:.875rem;font-weight:600}
+
+/* bed tile: room, one trajectory status, then Now -> Next 24 h */
+.bed{--t-bg:var(--surface);--t-fg:var(--ink);--t-2:var(--ink-2);--ic-k:var(--t-bg);
+  display:flex;flex-direction:column;gap:.5rem;min-width:0;min-height:5.75rem;text-align:left;padding:.625rem .75rem;
+  border:1px solid var(--rule);border-radius:.75rem;background:var(--t-bg);color:var(--t-fg);cursor:pointer;box-shadow:var(--card);
+  transition:transform .15s ease-out}
+.bed:hover{transform:translateY(-1px)}
+.bed.t-worse{--t-bg:var(--lv-high);--t-fg:var(--on-high);--t-2:var(--on-high);border-color:var(--lv-high)}
+.bed.t-watch{--t-bg:var(--lv-medium);--t-fg:var(--on-medium);--t-2:var(--on-medium);border-color:var(--lv-medium)}
+.bed.t-hold{--t-bg:var(--board-2);border:3px solid var(--ink);padding:calc(.625rem - 2px) calc(.75rem - 2px)}
+.bed.t-leave{border:2px solid var(--ok);padding:calc(.625rem - 1px) calc(.75rem - 1px)}
+.bed .bt{display:flex;flex-wrap:wrap;align-items:baseline;gap:.125rem .5rem}
+.bed .rm{font-size:1.75rem;font-weight:800;line-height:1;letter-spacing:-.01em}
+.bed .who{font-size:.8125rem;font-weight:600;color:var(--t-2)}
+.st{display:inline-flex;align-items:center;gap:.3125rem;font-size:.8125rem;font-weight:700;white-space:nowrap}
+.st .ic{width:.875rem;height:.875rem}
+.bed .st{margin-left:auto;align-self:center}
+.bed.t-leave .st{color:var(--ok)}
+.bed.t-steady .st{color:var(--ink-2);font-weight:600}
+.flow{display:flex;align-items:center;gap:.375rem;margin-top:auto;min-height:1.5rem}
+.flow .now,.flow .next{display:inline-flex;flex-wrap:wrap;align-items:center;gap:.25rem .375rem}
+.flow .nx.lv{margin-left:.5rem}
+.flow .arr{width:1rem;height:1rem;color:var(--t-2,var(--ink-2));opacity:.9}
+.flow .nx{display:inline-flex;align-items:center;gap:.1875rem}
+.flow .nx small{font-size:.75rem;font-weight:700;white-space:nowrap}
+@media (min-width:961px){.bed .flow .ic:not(.arr){width:1.75rem;height:1.75rem}.bed .flow .nx small{font-size:.875rem}.bed .flow{min-height:1.75rem}}
+@media (min-width:1800px){.wrap{padding-top:.75rem}.bed{min-height:5.25rem;gap:.375rem}.bed .flow{gap:.3125rem}.bed .flow .now,.bed .flow .next{gap:.25rem .3125rem}.bed .flow .ic:not(.arr){width:1.75rem;height:1.75rem}.bed .flow .arr{width:1rem;height:1rem}.bed .flow .nx small{font-size:1rem}.bed .st{font-size:1rem}.bed .st .ic{width:1rem;height:1rem}.bed .rm{font-size:2rem}.rail{margin-bottom:.625rem;padding-bottom:.875rem}.grid{gap:.625rem}}
+.flow .mark{color:var(--t-2,var(--ink-2))}
+.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.75rem}
+[data-chat="open"] .grid{grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))}
+
+/* Worry first: the Worsening rooms, then the Not improving rooms */
+.rail{padding:.25rem 0 1.25rem;margin:0 0 1rem;border-bottom:1px solid var(--rule)}
+.rail h2{font-size:1.125rem;line-height:1.2}
+.rail .rgs{display:flex;flex-wrap:wrap;gap:.875rem 1.5rem;margin-top:.625rem}
+.rail .grp{flex:0 1 calc(var(--n,1)*17rem + (var(--n,1) - 1)*.625rem);min-width:min(17rem,100%);max-width:100%}
+.rail h3{display:flex;align-items:center;gap:.375rem;font-size:.875rem;font-weight:700;margin-bottom:.5rem}
+.rail h3 .ic{width:.9375rem;height:.9375rem}
+.rail h3 .n{color:var(--ink-2);font-weight:600}
+.rail .rset{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:.625rem}
+.rail .bed{min-height:6.25rem}
+.rail .bed .rm{font-size:2rem}
+.rail .none{color:var(--ink-2);margin-top:.25rem}
+.bedhead{font-size:1.125rem;line-height:1.2;margin:0 0 .625rem}
+
+/* Unit strain */
+.lead{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1rem 2.5rem;background:var(--surface);border:1px solid var(--rule);border-radius:1rem;box-shadow:var(--card);padding:1rem 1.25rem;margin:.25rem 0 1rem}
+.lead.lv-amber,.wc.lv-amber{border:2px solid var(--amber-edge)}
+.lead.lv-red,.wc.lv-red{border:2px solid var(--red)}
+.lh{display:flex;flex-wrap:wrap;align-items:center;gap:.375rem .625rem}
+.lh h2{font-size:1.125rem;line-height:1.2}
+.yname{font-size:.8125rem;color:var(--ink-2)}
+.nums{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.25rem 1.5rem;margin-top:.5rem}
+.nums>span{display:flex;flex-direction:column;min-width:0}
+.nums i{font-style:normal;font-size:.8125rem;color:var(--ink-2)}
+.nums b{font-size:2rem;font-weight:800;line-height:1.05;letter-spacing:-.01em}
+.lead .nums b{font-size:2.75rem}
+.nums .f b{color:var(--blue)}
+.nums .f small{font-size:.8125rem;font-weight:400;color:var(--ink-2);margin-left:.375rem;letter-spacing:0}
+.bar{display:block;width:100%;height:1.25rem;margin-top:.5rem}
+.lead .bar{height:1.75rem}
+.bar .trk{stroke:var(--fig);stroke-width:6;stroke-linecap:round}
+.bar .rng{stroke:var(--blue);stroke-width:10;stroke-linecap:round}
+.bar .med{fill:var(--surface);stroke:var(--blue);stroke-width:3}
+.bar .cap{fill:var(--ink)}
+.bar .typ{stroke:var(--ink);stroke-width:2.5;stroke-dasharray:4 3}
+.barl{margin-top:.125rem;font-size:.8125rem;color:var(--ink-2)}
+.barl b{color:var(--ink)}
+.aside{display:flex;flex-direction:column;gap:.5rem;min-width:0}
+.deaths{font-size:.875rem;color:var(--ink-2)}
+.deaths b{color:var(--ink)}
+.capbox summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem;padding:.375rem .75rem;border:1px solid var(--line);border-radius:.625rem;font-weight:600;color:var(--ink)}
+.capbox summary::-webkit-details-marker{display:none}
 .capbox summary:hover{background:var(--board-2)}
-.capbox form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;padding:4px 0 8px}
-.capbox label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink-2)}
-.capbox input{min-height:44px;background:var(--board);border:1.5px solid var(--ink);border-radius:8px;padding:6px 10px;color:var(--ink);width:100%}
-.capbox .acts{align-items:center;grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
-.capbox .msg2{grid-column:1/-1;margin:0;font-size:13px;color:var(--ink)}
-.capset{margin:0;font-size:13px;color:var(--ink-2)}
-.primary{min-height:44px;background:var(--ink);color:var(--board);border:0;border-radius:8px;padding:6px 16px;font-weight:700;cursor:pointer}
+.capbox summary .ic{width:1rem;height:1rem;transition:transform .15s ease-out}
+.capbox[open] summary .ic{transform:rotate(180deg)}
+.capbox[open] summary{margin-bottom:.5rem}
+.capbox form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem .75rem;padding:.25rem 0 .5rem}
+.capbox label{display:flex;flex-direction:column;justify-content:flex-end;gap:.25rem;font-size:.8125rem;color:var(--ink-2)}
+.capbox input{min-height:2.75rem;background:var(--surface);border:1px solid var(--line);border-radius:.625rem;padding:.375rem .625rem;color:var(--ink);width:100%}
+.capbox .acts{align-items:center;grid-column:1/-1;display:flex;gap:.5rem;flex-wrap:wrap}
+.capbox .msg2{grid-column:1/-1;font-size:.8125rem;color:var(--ink)}
+.capset{font-size:.8125rem;color:var(--ink-2)}
+.primary{min-height:2.75rem;background:var(--ink);color:var(--board);border:0;border-radius:.625rem;padding:.375rem 1rem;font-weight:700;cursor:pointer}
 .primary:hover{opacity:.9}
 
-/* check first */
-.check a{min-width:44px;min-height:44px;text-align:center;color:var(--ink);font-weight:700;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;display:inline-block;padding:11px 0;margin:-11px -12px;line-height:22px;position:relative}
-
-/* board */
-.boardhead{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 16px;margin-bottom:8px}
-.boardhead h2{margin:0;font-size:18px}
-.legend{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);margin:0;align-items:center}
-.legend>span{display:inline-flex;align-items:center;gap:6px}
-.sw{display:inline-block;width:18px;height:18px;border-radius:3px;border:1.5px solid var(--ink)}
-.sw.lv-high{border:3px solid var(--red)}
-.legend2{margin:8px 0 0;font-size:13px;color:var(--ink-2);display:flex;gap:4px 14px;flex-wrap:wrap}
-.legend2>span{display:inline-flex;align-items:center;gap:6px}
-.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
-.mag{position:relative;min-height:96px;text-align:left;border:1.5px solid var(--ink);border-radius:6px;padding:8px 10px;cursor:pointer;
-  color:var(--ink);box-shadow:0 1px 1px rgba(0,0,0,.18),0 2px 4px rgba(0,0,0,.06);
-  transition:background-color .2s ease-out,transform .15s ease-out;display:flex;flex-direction:column;gap:4px}
-.mag.high{border:3px solid var(--red);padding:6.5px 8.5px}
-.mag.ols{border:3px solid var(--ink);padding:6.5px 8.5px}
-.mag:hover{transform:translateY(-1px)}
-.mag .rm{font-size:26px;font-weight:800;line-height:1}
-.mag .who{margin-left:8px;font-size:14px;font-weight:600;vertical-align:3px;letter-spacing:.02em}
-.mag .lw{font-size:14px;font-weight:700}
-.mag .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:auto}
-.tag{font-size:11px;font-weight:700;letter-spacing:.04em;border:1.5px solid currentColor;border-radius:3px;padding:0 4px;line-height:16px;display:inline-block}
-.tag.out{border:2px solid var(--ok);padding:0 3px}
-@media (max-width:560px){.grid{gap:6px}.mag{min-height:80px;padding:6px 5px}.mag.high,.mag.ols{padding:4.5px 3.5px}.mag .rm{font-size:20px}.mag .who{display:block;margin:2px 0 0;font-size:11px;vertical-align:0}.mag .lw{font-size:11px}.tag{font-size:11px;padding:0 2px;line-height:14px}.tag.out{padding:0 1px}.mag .tags{gap:2px}.wrap{padding:12px 16px 88px}.legend{gap:4px 10px;font-size:12px}}
+/* one card per support, and one for leaving: the unit count, then the beds behind it */
+.watch{display:grid;grid-template-columns:repeat(auto-fill,minmax(18.5rem,1fr));gap:1rem;align-items:start}
+.wc{min-width:0;padding:1rem 1.125rem;background:var(--surface);border:1px solid var(--rule);border-radius:1rem;box-shadow:var(--card)}
+.wc header{display:flex;align-items:center;gap:.625rem}
+.wc header .ic{width:2.5rem;height:2.5rem}
+.wc h3{font-size:1.125rem;line-height:1.2}
+.wc header .band{margin-left:auto}
+.wc .gl{display:block;margin:.875rem 0 .5rem;padding-top:.75rem;border-top:1px solid var(--rule);font-size:.8125rem;font-weight:700;color:var(--ink-2)}
+.wc .set{display:grid;grid-template-columns:repeat(auto-fill,3.25rem);justify-content:start;gap:.625rem .5rem}
+.wc .nobody{font-size:.8125rem;color:var(--ink-2)}
+/* bed figure (Dema's): head and shoulders that fill from the bottom with the chance; solid ink when the support is running now */
+.pp{width:3.25rem;min-height:2.75rem;display:flex;flex-direction:column;align-items:center;gap:1px;background:transparent;border:0;padding:0;cursor:pointer;color:var(--ink)}
+.pp .av{position:relative;width:2.5rem;height:2.625rem;margin-bottom:.1875rem;transition:transform .15s ease-out}
+.pp:hover .av{transform:translateY(-1px)}
+.pp .av svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.pp .av .base{fill:var(--fig)}
+.pp .av .fill{fill:var(--blue);clip-path:inset(calc(100% - var(--p)) 0 0 0)}
+.pp.on .av .base{fill:var(--ink)}
+.pp.out .av .fill{fill:var(--ok)}
+.pp .rm{font-size:.9375rem;font-weight:800;line-height:1.1}
+.pp .pc{font-size:.75rem;font-weight:600;line-height:1.15;text-align:center;color:var(--ink-2);white-space:nowrap}
+.pp:focus-visible{outline:0}
+.pp:focus-visible .av{outline:3px solid var(--focus);outline-offset:3px;border-radius:.5rem}
 
 /* room page */
-.roomview{padding-top:16px}
-.rv-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.rv-nav a{color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;min-height:44px;padding:0 4px}
-.rv-step{display:flex;gap:16px}
-.rv-unit{margin:4px 0 0;font-size:14px;color:var(--ink-2)}
-.rv-unit b{color:var(--ink)}
-.roomview .rvh{margin:12px 0 2px;font-size:40px;line-height:1.05;letter-spacing:-.02em;display:flex;align-items:center;gap:8px 20px;flex-wrap:wrap}
-#rv-h:focus:not(:focus-visible){outline:none}
-.lvtag{font-size:16px;font-weight:700;letter-spacing:0;border:1.5px solid var(--ink);border-radius:6px;padding:4px 12px}
-.lvtag.lv-high{border:3px solid var(--red);padding:2.5px 10.5px}
-.lvtag.ols{border:3px solid var(--ink);padding:2.5px 10.5px}
-.rv-sub{margin:0;font-size:14px;color:var(--ink-2)}
-.rv-stamp{margin:2px 0 0;font-size:14px}
-.rv-run{margin:2px 0 0;font-size:13px;color:var(--ink-2);min-height:1.4em}
-.rv-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:32px;margin-top:16px;padding-top:16px;border-top:2px solid var(--ink)}
-.rv-grid h2{margin:0 0 8px;font-size:18px}
-.rv-grid h3{margin:16px 0 0;font-size:14px;color:var(--ink-2);font-weight:700}
+.roomview{padding-top:.5rem}
+.rv-nav{display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap}
+.rv-nav a{color:var(--ink);font-weight:700;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;display:inline-flex;align-items:center;min-height:2.75rem;padding:0 .25rem}
+.rv-step{display:flex;gap:1rem}
+.rv-nav a{gap:.375rem}
+.rv-nav .ic{width:1rem;height:1rem}
+.rv-nav .flip{transform:scaleX(-1)}
+.rvtop{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem 1.5rem;margin:.5rem 0 .25rem}
+.roomview .rvh{font-size:2.5rem;line-height:1.05;letter-spacing:-.02em}
+#rv-h:focus{outline:none}
+.stchip{--t-bg:var(--surface);--t-fg:var(--ink);font-size:1rem;gap:.4375rem;padding:.3125rem .75rem;border:1px solid var(--line);border-radius:.5rem;background:var(--t-bg);color:var(--t-fg)}
+.stchip .ic{width:1rem;height:1rem}
+.stchip.t-worse{--t-bg:var(--lv-high);--t-fg:var(--on-high);border-color:var(--lv-high)}
+.stchip.t-watch{--t-bg:var(--lv-medium);--t-fg:var(--on-medium);border-color:var(--lv-medium)}
+.stchip.t-hold{--t-bg:var(--board-2);border:3px solid var(--ink);padding:calc(.3125rem - 2px) calc(.75rem - 2px)}
+.stchip.t-leave{border:2px solid var(--ok);color:var(--ok)}
+.rvflow{--ic-k:var(--surface);display:inline-flex;align-items:center;gap:.75rem;padding:.5rem .875rem;background:var(--surface);border:1px solid var(--rule);border-radius:.75rem;box-shadow:var(--card)}
+.rvflow .fl{font-size:.75rem;font-weight:700;color:var(--ink-2)}
+.rvflow .flow{margin:0;gap:.625rem}
+.rvflow .ic{width:1.75rem;height:1.75rem}
+.rvflow .arr{width:1.25rem;height:1.25rem}
+.rvflow .nx small{font-size:.875rem}
+.rv-sub{font-size:.875rem;color:var(--ink-2)}
+.rv-run{margin-top:.125rem;font-size:.8125rem;color:var(--ink-2);min-height:1.4em}
+.rv-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:1rem;margin-top:.75rem;align-items:start}
+.rv-grid>section{background:var(--surface);border:1px solid var(--rule);border-radius:1rem;box-shadow:var(--card);padding:1rem 1.25rem}
+.rv-grid h2{margin:0 0 .5rem;font-size:1.125rem;line-height:1.25}
+.rv-grid h3{display:flex;align-items:center;gap:.375rem;margin:1rem 0 0;font-size:.875rem;color:var(--ink-2);font-weight:700}
 .rv-grid h3:first-of-type{margin-top:0}
-.risks{list-style:none;margin:4px 0 0;padding:0}
-.risks li{display:grid;grid-template-columns:minmax(0,1fr) 5.5em auto 9.5em;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--rule);font-size:16px}
-.risks .lw2{font-size:13px;font-weight:700;color:var(--ink);text-align:center;border:1.5px solid var(--ink-2);border-radius:4px;padding:2px 4px}
-.risks .lw2.on{border-style:dashed}
-.dots{display:inline-flex;gap:4px;min-width:136px}
-.dots i{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--ink-2)}
-.dots i.on{background:var(--magnet);border-color:var(--magnet)}
-.risks .fq{font-size:14px;color:var(--ink-2)}
-@media (max-width:560px){.risks li{grid-template-columns:minmax(0,1fr) 5.5em;row-gap:6px}.risks .dots{grid-column:1;min-width:0}.risks .fq{grid-column:2;text-align:right;font-size:13px}.dots{gap:3px}.dots i{width:10px;height:10px}.roomview .rvh{font-size:30px}}
-.past{margin:6px 0 0;padding:0;list-style:none;font-size:13px}
-.past li{display:grid;grid-template-columns:56px 1fr;gap:8px;padding:3px 0;border-top:1px solid var(--rule)}
+.risks{list-style:none;margin:.25rem 0 0;padding:0;--ic-k:var(--surface)}
+.risks li{display:grid;grid-template-columns:minmax(0,1fr) 5.5em auto 9.5em;gap:.75rem;align-items:center;padding:.625rem 0;border-top:1px solid var(--rule);font-size:1rem}
+.risks .nm{display:inline-flex;align-items:center;gap:.5rem;font-weight:600}
+.risks .nm .ic{width:1.5rem;height:1.5rem}
+.risks .lw2{font-size:.8125rem;font-weight:700;color:var(--ink);text-align:center;background:var(--board-2);border-radius:.3125rem;padding:.1875rem .25rem}
+.risks .lw2.l-medium{background:var(--lv-medium);color:var(--on-medium)}
+.risks .lw2.l-high{background:var(--lv-high);color:var(--on-high)}
+.risks .lw2.on{background:var(--ink);color:var(--surface)}
+.risks.solo{margin-top:1rem}
+.dots{display:inline-flex;gap:.25rem;min-width:8.5rem}
+.dots i{width:.75rem;height:.75rem;border-radius:50%;border:1.5px solid var(--line)}
+.dots i.on{background:var(--blue);border-color:var(--blue)}
+.risks .fq{font-size:.875rem;color:var(--ink-2)}
+.past{margin:.375rem 0 0;padding:0;list-style:none;font-size:.8125rem}
+.past li{display:grid;grid-template-columns:3.5rem 1fr;gap:.5rem;padding:.25rem 0;border-top:1px solid var(--rule)}
 .past time{color:var(--ink-2)}
-.roomnote{margin:0 0 8px;font-size:14px;font-weight:600}
-.ctx{display:inline-block;font-size:12px;font-weight:600;border:1.5px solid var(--ink-2);border-radius:999px;padding:1px 10px;color:var(--ink)}
-.linkbtn{min-height:44px;background:transparent;border:0;padding:4px 0;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
-.stopped{margin:4px 0 0;font-size:13px;color:var(--ink-2)}
-.rv-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
-@media (max-width:760px){.rv-grid{grid-template-columns:1fr;gap:20px}}
+.ctx{display:inline-block;font-size:.75rem;font-weight:600;border:1px solid var(--line);border-radius:999px;padding:1px .625rem;color:var(--ink)}
+.linkbtn{min-height:2.75rem;background:transparent;border:0;padding:.25rem 0;cursor:pointer;font-size:.8125rem;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.stopped{margin:.25rem 0 0;font-size:.8125rem;color:var(--ink-2)}
+.rv-acts{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
 
-/* chat widget */
-.chatbtn{position:fixed;right:24px;bottom:24px;z-index:20;min-height:48px;padding:0 20px;border:0;border-radius:999px;background:var(--ink);color:var(--board);font-weight:700;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.18),0 8px 20px rgba(0,0,0,.14)}
-.chatbtn[aria-expanded="true"]{visibility:hidden}
-.chatpanel{position:fixed;right:24px;bottom:24px;z-index:21;width:min(420px,calc(100vw - 32px));max-height:min(72vh,640px);display:flex;flex-direction:column;background:var(--surface);color:var(--ink);border:1.5px solid var(--ink);border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,.18),0 12px 32px rgba(0,0,0,.18)}
+/* chat: docked on the right from 1200 px (the board reflows beside it), a floating panel below that, a bottom sheet on a phone */
+.chatpanel{position:fixed;right:1rem;bottom:1rem;z-index:21;width:min(26rem,calc(100vw - 2rem));max-height:min(72vh,40rem);display:flex;flex-direction:column;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:1rem;padding:1rem;box-shadow:0 2px 4px rgba(16,24,40,.12),0 16px 40px rgba(16,24,40,.18)}
 .chatpanel[hidden]{display:none}
-.cp-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.cp-head h2{margin:0;font-size:18px}
-.chatpanel .sub{margin:4px 0 8px;font-size:13px;color:var(--ink-2)}
-.chatpanel .chips{margin:0 0 10px}
-.close{min-height:44px;background:transparent;border:1.5px solid var(--ink);border-radius:6px;padding:4px 12px;cursor:pointer}
+.cp-head{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+.cp-head h2{font-size:1.125rem}
+.chatpanel .sub{margin:.25rem 0 .5rem;font-size:.8125rem;color:var(--ink-2)}
+.close{min-height:2.75rem;background:transparent;border:1px solid var(--line);border-radius:.625rem;padding:.25rem .75rem;cursor:pointer;font-weight:600}
 .close:hover{background:var(--board-2)}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
-.chip{min-height:44px;background:transparent;border:1.5px solid var(--ink);border-radius:999px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:600;text-align:left}
+.chips{display:flex;flex-wrap:wrap;gap:.375rem;margin:.5rem 0 .625rem}
+.chip{min-height:2.75rem;background:transparent;border:1px solid var(--line);border-radius:999px;padding:.375rem .875rem;cursor:pointer;font-size:.8125rem;font-weight:600;text-align:left}
 .chip:hover{background:var(--board-2)}
-.chatpanel .log{flex:1 1 auto;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:0 0 10px}
+.chatpanel .log{flex:1 1 auto;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:.5rem;margin:0 0 .625rem;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 .chatpanel .log:empty{display:none}
-.msg{padding:8px 10px;border-radius:8px;font-size:14px;max-width:92%}
+.msg{padding:.5rem .625rem;border-radius:.75rem;font-size:.875rem;max-width:92%}
 .msg.q{align-self:flex-end;background:var(--board-2)}
-.msg.a{align-self:flex-start;border:1.5px solid var(--rule)}
-.msg.n{align-self:center;max-width:100%;font-size:12px;color:var(--ink-2);padding:2px 0}
-.msg .who{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:2px}
-.ask{display:flex;gap:8px}
-.ask input{flex:1;min-width:0;min-height:44px;color:var(--ink);background:var(--board);border:1.5px solid var(--ink);border-radius:8px;padding:8px 10px}
+.msg.a{align-self:flex-start;border:1px solid var(--rule)}
+.msg.n{align-self:center;max-width:100%;font-size:.75rem;color:var(--ink-2);padding:.125rem 0}
+.msg .who{display:block;font-size:.75rem;font-weight:700;color:var(--ink-2);margin-bottom:.125rem}
+.ask{display:flex;gap:.5rem;margin-top:auto}
+.ask input{flex:1;min-width:0;min-height:2.75rem;color:var(--ink);background:var(--board);border:1px solid var(--line);border-radius:.625rem;padding:.5rem .625rem}
 .ask input::placeholder{color:var(--ink-2)}
-.ask button{background:var(--ink);color:var(--board);border:0;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer;min-height:44px}
+.ask button{background:var(--ink);color:var(--board);border:0;border-radius:.625rem;padding:.5rem .875rem;font-weight:700;cursor:pointer;min-height:2.75rem}
 .ask button:hover{opacity:.9}
-@media (max-width:560px){.chatbtn{right:16px;bottom:16px}.chatpanel{right:8px;left:8px;bottom:8px;width:auto;max-height:80vh}}
+@media (min-width:1200px){
+  [data-chat="open"] body{padding-right:24.5rem}
+  .chatpanel{top:0;right:0;bottom:0;width:24.5rem;max-height:none;border:0;border-left:1px solid var(--rule);border-radius:0;box-shadow:none;padding:1rem 1.25rem}
+}
 
-/* footer */
-.engine{margin-top:24px;padding-top:12px;border-top:2px solid var(--ink);font-size:14px}
-.engine h2{margin:0 0 4px;font-size:18px}
-.aboutline{margin:0 0 4px;max-width:58ch;color:var(--ink-2)}
-details.more{border-top:1px solid var(--rule)}
-details.more summary{cursor:pointer;min-height:44px;display:flex;align-items:center;padding:0;font-size:14px;font-weight:600;color:var(--ink-2)}
+/* footer: one folded disclosure holds every definition */
+.engine{margin-top:1.5rem;border-top:1px solid var(--rule);font-size:.875rem}
+details.more summary{cursor:pointer;min-height:2.75rem;display:flex;align-items:center;font-size:.875rem;font-weight:700;color:var(--ink-2)}
 details.more summary:hover{color:var(--ink)}
-.range{font-size:12px;color:var(--ink-2);font-weight:400}
-.all{width:100%;max-width:960px;border-collapse:collapse;margin:4px 0 12px;font-size:14px}
-.all th,.all td{text-align:left;padding:8px 12px 8px 0;border-top:1px solid var(--rule);vertical-align:top}
-.all thead th{font-size:12px;font-weight:600;color:var(--ink-2);border-top:0}
+.range{font-size:.75rem;color:var(--ink-2);font-weight:400}
+.all{width:100%;max-width:60rem;border-collapse:collapse;margin:.25rem 0 .75rem;font-size:.875rem}
+.all th,.all td{text-align:left;padding:.5rem .75rem .5rem 0;border-top:1px solid var(--rule);vertical-align:top}
+.all thead th{font-size:.75rem;font-weight:600;color:var(--ink-2);border-top:0}
 .all .num{text-align:right;white-space:nowrap;font-weight:700}
 .all th[scope=row]{font-weight:600}
-.all th[scope=row] .range{display:block;margin-top:2px}
-.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 24px;margin:0 0 8px;max-width:960px}
-.facts dt{font-size:12px;font-weight:600;color:var(--ink-2)}
-.facts dd{margin:2px 0 0;font-size:14px}
+.all th[scope=row] .range{display:block;margin-top:.125rem}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:.875rem 1.5rem;margin:0 0 .75rem;max-width:72rem}
+.facts dt{font-size:.75rem;font-weight:700;color:var(--ink-2)}
+.facts dd{margin:.125rem 0 0;font-size:.875rem;max-width:60ch}
+.facts .keys{display:flex;flex-wrap:wrap;gap:.25rem .875rem;align-items:center}
+.facts .keys span{display:inline-flex;align-items:center;gap:.3125rem}
 .pending{color:var(--ink-2);font-style:italic}
-::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--rule);border-radius:6px}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
+
+@media (min-width:561px){#theme .ic{display:none}}
+@media (max-width:1319px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:960px){
+  .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .lead{grid-template-columns:1fr}
+  .rv-grid{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .wrap{padding:.75rem 1rem 2.5rem}
+  .unit{flex:1 1 0;min-width:0;margin-right:0}
+  .spacer{display:none}
+  #theme,#chatbtn{order:-1;padding:.375rem .6875rem}
+  .unit{order:-2}
+  #theme .tl,#chatbtn .tl{position:absolute;left:-9999px}
+  .sline{flex:1 1 100%;justify-content:center;border-radius:.75rem}
+  .runbox{flex:1 1 100%}
+  .runbox .label{position:absolute;left:-9999px}
+  .runbox select{flex:1 1 auto;min-width:0}
+  .grid,[data-chat="open"] .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}
+  .rail .rset{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}
+  .rail .bed .rm{font-size:1.5rem}
+  .rail .grp{flex-basis:100%}
+  .bed{padding:.5rem .625rem}
+  .bed.t-hold{padding:calc(.5rem - 2px) calc(.625rem - 2px)}
+  .bed.t-leave{padding:calc(.5rem - 1px) calc(.625rem - 1px)}
+  .bed .rm{font-size:1.5rem}
+  .bed .st{margin-left:0;flex-basis:100%}
+  .seg{flex:1 1 auto}
+  .seg button{flex:1 1 0;justify-content:center;padding:0 .5rem}
+  .legend{margin-left:0;gap:.25rem .75rem;font-size:.75rem}
+  .legend .sep{display:none}
+  .lead{padding:.875rem 1rem}
+  .capbox form{grid-template-columns:1fr}
+  .roomview .rvh{font-size:2rem}
+  .risks li{grid-template-columns:minmax(0,1fr) 5.5em;row-gap:.375rem}
+  .risks .dots{grid-column:1;min-width:0}
+  .risks .fq{grid-column:2;text-align:right;font-size:.8125rem}
+  .dots{gap:.1875rem}.dots i{width:.625rem;height:.625rem}
+  .chatpanel{left:0;right:0;bottom:0;width:auto;max-height:82vh;border-radius:1rem 1rem 0 0;border-bottom:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
+<!-- Icon family: drawn for this board on a 24 grid, 1.75 stroke. "-on" = running now (solid), plain = expected (outline).
+     The person figure (i-person and the bed figures) is Dema's (deetherese) from origin/alternative. -->
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-vent" viewBox="0 0 24 24"><path d="M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8"/><path d="M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z"/><path d="M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z"/></symbol>
+  <symbol id="i-vent-on" viewBox="0 0 24 24"><path d="M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8"/><path fill="currentColor" d="M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z"/><path fill="currentColor" d="M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z"/></symbol>
+  <symbol id="i-pump" viewBox="0 0 24 24"><g transform="rotate(45 12 12)"><path d="M9 1.5h6M12 1.5v4M8 5.5h8M12 15.5v2.7"/><rect x="9.2" y="5.5" width="5.6" height="10" rx="1"/><path d="M9.2 10.2h2.3"/></g><path d="M4.2 17.6c1.1 1.3 1.8 2.1 1.8 3a1.8 1.8 0 0 1-3.6 0c0-.9.7-1.7 1.8-3z"/></symbol>
+  <symbol id="i-pump-on" viewBox="0 0 24 24"><g transform="rotate(45 12 12)"><path d="M9 1.5h6M12 1.5v4M8 5.5h8M12 15.5v2.7"/><rect fill="currentColor" x="9.2" y="5.5" width="5.6" height="10" rx="1"/></g><path fill="currentColor" d="M4.2 17.6c1.1 1.3 1.8 2.1 1.8 3a1.8 1.8 0 0 1-3.6 0c0-.9.7-1.7 1.8-3z"/></symbol>
+  <symbol id="i-crrt" viewBox="0 0 24 24"><rect x="8" y="2.5" width="8" height="3.4" rx="1.2"/><rect x="8" y="18.1" width="8" height="3.4" rx="1.2"/><path d="M9.5 5.9v12.2M14.5 5.9v12.2M12 8.5v7"/><path d="M9.5 16H6.5a3 3 0 0 1-3-3V9.5M1.7 11.3 3.5 9.5l1.8 1.8"/><path d="M14.5 8h3a3 3 0 0 1 3 3v3.5M18.7 12.7l1.8 1.8 1.8-1.8"/></symbol>
+  <symbol id="i-crrt-on" viewBox="0 0 24 24"><rect fill="currentColor" x="8" y="2.5" width="8" height="3.2" rx="1.2"/><rect fill="currentColor" x="8" y="18.3" width="8" height="3.2" rx="1.2"/><rect fill="currentColor" stroke-width="1" x="9.6" y="7.4" width="4.8" height="9.2" rx=".6"/><path style="stroke:var(--ic-k,var(--surface))" stroke-width="1.3" d="M12 9.3v5.4"/><path d="M9.5 16H6.5a3 3 0 0 1-3-3V9.5M1.7 11.3 3.5 9.5l1.8 1.8"/><path d="M14.5 8h3a3 3 0 0 1 3 3v3.5M18.7 12.7l1.8 1.8 1.8-1.8"/></symbol>
+  <symbol id="i-leave" viewBox="0 0 24 24"><path d="M2.5 9.5v10M2.5 16.5H18v3"/><path d="M8.5 16.5v-3.2h6.3a3.2 3.2 0 0 1 3.2 3.2"/><circle cx="5.6" cy="13.6" r="1.5"/><path d="M12.5 6h9M18.5 3l3 3-3 3"/></symbol>
+  <symbol id="i-leave-on" viewBox="0 0 24 24"><path d="M2.5 9.5v10M2.5 16.5H18v3"/><path fill="currentColor" d="M8.5 16.5v-3.2h6.3a3.2 3.2 0 0 1 3.2 3.2z"/><circle fill="currentColor" cx="5.6" cy="13.6" r="1.5"/><path d="M12.5 6h9M18.5 3l3 3-3 3" stroke-width="2.25"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="7.2" r="3.9"/><path d="M4.5 21v-1.4c0-3.5 3.2-5.9 7.5-5.9s7.5 2.4 7.5 5.9V21z"/></symbol>
+  <symbol id="i-person-on" viewBox="0 0 24 24"><circle fill="currentColor" cx="12" cy="7.2" r="3.9"/><path fill="currentColor" d="M4.5 21v-1.4c0-3.5 3.2-5.9 7.5-5.9s7.5 2.4 7.5 5.9V21z"/></symbol>
+  <symbol id="i-fig" viewBox="0 0 40 42"><circle cx="20" cy="10.5" r="8.5"/><path d="M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z"/></symbol>
+  <!-- trajectory shapes -->
+  <symbol id="i-up" viewBox="0 0 24 24"><path fill="currentColor" d="M12 4.5 21 19.5H3z"/></symbol>
+  <symbol id="i-watch" viewBox="0 0 24 24"><path d="M12 6.5 19.5 19h-15z" stroke-width="2.5"/></symbol>
+  <symbol id="i-hold" viewBox="0 0 24 24"><path d="M4 8.5h16M4 15.5h16" stroke-width="3.5"/></symbol>
+  <symbol id="i-steady" viewBox="0 0 24 24"><circle fill="currentColor" cx="12" cy="12" r="3.5" stroke="none"/></symbol>
+  <symbol id="i-none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" stroke-width="1.5"/></symbol>
+  <symbol id="i-any" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6" stroke-width="2.25"/></symbol>
+  <symbol id="i-same" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M3.5 12h16M14 6.5l5.5 5.5-5.5 5.5" stroke-width="2.25"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.6 6.6 0 0 0 10.5 10.5Z"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5.5h16v10.5H10.500L6 19.800V16H4Z"/><path d="M8 9.500h8M8 12.500h5"/></symbol>
+  <symbol id="i-beds" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-strain" viewBox="0 0 24 24"><path d="M4 20V11M10 20V4M16 20v-6M22 20H2" stroke-width="2.25"/></symbol>
+</svg>
+
 <div class="wrap">
   <header class="top">
     <div class="unit">
       <h1>Medical ICU<span id="beds"></span></h1>
-      <p><span class="brand">Lookahead</span> · The next 24 hours, in one place. · <b>07:00 to 07:00</b> · patients in the ICU at least 24 h</p>
+      <div class="sub"><span class="brand">Lookahead</span><span>07:00 to 07:00</span><span class="srctag" id="syn" hidden></span><p class="runstate" id="runstate" role="status" aria-live="polite"></p></div>
     </div>
-    <span class="srctag" id="syn" hidden></span>
     <span class="spacer"></span>
-    <button class="toggle" id="theme" aria-pressed="false" type="button">Night board</button>
+    <a class="sline" id="sline" href="#view=strain" hidden></a>
+    <button class="toggle" id="theme" aria-pressed="false" type="button"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-moon"/></svg><span class="tl" id="theme-l">Night board</span></button>
     <div class="runbox">
       <label for="role" class="label">I am</label>
       <select id="role">
@@ -233,61 +392,73 @@ details.more summary:hover{color:var(--ink)}
       </select>
       <button class="toggle" id="rerun" type="button">Update the unit</button>
     </div>
-    <p class="runstate" id="runstate" role="status" aria-live="polite"></p>
+    <button class="toggle" id="chatbtn" type="button" aria-expanded="false" aria-controls="chatpanel"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-chat"/></svg><span class="tl">Ask</span></button>
   </header>
 
   <div id="boardview">
   <main class="main" aria-label="Unit board">
-    <section class="strain" aria-labelledby="strain-h">
-      <div id="strainbody"></div>
-      <details class="capbox" id="capbox">
-        <summary>Set tonight's capacity</summary>
-        <form id="capform" novalidate>
-          <label for="cap-ls">Life-support patients tonight's staffing covers<input id="cap-ls" type="number" inputmode="numeric" min="0" max="50" step="1"></label>
-          <label for="cap-vf">Ventilators free (optional)<input id="cap-vf" type="number" inputmode="numeric" min="0" max="50" step="1"></label>
-          <div class="acts"><button class="primary" type="submit">Save capacity</button><button class="toggle" id="viewtyp" type="button" hidden>View against a typical day (staffing number kept)</button></div>
-          <p class="msg2" id="capmsg" role="status" aria-live="polite"></p>
-        </form>
-      </details>
-      <p class="capset" id="capset"></p>
-    </section>
+    <div class="viewbar">
+      <div class="seg" id="seg" role="group" aria-label="Board view">
+        <button type="button" data-v="beds" aria-pressed="true"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-beds"/></svg>Bed board</button><button type="button" data-v="strain" aria-pressed="false"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-strain"/></svg>Unit strain</button>
+      </div>
+      <span class="upd" id="upd-grid" hidden>updating</span>
+      <div class="legend" id="legend" role="group" aria-label="Key"></div>
+    </div>
+    <p class="roomnote" id="roomnote" role="status" hidden></p>
 
-    <p class="check" id="check"></p>
-
-    <div class="left">
+    <div id="bedsview">
+      <section class="rail" id="rail" aria-labelledby="rail-h"></section>
       <section aria-labelledby="board-h">
-        <div class="boardhead">
-          <h2 id="board-h">Rooms · next 24 hours <span class="upd" id="upd-grid" hidden>updating</span></h2>
-          <div class="legend" role="group" aria-label="Level: chance of any new life support in the next 24 hours">
-            <span><i class="sw lv-low"></i>Low</span><span><i class="sw lv-medium"></i>Medium</span><span><i class="sw lv-high"></i>High</span>
-          </div>
-        </div>
-        <p class="roomnote" id="roomnote" role="status" hidden></p>
+        <h2 class="bedhead" id="board-h">All rooms</h2>
         <div class="grid" id="grid" role="group" aria-label="Rooms; choose a room to open its page"></div>
-        <div class="legend2" role="group" aria-label="Tags"><span><span class="tag">V</span> IMV running at 07:00</span><span><span class="tag">P</span> vasopressor running</span><span><span class="tag">C</span> CRRT running</span><span>Thick dark border: 2 or more running, "On life support"</span><span><span class="tag out">OUT</span> likely to leave, 6 in 10 or more</span></div>
-        <p class="note">Level is the chance of any new life support (IMV, vasopressor or CRRT) in the next 24 hours: High is 4 in 10 or more, Medium is 2 in 10 or more. Support running at the 07:00 cut is "now" and is not counted again. A room with two or more supports running reads "On life support"; its fill still shows the level for more. Death never colours a tile. Open a room for the details. <span class="wardnote"></span></p>
       </section>
+    </div>
+
+    <div id="strainview">
+      <section class="lead" id="lead" aria-labelledby="strain-h">
+        <div id="strainbody"></div>
+        <div class="aside">
+          <p class="deaths" id="deaths"></p>
+          <details class="capbox" id="capbox">
+            <summary>Set tonight's capacity<svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-chev"/></svg></summary>
+            <form id="capform" novalidate>
+              <label for="cap-ls">Life-support patients tonight's staffing covers<input id="cap-ls" type="number" inputmode="numeric" min="0" max="50" step="1"></label>
+              <label for="cap-vf">Ventilators free (optional)<input id="cap-vf" type="number" inputmode="numeric" min="0" max="50" step="1"></label>
+              <div class="acts"><button class="primary" type="submit">Save capacity</button><button class="toggle" id="viewtyp" type="button" hidden>View against a typical day</button></div>
+              <p class="msg2" id="capmsg" role="status" aria-live="polite"></p>
+            </form>
+          </details>
+          <p class="capset" id="capset"></p>
+        </div>
+      </section>
+      <div class="watch" id="watch"></div>
     </div>
   </main>
 
-  <footer class="engine" aria-labelledby="about-h">
-    <h2 id="about-h">How this forecast was made</h2>
-    <p class="aboutline">On the hospital's own servers, a small model trained on this ICU's records read each patient's history once and estimated five events for the next 24 hours. Patient records never leave the hospital.</p>
-    <p class="aboutline">For unit planning; the care team makes clinical decisions.</p>
+  <footer class="engine">
     <details class="more about">
-      <summary>The five forecasts, and what each one means</summary>
+      <summary>How this forecast was made</summary>
+      <dl class="facts">
+        <div><dt>Each bed</dt><dd>Left of the arrow: life support running at 07:00. Right: new life support with a chance of 2 in 10 or more in the next 24 hours, and the bed with an arrow when leaving the ICU is 6 in 10 or more. A plus in a ring is the combined chance when no single support reaches 2 in 10.</dd></div>
+        <div><dt>Worsening and Watch</dt><dd>The chance of any new life support (IMV, vasopressor or CRRT): Worsening at 4 in 10 or more (level High), Watch at 2 in 10 or more (level Medium). Support already running is not counted again.</dd></div>
+        <div><dt>Not improving</dt><dd>On at least one life support now, a chance of leaving the ICU under 2 in 10, and no new support flagged. Worked out on this screen from the five forecasts; coming off support is not forecast.</dd></div>
+        <div><dt>Leaving and Steady</dt><dd>Leaving: 6 in 10 or more to leave the ICU for a ward or step-down. Steady: none of the above. Death never marks a bed.</dd></div>
+        <div><dt>Icons</dt><dd class="keys" id="iconkey"></dd></div>
+        <div><dt>Unit strain</dt><dd>Counts carry a range covering 8 in 10 likely outcomes (p10 to p90). The bead is the median, the solid line is what is free or what tonight's staffing covers, the dashed line is a typical day. A figure fills to its bed's chance; a solid figure is on that support now.</dd></div>
+        <div><dt>Status words</dt><dd>With tonight's capacity set: ON TRACK when the range stays at or under it, TIGHT when the range passes it, SHORT when the median passes it. Without it: USUAL, BUSY or VERY BUSY against a typical day.</dd></div>
+      </dl>
       <table class="all">
         <caption class="sr">The five forecasts for the next 24 hours: median and likely range across the unit</caption>
         <thead><tr><th scope="col">Forecast</th><th scope="col" class="num">Median (range)</th><th scope="col">Used by</th></tr></thead>
         <tbody id="alltasks"></tbody>
       </table>
-      <p class="note">Life support: IMV, vasopressor infusion or CRRT. Ranges cover 8 in 10 likely outcomes (p10 to p90).</p>
       <dl class="facts">
-        <div><dt>Model</dt><dd>icutwin m, 35 million parameters, trained on site on 2 × NVIDIA GB10</dd></div>
+        <div><dt>Model</dt><dd>icutwin m, 35 million parameters, trained on site on 2 × NVIDIA GB10. Patient records never leave the hospital.</dd></div>
         <div><dt>Method</dt><dd>One read of each patient's record 24 h after ICU arrival, a calibrated score per event, then patients added up into unit counts</dd></div>
         <div id="perf" hidden><dt>Model performance (held-out patients)</dt><dd></dd></div>
         <div><dt>Where and when</dt><dd>Fuzzball workflow t7-forecast on 1 × NVIDIA GB10, morning run and on update</dd></div>
-        <div><dt>Not included</dt><dd>Excludes new admissions from the ED and OR.</dd></div>
+        <div><dt>Not included</dt><dd>Excludes new admissions from the ED and OR. <span class="wardnote"></span></dd></div>
+        <div><dt>Use</dt><dd>For unit planning; the care team makes clinical decisions.</dd></div>
       </dl>
     </details>
   </footer>
@@ -295,13 +466,11 @@ details.more summary:hover{color:var(--ink)}
 
   <main id="roomview" class="roomview" hidden aria-labelledby="rv-h">
     <nav class="rv-nav" aria-label="Rooms">
-      <a class="back" id="back" href="#board">← All rooms</a>
+      <a class="back" id="back" href="#view=beds">All rooms</a>
       <span class="rv-step"><a id="rv-prev" href="#"></a><a id="rv-next" href="#"></a></span>
     </nav>
-    <p class="rv-unit" id="rv-unit"></p>
-    <h2 class="rvh" id="rv-h" tabindex="-1">Room</h2>
+    <div class="rvtop"><h2 class="rvh" id="rv-h" tabindex="-1">Room</h2><span id="rv-st"></span><div class="rvflow" id="rv-flow"></div></div>
     <p class="rv-sub" id="rv-sub"></p>
-    <p class="rv-stamp" id="rv-stamp"></p>
     <p class="rv-run" id="rv-run" role="status" aria-live="polite"></p>
     <div class="rv-grid">
       <section aria-labelledby="rv-risk-h">
@@ -321,14 +490,13 @@ details.more summary:hover{color:var(--ink)}
   </main>
 </div>
 
-<button class="chatbtn" id="chatbtn" type="button" aria-expanded="false" aria-controls="chatpanel">Ask about this forecast</button>
 <section class="chatpanel" id="chatpanel" aria-labelledby="chat-h" hidden>
   <div class="cp-head"><h2 id="chat-h">Ask about this forecast</h2><button class="close" id="chatclose" type="button">Close</button></div>
   <p class="sub" id="chat-scope" hidden></p>
   <div class="chips" id="chips" role="group" aria-label="Suggested questions"></div>
   <div class="log" id="log" aria-live="polite"></div>
   <form class="ask" id="ask"><label class="sr" for="q">Question</label>
-    <input id="q" autocomplete="off" placeholder="Ask about rooms, life support or discharges">
+    <input id="q" autocomplete="off" placeholder="Ask about a room or the unit">
     <button type="submit">Ask</button></form>
 </section>
 
@@ -492,7 +660,8 @@ details.more summary:hover{color:var(--ink)}
     if(!f||typeof f!=="object"||!r||typeof r!=="object") throw new Error("shape"); setData(f,r); }
   const sleep = ms => new Promise(res=>setTimeout(res,ms));
   async function loadRetry(tries=3){ for(let i=0;i<tries;i++){ try{ await loadAll(); return true; }catch(e){ if(i<tries-1) await sleep((FAST?150:600)*Math.pow(3,i)); } } return false; }
-  function useSynthetic(){ const g=generate(seedN, Date.now()-3*36e5, 0, cap); FC=g.fc; RM=g.rooms; setZone(); }
+  function useSynthetic(){ const d=new Date(); d.setHours(7,0,0,0); if(d.getTime()>Date.now()) d.setDate(d.getDate()-1);   // the morning cut: the most recent 07:00
+    const g=generate(seedN, d.getTime(), 0, cap); FC=g.fc; RM=g.rooms; setZone(); }
 
   const api = {
     async liveRerun(body){ try{ return await postJSON("/api/rerun", body); }catch(e){ return {started:false, reason:"The board server did not answer. Try again in a moment."}; } },
@@ -507,14 +676,6 @@ details.more summary:hover{color:var(--ink)}
     status(){ return Promise.resolve({state: run && Date.now()-run.t0>=RUN_MS ? "done" : "running"}); },
     capacity(body){ return new Promise(res=>setTimeout(()=>res({ok:true, capacity:{set_at:iso(Date.now())}}),80)); }
   };
-
-  /* ---------- level colours: token background, then the ink with the best contrast (>= 4.5:1) ---------- */
-  const hex=h=>{h=h.trim().replace('#','');return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16));};
-  const lum=c=>{const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(c[0])+.7152*f(c[1])+.0722*f(c[2]);};
-  const ratio=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
-  function tile(level){ const cs=getComputedStyle(document.documentElement), bg=hex(cs.getPropertyValue('--lv-'+(LV.includes(level)?level:"low")));
-    const inks=['#1E2A33','#FFFFFF','#10161B','#E8ECE6'].map(hex), ink=inks.slice().sort((a,b)=>ratio(bg,b)-ratio(bg,a))[0];
-    return [`rgb(${bg})`,`rgb(${ink})`]; }
 
   /* ---------- wording helpers: natural frequencies, never percentages ---------- */
   const inTen = v => { const n=Math.round(v*10); return n<1?"fewer than 1 in 10":`about ${n} in 10`; };
@@ -549,44 +710,100 @@ details.more summary:hover{color:var(--ink)}
   function applyCapLocal(){ if(hasFc() && capLocal) FC.yardstick=localCapYard(capLocal); }
   const YNAME = y => y.kind==="capacity" ? "vs tonight's staffing" : "vs a typical day";
 
-  /* ---------- strain panel ---------- */
+  /* ---------- icons, and one bed's trajectory (worked out here from the five forecasts) ---------- */
+  const ICON = {imv:"vent", vasopressor:"pump", crrt:"crrt", leave:"leave"};
+  const SUPN = {imv:"IMV", vasopressor:"Vasopressor", crrt:"CRRT"};
+  const ICN = {imv:"Ventilator", vasopressor:"Vasopressor", crrt:"CRRT"};
+  const svg = (id, label, cls) => `<svg class="ic${cls?" "+cls:""}" viewBox="0 0 24 24" ${label?`role="img" aria-label="${esc(label)}"`:`aria-hidden="true"`}><use href="#i-${id}"/></svg>`;
+  const ic = (k, on, label) => svg(ICON[k]+(on?"-on":""), label);
+  const nIn = v => { const n=Math.round(v*10); return n<1?"fewer than 1 in 10":`${n} in 10`; };
+  /* Worsening: level High (any new life support 4 in 10 or more). Watch: level Medium (2 in 10 or more).
+     Not improving: on life support now, leaving under 2 in 10, nothing new flagged. Leaving: the room's out flag (6 in 10 or more). Death never enters. */
+  const TRAJ = {worse:["Worsening","up"], watch:["Watch","watch"], hold:["Not improving","hold"], leave:["Leaving","leave"], steady:["Steady","steady"]};
+  const onList = r => SUP.filter(k=>r.on_now[k]);
+  const nextList = r => SUP.filter(k=>!r.on_now[k] && r.p[k]!=null && r.p[k]>=LEVELS.medium).sort((a,b)=>r.p[b]-r.p[a]);
+  const anyNew = r => 1-SUP.reduce((m,k)=>m*(r.on_now[k]||r.p[k]==null?1:1-r.p[k]),1);
+  function traj(r){
+    if(r.level==="high") return "worse"; if(r.level==="medium") return "watch";
+    if(onList(r).length && r.p.icu_departure!=null && r.p.icu_departure<LEVELS.medium && !nextList(r).length) return "hold";
+    return r.out ? "leave" : "steady"; }
+  /* a room flagged by the combined chance alone (no single support at 2 in 10): its most likely support, with the combined chance marked "any" */
+  const topNew = r => (r.level==="high"||r.level==="medium") && !nextList(r).length ? SUP.filter(k=>!r.on_now[k]&&r.p[k]!=null).sort((a,b)=>r.p[b]-r.p[a])[0]||null : null;
+  const flowWords = r => { const on=onList(r), nx=nextList(r).map(k=>`${SUPN[k]} ${nIn(r.p[k])}`); if(topNew(r)) nx.push(`any new life support ${nIn(anyNew(r))}`); if(r.out) nx.push(`leaving the ICU${r.p.icu_departure!=null?" "+nIn(r.p.icu_departure):""}`);
+    return `Now: ${on.length?on.map(k=>SUPN[k]).join(", "):"no life support"}. Next 24 hours: ${nx.length?nx.join(", "):"nothing new"}.`; };
+  function flow(r, lab){ const on=onList(r), nx=nextList(r);
+    const tk=topNew(r), next = nx.map(k=>`<span class="nx">${ic(k,false)}<small>${nIn(r.p[k])}</small></span>`).join("")+(tk?`<span class="nx">${svg("any")}<small>${nIn(anyNew(r))}</small></span>`:"")+(r.out?`<span class="nx${nx.length||tk?" lv":""}">${ic("leave",false)}${r.p.icu_departure!=null?`<small>${nIn(r.p.icu_departure)}</small>`:""}</span>`:"");
+    if(!lab && !on.length && !next) return "";      // nothing running and nothing flagged: the tile stays quiet
+    return `<span class="flow" aria-hidden="true"><span class="now">${lab?`<span class="fl">Now</span>`:""}${on.length?on.map(k=>ic(k,true)).join(""):svg("none","","mark")}</span>${svg("arrow","","arr")}<span class="next">${lab?`<span class="fl">Next 24 h</span>`:""}${next||svg("same","","mark")}</span></span>`; }
+  /* Dema's range bar: track, the 8-in-10 range, a bead at the median, a solid ink line for what is free or covered, a dashed one for a typical day */
+  function bar(q, mark, typ, top){ const max=Math.max(q.p90, mark==null?0:mark, typ==null?0:typ, top||0, 1)+1, x=v=>Math.round((6+(v/max)*288)*10)/10;
+    return `<svg class="bar" viewBox="0 0 300 24" preserveAspectRatio="xMinYMid meet" aria-hidden="true"><line class="trk" x1="6" x2="294" y1="12" y2="12"/><line class="rng" x1="${x(q.p10)}" x2="${Math.max(x(q.p90),x(q.p10)+2)}" y1="12" y2="12"/>${typ!=null?`<line class="typ" x1="${x(typ)}" x2="${x(typ)}" y1="1" y2="23"/>`:""}${mark!=null?`<rect class="cap" x="${x(mark)-1.5}" y="0" width="3" height="24"/>`:""}<circle class="med" cx="${x(q.p50)}" cy="12" r="4.5"/></svg>`; }
+
+  /* ---------- the two tabs: Bed board (#view=beds, default) and Unit strain (#view=strain); the choice is remembered ---------- */
+  let view="beds"; try{ const v=localStorage.getItem("lookahead-view"); if(v==="beds"||v==="strain") view=v; }catch(e){ /* no storage: the tab lasts for this page only */ }
+  function paintView(){ document.documentElement.dataset.view=view; for(const b of $("seg").children) b.setAttribute("aria-pressed",String(b.dataset.v===view));
+    const N=RM.rooms.length, back=$("back"); back.href="#view="+view; back.innerHTML = svg("arrow","","flip")+(view==="strain" ? "Unit strain" : N ? `All ${N} rooms` : "All rooms"); }
+  function setView(v, write){ if(v!=="beds"&&v!=="strain") return; view=v;
+    try{ localStorage.setItem("lookahead-view",v); }catch(e){ /* storage blocked */ }
+    if(write){ try{ history.replaceState(null,"","#view="+v); }catch(e){ /* keep the old hash */ } }
+    paintView(); }
+  for(const b of $("seg").children) b.onclick=()=>setView(b.dataset.v,true);
+  function paintLegend(){
+    $("legend").innerHTML = ["worse","watch","hold","leave"].map(t=>`<span><i class="sw t-${t}">${svg(TRAJ[t][1])}</i>${TRAJ[t][0]}</span>`).join("")
+      +`<i class="sep"></i><span>${SUP.map(k=>ic(k,true)).join("")}on now</span><span>${svg("arrow")}${SUP.map(k=>ic(k,false)).join("")}may start</span><span>${svg("any")}any of them</span>`;
+    $("iconkey").innerHTML = SUP.map(k=>`<span>${ic(k,true,ICN[k]+" running")}${ic(k,false,ICN[k]+" expected")}${SUPN[k]}</span>`).join("")
+      +`<span>${ic("leave",false,"Leaving the ICU")}Leaving</span><span>Solid: running now. Outline: expected.</span>`; }
+
+  /* ---------- Unit strain: the lead line, then one card per support and one for leaving ---------- */
   const FIRST = {pharmacy:"vasopressor","respiratory therapy":"imv","bed manager":"leave"};
   function unitLine(){ const ls=FC.life_support, y=Y(); return `<b>${ls.now_patients}</b> on life support now · <b>${ls.expected_new_patients.p50}</b> more expected ${rgT(ls.expected_new_patients)}${y?` · ${y.words} ${YNAME(y)}`:""}`; }
   function renderStrain(){
-    const tbtn=$("viewtyp");
+    const tbtn=$("viewtyp"), sl=$("sline");
     if(!hasFc()){
       const off = offline && !FC;
-      $("strainbody").innerHTML=`<div class="strain-top"><h2 id="strain-h">Strain · next 24 hours</h2></div><p class="headline">No forecast yet</p><p class="yline">${off?"Can't reach the board server — retrying.":'Updates start at 07:00. Use "Update the unit" to start one.'}</p>`;
-      $("check").textContent=""; $("capset").textContent=""; tbtn.hidden=true; return; }
+      $("strainbody").innerHTML=`<div class="lh"><h2 id="strain-h">Life support</h2></div><p class="nums"><span><b>No forecast yet</b></span></p><p class="barl">${off?"Can't reach the board server — retrying.":'Updates start at 07:00. Use "Update the unit" to start one.'}</p>`;
+      $("lead").className="lead"; $("deaths").textContent=""; $("capset").textContent=""; tbtn.hidden=true; sl.hidden=true; renderWatch(); return; }
     const raw=rawY(); if(viewTyp && !(raw&&raw.kind==="capacity"&&raw.typ!=null)) viewTyp=false;
-    const ls=FC.life_support, y=Y(), q=ls.expected_new_patients, d=FC.resources.icu_departure, dd=FC.resources.death, load=loadOf();
-    const L = {
-      imv:`<li><span class="ln">IMV</span><span><b>${ls.now_by.imv}</b> on now · +<b>${ls.expected_by.imv.p50}</b> expected ${rg(ls.expected_by.imv)}</span></li>`,
-      vasopressor:`<li><span class="ln">Vasopressor</span><span><b>${ls.now_by.vasopressor}</b> on now · +<b>${ls.expected_by.vasopressor.p50}</b> expected ${rg(ls.expected_by.vasopressor)}</span></li>`,
-      crrt:`<li><span class="ln">CRRT</span><span><b>${ls.now_by.crrt}</b> on now · +<b>${ls.expected_by.crrt.p50}</b> expected ${rg(ls.expected_by.crrt)}</span></li>`,
-      leave:`<li><span class="ln">Leaving</span><span>expected to leave <b>${d.p50}</b> ${rg(d)}</span></li>`};
-    const first = FIRST[role()], base = ["imv","vasopressor","crrt"];
-    const order = first==="leave" ? ["leave",...base] : first ? [first,...base.filter(k=>k!==first),"leave"] : [...base,"leave"];
-    const deaths = `<li class="small"><span class="ln">Deaths</span><span>Deaths expected: <b>${dd.p50}</b> ${rgT(dd)}</span></li>`;
-    let yl = "";      // the yardstick sentence appears only when there is something to compare with
-    if(y && y.kind==="capacity") yl=`Now plus new: <b>${load.p50}</b> ${rgT(load)} · tonight's staffing covers <b>${y.ls}</b>${y.vf!=null?` · ventilators free <b>${y.vf}</b>, IMV starts expected ${ls.expected_by.imv.p50} ${rgT(ls.expected_by.imv)}`:""}.`;
-    else if(y && y.typ!=null) yl=`Now plus new: <b>${load.p50}</b> ${rgT(load)} · a typical day is about <b>${y.typ}</b>.`;
-    $("strainbody").innerHTML = `<div class="strain-top"><h2 id="strain-h">Strain · next 24 hours <span class="upd" id="upd-strain" ${run?"":"hidden"}>updating</span></h2>
-      <div class="yard">${y?`<span class="band lv-${y.level}" id="yword">${y.words}</span><span class="yname">${YNAME(y)}</span>`:`<span class="band" id="yword">Not ready yet</span>`}</div></div>
-      <p class="headline"><b>${ls.now_patients}</b> patients on life support now · <b>${q.p50}</b> more expected <span class="rg">${rgT(q)}</span></p>
-      <ul class="lines">${order.map(k=>L[k]).join("")}${deaths}</ul>
-      ${yl?`<p class="yline">${yl}</p>`:""}
-      <p class="rgnote">Ranges cover 8 in 10 likely outcomes (p10 to p90).</p>`;
-    let cs;
-    if(viewTyp) cs=`Showing a typical day on this screen only. Tonight's staffing number (${raw.ls}) stays saved.`;
+    const ls=FC.life_support, y=Y(), q=ls.expected_new_patients, dd=FC.resources.death, load=loadOf();
+    const mark = y&&y.kind==="capacity" ? y.ls : null, typ = y&&y.kind!=="capacity"&&y.typ!=null ? y.typ : null;
+    $("strainbody").innerHTML = `<div class="lh"><h2 id="strain-h">Life support</h2>${y?`<span class="band lv-${y.level}" id="yword">${y.words}</span><span class="yname">${YNAME(y)}</span>`:`<span class="band none" id="yword">Not ready yet</span>`}<span class="upd" id="upd-strain" ${run?"":"hidden"}>updating</span></div>
+      <div class="nums"><span><b>${ls.now_patients}</b><i>patients on now</i></span><span class="f"><b>+${q.p50}<small>${q.p10} to ${q.p90}</small></b><i>expected</i></span></div>
+      ${bar(load, mark, typ)}
+      <p class="barl">Now plus new <b>${load.p50}</b> ${rgT(load)}${mark!=null?` · staffing covers <b>${mark}</b>`:typ!=null?` · typical day <b>${typ}</b>`:""}</p>`;
+    $("lead").className = "lead"+(y&&y.level!=="ok"?` lv-${y.level}`:"");
+    $("deaths").innerHTML = `Deaths expected <b>${dd.p50}</b> ${rgT(dd)}`;
+    sl.hidden=false; sl.setAttribute("aria-label",`Unit strain: ${ls.now_patients} on life support, ${q.p50} more expected${y?`, ${y.words}`:""}`);
+    sl.innerHTML = `<span><b>${ls.now_patients}</b> on life support</span><span class="f"><b>+${q.p50}</b> expected</span>${y?`<span class="band lv-${y.level}">${y.words}</span>`:""}`;
+    let cs="";
+    if(viewTyp) cs=`Typical day shown on this screen only. Staffing number (${raw.ls}) kept.`;
     else if(raw && raw.kind==="capacity") cs=`Capacity set ${raw.set_at?hm(raw.set_at)+" ":""}by ${roleLabel(raw.role||"")||"the team"}`;
-    else if(raw) cs="Capacity not set: compared with a typical day.";
-    else cs="Capacity not set.";
     $("capset").textContent=cs;
     tbtn.hidden = !(raw && raw.kind==="capacity" && raw.typ!=null);
-    tbtn.textContent = viewTyp ? "View against tonight's staffing" : "View against a typical day (staffing number kept)";
-    const cf=cfRooms();
-    $("check").innerHTML = cf===null ? "" : cf.length ? `Check first: rooms ${cf.map(n=>`<a href="#room=${n}">${n}</a>`).join(", ")}` : "Check first: no room is High.";
+    tbtn.textContent = viewTyp ? "View against tonight's staffing" : "View against a typical day";
+    renderWatch();
+  }
+  /* the beds behind each count: solid ink figures are on that support now, the others fill with the chance (2 in 10 or more; leaving at 6 in 10 or more) */
+  function renderWatch(){
+    const el=$("watch"); if(!hasFc() || !RM.rooms.length){ el.innerHTML=""; return; }
+    const ls=FC.life_support, y=Y(), rs=RM.rooms, first=FIRST[role()];
+    const fig = (r,cls,p,label,name) => `<button type="button" class="pp${cls?" "+cls:""}" data-room="${r.room}" aria-label="Room ${r.room}: ${name}"><span class="av"${p!=null?` style="--p:${Math.round(p*100)}%"`:""} aria-hidden="true"><svg class="base" viewBox="0 0 40 42"><use href="#i-fig"/></svg>${p!=null?`<svg class="fill" viewBox="0 0 40 42"><use href="#i-fig"/></svg>`:""}</span><span class="rm">${r.room}</span>${label?`<span class="pc">${label}</span>`:""}</button>`;
+    const top = Math.max(...SUP.map(k=>ls.expected_by[k].p90));      // the three support bars share one scale
+    const set = (list, none) => list.length ? `<div class="set">${list.join("")}</div>` : `<p class="nobody">${none}</p>`;
+    const card = k => { const q=ls.expected_by[k], free = k==="imv" && y && y.kind==="capacity" && y.vf!=null ? y.vf : null, st = free!=null ? capWords(q,free) : null, lv = st ? LEVEL_OF_WORD[st] : "";
+      const on=rs.filter(r=>r.on_now[k]), may=rs.filter(r=>!r.on_now[k] && r.p[k]!=null && r.p[k]>=LEVELS.medium).sort((a,b)=>b.p[k]-a.p[k]);
+      return `<article class="wc${lv&&lv!=="ok"?` lv-${lv}`:""}" data-k="${k}" style="order:${first===k?0:1}" aria-labelledby="wc-${k}">
+        <header>${ic(k,true)}<h3 id="wc-${k}">${SUPN[k]}</h3>${st?`<span class="band lv-${lv}">${st}</span>`:""}</header>
+        <div class="nums"><span><b>${ls.now_by[k]}</b><i>on now</i></span>${free!=null?`<span><b>${free}</b><i>free</i></span>`:""}<span class="f"><b>+${q.p50}<small>${q.p10} to ${q.p90}</small></b><i>expected</i></span></div>
+        ${bar(q,free,null,top)}
+        <span class="gl">On now</span>${set(on.map(r=>fig(r,"on",null,"",`${SUPN[k]} on now`)),"None")}
+        <span class="gl">May start</span>${set(may.map(r=>fig(r,"",r.p[k],nIn(r.p[k]),`${SUPN[k]} ${inTen(r.p[k])}`)),"None at 2 in 10 or more")}</article>`; };
+    const d=FC.resources.icu_departure, out=rs.filter(r=>r.out && r.p.icu_departure!=null).sort((a,b)=>b.p.icu_departure-a.p.icu_departure);
+    el.innerHTML = SUP.map(card).join("")+`<article class="wc" data-k="leave" style="order:${first==="leave"?0:2}" aria-labelledby="wc-leave">
+        <header>${ic("leave",false)}<h3 id="wc-leave">Leaving the ICU</h3></header>
+        <div class="nums"><span class="f"><b>${d.p50}<small>${d.p10} to ${d.p90}</small></b><i>expected to leave</i></span></div>
+        ${bar(d)}
+        <span class="gl">Likely to leave</span>${set(out.map(r=>fig(r,"out",r.p.icu_departure,nIn(r.p.icu_departure),`leaving the ICU ${inTen(r.p.icu_departure)}`)),"None at 6 in 10 or more")}</article>`;
+    for(const b of el.querySelectorAll(".pp")) b.onclick=()=>openRoom(+b.dataset.room);
   }
   function renderFooter(){
     if(!hasFc()){ $("alltasks").innerHTML=`<tr><td colspan="3">—</td></tr>`; return; }
@@ -595,50 +812,55 @@ details.more summary:hover{color:var(--ink)}
       return `<tr><th scope="row">${n}<span class="range">${def}</span></th><td class="num">${c.p50} <span class="range">${rgT(c)}</span></td><td>${esc(str(c.team,40))}</td></tr>`; }).join("");
   }
 
-  /* ---------- room board ---------- */
+  /* ---------- Bed board: Worry first, then every room in room order ---------- */
+  function bedTile(r){
+    const t=traj(r), [word,shape]=TRAJ[t], who=[r.sex,r.age].filter(Boolean).join(" "), b=document.createElement("button");
+    b.type="button"; b.className="bed t-"+t; b.dataset.room=r.room; b.dataset.level=r.level||"none"; b.dataset.state=t;
+    b.setAttribute("aria-label",`Room ${r.room}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${word}. ${flowWords(r)}`);
+    b.innerHTML=`<span class="bt"><span class="rm">${r.room}</span>${who?`<span class="who">${esc(who)}</span>`:""}<span class="st">${svg(shape)}${word}</span></span>${flow(r)}`;
+    b.onclick=()=>openRoom(r.room); return b; }
+  function renderRail(){
+    const el=$("rail"), rs=RM.rooms; el.hidden=!rs.length; if(!rs.length){ el.innerHTML=""; return; }
+    const G=[["worse", rs.filter(r=>traj(r)==="worse").sort((a,b)=>anyNew(b)-anyNew(a))],
+             ["hold", rs.filter(r=>traj(r)==="hold").sort((a,b)=>onList(b).length-onList(a).length || a.p.icu_departure-b.p.icu_departure)]].filter(g=>g[1].length);
+    el.innerHTML=`<h2 id="rail-h">Worry first</h2>`+(G.length ? `<div class="rgs">${G.map(([t,l])=>`<div class="grp" style="--n:${l.length}"><h3>${svg(TRAJ[t][1])}${TRAJ[t][0]} <span class="n">${l.length}</span></h3><div class="rset" data-t="${t}"></div></div>`).join("")}</div>` : `<p class="none">No room is worsening or not improving.</p>`);
+    for(const [t,l] of G){ const set=el.querySelector(`.rset[data-t="${t}"]`); for(const r of l) set.appendChild(bedTile(r)); }
+  }
   function renderGrid(){
-    const g=$("grid"); g.innerHTML="";
-    const N=RM.rooms.length; $("board-h").firstChild.nodeValue = N ? `All ${N} rooms · next 24 hours ` : "Rooms · next 24 hours ";
-    $("back").textContent = N ? `← All ${N} rooms` : "← All rooms";
+    const g=$("grid"), N=RM.rooms.length; g.innerHTML="";
+    $("board-h").textContent = N ? `All ${N} rooms` : "Rooms";
+    paintView(); renderRail(); renderWatch();
     if(!N){ g.innerHTML=`<p class="note">${offline&&!FC?"Can't reach the board server — retrying.":"No rooms yet. They appear when the first forecast finishes."}</p>`; return; }
-    for(const r of RM.rooms){
-      const lv=r.level||"low", b=document.createElement("button"); b.type="button"; b.className="mag lv-"+lv+(lv==="high"?" high":""); b.dataset.room=r.room; b.dataset.level=r.level||"none";
-      const [bg,fg]=tile(lv);
-      b.style.background=bg; b.style.color=fg;
-      const tg=[["imv","V","IMV"],["vasopressor","P","vasopressor"],["crrt","C","CRRT"]].filter(x=>r.on_now[x[0]]), ols=r.on_life_support;
-      b.dataset.state=ols?"on-life-support":(r.level||"none"); if(ols) b.classList.add("ols");
-      const wd=lvWord(r.level), who=[r.sex,r.age].filter(Boolean).join(" ");
-      b.setAttribute("aria-label",`Room ${r.room}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${ols?`On life support (${wd} for more)`:wd}.${tg.length?` On ${tg.map(x=>x[2]).join(", ")}.`:""}${r.out?" Likely to leave the ICU.":""}`);
-      b.innerHTML=`<span class="rm">${r.room}${who?`<span class="who">${esc(who)}</span>`:""}</span><span class="lw">${ols?"On life support":wd}</span><span class="tags" aria-hidden="true">${tg.map(x=>`<span class="tag">${x[1]}</span>`).join("")}${r.out?`<span class="tag out">OUT</span>`:""}</span>`;
-      b.onclick=()=>openRoom(r.room); g.appendChild(b); }
+    for(const r of RM.rooms) g.appendChild(bedTile(r));
   }
 
   /* ---------- room page (#room=N) ---------- */
   const boardview=$("boardview"), roomview=$("roomview");
   const openRoom = n => { if(R(n)) location.hash="room="+n; };
-  function rrow(label, v, on, extra=""){
-    if (on) return `<li><span>${label}${extra}</span><span class="lw2 on">On now</span><span class="dots" aria-hidden="true"></span><span class="fq">on now</span></li>`;
-    if (v==null) return `<li><span>${label}${extra}</span><span class="lw2">No estimate</span><span class="dots" aria-hidden="true"></span><span class="fq"></span></li>`;
+  function rrow(label, v, on, icon=""){
+    const nm=`<span class="nm">${icon}${label}</span>`;
+    if (on) return `<li>${nm}<span class="lw2 on">On now</span><span class="dots" aria-hidden="true"></span><span class="fq">on now</span></li>`;
+    if (v==null) return `<li>${nm}<span class="lw2">No estimate</span><span class="dots" aria-hidden="true"></span><span class="fq"></span></li>`;
     const n=Math.round(v*10);
-    return `<li><span>${label}${extra}</span><span class="lw2">${wordN(n)}</span><span class="dots" role="img" aria-label="${inTen(v)}">${Array.from({length:10},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("")}</span><span class="fq">${inTen(v)}</span></li>`;
+    return `<li>${nm}<span class="lw2 l-${wordN(n).toLowerCase()}">${wordN(n)}</span><span class="dots" role="img" aria-label="${inTen(v)}">${Array.from({length:10},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("")}</span><span class="fq">${inTen(v)}</span></li>`;
   }
   const STOPN = {imv:"Ventilator",vasopressor:"Vasopressor",crrt:"CRRT"};
   const stoppedNote = r => SUP.filter(k=>r.stopped_before_cut[k]).map(k=>`<p class="stopped">${STOPN[k]}: off (stopped before 07:00)</p>`).join("");
   function renderRoom(){
     const n=room, r=R(n); if(!r){ route(false); return; }
-    const lv=r.level||"low", lvl=lvWord(r.level), [bg,fg]=tile(lv), ols=r.on_life_support;
-    $("rv-h").innerHTML=`Room ${n}: next 24 hours <span class="lvtag lv-${lv}${ols?" ols":""}" style="background:${bg};color:${fg}">${ols?"On life support":lvl}</span>`;
+    const t=traj(r), [tw,ts]=TRAJ[t];
+    $("rv-h").textContent=`Room ${n}`;
+    $("rv-st").innerHTML=`<span class="st stchip t-${t}">${svg(ts)}${tw}</span>`;
+    $("rv-flow").innerHTML=`${flow(r,true)}<span class="sr">${flowWords(r)}</span>`;
     const who=[r.sex==="F"?"female":r.sex==="M"?"male":"",r.age?`age ${r.age}`:""].filter(Boolean).join(", ");
-    $("rv-sub").textContent=`Stage ward${who?` · ${who}`:""}${r.level?` · ${lvl} chance of any new life support in the next 24 hours`:""}`;
-    $("rv-stamp").innerHTML=`updated ${hm(r.updated_at)} · next 24 h to ${hm(r.window.end)}${dayWord(r.window.end, r.window.start||r.cut_time)} <span class="upd" id="upd-room" ${run?"":"hidden"}>updating</span>`;
-    $("rv-unit").innerHTML=hasFc()?`Unit: ${unitLine()}`:"";
+    const w0=r.window.start||r.cut_time;
+    $("rv-sub").innerHTML=`${who?esc(who)+" · ":""}${hm(w0)} to ${hm(r.window.end)}${dayWord(r.window.end, w0)} · updated ${hm(r.updated_at)} <span class="upd" id="upd-room" ${run?"":"hidden"}>updating</span>`;
     const ids=RM.rooms.map(x=>x.room), i=ids.indexOf(n), pa=$("rv-prev"), na=$("rv-next");
     if(ids.length<2){ pa.hidden=na.hidden=true; } else { const pv=ids[(i-1+ids.length)%ids.length], nx=ids[(i+1)%ids.length]; pa.hidden=na.hidden=false;
-      pa.href=`#room=${pv}`; pa.textContent=`← Room ${pv}`; na.href=`#room=${nx}`; na.textContent=`Room ${nx} →`; }
+      pa.href=`#room=${pv}`; pa.innerHTML=svg("arrow","","flip")+`Room ${pv}`; na.href=`#room=${nx}`; na.innerHTML=`Room ${nx}`+svg("arrow"); }
     const p=r.p, on=r.on_now;
-    $("rv-risks").innerHTML = `<h3>New life support</h3><ul class="risks">${rrow("IMV",p.imv,on.imv)}${rrow("Vasopressor",p.vasopressor,on.vasopressor)}${rrow("CRRT",p.crrt,on.crrt)}</ul>${stoppedNote(r)}
-      <h3>Leaving the ICU</h3><ul class="risks">${rrow("ICU discharge",p.icu_departure,false,r.out?` <span class="tag out">OUT</span>`:"")}</ul>
-      <h3>Death</h3><ul class="risks">${rrow("Death",p.death,false)}</ul>`;
+    $("rv-risks").innerHTML = `<h3>New life support</h3><ul class="risks">${SUP.map(k=>rrow(SUPN[k],p[k],on[k],ic(k,on[k]))).join("")}</ul>${stoppedNote(r)}
+      <ul class="risks solo">${rrow("Leaving the ICU",p.icu_departure,false,ic("leave",r.out))}${rrow("Death",p.death,false)}</ul>`;
     const ph=r.past_12h, items=pastOpen?ph:ph.slice(0,5);
     $("past").innerHTML=items.map(x=>`<li>${x.h!=null?`<time datetime="PT${x.h}H">${x.h} h</time>`:`<time>–</time>`}<span>${esc(x.text)}</span></li>`).join("");
     const pm=$("pastmore"); pm.textContent=pastOpen?"Show fewer":`Show ${ph.length-5} more`; pm.hidden=ph.length<=5;
@@ -657,11 +879,12 @@ details.more summary:hover{color:var(--ink)}
     roomview.hidden=true; boardview.hidden=false;
     const note=$("roomnote"); if(missing!=null){ note.hidden=false; note.textContent=`Room ${missing} is not in this forecast.`; } else note.hidden=true;
     paintScope(); renderGrid(); renderChips();
-    if(was!==null){ const t=document.querySelector(`#grid .mag[data-room="${was}"]`); if(t){ t.focus({preventScroll:true}); t.scrollIntoView({block:"center"}); } }
+    if(was!==null){ const t=document.querySelector(`${view==="strain"?"#watch":"#grid"} [data-room="${was}"]`); if(t){ t.focus({preventScroll:true}); t.scrollIntoView({block:"center"}); } }
   }
   function route(fromHash){
-    if(fromHash && window.innerWidth<560 && !chatpanel.hidden){ chatpanel.hidden=true; chatbtn.setAttribute("aria-expanded","false"); }
+    if(fromHash && window.innerWidth<560 && !chatpanel.hidden){ chatpanel.hidden=true; chatbtn.setAttribute("aria-expanded","false"); document.documentElement.dataset.chat="closed"; }
     let h=location.hash; try{ h=decodeURIComponent(h); }catch(e){ /* malformed hash: treat as the board */ }
+    const vm=h.match(/view=(beds|strain)/); if(vm) setView(vm[1],false);
     const m=h.match(/room=(\d+)/), n=m?+m[1]:null;
     if(n!==null && R(n)) showRoom(n);
     else showBoard(n!==null && (RM.rooms.length||FC) ? n : null);
@@ -676,7 +899,7 @@ details.more summary:hover{color:var(--ink)}
   const demoOn = () => LIVE ? !!DEMO_LABEL : FC && FC.demo_clock_hours>0;
   function runLine(scope,n){ if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
     const t = scope==="room"&&R(n) ? R(n).updated_at : FC.made_at;
-    return `Updated ${hm(t)} (${scope==="room"?"room "+n:"unit"})${demoOn()?` · ${LIVE?esc(DEMO_LABEL):"Demo clock: recorded patients, time advanced "+FC.demo_clock_hours+" h"}`:""}`; }
+    return `Updated ${hm(t)}${scope==="room"?" (room "+n+")":""}${demoOn()?` · ${LIVE?esc(DEMO_LABEL):"Demo clock: recorded patients, time advanced "+FC.demo_clock_hours+" h"}`:""}`; }
   function say2(scope, text, refusal){ if(refusal) hold[scope]=true; put(scope==="room"?"rv-run":"runstate", esc(text)); }
   function idleLine(){ if(run) return; if(offline){ hold.unit=false; put("runstate", OFFLINE_LINE+(FC?". Showing the last forecast.":"")); return; } if(hold.unit) return; put("runstate", `<b>${runLine("unit")}</b>`); }
   function refreshAll(){
@@ -766,10 +989,10 @@ details.more summary:hover{color:var(--ink)}
 
   /* ---------- chat ---------- */
   const log=$("log"), chatbtn=$("chatbtn"), chatpanel=$("chatpanel");
-  const CHIPS = {"ICU nurse":["Summarise the shift","What will we be short of tonight?","Which rooms should we check first?"],
-    "ICU physician":["Summarise the shift","Which rooms should we check first?","How many CRRT starts?"],
-    "pharmacy":["How many vasopressor starts?","Summarise the shift","Which rooms should we check first?"],
-    "respiratory therapy":["How many ventilator starts?","Summarise the shift","Which rooms should we check first?"],
+  const CHIPS = {"ICU nurse":["Summarise the shift","What will we be short of tonight?","Which rooms should we worry about first?"],
+    "ICU physician":["Summarise the shift","Which rooms should we worry about first?","How many CRRT starts?"],
+    "pharmacy":["How many vasopressor starts?","Summarise the shift","Which rooms should we worry about first?"],
+    "respiratory therapy":["How many ventilator starts?","Summarise the shift","Which rooms should we worry about first?"],
     "bed manager":["How many patients leave the ICU?","Summarise the shift","What will we be short of tonight?"]};
   function renderChips(){
     const qs=(room?[`Room ${room}: what is most likely in the next 24 hours?`]:[]).concat(CHIPS[role()]).slice(0,3);
@@ -779,9 +1002,11 @@ details.more summary:hover{color:var(--ink)}
   function say(who,text,cls){ const d=document.createElement("div"); d.className="msg "+cls; if(who){ const s=document.createElement("span"); s.className="who"; s.textContent=who; d.appendChild(s); } d.append(document.createTextNode(text)); log.appendChild(d); log.scrollTop=log.scrollHeight; }
   function noteChange(){ if(LIVE || chatpanel.hidden || !log.querySelector(".msg:not(.n)")) return; const o=log.querySelector(".msg.n"); if(o) o.remove(); say("",`Forecast updated at ${hm(FC.made_at)}. Answers below use it.`,"n"); }
   const cnt = q => `median ${q.p50} in the next 24 hours (range ${q.p10} to ${q.p90})`;
+  const worryRooms = () => { const rs=RM.rooms; return [rs.filter(r=>traj(r)==="worse").sort((a,b)=>anyNew(b)-anyNew(a)).map(r=>r.room), rs.filter(r=>traj(r)==="hold").map(r=>r.room)]; };
+  const worryLine = () => { const [w,h]=worryRooms(); return w.length||h.length ? `Worry first: ${[w.length?`worsening, room${w.length>1?"s":""} ${w.join(", ")}`:"", h.length?`not improving, room${h.length>1?"s":""} ${h.join(", ")}`:""].filter(Boolean).join("; ")}.` : "No room is worsening or not improving."; };
   function summary(){ if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
-    const ls=FC.life_support, y=Y(), d=FC.resources.icu_departure, cf=cfRooms()||[];
-    return `${ls.now_patients} patients are on life support now and ${ls.expected_new_patients.p50} more are expected (${ls.expected_new_patients.p10} to ${ls.expected_new_patients.p90}). IMV +${ls.expected_by.imv.p50}, vasopressor +${ls.expected_by.vasopressor.p50}, CRRT +${ls.expected_by.crrt.p50}. ${d.p50} expected to leave the ICU (${d.p10} to ${d.p90}). ${y?`${y.words} ${YNAME(y)}. `:""}${cf.length?`Check first: rooms ${cf.join(", ")}.`:"No room is High."}`; }
+    const ls=FC.life_support, y=Y(), d=FC.resources.icu_departure;
+    return `${ls.now_patients} patients are on life support now and ${ls.expected_new_patients.p50} more are expected (${ls.expected_new_patients.p10} to ${ls.expected_new_patients.p90}). IMV +${ls.expected_by.imv.p50}, vasopressor +${ls.expected_by.vasopressor.p50}, CRRT +${ls.expected_by.crrt.p50}. ${d.p50} expected to leave the ICU (${d.p10} to ${d.p90}). ${y?`${y.words} ${YNAME(y)}. `:""}${worryLine()}`; }
   function answer(q){
     const t=q.toLowerCase();
     if(/(should (we|i)|recommend|dose|dosing|treat|prescrib|order (a|an|the)|wean)/.test(t)) return "That's outside this forecast. I can tell you what the unit is likely to need in the next 24 hours.";
@@ -800,22 +1025,22 @@ details.more summary:hover{color:var(--ink)}
       if(!y) return `Now plus new life support: ${cnt(load)}.`;
       return y.kind==="capacity" ? `${y.words} vs tonight's staffing: now plus new life support ${cnt(load)}; staffing covers ${y.ls}${y.vf!=null?`; ${y.vf} ventilators free, IMV starts ${cnt(ls.expected_by.imv)}`:""}.`
         : `${y.words} vs a typical day: now plus new life support ${cnt(load)}${y.typ!=null?`; a typical day is about ${y.typ}`:""}. No capacity is set for tonight.`; }
-    if(/(check first|highest|which rooms|rooms)/.test(t)){ const cf=cfRooms()||[]; return cf.length?`Check first: rooms ${cf.join(", ")} (High, ordered by the chance of any new life support).`:"No room is High right now."; }
+    if(/(check first|worry|highest|which rooms|rooms)/.test(t))return worryLine();
     if(/vent|imv/.test(t)) return vq(FC.resources.ventilator)?`IMV starts: ${cnt(FC.resources.ventilator)}.`:"No estimate for IMV starts yet.";
     if(/(pressor|norepi|pharm)/.test(t)) return vq(FC.resources.vasopressor)?`Vasopressor starts: ${cnt(FC.resources.vasopressor)}.`:"No estimate for vasopressor starts yet.";
     if(/crrt|dialys/.test(t)) return vq(FC.resources.crrt)?`CRRT starts: ${cnt(FC.resources.crrt)}.`:"No estimate for CRRT starts yet.";
     if(/death|die/.test(t)) return `Deaths: ${cnt(FC.resources.death)}.`;
     if(/(leave|bed|out|transfer|discharg)/.test(t)) return `ICU discharges (to ward or step-down): ${cnt(FC.resources.icu_departure)}.`;
-    return "I can answer from this forecast: life support, IMV, vasopressor and CRRT starts, discharges, deaths, which rooms to check first, or one stage-ward room. Say \"update room 12\" or \"update the unit\" to start an update.";
+    return "I can answer from this forecast: life support, IMV, vasopressor and CRRT starts, discharges, deaths, which rooms to worry about first, or one room. Say \"update room 12\" or \"update the unit\" to start an update.";
   }
   async function ask(q){ openChat(false); say(roleLabel(role()),q,"q");
     if(LIVE){ let a; try{ const body={question:q, role:role(), seen_made_at:seenMadeAt}; if(room) body.room=room; const rs=await postJSON("/api/ask", body, 60000);
         a=str(rs.answer,4000)||str(rs.reason,200)||"Lookahead is not answering yet. The rest of the board works."; if(typeof rs.made_at==="string") seenMadeAt=rs.made_at; }catch(e){ a="Lookahead is not answering yet. The rest of the board works."; }
       say("Lookahead",a,"a"); schedulePoll(FAST?300:3000); return; }
     const a=await Promise.resolve(answer(q)); say("Lookahead",a,"a"); }
-  function openChat(focusInput=true){ if(chatpanel.hidden){ chatpanel.hidden=false; chatbtn.setAttribute("aria-expanded","true"); } if(focusInput) $("q").focus(); }
-  function closeChat(){ chatpanel.hidden=true; chatbtn.setAttribute("aria-expanded","false"); chatbtn.focus(); }
-  chatbtn.onclick=()=>openChat();
+  function openChat(focusInput=true){ if(chatpanel.hidden){ chatpanel.hidden=false; chatbtn.setAttribute("aria-expanded","true"); document.documentElement.dataset.chat="open"; } if(focusInput) $("q").focus(); }
+  function closeChat(){ chatpanel.hidden=true; chatbtn.setAttribute("aria-expanded","false"); document.documentElement.dataset.chat="closed"; chatbtn.focus(); }
+  chatbtn.onclick=()=>{ if(chatpanel.hidden) openChat(); else closeChat(); };
   $("chatclose").onclick=closeChat;
   chatpanel.addEventListener("keydown",e=>{ if(e.key==="Escape") closeChat(); });
   $("ask").onsubmit=e=>{ e.preventDefault(); const q=$("q"), v=q.value.trim(); if(!v) return; ask(v); q.value=""; };
@@ -823,12 +1048,12 @@ details.more summary:hover{color:var(--ink)}
 
   /* ---------- theme ---------- */
   let theme="day"; const tb=$("theme");
-  tb.onclick=()=>{ theme=theme==="day"?"night":"day"; document.documentElement.dataset.board=theme; tb.setAttribute("aria-pressed",String(theme==="night")); tb.textContent=theme==="day"?"Night board":"Day board"; renderGrid(); if(room!==null) renderRoom(); };
+  tb.onclick=()=>{ theme=theme==="day"?"night":"day"; document.documentElement.dataset.board=theme; tb.setAttribute("aria-pressed",String(theme==="night")); $("theme-l").textContent=theme==="day"?"Night board":"Day board"; };
 
   /* ---------- start ---------- */
   function start(){
-    paintWard(); renderStrain(); renderFooter(); renderGrid(); renderChips(); idleLine();
-    // deep links for review captures: #room=7, #night, #role=pharmacy, #fast (quick runs), #morning (the scheduled run in progress), #synthetic (never read the API)
+    paintLegend(); paintWard(); renderStrain(); renderFooter(); renderGrid(); renderChips(); idleLine();
+    // deep links for review captures: #room=7, #view=strain, #night, #role=pharmacy, #fast (quick runs), #morning (the scheduled run in progress), #synthetic (never read the API)
     let h=location.hash; try{ h=decodeURIComponent(h); }catch(e){ /* malformed hash: use it raw */ }
     if(flag("night")) tb.click();
     const rm=h.match(/role=([a-z ]+)/i); if(rm && hasOwn(ROLE_LABEL, rm[1])){ $("role").value=rm[1]; if(hasFc()) renderStrain(); renderChips(); }
