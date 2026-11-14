@@ -364,6 +364,19 @@ class ChatAgent:
                 out["note"] = "not set"
             if isinstance(fc, dict) and fc.get("machines"):
                 out["machines"] = fc["machines"]  # SHORT / AT LIMIT / ON TRACK
+                for s, e in list(out["machines"].items()):
+                    # the saved words used the totals of the last run: redo them
+                    # against the totals as they are now (flagged is the forecast's)
+                    if not isinstance(e, dict) or s not in capacity_mod.MACHINES:
+                        continue
+                    free = out.get(f"{'vents' if s == 'imv' else s}_free")
+                    flagged = e.get("flagged")
+                    e = {**e, "total": out.get(capacity_mod.MACHINES[s]), "free": free}
+                    ok = free is not None and flagged is not None
+                    w, lv = capacity_mod.words(flagged, free) if ok else (None, None)
+                    short = max(0, flagged - free) if ok else None
+                    e.update(words=w, level=lv, short_by=short)
+                    out["machines"][s] = e
             return out
         if name == "get_staffing":
             fc = _read_json(self.forecast_path)

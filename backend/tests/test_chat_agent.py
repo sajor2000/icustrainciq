@@ -350,7 +350,10 @@ def test_life_support_and_capacity_tools(env, tmp_path):
     # machine totals: free = total - on now, and the forecast's words come along
     fc = json.loads((tmp_path / "forecast.json").read_text())
     fc["life_support"]["now_by"] = {"imv": 5, "vasopressor": 1, "crrt": 2}
-    fc["machines"] = {"imv": {"words": "SHORT", "short_by": 1}, "crrt": None}
+    fc["machines"] = {
+        "imv": {"flagged": 4, "words": "SHORT", "short_by": 1},
+        "crrt": None,
+    }
     (tmp_path / "forecast.json").write_text(json.dumps(fc))
     (tmp_path / "capacity.json").write_text(
         json.dumps({"vents_total": 8, "crrt_total": 2})
@@ -360,6 +363,46 @@ def test_life_support_and_capacity_tools(env, tmp_path):
     got = tool_msgs(f)[0]["content"]
     assert '"vents_total":8' in got and '"vents_free":3' in got
     assert '"crrt_total":2' in got and '"crrt_free":0' in got and "SHORT" in got
+
+
+def test_get_capacity_status_follows_the_current_totals(env, tmp_path):
+    fc = json.loads((tmp_path / "forecast.json").read_text())
+    fc["life_support"]["now_by"] = {"imv": 2, "vasopressor": 1, "crrt": 0}
+    # the saved forecast was made against 2 free ventilators: 3 flagged, so SHORT
+    fc["machines"] = {
+        "imv": {
+            "total": 4,
+            "in_use": 2,
+            "free": 2,
+            "flagged": 3,
+            "short_by": 1,
+            "words": "SHORT",
+            "level": "red",
+        },
+        "crrt": None,
+    }
+    (tmp_path / "forecast.json").write_text(json.dumps(fc))
+    # the team then set 8 ventilators: 6 free, so the same 3 flagged are ON TRACK
+    (tmp_path / "capacity.json").write_text(json.dumps({"vents_total": 8}))
+    f, a = env([tc("get_capacity"), text("ok")])
+    a.ask("are we short of ventilators?", "respiratory therapy")
+    got = json.loads(tool_msgs(f)[0]["content"])["tool_result"]
+    assert got["vents_free"] == 6
+    m = got["machines"]["imv"]
+    assert (m["free"], m["short_by"], m["words"], m["level"]) == (
+        6,
+        0,
+        "ON TRACK",
+        "ok",
+    )
+    assert m["total"] == 8 and m["flagged"] == 3
+    # no forecast count of flagged beds: the status stays null, never guessed
+    fc["machines"]["imv"]["flagged"] = None
+    (tmp_path / "forecast.json").write_text(json.dumps(fc))
+    f, a = env([tc("get_capacity"), text("ok")])
+    a.ask("are we short of ventilators?", "respiratory therapy")
+    m = json.loads(tool_msgs(f)[0]["content"])["tool_result"]["machines"]["imv"]
+    assert m["words"] is None and m["level"] is None and m["free"] == 6
 
 
 def test_staffing_tool(env, tmp_path):
@@ -375,6 +418,7 @@ def test_staffing_tool(env, tmp_path):
     (tmp_path / "forecast.json").write_text(json.dumps(fc))
     f, a = env([tc("get_staffing"), text("ok")])
     out = a.ask("How many nurses do we need tonight?", "ICU nurse")
+    print(tool_msgs(f)[0]["content"])
     got = json.loads(tool_msgs(f)[0]["content"])["tool_result"]
     assert got["now"]["nurses"] == 14 and got["next_24h"]["nurses"]["p90"] == 16
     assert got["unavailable"] == ["rt"] and out["trace"] == ["get_staffing"]
