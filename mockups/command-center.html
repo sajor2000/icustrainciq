@@ -140,8 +140,9 @@ details.allrooms[open] summary{margin-bottom:8px}
 .cl .stats>div{display:flex;flex-direction:column;min-width:0}
 .cl .stats .sl{font-size:12px;color:var(--ink-2)}
 .cl .stats b{font-size:24px;font-weight:800;line-height:1.15}
+.cl .stats b.free{color:var(--ok)}
 .cl .ub{margin-top:6px}
-.cl .ub svg{display:block;width:100%;height:20px}
+.cl .ub svg{display:block;width:100%;height:auto}
 .cl .expl{margin:4px 0 0;color:var(--ink);font-weight:600}
 .cl .bedline b{color:var(--ink)}
 .cl .why{margin:0 0 10px;color:var(--ink)}
@@ -150,6 +151,7 @@ details.allrooms[open] summary{margin-bottom:8px}
 .cl.empty .set{display:none}
 .cl[hidden]{display:none}
 .cl h3 .status{display:inline-block;margin-left:6px;vertical-align:1px}
+.cl h3 .own{margin-left:8px;font-weight:600;color:var(--ink-2)}
 .cl .set{display:grid;grid-template-columns:repeat(auto-fill,52px);justify-content:start;gap:12px 8px}
 /* bed marker: a patient figure (head and shoulders) that fills from the bottom with the chance of the event; bed number and percent beneath */
 .pp{width:52px;display:flex;flex-direction:column;align-items:center;gap:1px;background:transparent;border:0;padding:0;cursor:pointer;color:var(--ink)}
@@ -179,6 +181,7 @@ details.allrooms[open] summary{margin-bottom:8px}
    ripples that leave the card one after the other. SHORT ripples faster and tints the card. The status word stays in the heading. */
 .cl.hot{position:relative;border:2px solid var(--short);padding:15px 17px;background:color-mix(in srgb,var(--short) 6%,var(--surface));box-shadow:0 0 0 5px color-mix(in srgb,var(--short) 22%,transparent),var(--card,0 0 0 transparent)}
 .cl.hot h3 .status{background:var(--short);border-color:var(--short);color:var(--surface)}
+.cl h3 .status[hidden],.cl .expl[hidden]{display:none}
 .cl.hot .exp b{color:var(--short)}
 .cl.hot::before,.cl.hot::after{content:"";position:absolute;inset:-2px;border:4px solid var(--short);border-radius:inherit;opacity:0;pointer-events:none;
   animation:ripple 1.6s cubic-bezier(.2,.6,.3,1) infinite}
@@ -252,9 +255,24 @@ details.allrooms[open] summary{margin-bottom:8px}
 /* Alternative: the shift brief is one line; its heading stays for screen readers */
 [data-view="alt"] .brief :is(h2,.sub){position:absolute;left:-9999px}
 [data-view="alt"] .brief{padding-bottom:0}
-[data-view="alt"] .brief li:first-child{padding:2px 0 10px;font-size:17px}
-[data-view="alt"] .brief .sep{margin:0 6px;color:var(--ink-2);font-weight:400}
-[data-view="alt"] .brief .range{margin-left:8px}
+[data-view="alt"] .main .brief{border-left:0;padding-left:0}
+[data-view="alt"] .left{border-top:0;padding-top:14px}
+/* the brief as a strip: what is short (or the all-clear), then the three beds to review as chips */
+[data-view="alt"] .brief li.strip{display:flex;align-items:center;flex-wrap:wrap;gap:8px 24px;padding:8px 14px;font-size:15px;font-weight:600;background:var(--surface);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--card)}
+.strip .alerts{display:flex;flex-wrap:wrap;gap:6px 16px}
+.strip .al{display:inline-flex;align-items:center;gap:8px}
+.strip .pill{font-size:11px;font-weight:800;letter-spacing:.05em;line-height:1;padding:4px 7px;border-radius:999px;color:var(--surface);background:var(--short)}
+.strip .okdot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.strip .al.warn{color:var(--short);font-weight:700}
+.strip .al svg{width:18px;height:18px;flex:none;fill:var(--short);stroke:var(--short);stroke-width:1.5;stroke-linejoin:round}
+.strip .al svg .ex{fill:none;stroke:var(--surface);stroke-width:2;stroke-linecap:round}
+.strip .rev{display:inline-flex;align-items:center;gap:6px}
+.strip .lab{margin-right:2px;font-size:13px;font-weight:400;color:var(--ink-2)}
+.strip .bedchip{min-width:36px;min-height:30px;margin:0;padding:2px 10px;font-size:14px;font-weight:700;color:var(--ink);background:var(--surface);background-clip:border-box;border:1px solid var(--line);border-radius:999px;cursor:pointer}
+.strip .bedchip{border-color:color-mix(in srgb,var(--short) 55%,var(--line));color:var(--short)}
+.strip .bedchip:hover{background:color-mix(in srgb,var(--short) 8%,var(--surface))}
+.strip .runbadge{margin-left:auto}
+@media (max-width:560px){.strip .bedchip{min-height:44px;min-width:44px}}
 [data-view="alt"] .left{margin-top:0}
 
 /* Alternative: settings is a side panel on the right; the board stays visible beside it so line changes show at once */
@@ -268,9 +286,6 @@ details.allrooms[open] summary{margin-bottom:8px}
 .lrow{display:grid;grid-template-columns:minmax(0,1fr) 32px 58px 32px 52px;align-items:center;gap:6px;padding:6px 0;border-top:1px solid var(--rule)}
 .lrow:first-child{border-top:0}
 .lrow .nm{font-size:14px;font-weight:600}
-.sethrow{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--rule)}
-.sethrow .seth{margin:0;padding:0;border:0}
-.setmenu .reset{min-height:32px;padding:2px 10px;font-size:13px}
 .pctin{position:relative;display:block}
 .pctin input{width:100%;height:32px;font:inherit;font-size:15px;font-weight:800;text-align:right;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:0 20px 0 4px;-moz-appearance:textfield;appearance:textfield}
 .pctin input::-webkit-inner-spin-button,.pctin input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
@@ -286,6 +301,8 @@ details.allrooms[open] summary{margin-bottom:8px}
 .custom[hidden]{display:none}
 .custom input{width:92px;min-height:44px;font:inherit;font-weight:700;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
 .custom input::placeholder{font-weight:400;color:var(--ink-2)}
+.custom .pctin{flex:none;width:92px}
+.custom .pctin input{width:100%;height:44px;min-height:0;font-size:15px;font-weight:800;text-align:right;border-radius:8px;padding:0 22px 0 6px}
 @media (max-width:560px){.setmenu .lrow .step{width:44px;height:44px}.lrow{grid-template-columns:minmax(0,1fr) 44px 58px 44px 48px}.pctin input{height:44px}}
 
 /* Alternative: vitals in the bed detail, as small multiples (one chart per vital) */
@@ -405,13 +422,13 @@ details.more summary:hover{color:var(--ink)}
         <span class="label">Board appearance</span>
         <button type="button" data-t="day" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>Light</button>
         <button type="button" data-t="night" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.6 6.6 0 0 0 10.5 10.5Z"/></svg>Dark</button>
-        <div class="sethrow"><h3 class="seth">Cluster lines</h3><button type="button" class="reset" id="linesreset">Reset to 25%</button></div>
-        <p class="range seti">A bed joins a cluster when its chance of that event is at or above the cluster's line. Remembered on this device.</p>
+        <h3 class="seth">Cluster lines</h3>
+        <p class="range seti">A bed joins a cluster when its chance of that event is at or above the cluster's line. Predicted new* on the card is the number of those beds. The TIGHT / SHORT warning compares Predicted new* with what is free, so it moves with the line too. Remembered on this device.</p>
         <div id="linesbox"></div>
         <span class="label" id="thr-l">Set every line to</span>
         <div class="views" id="thr" role="group" aria-labelledby="thr-l"><button type="button" data-v="50">50%</button><button type="button" data-v="25">25%</button><button type="button" data-v="10">10%</button><button type="button" data-v="custom" aria-controls="customrow" aria-expanded="false">Custom</button></div>
         <div class="custom" id="customrow" hidden><label for="customv" class="sr">Custom line for every cluster, percent</label>
-          <input id="customv" type="number" min="1" max="99" step="1" inputmode="numeric" placeholder="1 to 99"><span aria-hidden="true">%</span><button type="button" id="customgo">Apply to all</button></div>
+          <span class="pctin"><input id="customv" type="number" min="1" max="99" step="1" inputmode="numeric" placeholder="1 to 99"><i aria-hidden="true">%</i></span><button type="button" id="customgo">Apply to all</button></div>
       </div>
     </div>
     <div class="runbox">
@@ -450,13 +467,13 @@ details.more summary:hover{color:var(--ink)}
       <section aria-labelledby="alt-h" id="altview">
         <div class="boardhead">
           <h2 id="alt-h">Patient clusters · chance of a new event in the next 24 h</h2>
-          <p class="legend">Expected new = unit median of new starts · bar = its 80% range · ink line = what is free · figure fills with a bed's chance</p>
+          
         </div>
         <div class="thr">
-          <button class="toggle resttoggle" id="resttoggle" type="button" aria-pressed="false">Hide no-risk beds</button>
+          <button class="toggle resttoggle" id="resttoggle" type="button" aria-pressed="false">Hide other beds</button>
         </div>
         <div id="clusters"></div>
-        <p class="note">Each group holds the beds whose chance of that new event in the next 24 h is at or above its line; set each cluster's line in Settings (remembered on this device); a bed can sit in more than one group. Already on before 07:00 is not counted as new. The three highest-risk beds pulse red, and a whole group pulses red when the unit forecast for it is TIGHT or SHORT against what is free (faster when SHORT). Leaving the ICU is not a risk, so those figures fill grey. Beds are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
+        <p class="note">* Predicted counts every bed at or above its line as a start; each is a chance, not a certainty. Each group holds the beds whose chance of that new event in the next 24 h is at or above its line; set each cluster's line in Settings (remembered on this device); a bed can sit in more than one group. Already on before 07:00 is not counted as new. The three highest-risk beds pulse red, and a whole group pulses red when the unit forecast for it is TIGHT or SHORT against what is free (faster when SHORT). Leaving the ICU is not a risk, so those figures fill grey. Beds are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
       </section>
     </div>
 
@@ -542,6 +559,7 @@ details.more summary:hover{color:var(--ink)}
     return {n:i+1, on, p, age: 40+Math.round(rnd()*45)};
   });
   let theme = "day", room = null, pastOpen = false;
+  const runBadge = document.getElementById("runbadge");   // kept by reference: the Alternative view shows it at the right end of the top strip
   // wording: the Board tab says "room", the Alternative tab says "bed" (same display slots, same data)
   const tw = t => document.documentElement.dataset.view==="alt" ? t.replace(/\bRoom/g,"Bed").replace(/\broom/g,"bed") : t;
   const role = () => document.getElementById("role").value;
@@ -588,6 +606,7 @@ details.more summary:hover{color:var(--ink)}
   }
 
   const RANK = {short:0, tight:1, ok:2, none:3};
+  const unitStatus=k=>status(k);
   function status(k){ const c=C[k], free=cap[k]; if(free==null) return ["none","no capacity set"]; if(c.p50>free) return ["short","SHORT"]; if(c.p90>free) return ["tight","TIGHT"]; return ["ok","ON TRACK"]; }
   function bar(c, free){
     const max=Math.max(c.p90, free??0)+1, x=v=>6+(v/max)*288;
@@ -599,6 +618,7 @@ details.more summary:hover{color:var(--ink)}
 
   // shift brief: three lines at most, exceptions first
   function renderBrief(){
+    const status = document.documentElement.dataset.view==="alt" ? altStatus : unitStatus;
     const ex = EV.filter(e=>["short","tight"].includes(status(e.k)[0])).sort((a,b)=>RANK[status(a.k)[0]]-RANK[status(b.k)[0]]);
     // three short lines; full detail stays in the rows and the drawer
     const mr = c => `${c.p50} (${c.p10}\u2013${c.p90})`;
@@ -611,11 +631,13 @@ details.more summary:hover{color:var(--ink)}
     const links=t3.map(r=>`<button class="roomlink" type="button" data-room="${r.n}">${r.n}</button>`).join(", ");
     // Alternative view: one line. The verdict in words (the cluster cards carry the numbers), then the three beds to review.
     if(document.documentElement.dataset.view==="alt") document.getElementById("brief").innerHTML =
-      `<li>${ex.length ? ex.map(e=>{const [cls,w]=status(e.k); return `${e.bl} <span class="w" style="background:var(--short);border-color:var(--short);color:var(--surface)">${w}</span>`;}).join(", ") : "Nothing short where a capacity is set"}
-        <span class="sep">·</span> Review beds ${links} <span class="range">drafted (mock)</span></li>`;
+      `<li class="strip"><span class="alerts">${ex.length ? ex.map(e=>{ const n=live(e.k).filter(r=>r.p[e.k]>=thrBy[e.k]).length-cap[e.k];
+          return `<span class="al warn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 18.5 17h-17Z"/><path class="ex" d="M10 8v4.2M10 14.6v.2"/></svg>${e.bl} ${n>0?`short by ${n}`:"at the limit, none spare"}</span>`; }).join("") : `<span class="al"><span class="okdot" aria-hidden="true"></span>Nothing short where a capacity is set</span>`}</span>
+        <span class="rev"><span class="lab">Highest-risk beds</span>${t3.map(r=>`<button class="roomlink bedchip" type="button" data-room="${r.n}" aria-label="Open bed ${r.n}, one of the three highest-risk beds">${r.n}</button>`).join("")}</span></li>`;
     else document.getElementById("brief").innerHTML =
       `<li>${l1}</li><li>${busy}</li><li>${tw("Review rooms")} ${t3.map(r=>`<button class="roomlink" type="button" data-room="${r.n}">${r.n}</button>`).join(", ")}</li>`;
     document.querySelectorAll(".roomlink").forEach(b=>b.onclick=()=>openRoom(+b.dataset.room));
+    const strip=document.querySelector("#brief .strip"); if(strip) strip.appendChild(runBadge); else document.querySelector(".top .synthetic").after(runBadge);
   }
 
   // unit rows: your rows first, then SHORT and TIGHT; the rest folded (charge nurse sees all six)
@@ -657,46 +679,65 @@ details.more summary:hover{color:var(--ink)}
       <span class="av" style="--p:${Math.round(v*100)}%" aria-hidden="true"><svg class="base" viewBox="0 0 40 42">${FIG}</svg><svg class="fill" viewBox="0 0 40 42">${FIG}</svg></span><span class="rm">${r.n}</span><span class="pc">${label}</span></button>`;
   const live=k=>rooms.filter(r=>!Number.isNaN(r.p[k]));
   const nbeds=n=>n?`${n} ${n===1?"bed":"beds"}`:"no beds";
+  // Alternative view: the warning follows the line. Predicted new* (beds at or above the line) against what is free:
+  // more than free = SHORT, exactly free = TIGHT (none spare), fewer = ON TRACK. No capacity set = no status.
+  function altStatus(k){ const free=cap[k]; if(free==null) return ["none",""]; const n=live(k).filter(r=>r.p[k]>=thrBy[k]).length;
+    return n>free ? ["short","SHORT"] : n===free ? ["tight","TIGHT"] : ["ok","ON TRACK"]; }
+  // capacity bar (ventilator and CRRT cards): solid = in use now (first line, numbered), lighter = with the predicted beds (second line, numbered with *),
+  // red line = total (in use + free) where a capacity is set
+  function usageBar(on,free,pred){ const base=on??0, tot=free!=null?base+free:null, max=Math.max(base+pred,tot??0,1)+1, x=v=>6+(v/max)*288;
+    return `<svg viewBox="0 0 300 42" role="img" aria-label="${base} in use now, ${base+pred} with the predicted beds${tot!=null?`, ${tot} in total`:""}">
+      <line x1="6" x2="294" y1="22" y2="22" stroke="var(--rule)" stroke-width="6" stroke-linecap="round"/>
+      ${base?`<line x1="6" x2="${x(base)}" y1="22" y2="22" stroke="var(--magnet)" stroke-width="10" stroke-linecap="round"/>`:""}
+      ${pred?`<line x1="${x(base)}" x2="${x(base+pred)}" y1="22" y2="22" stroke="var(--magnet)" stroke-opacity=".38" stroke-width="10"/>`:""}
+      <line x1="${x(base)}" x2="${x(base)}" y1="13" y2="31" stroke="var(--ink)" stroke-width="3"/><text x="${x(base)}" y="9" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">${base}</text>
+      ${pred?`<line x1="${x(base+pred)}" x2="${x(base+pred)}" y1="13" y2="31" stroke="var(--ink)" stroke-width="3" stroke-dasharray="3 2"/><text x="${x(base+pred)}" y="9" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">${base+pred}*</text>`:""}
+      ${tot!=null?`<line x1="${x(tot)}" x2="${x(tot)}" y1="14" y2="34" stroke="var(--short)" stroke-width="2"/><text x="${x(tot)}" y="41" text-anchor="middle" font-size="11" fill="var(--ink-2)">${tot} total</text>`:""}</svg>`; }
   // refresh one card for its line: value, count, slider fill, marks, beds
   function updateCard(k){
     const card=document.querySelector(`.cl[data-k="${k}"]`); if(!card) return; const e=EV.find(x=>x.k===k), t=Math.round(thrBy[k]*100), w3=ranked().slice(0,3).map(r=>r.n);
     const rs=live(k).filter(r=>r.p[k]>=thrBy[k]).sort((a,b)=>b.p[k]-a.p[k]);
     card.querySelector(".lv").textContent=`${t}%`; card.querySelector(".lc").textContent=nbeds(rs.length);
+    // "Predicted new*" is the number of beds at or above the line (a flag per bed, not a certainty; the footnote says so).
+    const on = k in rooms[0].on ? rooms.filter(r=>r.on[k]).length : null;
+    card.querySelector(".exp b").textContent=rs.length; const ub=card.querySelector(".ub"); if(ub) ub.innerHTML=usageBar(on,cap[k],rs.length);
+
     const row=document.querySelector(`#linesbox [data-k="${k}"]`);
     if(row){ row.querySelector("input").value=t; row.querySelector(".cnt").textContent=nbeds(rs.length); row.querySelector(".step[data-d='-5']").disabled=t<=LO; row.querySelector(".step[data-d='5']").disabled=t>=HI; }
     // a pulsing card with no bed at its line would look wrong: the warning comes from the unit count (many smaller chances added up),
     // so say that and show the three beds with the highest chance
-    const hot=card.classList.contains("hot"), shown=rs.length||!hot ? rs : live(k).slice().sort((a,b)=>b.p[k]-a.p[k]).slice(0,3), why=card.querySelector(".why");
-    why.hidden=!!rs.length||!hot; if(!why.hidden) why.textContent=`No single bed reaches ${t}%, but the smaller chances across the unit add up to a median of ${C[k].p50} new starts against ${cap[k]} free. Highest chances:`;
+    const [scls,sword]=altStatus(k), hot=scls==="short"||scls==="tight", badge=card.querySelector("h3 .status");
+    card.classList.toggle("hot",hot); card.classList.toggle("short",scls==="short"); card.classList.toggle("tight",scls==="tight");
+    badge.hidden=scls==="none"; badge.className=`status ${scls}`; badge.textContent=sword;
+    const shown=rs.length||!hot ? rs : live(k).slice().sort((a,b)=>b.p[k]-a.p[k]).slice(0,3), why=card.querySelector(".why");
+    why.hidden=!!rs.length||!hot; if(!why.hidden) why.textContent=`No bed reaches ${t}%. Highest chances:`;
     card.querySelector(".set").innerHTML=shown.map(r=>chip(r,e,r.p[k],pct(r.p[k]),w3)).join(""); card.classList.toggle("empty",!shown.length);
   }
   // the last card: beds under every risk line, each with its top risk
   function updateRest(){
     const inRisk=new Set(), w3=ranked().slice(0,3).map(r=>r.n); for(const k of KEYS) if(k!=="out") live(k).forEach(r=>{ if(r.p[k]>=thrBy[k]) inRisk.add(r.n); });
     const rest=rooms.filter(r=>!inRisk.has(r.n)), rt=document.getElementById("resttoggle"), card=document.getElementById("restcard");
-    rt.setAttribute("aria-pressed",String(hideRest)); rt.textContent = hideRest ? `Show no-risk beds (${rest.length})` : "Hide no-risk beds"; rt.hidden=!rest.length;
-    card.hidden = hideRest || !rest.length; card.querySelector(".lc").textContent=`every risk under its line · ${nbeds(rest.length)}`;
+    rt.setAttribute("aria-pressed",String(hideRest)); rt.textContent = hideRest ? `Show other beds (${rest.length})` : "Hide other beds"; rt.hidden=!rest.length;
+    card.hidden = hideRest || !rest.length; card.querySelector(".lc").textContent=`under every line · ${nbeds(rest.length)}`;
     card.querySelector(".set").innerHTML=rest.map(r=>{const [e,v]=top(r); return chip(r,e,v,`${e.short}<br>${pct(v)}`,w3);}).join("");
     const cur=KEYS.map(k=>Math.round(thrBy[k]*100)), same=cur.every(v=>v===cur[0]), preset=same&&[50,25,10].includes(cur[0]);
+    if(document.documentElement.dataset.view==="alt") renderBrief();
     document.querySelectorAll("#thr button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v==="custom" ? !preset : same&&cur[0]===+b.dataset.v)));
   }
   function renderClusters(){
     const mine=OWN[role()]||[], order=KEYS.slice().sort((a,b)=>(mine.includes(a)?0:1)-(mine.includes(b)?0:1)); let html="";
     for(const k of order){ const e=EV.find(x=>x.k===k), c=C[k], st=status(k), hot=["short","tight"].includes(st[0]);
       // a cluster card: the unit line for that event (median, 80% range bar, what is free, status), its line control, then its beds
-      html+=`<section class="cl${hot?` hot ${st[0]}`:""}" data-k="${k}"><h3>${e.row.replace(/ \(.*\)/,"")}${hot?`<span class="status ${st[0]}">${st[1]}</span>`:""}</h3>
-        <p class="sec">Whole unit · next 24 h</p>
+      html+=`<section class="cl" data-k="${k}"><h3>${e.row.replace(/ \(.*\)/,"").replace(/ starts$/,"")}<span class="status" hidden></span>${mine.includes(k)?`<span class="own">your row</span>`:""}</h3>
         <div class="stats">${k in rooms[0].on ? `<div><span class="sl">On now</span><b>${rooms.filter(r=>r.on[k]).length}</b><span class="range">beds</span></div>
-          <div><span class="sl">Free</span><b>${cap[k]!=null?cap[k]:"–"}</b><span class="range">${cap[k]!=null?"placeholder":"not set"}</span></div>`:""}
-          <div class="exp"><span class="sl">Expected new</span><b>${c.p50}</b><span class="range">range ${c.p10} to ${c.p90}</span></div></div>
-        <div class="ub">${bar(c,cap[k])}</div>
-        ${hot?`<p class="range expl">${st[0]==="short"?`The median of ${c.p50} new starts is more than the ${cap[k]} free.`:`New starts could reach ${c.p90}, more than the ${cap[k]} free.`}</p>`:""}
-        <p class="range who">${mine.includes(k)?`<span class="own">your row</span>`:e.team}${cap[k]==null?" · no capacity set":st[0]==="ok"?` · <span class="status ok">${st[1]}</span>`:""}</p>
+          <div><span class="sl">Free</span><b class="${cap[k]!=null?"free":""}">${cap[k]!=null?cap[k]:"–"}</b><span class="range">${cap[k]!=null?"placeholder":"not set"}</span></div>`:""}
+          <div class="exp"><span class="sl">Predicted new*</span><b>${c.p50}</b></div></div>
+        ${k==="vent"||k==="crrt"?`<div class="ub"></div>`:""}
         <p class="sec two">Beds to watch</p>
         <p class="range bedline">Beds at <b class="lv"></b> or more · <span class="lc"></span> <button type="button" class="chg" data-k="${k}" aria-label="Change the line for ${e.name} in settings">Change</button></p>
         <p class="range why" hidden></p>
         <div class="set"></div></section>`; }
-    html+=`<section class="cl rest" id="restcard"><h3>No risk at the line</h3><p class="range bedline lc"></p><div class="set"></div></section>`;
+    html+=`<section class="cl rest" id="restcard"><h3>Other beds</h3><p class="range bedline lc"></p><div class="set"></div></section>`;
     // settings: one row per cluster, in the same order: name, − value +, how many beds that gives
     document.getElementById("linesbox").innerHTML=order.map(k=>{ const e=EV.find(x=>x.k===k); return `<div class="lrow" data-k="${k}"><span class="nm">${e.bl}</span>
       <button type="button" class="step" data-d="-5" aria-label="Lower the line for ${e.name} by 5 points">−</button><span class="pctin"><input type="number" min="1" max="99" step="1" inputmode="numeric" aria-label="Line for ${e.name}, percent"><i aria-hidden="true">%</i></span><button type="button" class="step" data-d="5" aria-label="Raise the line for ${e.name} by 5 points">+</button><span class="cnt range"></span></div>`; }).join("");
@@ -710,7 +751,6 @@ details.more summary:hover{color:var(--ink)}
   document.getElementById("linesbox").addEventListener("change",e=>{ if(e.target.type!=="number") return; const k=e.target.closest(".lrow").dataset.k, v=Math.round(+e.target.value);
     if(e.target.value!==""&&okLine(v)){ thrBy[k]=v/100; saveLines(); } updateCard(k); updateRest(); });
   document.getElementById("linesbox").addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.type==="number"){ e.preventDefault(); e.target.blur(); e.target.focus(); } });
-  document.getElementById("linesreset").onclick=()=>{ document.getElementById("customrow").hidden=true; document.querySelector('#thr [data-v="custom"]').setAttribute("aria-expanded","false"); setLines(()=>.25); };
   // "Set every line to": three presets, or Custom, which opens a box for any whole percent from 1 to 99
   { const row=document.getElementById("customrow"), inp=document.getElementById("customv"), cb=document.querySelector('#thr [data-v="custom"]'), show=o=>{ row.hidden=!o; cb.setAttribute("aria-expanded",String(o)); };
     document.querySelectorAll("#thr button").forEach(b=>b.onclick=()=>{ if(b.dataset.v!=="custom"){ show(false); return setLines(()=>+b.dataset.v/100); }
@@ -820,7 +860,7 @@ details.more summary:hover{color:var(--ink)}
   function say(who,text,cls){ const d=document.createElement("div"); d.className="msg "+cls; d.innerHTML=`<span class="who">${who}</span>`; d.append(document.createTextNode(text)); log.appendChild(d); log.scrollTop=log.scrollHeight; }
   let lastRun=0;
   function rerun(who){ if(Date.now()-lastRun<20*60*1000) return `Forecast not started: the last run was under 20 minutes ago.`;
-    lastRun=Date.now(); const now=new Date(), z=v=>String(v).padStart(2,"0"), rb=document.getElementById("runbadge");
+    lastRun=Date.now(); const now=new Date(), z=v=>String(v).padStart(2,"0"), rb=runBadge;
     rb.textContent=`Running since ${z(now.getHours())}:${z(now.getMinutes())} (mock)`; rb.classList.add("live"); document.getElementById("runstate").classList.add("live");
     const name=`t7-forecast-${z(now.getMonth()+1)}${z(now.getDate())}-${z(now.getHours())}${z(now.getMinutes())}`;
     document.getElementById("runstate").innerHTML=`<b>Running ${name}</b> for ${who} (mock) · the board updates when it finishes · last forecast stays on screen`;
@@ -871,6 +911,7 @@ details.more summary:hover{color:var(--ink)}
   const lm=h.match(/lines=([a-z0-9:,]+)/); if(lm) for(const part of lm[1].split(",")){ const [k,v]=part.split(":"); if(KEYS.includes(k)&&okLine(+v)) thrBy[k]=+v/100; }
   if(tm||lm) renderClusters();
   if(/(^|[#&])settings(&|$)/.test(h)) setMenu(true);
+  if(/(^|[#&])custom(&|$)/.test(h)) document.querySelector('#thr [data-v="custom"]').click();
   if(/(^|[#&])night(&|$)/.test(h)) setTheme("night");
   const rm=h.match(/role=([a-z ]+)/i); if(rm && Object.prototype.hasOwnProperty.call(OWN, rm[1])){ document.getElementById("role").value=rm[1]; renderRows(); renderChips(); renderClusters(); setGearLabel(); }
   const m=h.match(/room=(\d+)/); if(m){ const n=+m[1]; if(n>=1 && n<=rooms.length){ document.getElementById("allrooms").open=true; openRoom(n,{focus:false}); } }
