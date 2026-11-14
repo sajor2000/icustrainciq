@@ -1292,8 +1292,8 @@ details.more summary:hover{color:var(--ink)}
 
   /* ---------- capacity ---------- */
   /* Capacity as machine totals (Dema's model): total ventilators and CRRT machines on the unit; free = total - in use now.
-     The totals live on this device (lookahead-machines). The staffing number is optional and, when given, is POSTed as before
-     with vents_free derived from the ventilator total; the API is unchanged (a CRRT total has no field yet). */
+     The totals live on this device (lookahead-machines). The staffing number is optional and, when given, is POSTed as before;
+     the totals go as sent and free machines are derived by the server (a CRRT total has no field yet). */
   let machines = {imv:null, crrt:null, nurses:null, rt:null};      // the device copy: the fallback for an older server, and the store in #synthetic mode
   try{ const m=JSON.parse(localStorage.getItem("lookahead-machines")||"null"); if(m && typeof m==="object") for(const k of ["imv","crrt","nurses","rt"]) if(Number.isInteger(m[k]) && m[k]>=0 && m[k]<=50) machines[k]=m[k]; }catch(e){ /* no storage */ }
   const saveMachines = () => { try{ localStorage.setItem("lookahead-machines", JSON.stringify(machines)); }catch(e){ /* storage blocked: totals last for this page */ } };
@@ -1315,7 +1315,7 @@ details.more summary:hover{color:var(--ink)}
     machines={imv:vt===""?null:+vt, crrt:ct===""?null:+ct, nurses:ns===""?null:+ns, rt:rs0===""?null:+rs0}; saveMachines();      // the device copy, used when the server has no such field
     const vfN = vt==="" ? null : Math.max(0, +vt-inUse("imv"));
     /* POST /api/capacity: only the fields the user filled in; an empty field is left out, never sent as null */
-    const body={role:role()}; if(ls!=="") body.life_support_patients=+ls; if(vt!==""){ body.vents_total=+vt; body.vents_free=vfN; } if(ct!=="") body.crrt_total=+ct; if(ns!=="") body.nurses_on_shift=+ns; if(rs0!=="") body.rt_on_shift=+rs0;
+    const body={role:role()}; if(ls!=="") body.life_support_patients=+ls; if(vt!=="") body.vents_total=+vt; if(ct!=="") body.crrt_total=+ct; if(ns!=="") body.nurses_on_shift=+ns; if(rs0!=="") body.rt_on_shift=+rs0;
     if(!LIVE && ls===""){ renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device."; return; }
     let rs;
     if(LIVE){ try{ rs=await postJSON("/api/capacity", body); }catch(err){ rs={ok:false,reason:"The board server did not answer. Try again in a moment."}; } }

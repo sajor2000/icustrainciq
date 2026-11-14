@@ -65,7 +65,7 @@ Five predictions only, all for the next 24 h, 07:00 to 07:00: ICU discharge, IMV
 | Action | Request | Response |
 |---|---|---|
 | Update the unit or one room | `POST /api/rerun {"role": "ICU nurse", "scope": "unit"}` or `{"scope": "room", "room": 12}` | `{"started": true, "workflow", "name", "scope", "room", "demo_clock_hours", "demo_clock_label"}` or `{"started": false, "reason": "..."}` (HTTP 200; the reason is shown verbatim, for example "Updated 12 minutes ago. You can update again at 13:17.") |
-| Set tonight's capacity | `POST /api/capacity {"life_support_patients": 0..50, "vents_free": 0..50, "role": "ICU nurse"}` (`vents_free` optional) | `200 {"ok": true, "capacity": {...}}` or `400 {"ok": false, "reason": "..."}` (shown) |
+| Set tonight's capacity | `POST /api/capacity {"life_support_patients": 0..50, "vents_total": 0..50, "role": "ICU nurse"}` (every number optional; `vents_free` is no longer accepted) | `200 {"ok": true, "capacity": {...}}` or `400 {"ok": false, "reason": "..."}` (shown) |
 | Ask the chat | `POST /api/ask {"question", "role", "room"?, "seen_made_at"?}` | `{"answer", "made_at", "trace"?}`; the board sends back the last `made_at` it received, and the server adds "Forecast updated at HH:MM. Answers below use it." when it changed |
 
 Roles accepted: `ICU nurse`, `ICU physician`, `pharmacy`, `respiratory therapy`, `bed manager`. The board never sends or stores names. The chat can start "update room 12" or "update the unit" only when the user asks in those words; chips never start an update.
@@ -164,7 +164,7 @@ The board is read at 07:00 by a tired team at a workstation or a wall screen, of
 | `nurses_on_shift` | nurses on shift (0 to 50) |
 | `rt_on_shift` | respiratory therapists on shift (0 to 50) |
 | `life_support_patients` | life-support patients tonight's staffing covers (optional; drives the unit yardstick) |
-| `vents_free` | sent with `vents_total` for an older server: total minus ventilators in use now |
+| `vents_free` | not sent: free ventilators are total minus in use now, worked out when read, never stored |
 
 The response is `{"ok": true, "capacity": {...}}` (or `{"ok": false, "reason"}`, shown). On load and on every refresh the page reads `GET /api/capacity` (either the object itself or `{"capacity": {...}}`) and the forecast's `yardstick.capacity` block. For each of `vents_total`, `crrt_total`, `nurses_on_shift`, `rt_on_shift`: **when the server returns the key, its value wins** (even `null`); when the key is absent (an older backend) or in `#synthetic` mode the copy kept on the device (`lookahead-machines`) is used. A saved `life_support_patients` from `GET /api/capacity` recomputes the yardstick on load when the forecast does not carry it yet, so a saved shortage survives a reload. The line "Capacity set 07:12 by ICU nurse (charge)" comes from the server's `set_at` (or `updated_at`) and `set_by_role`. An older server that refuses a save without `life_support_patients` leaves the numbers on the device and says so.
 

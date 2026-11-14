@@ -42,7 +42,7 @@ def test_api_takes_totals_alone_and_derives_free(stack):  # noqa: F811
     assert r["capacity"]["vents_free"] == 3 and r["capacity"]["crrt_free"] == 1
     saved = json.loads((tmp / "capacity.json").read_text())
     assert saved["vents_total"] == 8 and saved["crrt_total"] == 2
-    assert saved["vents_free"] is None  # free is derived on read, never stored
+    assert "vents_free" not in saved  # free is derived on read, never stored
     assert saved["life_support_patients"] is None
     got = jcall(base, "/api/capacity")[1]
     assert got["vents_total"] == 8 and got["vents_free"] == 3
@@ -82,6 +82,17 @@ def test_api_saves_and_returns_staffing_alone(stack):  # noqa: F811
         assert jcall(base, "/api/capacity", bad)[0] == 400
 
 
+def test_free_follows_the_forecast_not_a_posted_number(stack):  # noqa: F811
+    base, tmp, fake, page = stack
+    (tmp / "forecast.json").write_text(json.dumps({"made_at": "x", **NOW}))
+    body = {"vents_total": 8, "vents_free": 3, "role": "ICU nurse"}  # 8 total, 5 in use
+    assert jcall(base, "/api/capacity", body)[1]["capacity"]["vents_free"] == 3
+    assert "vents_free" not in json.loads((tmp / "capacity.json").read_text())
+    now = {"life_support": {"now_by": {"imv": 6}}}
+    (tmp / "forecast.json").write_text(json.dumps(now))
+    assert jcall(base, "/api/capacity")[1]["vents_free"] == 2
+
+
 def test_api_keeps_the_old_fields_and_an_old_file_loads(stack):  # noqa: F811
     base, tmp, fake, page = stack
     old = {"life_support_patients": 12, "vents_free": 3, "updated_at": "t"}
@@ -91,7 +102,7 @@ def test_api_keeps_the_old_fields_and_an_old_file_loads(stack):  # noqa: F811
     assert got["vents_total"] is None and got["crrt_total"] is None
     assert got["crrt_free"] is None and got["updated_at"] == "t"
     c, r = jcall(base, "/api/capacity", {**old, "vents_total": 9, "role": "pharmacy"})
-    assert r["capacity"]["vents_free"] == 3  # an entered free number is kept
+    assert "vents_free" not in json.loads((tmp / "capacity.json").read_text())
     (tmp / "capacity.json").write_text("[1, 2")  # corrupt: reads as not set
     got = jcall(base, "/api/capacity")
     assert got[0] == 200 and got[1]["vents_total"] is None
