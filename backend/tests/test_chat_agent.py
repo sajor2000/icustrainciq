@@ -863,3 +863,92 @@ def test_null_forecast_values_and_skipped_rooms_do_not_crash(env, tmp_path):
     assert "ventilator starts: unavailable" in out["answer"]
     assert "No estimate" in out["answer"]
     assert "0 ventilator starts" not in out["answer"]
+
+
+# ---- CodeRabbit PR #16: the run status the chat retrieved is the answer ----
+
+
+def _status(**over):
+    base = {
+        "next_scheduled": "2026-11-15T07:00-06:00",
+        "scheduled": {"cut": "2026-11-14T07:00-06:00", "state": "ok", "ok": True},
+        "running": None,
+        "updating": False,
+        "last": {},
+        "recent": [],
+        "stuck": None,
+    }
+    return {**base, **over}
+
+
+@pytest.mark.parametrize(
+    "status, want, never",
+    [
+        (
+            _status(
+                running={"name": "t7-forecast-unit-1114-0912", "state": "Started"},
+                updating=True,
+            ),
+            ["An update is running now."],
+            ["unknown", "No update"],
+        ),
+        (
+            _status(running={"name": "t7-forecast-unit-1114-0912", "state": "Pending"}),
+            ["An update is waiting to start."],
+            ["running now"],
+        ),
+        (
+            _status(
+                last={
+                    "unit": {"at": "2026-11-14T09:12:30-06:00", "scope": "unit"},
+                    "room": {
+                        "at": "2026-11-14T10:05:00-06:00",
+                        "scope": "room",
+                        "room": 12,
+                    },
+                }
+            ),
+            [
+                "No update is running now.",
+                "Last unit update started at 09:12.",
+                "Last room update (room 12) started at 10:05.",
+                "This morning's scheduled run started.",
+            ],
+            ["unknown"],
+        ),
+        (
+            _status(running={"unknown": True}),
+            ["Whether an update is running now is unknown"],
+            ["No update is running", "An update is running"],
+        ),
+        (
+            _status(
+                scheduled={"state": "failed", "ok": False, "detail": "gpu busy"},
+                stuck={"at": "2026-11-14T08:00:00-06:00", "minutes": 45},
+            ),
+            [
+                "This morning's scheduled run failed.",
+                "The last update was stopped after waiting 45 minutes.",
+            ],
+            [],
+        ),
+        (
+            {"started": False, "reason": "dispatcher unreachable (URLError)"},
+            ["Run status unknown"],
+            ["No update is running", "running now."],
+        ),
+        ({"recent": []}, ["Run status unknown"], ["No update is running"]),
+    ],
+)
+def test_run_status_answer_renders_what_the_dispatcher_returned(
+    env, status, want, never
+):
+    _, agent = env(
+        [tc("list_runs"), text("the model says all is fine")], lambda *a, **k: status
+    )
+    answer = agent.ask("Did the update start?", "ICU nurse")["answer"]
+    for line in want:
+        assert line in answer, answer
+    for line in never:
+        assert line not in answer, answer
+    assert "t7-forecast" not in answer and "all is fine" not in answer

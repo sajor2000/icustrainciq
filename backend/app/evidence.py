@@ -62,7 +62,64 @@ def forecast_answer(forecast: dict) -> str:
     return "\n".join(lines)
 
 
+RUNS_UNKNOWN = "Run status unknown: check the run panel before starting another update."
+
+
+def _clock(value) -> str | None:
+    """HH:MM of a dispatcher timestamp, or None"""
+    m = re.fullmatch(r"\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})(?::\d{2})?\S*", str(value or ""))
+    return m.group(1) if m else None
+
+
+def runs_answer(status: dict) -> str:
+    """The dispatcher's own status in plain words: what runs now, the last update of
+    each scope and this morning's scheduled run. What it could not tell stays unknown;
+    workflow names stay in the run panel."""
+    if not isinstance(status, dict) or "running" not in status:
+        return RUNS_UNKNOWN  # dispatcher unreachable, unavailable or an old shape
+    lines = []
+    running = status["running"]
+    if running is None:
+        lines.append("No update is running now.")
+    elif not isinstance(running, dict) or running.get("unknown"):
+        lines.append(
+            "Whether an update is running now is unknown: the workflow list "
+            "could not be read. Check the run panel before starting another."
+        )
+    elif str(running.get("state", "")).lower() == "pending":
+        lines.append("An update is waiting to start.")
+    else:
+        lines.append("An update is running now.")
+    last = status.get("last")
+    for scope in ("unit", "room"):
+        row = last.get(scope) if isinstance(last, dict) else None
+        at = _clock(row.get("at")) if isinstance(row, dict) else None
+        if not at:
+            continue
+        room = row.get("room")
+        where = f" (room {room})" if scope == "room" and type(room) is int else ""
+        lines.append(f"Last {scope} update{where} started at {at}.")
+    scheduled = status.get("scheduled")
+    state = scheduled.get("state") if isinstance(scheduled, dict) else None
+    words = {
+        "ok": "started",
+        "pending": "has not started yet",
+        "failed": "failed",
+        "missed": "did not run",
+    }
+    if state in words:
+        lines.append(f"This morning's scheduled run {words[state]}.")
+    stuck = status.get("stuck")
+    if isinstance(stuck, dict):
+        minutes = stuck.get("minutes")
+        waited = f" after waiting {minutes} minutes" if type(minutes) is int else ""
+        lines.append(f"The last update was stopped{waited}.")
+    return "\n".join(lines)
+
+
 def tool_answer(name: str, result: dict) -> str:
+    if name == "list_runs":
+        return runs_answer(result)
     if result.get("error"):
         if result.get("counts_only") is True:
             return "Room details are not shown for this ward: counts only."
@@ -224,6 +281,4 @@ def tool_answer(name: str, result: dict) -> str:
         )
     if name == "explain_method":
         return result.get("text") or "Method definition unavailable."
-    if name == "list_runs":
-        return "Run status retrieved. See the run panel for workflow details."
     return "Requested evidence is unavailable."
