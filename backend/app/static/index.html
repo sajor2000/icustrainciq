@@ -5,23 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lookahead · ICU forecast, next 24 hours</title>
 <style>
-/* Ink means now, blue means forecast. Amber is TIGHT / BUSY only, red is SHORT / VERY BUSY only. */
+/* The look follows Dema's Alternative board (mockups/command-center.html): a cool neutral ground, white hairline cards, one blue.
+   Numbers are ink. On Unit strain amber is TIGHT / BUSY / AT LIMIT and red is SHORT / VERY BUSY; a red card is tinted with a still halo and only the beds pulse.
+   On the Bed board a tile's edge is its trajectory: red worsening, amber watch, green leaving. */
 :root{
-  --board:#F3F5F9; --board-2:#E8ECF2; --surface:#FFFFFF; --ink:#111827; --ink-2:#4A5567; --rule:rgba(17,24,39,.10); --line:#7A8597;
-  --blue:#1E5BB8; --focus:#1E5BB8; --sel:rgba(30,91,184,.22); --fig:#DDE2EA;
-  --lv-medium:#D2E2F8; --on-medium:#111827; --lv-high:#1E5BB8; --on-high:#FFFFFF;
-  --ok:#18794E; --amber:#8A4B08; --amber-bg:#FCE8C3; --amber-edge:#C27A14; --red:#B3261E; --on-red:#FFFFFF;
-  --card:0 1px 2px rgba(16,24,40,.06),0 4px 12px rgba(16,24,40,.04);
+  --board:#F6F7F9; --board-2:#EEF0F4; --surface:#FFFFFF; --ink:#111827; --ink-2:#5B6474; --rule:rgba(17,24,39,.10); --line:#CDD3DC;
+  --blue:#2563EB; --focus:#2563EB; --sel:rgba(37,99,235,.22); --fig:#E4E6EA;
+  --d-vent:#0891B2; --d-crrt:#7C3AED; --d-press:#BE185D;
+  --lv-medium:#DBE7FE; --on-medium:#111827; --lv-high:#2563EB; --on-high:#FFFFFF;
+  --ok:#18794E; --amber:#A15C07; --amber-bg:#A15C07; --on-amber:#FFFFFF; --amber-edge:#A15C07; --red:#C0362C; --on-red:#FFFFFF;
+  --card:0 1px 2px rgba(16,24,40,.06);
 }
 [data-board="night"]{
   --board:#0E131B; --board-2:#1C2533; --surface:#151C28; --ink:#E6E9EF; --ink-2:#A3ADBD; --rule:rgba(230,233,239,.13); --line:#667286;
   --blue:#8DBBFF; --focus:#A9CCFF; --sel:rgba(141,187,255,.3); --fig:#2B3445;
+  --d-vent:#1A9DBA; --d-crrt:#9A7CF2; --d-press:#DB5C9B;
   --lv-medium:#1B2E50; --on-medium:#F1F4F9; --lv-high:#8DBBFF; --on-high:#0B1220;
-  --ok:#6CC59B; --amber:#F0B466; --amber-bg:#3B2D12; --amber-edge:#C58A2F; --red:#F28B82; --on-red:#1B0C0A;
+  --ok:#6CC59B; --amber:#F0B466; --amber-bg:#F0B466; --on-amber:#1F1403; --amber-edge:#F0B466; --red:#F28B82; --on-red:#1B0C0A;
   --card:none;
 }
 *{box-sizing:border-box}
-html{color-scheme:light;font-size:100%}
+html{color-scheme:light;font-size:100%;overscroll-behavior-x:none}
 [data-board="night"]{color-scheme:dark}
 @media (min-width:1800px){html{font-size:120%}}
 body{margin:0;background:var(--board);color:var(--ink);
@@ -32,7 +36,7 @@ body{margin:0;background:var(--board);color:var(--ink);
 button,input,select{font:inherit;color:inherit}
 input,select{caret-color:var(--blue);accent-color:var(--blue)}
 h1,h2,h3,p{margin:0}
-.wrap{max-width:92rem;margin:0 auto;padding:1rem 1.5rem 6.5rem}
+.wrap{max-width:92rem;margin:0 auto;padding:1.5rem 1.5rem 6.5rem}
 .sr{position:absolute;left:-9999px}
 .sprite{position:absolute;width:0;height:0;overflow:hidden}
 .label{font-size:.75rem;color:var(--ink-2)}
@@ -43,32 +47,47 @@ h1,h2,h3,p{margin:0}
 .ic{width:1.375rem;height:1.375rem;flex:none;display:block;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 
 /* header */
-.top{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;padding-bottom:.5rem}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;padding-bottom:.875rem;margin-bottom:.5rem;border-bottom:1px solid var(--rule)}
 .unit{margin-right:.5rem}
-.unit h1{font-size:1.375rem;line-height:1.15;letter-spacing:-.01em}
-.unit h1 .what{font-size:1rem;font-weight:600;letter-spacing:0;color:var(--ink-2);margin-left:.375rem;white-space:nowrap}
-.unit .sub{margin-top:.125rem;font-size:.8125rem;color:var(--ink-2);display:flex;flex-wrap:wrap;align-items:center;gap:.125rem .5rem}
-.srctag{font-size:.75rem;font-weight:600;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:0 .5rem;white-space:nowrap}
+.unit h1{font-size:1.75rem;font-weight:800;line-height:1.15;letter-spacing:-.02em}
+.unit h1 .what{font-size:1rem;font-weight:500;letter-spacing:0;color:var(--ink-2);margin-left:.375rem;white-space:nowrap}
+.unit .sub{margin-top:.25rem;font-size:.8125rem;color:var(--ink-2);display:flex;flex-wrap:wrap;align-items:center;gap:.125rem .5rem}
+.srctag{font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);border:1px dashed var(--ink-2);border-radius:.3125rem;padding:.0625rem .5rem;white-space:nowrap}
 .srctag[hidden]{display:none}
 .runstate{font-size:.8125rem;color:var(--ink-2)}
 .runstate b{color:var(--ink);font-weight:600}
 .spacer{flex:1}
-.sline{display:inline-flex;align-items:center;flex-wrap:wrap;gap:.125rem .5rem;min-height:2.75rem;padding:.25rem .875rem;background:var(--surface);border:1px solid var(--rule);border-radius:999px;box-shadow:var(--card);color:var(--ink);text-decoration:none;font-size:.875rem;font-weight:600}
+.sline{display:inline-flex;align-items:center;flex-wrap:wrap;gap:.125rem .5rem;margin-left:auto;color:var(--ink);text-decoration:none;font-size:.875rem;font-weight:600}
 .sline[hidden]{display:none}
-.sline:hover{border-color:var(--line)}
+.sline:hover{text-decoration:underline;text-underline-offset:3px}
 .sline b{font-size:1.125rem;font-weight:800;line-height:1}
 .sline .f,.sline .f b{color:var(--blue)}
 .sline .ic{width:1rem;height:1rem;color:var(--ink-2)}
-.toggle{display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem;background:var(--surface);border:1px solid var(--line);border-radius:.625rem;padding:.375rem .75rem;cursor:pointer;font-weight:600;color:var(--ink)}
+.toggle{display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem;background:var(--surface);border:1px solid var(--line);border-radius:.5rem;padding:.375rem .875rem;cursor:pointer;font-weight:600;color:var(--ink)}
 .toggle:hover{background:var(--board-2)}
 .toggle .ic{width:1.25rem;height:1.25rem}
 .toggle[aria-disabled="true"]{opacity:.7;cursor:progress}
 .runbox{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
-.runbox select{min-height:2.75rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:.625rem;padding:.375rem .5rem}
+.gear{padding:.375rem .6875rem}
+/* settings: a side panel on the right (Dema's, from the Alternative board); the board stays visible beside it so a threshold change shows at once */
+.setmenu{position:fixed;top:0;right:0;bottom:0;z-index:60;width:min(24rem,100vw);display:flex;flex-direction:column;gap:.5rem;padding:1rem 1.25rem 1.5rem;overflow:auto;background:var(--surface);color:var(--ink);border-left:1px solid var(--line);box-shadow:-16px 0 40px rgba(10,15,25,.16)}
+.setmenu[hidden]{display:none}
+.setmenu>*{flex-shrink:0}
+.sethead{display:flex;align-items:center;gap:.75rem;margin-bottom:.25rem}
+.sethead h2{font-size:1.125rem}
+.sethead h2:focus{outline:none}
+.setmenu select{width:100%;min-height:2.75rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:.5rem;padding:.375rem .5rem;margin-bottom:.375rem}
+.setapp{display:inline-flex;border:1px solid var(--line);border-radius:.5rem;overflow:hidden}
+.setapp button{width:2.75rem;justify-content:center;padding:0;border:0;border-radius:0}
+.setapp button+button{border-left:1px solid var(--line)}
+.setapp button:focus-visible{outline-offset:-3px}
+.setapp button[aria-pressed="true"]{background:var(--ink);color:var(--board)}
+.seth{margin:.875rem 0 0;padding-top:.875rem;border-top:1px solid var(--rule);font-size:.875rem}
+.seti{font-size:.75rem;color:var(--ink-2);margin:0 0 .25rem}
 
 /* status chip: the word is always shown; amber and red are fills, not text colours alone */
-.band{display:inline-flex;align-items:center;font-size:.75rem;font-weight:800;letter-spacing:.05em;line-height:1.2;border:1.5px solid var(--ok);border-radius:.3125rem;padding:.1875rem .5rem;color:var(--ok);background:var(--surface);white-space:nowrap}
-.band.lv-amber{background:var(--amber-bg);border-color:var(--amber-edge);color:var(--amber)}
+.band{display:inline-flex;align-items:center;font-size:.6875rem;font-weight:800;letter-spacing:.08em;line-height:1.2;border:1.5px solid var(--ok);border-radius:.25rem;padding:.1875rem .4375rem;color:var(--ok);background:var(--surface);white-space:nowrap}
+.band.lv-amber{background:var(--amber-bg);border-color:var(--amber-edge);color:var(--on-amber)}
 .band.lv-red{background:var(--red);border-color:var(--red);color:var(--on-red)}
 .band.none{border-color:var(--line);color:var(--ink-2);letter-spacing:0;font-weight:600}
 .upd{font-size:.75rem;font-weight:700;border:1.5px dashed var(--line);border-radius:.3125rem;padding:0 .375rem;color:var(--ink)}
@@ -76,40 +95,45 @@ h1,h2,h3,p{margin:0}
 
 /* the two tabs */
 .viewbar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1.25rem;padding:.5rem 0;background:var(--board)}
-.seg{display:inline-flex;padding:.1875rem;background:var(--board-2);border:1px solid var(--rule);border-radius:.8125rem}
-.seg button{display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem;padding:0 1.125rem;border:0;border-radius:.625rem;background:transparent;font-weight:700;cursor:pointer;color:var(--ink)}
-.seg button:hover{background:var(--surface)}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:.5rem;overflow:hidden}
+.seg button{display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem;padding:0 1.125rem;border:0;border-radius:0;background:transparent;font-weight:600;cursor:pointer;color:var(--ink)}
+.seg button:hover{background:var(--board-2)}
+.seg button:focus-visible{outline-offset:-3px}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--board)}
 .seg .ic{width:1.125rem;height:1.125rem}
 [data-view="beds"] #strainview,[data-view="strain"] #bedsview{display:none}
 .subrow{display:flex;flex-wrap:wrap;align-items:center;gap:.375rem 1.5rem;margin:0 0 .75rem}
 .subrow .viewsub{margin:0}
-/* when: Now is ink, Next 24 h is blue */
-.when{display:inline-flex;padding:.125rem;background:var(--surface);border:1px solid var(--line);border-radius:999px}
-.when button{min-height:2.75rem;padding:0 1rem;border:0;border-radius:999px;background:transparent;font-size:.875rem;font-weight:700;color:var(--ink-2);cursor:pointer}
+/* when: two words, not a button box; the current one is underlined (Now ink, Next 24 h blue). Swipe left for the next 24 h, right for now. */
+.when{display:inline-flex;align-items:center;gap:.25rem}
+.when button{position:relative;min-height:2.75rem;padding:0 .5rem;border:0;background:transparent;font-size:.9375rem;font-weight:600;color:var(--ink-2);cursor:pointer}
 .when button:hover{color:var(--ink)}
-.when button[data-w="now"][aria-pressed="true"]{background:var(--ink);color:var(--board)}
-.when button[data-w="next"][aria-pressed="true"]{background:var(--blue);color:var(--on-high)}
-/* flag line (Dema's threshold toggle): which chance flags a bed; a view setting, hidden in Now */
-.flag{position:relative;display:inline-flex;align-items:center;gap:.5rem}
-[data-when="now"] .flag,.roomview .flag{display:none}
+.when button[aria-pressed="true"]{color:var(--ink);font-weight:800}
+.when button[aria-pressed="true"]::after{content:"";position:absolute;left:.5rem;right:.5rem;bottom:.4375rem;height:2.5px;border-radius:2px;background:currentColor}
+.when button[data-w="next"][aria-pressed="true"]{color:var(--blue)}
+.swipehint{font-size:.75rem;color:var(--ink-2);white-space:nowrap}
+/* the board slides in from the side it was swiped from */
+@keyframes slide-l{from{opacity:.25;transform:translateX(2.5rem)}}
+@keyframes slide-r{from{opacity:.25;transform:translateX(-2.5rem)}}
+[data-slide="l"] :is(#bedsview,#strainview,.rv-grid){animation:slide-l .22s ease-out}
+[data-slide="r"] :is(#bedsview,#strainview,.rv-grid){animation:slide-r .22s ease-out}
+/* flag presets (Dema's threshold toggle): which chance flags a bed; they sit in the settings panel under Thresholds */
+.flag{display:flex;align-items:center;gap:.5rem;margin-top:.375rem}
 [data-pending] .flag{opacity:.55}
 [data-pending] .flag button{cursor:default}
 .flag .fl{font-size:.8125rem;font-weight:600;color:var(--ink-2);white-space:nowrap}
-.fseg{display:inline-flex;border:1px solid var(--line);border-radius:.625rem;overflow:hidden;background:var(--surface)}
-.fseg button{min-width:3.25rem;min-height:2.75rem;padding:0 .625rem;border:0;border-left:1px solid var(--line);background:transparent;font-size:.875rem;font-weight:700;color:var(--ink);cursor:pointer}
+.fseg{display:inline-flex;border:1px solid var(--line);border-radius:.5rem;overflow:hidden;background:var(--surface)}
+.fseg button{min-width:3.25rem;min-height:2.75rem;padding:0 .625rem;border:0;border-left:1px solid var(--line);background:transparent;font-size:.875rem;font-weight:600;color:var(--ink);cursor:pointer}
 .fseg button:first-child{border-left:0}
 .fseg button:hover{background:var(--board-2)}
 .fseg button[aria-pressed="true"]{background:var(--blue);color:var(--on-high)}
 .fseg button:focus-visible{outline-offset:-3px}
-.thr .ic{width:1rem;height:1rem}
-.thrpop{position:absolute;top:calc(100% + .375rem);left:0;z-index:30;width:min(24rem,calc(100vw - 2rem));padding:.875rem 1rem;background:var(--surface);border:1px solid var(--line);border-radius:1rem;box-shadow:0 2px 4px rgba(16,24,40,.12),0 16px 40px rgba(16,24,40,.18)}
 .thrpop[hidden]{display:none}
-.thrpop h3{font-size:1rem;margin-bottom:.25rem}
-.thrpop .lrow{display:grid;grid-template-columns:minmax(0,1fr) 2.75rem 3rem 2.75rem 3.5rem;align-items:center;gap:.375rem;padding:.25rem 0;border-top:1px solid var(--rule)}
+.thrpop .lrow:first-child{border-top:0}
+.thrpop .lrow{display:grid;grid-template-columns:minmax(0,1fr) 2.75rem 2.75rem 2.75rem 3.25rem;align-items:center;gap:.375rem;padding:.25rem 0;border-top:1px solid var(--rule)}
 .thrpop .lrow .nm{display:inline-flex;align-items:center;gap:.375rem;font-size:.875rem;font-weight:600}
 .thrpop .lrow .ic{width:1.25rem;height:1.25rem}
-.thrpop .step{width:2.75rem;height:2.75rem;display:grid;place-items:center;background:transparent;border:1px solid var(--line);border-radius:.625rem;font-size:1.125rem;font-weight:700;color:var(--ink);cursor:pointer}
+.thrpop .step{width:2.75rem;height:2.75rem;display:grid;place-items:center;background:transparent;border:1px solid var(--line);border-radius:.5rem;font-size:1.125rem;font-weight:700;color:var(--ink);cursor:pointer}
 .thrpop .step:hover{background:var(--board-2)}
 .thrpop .step:disabled{opacity:.4;cursor:default}
 .thrpop .val{font-size:1rem;font-weight:800;text-align:center}
@@ -121,24 +145,24 @@ h1,h2,h3,p{margin:0}
 .legend{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem 1rem;margin-left:auto;font-size:.8125rem;color:var(--ink-2)}
 .legend>span{display:inline-flex;align-items:center;gap:.3125rem}
 .legend .ic{width:1.125rem;height:1.125rem;color:var(--ink)}
-.legend .sw{width:1.125rem;height:1.125rem;border-radius:.25rem;display:grid;place-items:center}
-.legend .sw .ic{width:.75rem;height:.75rem;color:inherit}
-.legend .sw.t-worse{background:var(--lv-high);color:var(--on-high)}
-.legend .sw.t-watch{background:var(--lv-medium);color:var(--on-medium)}
-.legend .sw.t-hold{background:var(--board-2);border:2.5px solid var(--ink);color:var(--ink)}
-.legend .sw.t-leave{border:2px solid var(--ok);color:var(--ok)}
+.sw{flex:none;width:1.125rem;height:1.125rem;border-radius:.25rem;background:var(--surface)}
+.sw.t-worse{border:2px solid var(--red);background:color-mix(in srgb,var(--red) 12%,var(--surface));color:var(--red)}
+.sw.t-watch{border:2px solid var(--amber-edge);background:color-mix(in srgb,var(--amber-edge) 12%,var(--surface));color:var(--amber)}
+.sw.t-hold{border:1px solid var(--line);color:var(--ink)}
+.sw.t-leave{border:2px solid var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--surface));color:var(--ok)}
 .legend .sep{width:1px;height:1rem;background:var(--line)}
 .roomnote{margin:0 0 .5rem;font-size:.875rem;font-weight:600}
 
 /* bed tile: room, one trajectory status, then Now -> Next 24 h */
 .bed{--t-bg:var(--surface);--t-fg:var(--ink);--t-2:var(--ink-2);--ic-k:var(--t-bg);
   display:flex;flex-direction:column;gap:.5rem;min-width:0;min-height:5.75rem;text-align:left;padding:.625rem .75rem;
-  border:1px solid var(--rule);border-radius:.75rem;background:var(--t-bg);color:var(--t-fg);cursor:pointer;box-shadow:var(--card);
+  border:1px solid var(--rule);border-radius:1rem;background:var(--t-bg);color:var(--t-fg);cursor:pointer;box-shadow:var(--card);
   transition:transform .15s ease-out}
 .bed:hover{transform:translateY(-1px)}
-.bed.t-worse{--t-bg:var(--lv-high);--t-fg:var(--on-high);--t-2:var(--on-high);border-color:var(--lv-high)}
-.bed.t-watch{--t-bg:var(--lv-medium);--t-fg:var(--on-medium);--t-2:var(--on-medium);border-color:var(--lv-medium)}
-.bed.t-hold{--t-bg:var(--board-2);border:3px solid var(--ink);padding:calc(.625rem - 2px) calc(.75rem - 2px)}
+/* the trajectory is the card's edge and a light fill, with no word on the tile: worsening red, watch amber, leaving green; not improving and steady plain.
+   The word stays in the tile's label and tooltip, and in the key above the board. */
+.bed.t-worse{--t-bg:color-mix(in srgb,var(--red) 12%,var(--surface));border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red)}
+.bed.t-watch{--t-bg:color-mix(in srgb,var(--amber-edge) 12%,var(--surface));border-color:var(--amber-edge);box-shadow:inset 0 0 0 1px var(--amber-edge)}
 .bed.s1{--t-bg:var(--board-2)}
 .bed.s2{--t-bg:var(--board-2);border:3px solid var(--ink);padding:calc(.625rem - 2px) calc(.75rem - 2px)}
 .bed.s0 .st{color:var(--ink-2);font-weight:600}
@@ -147,10 +171,17 @@ h1,h2,h3,p{margin:0}
 .nowl .nx small{font-size:.875rem;font-weight:700}
 .nowl .mu{font-size:.8125rem;font-weight:600;color:var(--ink-2)}
 .nowl .ic{width:1.75rem;height:1.75rem}
+/* next 24 h: under a hairline, the supports that may start and leaving, each an icon and its chance */
+.nextl{display:flex;flex-wrap:wrap;align-items:center;gap:.125rem .75rem;padding-top:.375rem;border-top:1px solid var(--rule);min-height:1.875rem}
+.nextl .cap{font-size:.6875rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.nextl .nx{display:inline-flex;align-items:center;gap:.25rem}
+.nextl .nx small{font-size:.875rem;font-weight:700}
+.nextl .mu{font-size:.8125rem;font-weight:600;color:var(--ink-2)}
+.nextl .ic{width:1.375rem;height:1.375rem}
 [data-mode="now"] .rail .st{display:none}
 @keyframes swap{from{opacity:.35}}
 .grid .bed,.rail .bed,.wc{animation:swap .18s ease-out}
-.bed.t-leave{border:2px solid var(--ok);padding:calc(.625rem - 1px) calc(.75rem - 1px)}
+.bed.t-leave{--t-bg:color-mix(in srgb,var(--ok) 12%,var(--surface));border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
 .bed .bt{display:flex;flex-wrap:wrap;align-items:baseline;gap:.125rem .5rem}
 .bed .rm{font-size:1.75rem;font-weight:800;line-height:1;letter-spacing:-.01em}
 .bed .who{display:flex;flex:0 1 auto;min-width:0;font-size:.8125rem;font-weight:600;color:var(--t-2);white-space:nowrap}
@@ -175,12 +206,12 @@ h1,h2,h3,p{margin:0}
 .rail .flow .nm{display:inline}
 .flow .mu{font-size:.8125rem;font-weight:600;color:var(--t-2,var(--ink-2));white-space:nowrap}
 .bed .flow .ic:not(.arr){width:1.625rem;height:1.625rem}
-@media (min-width:1800px){.wrap{padding-top:.375rem}.top{padding-bottom:.25rem}.viewbar{padding:.125rem 0}.subrow{margin-bottom:.25rem}.bed{min-height:0;gap:.25rem;padding:.375rem .625rem}.bed.t-hold,.bed.s2{padding:calc(.375rem - 2px) calc(.625rem - 2px)}.bed.t-leave{padding:calc(.375rem - 1px) calc(.625rem - 1px)}.bed .flow .col{gap:0}.bed .flow .cap{font-size:.75rem;line-height:1.1}.bed .flow .its{min-height:1.5rem}.bed .flow .arr{margin-bottom:.25rem}.bed .flow .ic:not(.arr){width:1.5rem;height:1.5rem}.bed .flow .nx small{font-size:.9375rem}.bed .st{font-size:.9375rem}.bed .rm{font-size:1.75rem}.rail .bed .rm{font-size:1.75rem}.rail .rset .bed{min-height:0}.rail{margin-bottom:.375rem;padding-bottom:.5rem}.rail h3{margin-bottom:.1875rem}.rail .rgs{margin-top:.25rem;gap:.25rem 1.25rem}.grid{gap:.375rem .625rem}.bedhead{margin-bottom:.25rem}.rail h2{font-size:1rem}.nowl{min-height:1.5rem;gap:0 .75rem}.nowl .ic{width:1.5rem;height:1.5rem}[data-mode="next"] .rail .rgs{flex-wrap:nowrap}[data-mode="next"] .rail .grp{flex:var(--n,1) 1 0;min-width:0}[data-mode="next"] .rail .rset{grid-template-columns:repeat(auto-fit,minmax(11rem,1fr))}[data-mode="next"] .rail .flow .nm{display:none}[data-mode="next"] .rail .flow .its{flex-direction:row;flex-wrap:wrap;align-items:center;gap:.125rem .5rem}[data-mode="next"] .rail .flow .arr{align-self:flex-end;margin-bottom:.25rem}[data-mode="next"] .rail .st{display:none}[data-mode="now"] .rail .grp{flex-basis:calc(var(--n,1)*12.75rem)}[data-mode="now"] .rail .rset{grid-template-columns:repeat(auto-fill,minmax(12rem,1fr))}}
+@media (min-width:1800px){.wrap{padding-top:1.25rem}.top{padding-bottom:.5rem}.viewbar{padding:.25rem 0}.subrow{margin-bottom:.25rem}.bed{min-height:0;gap:.25rem;padding:.375rem .625rem}.bed.s2{padding:calc(.375rem - 2px) calc(.625rem - 2px)}.bed .flow .col{gap:0}.bed .flow .cap{font-size:.75rem;line-height:1.1}.bed .flow .its{min-height:1.5rem}.bed .flow .arr{margin-bottom:.25rem}.bed .flow .ic:not(.arr){width:1.5rem;height:1.5rem}.bed .flow .nx small{font-size:.9375rem}.bed .st{font-size:.9375rem}.bed .rm{font-size:1.75rem}.rail .bed .rm{font-size:1.75rem}.rail .rset .bed{min-height:0}.rail{margin-bottom:.375rem;padding-bottom:.5rem}.rail h3{margin-bottom:.1875rem}.rail .rgs{margin-top:.25rem;gap:.25rem 1.25rem}.grid{gap:.375rem .625rem}.bedhead{margin-bottom:.25rem}.rail h2{font-size:1rem}.nowl{min-height:1.5rem;gap:0 .75rem}.nowl .ic{width:1.5rem;height:1.5rem}[data-mode="next"] .rail .rgs{flex-wrap:nowrap}[data-mode="next"] .rail .grp{flex:var(--n,1) 1 0;min-width:0}[data-mode="next"] .rail .rset{grid-template-columns:repeat(auto-fit,minmax(11rem,1fr))}[data-mode="next"] .rail .flow .nm{display:none}[data-mode="next"] .rail .flow .its{flex-direction:row;flex-wrap:wrap;align-items:center;gap:.125rem .5rem}[data-mode="next"] .rail .flow .arr{align-self:flex-end;margin-bottom:.25rem}[data-mode="next"] .rail .st{display:none}[data-mode="now"] .rail .grp{flex-basis:calc(var(--n,1)*12.75rem)}[data-mode="now"] .rail .rset{grid-template-columns:repeat(auto-fill,minmax(12rem,1fr))}}
 .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.75rem}
 
 /* Worry first: the Worsening rooms, then the Not improving rooms */
 .rail{padding:.25rem 0 1.25rem;margin:0 0 1rem;border-bottom:1px solid var(--rule)}
-.rail h2{font-size:1.125rem;line-height:1.2}
+.rail h2{font-size:1.25rem;font-weight:700;letter-spacing:-.01em;line-height:1.2}
 .rail .rgs{display:flex;flex-wrap:wrap;gap:.875rem 1.5rem;margin-top:.625rem}
 .rail .grp{flex:0 1 calc(var(--n,1)*20rem + (var(--n,1) - 1)*.625rem);min-width:min(20rem,100%);max-width:100%}
 .rail h3{display:flex;align-items:center;gap:.375rem;font-size:.875rem;font-weight:700;margin-bottom:.5rem}
@@ -192,23 +223,26 @@ h1,h2,h3,p{margin:0}
 .rail .bed{min-height:6.25rem}
 .rail .bed .rm{font-size:2rem}
 .rail .none{color:var(--ink-2);margin-top:.25rem}
-.bedhead{font-size:1.125rem;line-height:1.2;margin:0 0 .625rem}
+.bedhead{font-size:1.25rem;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin:.5rem 0 .75rem}
 .viewsub{font-size:.875rem;color:var(--ink-2);margin:0 0 .75rem}
 .viewsub b{color:var(--ink);font-weight:700}
 
 /* Unit strain */
-.lead{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1rem 2.5rem;background:var(--surface);border:1px solid var(--rule);border-radius:1rem;box-shadow:var(--card);padding:1rem 1.25rem;margin:.25rem 0 1rem}
+.lead{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1rem 2.5rem;background:var(--surface);border:1px solid var(--rule);border-radius:1rem;box-shadow:var(--card);padding:1rem 1.125rem;margin:.25rem 0 1rem}
 .lead.lv-amber,.wc.lv-amber{border:2px solid var(--amber-edge)}
-.lead.lv-red,.wc.lv-red{border:2px solid var(--red)}
+.lead.lv-red,.wc.lv-red{border:2px solid var(--red);background:color-mix(in srgb,var(--red) 13%,var(--surface));--ic-k:color-mix(in srgb,var(--red) 13%,var(--surface));box-shadow:0 0 0 4px color-mix(in srgb,var(--red) 20%,transparent)}
 .lh{display:flex;flex-wrap:wrap;align-items:center;gap:.375rem .625rem}
-.lh h2{font-size:1.125rem;line-height:1.2}
+.lh h2{font-size:1rem;font-weight:700;line-height:1.2}
 .yname{font-size:.8125rem;color:var(--ink-2)}
-.nums{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.25rem 1.5rem;margin-top:.5rem}
-.nums>span{display:flex;flex-direction:column;min-width:0}
-.nums i{font-style:normal;font-size:.8125rem;color:var(--ink-2)}
-.nums b{font-size:2rem;font-weight:800;line-height:1.05;letter-spacing:-.01em}
-.lead .nums b{font-size:2.75rem}
-.nums .f b{color:var(--blue)}
+.nums{display:flex;flex-wrap:wrap;align-items:flex-start;gap:.5rem 1.25rem;margin-top:.625rem}
+.nums>span{display:flex;flex-direction:column-reverse;justify-content:flex-end;min-width:0}
+.nums i{font-style:normal;font-size:.75rem;color:var(--ink-2)}
+.nums b{font-size:1.5rem;font-weight:800;line-height:1.15;letter-spacing:-.01em}
+.lead .nums b{font-size:2.25rem}
+.nums .f b{color:var(--ink)}
+.wc .nums>span:nth-child(2):not(.f) b{color:var(--ok)}
+.lv-amber .nums .f b{color:var(--amber)}
+.lv-red .nums .f b{color:var(--red)}
 .bar{display:block;width:100%;height:1.25rem;margin-top:.5rem}
 .lead .bar{height:1.75rem}
 .bar .trk{stroke:var(--fig);stroke-width:6;stroke-linecap:round}
@@ -221,32 +255,57 @@ h1,h2,h3,p{margin:0}
 .aside{display:flex;flex-direction:column;gap:.5rem;min-width:0}
 .deaths{font-size:.875rem;color:var(--ink-2)}
 .deaths b{color:var(--ink)}
-.capbox summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem;padding:.375rem .75rem;border:1px solid var(--line);border-radius:.625rem;font-weight:600;color:var(--ink)}
-.capbox summary::-webkit-details-marker{display:none}
-.capbox summary:hover{background:var(--board-2)}
-.capbox summary .ic{width:1rem;height:1rem;transition:transform .15s ease-out}
-.capbox[open] summary .ic{transform:rotate(180deg)}
-.capbox[open] summary{margin-bottom:.5rem}
-.capbox form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem .75rem;padding:.25rem 0 .5rem}
+.capbox form{display:grid;grid-template-columns:minmax(0,1fr);gap:.5rem .75rem;padding:.25rem 0 .5rem}
 .capbox label{display:flex;flex-direction:column;justify-content:flex-end;gap:.25rem;font-size:.8125rem;color:var(--ink-2)}
 .capbox input{min-height:2.75rem;background:var(--surface);border:1px solid var(--line);border-radius:.625rem;padding:.375rem .625rem;color:var(--ink);width:100%}
-.capbox label.wide{grid-column:1/-1}
 .capbox .acts{align-items:center;grid-column:1/-1;display:flex;gap:.5rem;flex-wrap:wrap}
 .capbox .msg2{grid-column:1/-1;font-size:.8125rem;color:var(--ink)}
 .capset{font-size:.8125rem;color:var(--ink-2)}
-.primary{min-height:2.75rem;background:var(--ink);color:var(--board);border:0;border-radius:.625rem;padding:.375rem 1rem;font-weight:700;cursor:pointer}
+.primary{min-height:2.75rem;background:var(--ink);color:var(--board);border:0;border-radius:.5rem;padding:.375rem 1rem;font-weight:700;cursor:pointer}
 .primary:hover{opacity:.9}
 
 /* one card per support, and one for leaving: the unit count, then the beds behind it */
-.watch{display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start}
-.wc{flex:var(--w,5) 1 17rem;min-width:0;padding:1rem 1.125rem;background:var(--surface);border:1px solid var(--rule);border-radius:1rem;box-shadow:var(--card)}
+.watch{display:flex;flex-wrap:wrap;gap:1rem;align-items:stretch}
+.wc{flex:var(--w,5) 1 13rem;min-width:0;padding:.875rem;background:var(--surface);border:1px solid var(--rule);border-radius:1rem;box-shadow:var(--card)}
+.wc.rest{flex:1 1 100%;order:9}
+.wc h3 .band{margin-left:.5rem;vertical-align:1px}
+/* the alert line above the cards (Dema's): what is short, the three highest-risk beds, when the forecast was made */
+.alerts[hidden],.runbadge[hidden]{display:none}
+.albody{display:contents}
+.alerts{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1.5rem;padding:.625rem 1rem;margin:.25rem 0 1rem;background:var(--surface);border:1px solid var(--rule);border-radius:1rem;box-shadow:var(--card)}
+.al{display:inline-flex;align-items:center;gap:.5rem;font-size:1rem;font-weight:700}
+.al.red{color:var(--red)}
+.al.amber{color:var(--amber)}
+.al .ic{width:1.125rem;height:1.125rem;stroke:none;--ic-k:var(--surface)}
+.hi{display:inline-flex;flex-wrap:wrap;align-items:center;gap:.5rem;font-size:.875rem;color:var(--ink-2)}
+.bedchip{min-width:2.5rem;min-height:2rem;padding:0 .625rem;background:transparent;border:1.5px solid var(--red);border-radius:999px;color:var(--red);font-weight:700;cursor:pointer}
+.bedchip:hover{background:color-mix(in srgb,var(--red) 10%,transparent)}
+.alerts .capset{font-size:.8125rem;color:var(--ink-2)}
+.runbadge{display:inline-flex;align-items:center;gap:.375rem;font-size:.8125rem;font-weight:600;border:1px solid var(--line);border-radius:999px;padding:.125rem .625rem;white-space:nowrap}
+.runbadge::before{content:"";width:.375rem;height:.375rem;border-radius:50%;background:var(--ok)}
+#strainview[data-cards] .lead,#strainview:not([data-cards]) .prednote{display:none}
+/* card numbers: label, number, what it counts */
+.stats{display:flex;flex-wrap:wrap;align-items:flex-start;gap:.5rem .875rem;margin-top:.375rem}
+.stats>span{display:flex;flex-direction:column;min-width:0}
+.stats i{font-style:normal;font-size:.75rem;color:var(--ink-2)}
+.stats b{font-size:1.5rem;font-weight:800;line-height:1.15}
+.stats small{font-size:.75rem;color:var(--ink-2)}
+.stats .free b{color:var(--ok)}
+.lv-red .stats .exp b{color:var(--red)}
+.lv-amber .stats .exp b{color:var(--amber)}
+.fc{font-size:.75rem;color:var(--ink-2);margin-top:.375rem}
+.fc b{color:var(--ink)}
+.bedline{font-size:.8125rem;color:var(--ink-2);margin:0 0 .5rem}
+.bedline b{color:var(--ink)}
+.chg{background:transparent;border:0;padding:.375rem .25rem;margin:-.375rem 0 -.375rem .25rem;font-weight:600;color:var(--blue);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.prednote{font-size:.8125rem;color:var(--ink-2);margin:1rem 0 0;max-width:none}
 .wc header{display:flex;align-items:flex-start;gap:.625rem}
-.wc header .ic{width:2.5rem;height:2.5rem}
-.wc h3{font-size:1.125rem;line-height:1.2}
+.wc header .ic{width:1.75rem;height:1.75rem;color:var(--ink-2)}
+.wc h3{font-size:.9375rem;font-weight:700;line-height:1.3}
 .wc .wsub{font-size:.8125rem;color:var(--ink-2);line-height:1.3}
 .wc header>div{min-width:0}
 .wc header .band{margin-left:auto}
-.wc .gl{display:block;margin:.875rem 0 .5rem;padding-top:.75rem;border-top:1px solid var(--rule);font-size:.8125rem;font-weight:700;color:var(--ink-2)}
+.wc .gl{display:block;margin:.875rem 0 .5rem;padding-top:.75rem;border-top:1px solid var(--rule);font-size:.6875rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
 .wc .set{display:grid;grid-template-columns:repeat(auto-fill,3.25rem);justify-content:start;gap:.625rem .5rem}
 .wc .nobody{font-size:.8125rem;color:var(--ink-2)}
 /* bed figure (Dema's): head and shoulders that fill from the bottom with the chance; solid ink when the support is running now */
@@ -256,20 +315,29 @@ h1,h2,h3,p{margin:0}
 .pp .av svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 .pp .av .base{fill:var(--fig)}
 .pp .av .fill{fill:var(--blue);clip-path:inset(calc(100% - var(--p)) 0 0 0)}
-.pp.on .av .base{fill:var(--ink)}
+.pp.on .av .base{fill:color-mix(in srgb,var(--ink) 62%,var(--surface))}
 .pp.out .av .fill{fill:var(--ink-2)}
-/* the highest-risk beds (Dema's): red fill and a soft, static halo */
+/* the highest-risk beds (Dema's): tinted red, with a pulsing halo and ring */
 .pp{position:relative}
-.pp.w .av{isolation:isolate}
-.pp.w .av::after{content:"";position:absolute;inset:-.5rem;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--red) 42%,transparent) 30%,transparent)}
-.pp.w .av .base{fill:color-mix(in srgb,var(--red) 30%,var(--surface))}
+.pp.w .av{isolation:isolate;animation:beat 1.2s ease-in-out infinite}
+.pp.w:hover .av{transform:none}
+.pp.w .av::after{content:"";position:absolute;inset:-.6875rem;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--red) 85%,transparent) 35%,transparent);animation:watchp 1.2s ease-in-out infinite}
+.pp.w .av::before{content:"";position:absolute;inset:-.1875rem;z-index:-1;border-radius:50%;border:2.5px solid var(--red);animation:ring 1.2s ease-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}45%{transform:scale(1.12)}}
+@keyframes ring{0%{opacity:.95;transform:scale(.7)}100%{opacity:0;transform:scale(1.55)}}
+@keyframes watchp{0%,100%{opacity:.2;transform:scale(.8)}45%{opacity:1;transform:scale(1.15)}}
+.pp.w .av .base{fill:color-mix(in srgb,var(--red) 38%,var(--surface))}
 .pp.w .av .fill{fill:var(--red)}
 .pp.w .pc{color:var(--red);font-weight:800}
 .pp .dv{position:absolute;top:-.25rem;right:-.125rem;display:flex;flex-direction:column;gap:1px}
 .pp .dv i,.frees i{display:grid;place-items:center;width:1.125rem;height:1.125rem;border-radius:50%;background:var(--surface);border:1px solid var(--line);--ic-k:var(--surface)}
 .pp .dv .ic,.frees .ic{width:.75rem;height:.75rem}
+:is(.pp .dv,.frees) i:has(use[href^="#i-vent"]){color:var(--d-vent);border-color:color-mix(in srgb,var(--d-vent) 55%,var(--line))}
+:is(.pp .dv,.frees) i:has(use[href^="#i-crrt"]){color:var(--d-crrt);border-color:color-mix(in srgb,var(--d-crrt) 55%,var(--line))}
+:is(.pp .dv,.frees) i:has(use[href^="#i-pump"]){color:var(--d-press);border-color:color-mix(in srgb,var(--d-press) 55%,var(--line))}
 .frees{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .375rem;margin-top:.5rem;font-size:.8125rem;color:var(--ink-2)}
-.frees b{color:var(--ink);font-weight:800}
+.frees{color:var(--ink)}
+.frees b{color:var(--ink);font-size:.9375rem;font-weight:800}
 .ubar{display:block;width:100%;height:2.875rem;margin-top:.375rem}
 .ubar text{font-family:inherit;fill:var(--ink)}
 .pp .rm{font-size:.9375rem;font-weight:800;line-height:1.1}
@@ -278,7 +346,25 @@ h1,h2,h3,p{margin:0}
 .pp:focus-visible .av{outline:3px solid var(--focus);outline-offset:3px;border-radius:.5rem}
 
 /* room page */
-.roomview{padding-top:.5rem}
+/* room view: a dialog over the board (Dema's bed card); the board stays behind it */
+.roomview{position:fixed;inset:0;z-index:50;display:flex;justify-content:center;align-items:flex-start;padding:2rem 1rem;overflow:auto;background:rgba(15,20,30,.5)}
+.roomview[hidden]{display:none}
+.rv-card{width:min(46rem,100%);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:1rem;box-shadow:0 2px 4px rgba(16,24,40,.12),0 24px 60px rgba(16,24,40,.28);padding:1.25rem 1.5rem 1.5rem}
+.rvtop .back{text-decoration:none;margin-left:auto}
+/* vitals: one small card per vital, the hourly median over the last 12 h */
+.vits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
+.vit{border:1px solid var(--rule);border-radius:.75rem;padding:.625rem .75rem}
+.vit .vh{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;font-size:.875rem;font-weight:700}
+.vit .vh b{font-size:1.375rem;font-weight:800;line-height:1}
+.vit .vh small{font-size:.75rem;font-weight:600;color:var(--ink-2);margin-left:.1875rem}
+.vit .vf{display:flex;justify-content:space-between;font-size:.75rem;color:var(--ink-2)}
+.spark{display:block;width:100%;height:auto;margin:.25rem 0 .125rem}
+.spark .ln{fill:none;stroke:var(--blue);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.spark .dot{fill:var(--blue)}
+.spark .ref{stroke:var(--ink-2);stroke-width:1;stroke-dasharray:4 3}
+.spark .ax{stroke:var(--rule);stroke-width:1}
+.spark text{font-family:inherit;fill:var(--ink-2)}
+.rvk2{font-size:.8125rem;font-weight:400;color:var(--ink-2)}
 .rv-nav{display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap}
 .rv-nav a{color:var(--ink);font-weight:700;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;display:inline-flex;align-items:center;min-height:2.75rem;padding:0 .25rem}
 .rv-step{display:flex;gap:1rem}
@@ -286,7 +372,7 @@ h1,h2,h3,p{margin:0}
 .rv-nav .ic{width:1rem;height:1rem}
 .rv-nav .flip{transform:scaleX(-1)}
 .rvtop{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem 1.5rem;margin:.5rem 0 .25rem}
-.roomview .rvh{font-size:2.5rem;line-height:1.05;letter-spacing:-.02em}
+.roomview .rvh{font-size:1.75rem;line-height:1.1;letter-spacing:-.02em}
 .rvh .rvk{font-size:1rem;font-weight:600;letter-spacing:0;color:var(--ink-2);white-space:nowrap}
 #rv-h:focus{outline:none}
 .stchip{--t-bg:var(--surface);--t-fg:var(--ink);font-size:1rem;gap:.4375rem;padding:.3125rem .75rem;border:1px solid var(--line);border-radius:.5rem;background:var(--t-bg);color:var(--t-fg)}
@@ -304,9 +390,10 @@ h1,h2,h3,p{margin:0}
 .risks.now li{grid-template-columns:minmax(0,1fr) 7em}
 .rv-sub{font-size:.875rem;color:var(--ink-2)}
 .rv-run{margin-top:.125rem;font-size:.8125rem;color:var(--ink-2);min-height:1.4em}
-.rv-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:1rem;margin-top:.75rem;align-items:start}
-.rv-grid>section{background:var(--surface);border:1px solid var(--rule);border-radius:1rem;box-shadow:var(--card);padding:1rem 1.25rem}
-.rv-grid h2{margin:0 0 .5rem;font-size:1.125rem;line-height:1.25}
+.rv-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin-top:.5rem}
+.rv-grid>section{border-top:1px solid var(--rule);padding:.875rem 0 .25rem}
+.rv-grid>section[hidden]{display:none}
+.rv-grid h2{margin:0 0 .5rem;font-size:1rem;font-weight:700;line-height:1.25}
 .rv-grid h3{display:flex;align-items:center;gap:.375rem;margin:1rem 0 0;font-size:.875rem;color:var(--ink-2);font-weight:700}
 .rv-grid h3:first-of-type{margin-top:0}
 .risks{list-style:none;margin:.25rem 0 0;padding:0;--ic-k:var(--surface)}
@@ -319,7 +406,7 @@ h1,h2,h3,p{margin:0}
 .risks .lw2.on{background:var(--ink);color:var(--surface)}
 .risks.solo li:first-child{border-top:1px solid var(--rule)}
 .dots{display:inline-flex;gap:.25rem;min-width:8.5rem}
-.dots i{width:.75rem;height:.75rem;border-radius:50%;border:1.5px solid var(--line)}
+.dots i{width:.75rem;height:.75rem;border-radius:50%;border:1.5px solid var(--ink-2)}
 .dots i.on{background:var(--blue);border-color:var(--blue)}
 .risks .fq{font-size:.875rem;color:var(--ink-2)}
 .past{margin:.375rem 0 0;padding:0;list-style:none;font-size:.8125rem}
@@ -377,8 +464,8 @@ h1,h2,h3,p{margin:0}
 
 /* footer: one folded disclosure holds every definition */
 .engine{margin-top:1.5rem;border-top:1px solid var(--rule);font-size:.875rem}
-details.more summary{cursor:pointer;min-height:2.75rem;display:flex;align-items:center;font-size:.875rem;font-weight:700;color:var(--ink-2)}
-details.more summary:hover{color:var(--ink)}
+details.more summary{cursor:pointer;min-height:2.75rem;display:flex;align-items:center;font-size:1.25rem;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+details.more summary:hover{color:var(--blue)}
 .range{font-size:.75rem;color:var(--ink-2);font-weight:400}
 .all{width:100%;max-width:60rem;border-collapse:collapse;margin:.25rem 0 .75rem;font-size:.875rem}
 .all th,.all td{text-align:left;padding:.5rem .75rem .5rem 0;border-top:1px solid var(--rule);vertical-align:top}
@@ -394,32 +481,27 @@ details.more summary:hover{color:var(--ink)}
 .pending{color:var(--ink-2);font-style:italic}
 ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
 
-@media (min-width:561px){#theme .ic{display:none}}
 @media (max-width:1319px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (max-width:960px){
   .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .lead{grid-template-columns:1fr}
-  .rv-grid{grid-template-columns:1fr}
 }
 @media (max-width:560px){
   .wrap{padding:.75rem 1rem 6rem}
   .unit{flex:1 1 0;min-width:0;margin-right:0}
   .spacer{display:none}
-  #theme{order:-1;padding:.375rem .6875rem}
+  .gear{order:-1}
   .unit{order:-2}
-  #theme .tl{position:absolute;left:-9999px}
   .unit h1 .what{display:block;margin:0;font-size:.875rem}
-  .sline{flex:1 1 100%;justify-content:center;border-radius:.75rem}
+  .sline{flex:1 1 100%;margin-left:0}
   .runbox{flex:1 1 100%}
-  .runbox .label{position:absolute;left:-9999px}
-  .runbox select{flex:1 1 auto;min-width:0}
+  .runbox .toggle{flex:1 1 auto;justify-content:center}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}
   .rail .rset{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}
   .rail .bed .rm{font-size:1.5rem}
   .rail .grp{flex-basis:100%}
   .bed{padding:.5rem .625rem}
-  .bed.t-hold,.bed.s2{padding:calc(.5rem - 2px) calc(.625rem - 2px)}
-  .bed.t-leave{padding:calc(.5rem - 1px) calc(.625rem - 1px)}
+  .bed.s2{padding:calc(.5rem - 2px) calc(.625rem - 2px)}
   .bed .rm{font-size:1.5rem}
   .bed .st{margin-left:0;flex-basis:100%}
   .seg{flex:1 1 auto}
@@ -433,13 +515,13 @@ details.more summary:hover{color:var(--ink)}
   .rail .flow .its{flex-direction:row;flex-wrap:wrap}
   .rail .flow .nm{display:none}
   .flag{flex:1 1 100%;flex-wrap:wrap}
-  .thrpop{left:0;right:auto}
   .when{flex:1 1 auto}
   .when button{flex:1 1 0}
   .legend .sep{display:none}
   .lead{padding:.875rem 1rem}
-  .capbox form{grid-template-columns:1fr}
-  .roomview .rvh{font-size:2rem}
+  .roomview{padding:0}
+  .rv-card{border-radius:0;border:0;min-height:100%;padding:1rem}
+  .vits{grid-template-columns:minmax(0,1fr)}
   .risks li{grid-template-columns:minmax(0,1fr) 5.5em;row-gap:.375rem}
   .risks .dots{grid-column:1;min-width:0}
   .risks .fq{grid-column:2;text-align:right;font-size:.8125rem}
@@ -448,7 +530,7 @@ details.more summary:hover{color:var(--ink)}
   .chatpanel{left:0;right:0;bottom:0;width:auto;height:85vh;height:min(85dvh,var(--vvh,85dvh));border-radius:1rem 1rem 0 0;border-bottom:0;padding-top:1.25rem;padding-bottom:calc(1rem + env(safe-area-inset-bottom,0px))}
   .chatpanel::before{content:"";position:absolute;top:.5rem;left:50%;width:2.5rem;height:.25rem;margin-left:-1.25rem;border-radius:999px;background:var(--line)}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -476,6 +558,10 @@ details.more summary:hover{color:var(--ink)}
   <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6" stroke-width="2.25"/></symbol>
   <symbol id="i-same" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M3.5 12h16M14 6.5l5.5 5.5-5.5 5.5" stroke-width="2.25"/></symbol>
+  <symbol id="i-death" viewBox="0 0 24 24"><path d="M2.5 12.5h3.5l2-5.5 3 11 2.5-5.500h8"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 4.5 21 20H3z"/><path d="M12 10v4.5M12 17.4v.1" style="stroke:var(--ic-k,var(--surface))" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.6" stroke-width="3.4" stroke-dasharray="3.2 2.77" stroke-linecap="butt"/><circle cx="12" cy="12" r="5.6"/><circle cx="12" cy="12" r="2.2"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.6 6.6 0 0 0 10.5 10.5Z"/></symbol>
   <symbol id="i-min" viewBox="0 0 24 24"><path d="M6 17.5h12" stroke-width="2.25"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" stroke-width="2.25"/></symbol>
@@ -488,20 +574,40 @@ details.more summary:hover{color:var(--ink)}
 <div class="wrap">
   <header class="top">
     <div class="unit">
-      <h1>Lookahead <span class="what">ICU forecast · next 24 hours</span></h1>
+      <h1>Lookahead <span class="what">ICU forecast</span></h1>
       <div class="sub"><span data-tip="The forecast window: 07:00 today to 07:00 tomorrow">07:00 to 07:00</span><span class="srctag" id="unit" data-tip="The unit this forecast covers" hidden></span><span class="srctag" id="syn" hidden></span><p class="runstate" id="runstate" role="status" aria-live="polite" data-tip="When this forecast was made"></p></div>
     </div>
     <span class="spacer"></span>
-    <a class="sline" id="sline" href="#view=strain" hidden></a>
-    <button class="toggle" id="theme" aria-pressed="false" type="button"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-moon"/></svg><span class="tl" id="theme-l">Night board</span></button>
     <div class="runbox">
-      <label for="role" class="label">I am</label>
-      <select id="role">
-        <option value="ICU nurse">ICU nurse (charge)</option><option value="ICU physician">ICU physician</option><option value="pharmacy">pharmacy</option><option value="respiratory therapy">respiratory therapy</option><option value="bed manager">bed manager</option>
-      </select>
       <button class="toggle" id="rerun" type="button">Update the unit</button>
     </div>
+    <button class="toggle gear" id="gear" type="button" aria-label="Settings" data-tip="Settings" aria-expanded="false" aria-controls="setmenu"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-gear"/></svg></button>
   </header>
+
+  <!-- settings side panel (Dema's, from the Alternative board): light or dark board (the two icons beside the heading), thresholds, capacity -->
+  <!-- the role picker is off the page: the board acts as the ICU nurse (charge). The select stays, hidden, so #role=pharmacy still works for captures. -->
+  <select id="role" hidden aria-hidden="true" tabindex="-1"> <option value="ICU nurse">ICU nurse (charge)</option><option value="ICU physician">ICU physician</option><option value="pharmacy">pharmacy</option><option value="respiratory therapy">respiratory therapy</option><option value="bed manager">bed manager</option> </select>
+  <aside class="setmenu" id="setmenu" role="dialog" aria-labelledby="set-h" hidden>
+    <div class="sethead"><h2 id="set-h" tabindex="-1">Settings</h2><div class="setapp" role="group" aria-label="Board appearance"><button type="button" class="toggle" data-t="day" aria-pressed="true" aria-label="Light board" data-tip="Light board"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-sun"/></svg></button><button type="button" class="toggle" data-t="night" aria-pressed="false" aria-label="Dark board" data-tip="Dark board"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-moon"/></svg></button></div><span class="spacer"></span><button type="button" class="toggle" id="setclose">Close</button></div>
+    <h3 class="seth" id="st-h">Bed colours</h3>
+    <p class="seti">The chance at which a bed turns each colour on the Bed board. Not improving has no line of its own: on life support, under the Watch line to leave, nothing new expected.</p>
+    <div class="thrpop" id="stpop"></div>
+    <h3 class="seth" id="thr-h">Event thresholds</h3>
+    <p class="seti">A bed is flagged under an event when its chance is at or above that event's threshold. Moving a support's threshold also moves when a bed is flagged for it.</p>
+    <div class="thrpop" id="thrpop" hidden></div>
+    <div class="flag" id="flag"><span class="fl" id="flag-l">Flag beds at</span><div class="fseg" id="fseg" role="group" aria-labelledby="flag-l"><button type="button" data-p="50" aria-pressed="false">50%</button><button type="button" data-p="25" aria-pressed="true">25%</button><button type="button" data-p="10" aria-pressed="false">10%</button></div></div>
+    <h3 class="seth" id="cap-h">Capacity</h3>
+    <p class="seti">Total machines on the unit. Free = total minus in use now. Leave a box blank if it is not set.</p>
+    <div class="capbox" id="capbox">
+      <form id="capform" novalidate>
+        <label for="cap-vt">Ventilators on the unit (total)<input id="cap-vt" type="number" inputmode="numeric" min="0" max="50" step="1"></label>
+        <label for="cap-ct">CRRT machines on the unit (total)<input id="cap-ct" type="number" inputmode="numeric" min="0" max="50" step="1"></label>
+        <label for="cap-ls">Life-support patients tonight's staffing covers (optional)<input id="cap-ls" type="number" inputmode="numeric" min="0" max="50" step="1"></label>
+        <div class="acts"><button class="primary" type="submit">Save capacity</button><button class="toggle" id="viewtyp" type="button" hidden>View against a typical day</button><button class="toggle" id="capreset" type="button">Reset</button></div>
+        <p class="msg2" id="capmsg" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </aside>
 
   <div id="boardview">
   <main class="main" aria-label="Unit board">
@@ -510,9 +616,10 @@ details.more summary:hover{color:var(--ink)}
         <button type="button" data-v="beds" aria-pressed="true"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-beds"/></svg>Bed board</button><button type="button" data-v="strain" aria-pressed="false"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-strain"/></svg>Unit strain</button>
       </div>
       <div class="when" role="group" aria-label="Show now or the next 24 hours"><button type="button" data-w="now" aria-pressed="false">Now</button><button type="button" data-w="next" aria-pressed="true">Next 24 h</button></div>
-      <div class="flag" id="flag"><span class="fl" id="flag-l">Flag beds at</span><div class="fseg" id="fseg" role="group" aria-labelledby="flag-l"><button type="button" data-p="50" aria-pressed="false">50%</button><button type="button" data-p="25" aria-pressed="true">25%</button><button type="button" data-p="10" aria-pressed="false">10%</button></div><button class="toggle thr" id="thrbtn" type="button" aria-expanded="false" aria-controls="thrpop">Thresholds<svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-chev"/></svg></button><div class="thrpop" id="thrpop" role="dialog" aria-label="Thresholds" hidden></div></div>
+      <span class="swipehint" aria-hidden="true">swipe ← → to switch</span>
       <span class="upd" id="upd-grid" hidden>updating</span>
     </div>
+    <section class="alerts" id="alerts" aria-label="Unit summary" hidden><div class="albody" id="albody"></div><a class="sline" id="sline" href="#view=strain" hidden></a><span class="runbadge" id="runbadge" data-tip="When this forecast was made" hidden></span></section>
     <p class="roomnote" id="roomnote" role="status" hidden></p>
 
     <div id="bedsview">
@@ -520,7 +627,7 @@ details.more summary:hover{color:var(--ink)}
       <section class="rail" id="rail" aria-labelledby="rail-h"></section>
       <section aria-labelledby="board-h">
         <h2 class="bedhead" id="board-h">All rooms</h2>
-        <div class="grid" id="grid" role="group" aria-label="Rooms; choose a room to open its page"></div>
+        <div class="grid" id="grid" role="group" aria-label="Beds; choose a bed to open it"></div>
       </section>
     </div>
 
@@ -530,20 +637,11 @@ details.more summary:hover{color:var(--ink)}
         <div id="strainbody"></div>
         <div class="aside">
           <p class="deaths" id="deaths"></p>
-          <details class="capbox" id="capbox">
-            <summary>Set tonight's capacity<svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-chev"/></svg></summary>
-            <form id="capform" novalidate>
-              <label for="cap-vt">Ventilators on the unit (total)<input id="cap-vt" type="number" inputmode="numeric" min="0" max="50" step="1"></label>
-              <label for="cap-ct">CRRT machines on the unit (total)<input id="cap-ct" type="number" inputmode="numeric" min="0" max="50" step="1"></label>
-              <label for="cap-ls" class="wide">Life-support patients tonight's staffing covers (optional)<input id="cap-ls" type="number" inputmode="numeric" min="0" max="50" step="1"></label>
-              <div class="acts"><button class="primary" type="submit">Save capacity</button><button class="toggle" id="viewtyp" type="button" hidden>View against a typical day</button><button class="toggle" id="capreset" type="button">Reset</button></div>
-              <p class="msg2" id="capmsg" role="status" aria-live="polite"></p>
-            </form>
-          </details>
           <p class="capset" id="capset"></p>
         </div>
       </section>
       <div class="watch" id="watch"></div>
+      <p class="note prednote">* Predicted new counts every bed at or above the event's threshold as a start; each is a chance, not a certainty. The unit forecast under it is the model's expected count, with the range covering 8 in 10 likely outcomes. Set each threshold in Settings (kept on this device); a bed can appear under more than one event. Already on before 07:00 is not counted as new. The three highest-risk beds pulse red. A card turns red when its flagged beds are more than what is free, and amber at exactly the limit.</p>
     </div>
   </main>
 
@@ -578,34 +676,40 @@ details.more summary:hover{color:var(--ink)}
   </footer>
   </div>
 
-  <main id="roomview" class="roomview" hidden aria-labelledby="rv-h">
-    <nav class="rv-nav" aria-label="Rooms">
-      <a class="back" id="back" href="#view=beds">All rooms</a>
+  <div id="roomview" class="roomview" role="dialog" aria-labelledby="rv-h" hidden>
+   <div class="rv-card">
+    <div class="rvtop"><h2 class="rvh" id="rv-h" tabindex="-1">Bed</h2><span id="rv-st"></span><a class="toggle back" id="back" href="#view=beds">Close bed</a></div>
+    <div class="rvflow" id="rv-flow"></div>
+    <p class="rv-sub" id="rv-sub"></p>
+    <p class="rv-run" id="rv-run" role="status" aria-live="polite"></p>
+    <nav class="rv-nav" aria-label="Beds">
       <div class="when" role="group" aria-label="Show now or the next 24 hours"><button type="button" data-w="now" aria-pressed="false">Now</button><button type="button" data-w="next" aria-pressed="true">Next 24 h</button></div>
       <span class="rv-step"><a id="rv-prev" href="#"></a><a id="rv-next" href="#"></a></span>
     </nav>
-    <div class="rvtop"><h2 class="rvh" id="rv-h" tabindex="-1">Room</h2><span id="rv-st"></span><div class="rvflow" id="rv-flow"></div></div>
-    <p class="rv-sub" id="rv-sub"></p>
-    <p class="rv-run" id="rv-run" role="status" aria-live="polite"></p>
     <div class="rv-grid">
       <section aria-labelledby="rv-risk-h">
         <h2 id="rv-risk-h">Five predictions for this patient · chance in the next 24 h</h2>
         <div id="rv-risks"></div>
       </section>
+      <section aria-labelledby="rv-vit-h" id="rv-vit" hidden>
+        <h2 id="rv-vit-h">Vitals · last 12 h <span class="rvk2">hourly median, from the unit's records</span></h2>
+        <div class="vits" id="vits"></div>
+      </section>
       <section aria-labelledby="rv-past-h">
-        <h2 id="rv-past-h">Last 12 hours</h2>
+        <h2 id="rv-past-h">What the model read · last 12 h</h2>
         <ul class="past" id="past"></ul>
         <button class="linkbtn" id="pastmore" type="button"></button>
         <div class="rv-acts">
-          <button class="toggle" id="rv-update" type="button">Update this room</button>
+          <button class="toggle" id="rv-update" type="button">Update this bed</button>
           <button class="toggle" id="rv-ask" type="button">Ask about this forecast</button>
         </div>
       </section>
     </div>
-  </main>
+   </div>
+  </div>
 </div>
 
-<button class="chatbtn" id="chatbtn" type="button" aria-label="Ask Lookahead" data-tip="Ask about the unit or a room" aria-expanded="false" aria-controls="chatpanel"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-chat"/></svg><i class="dot" id="chatdot" hidden></i><span class="sr" id="chatdot-l" hidden>, forecast updated</span></button>
+<button class="chatbtn" id="chatbtn" type="button" aria-label="Ask Lookahead" data-tip="Ask about the unit or a bed" aria-expanded="false" aria-controls="chatpanel"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-chat"/></svg><i class="dot" id="chatdot" hidden></i><span class="sr" id="chatdot-l" hidden>, forecast updated</span></button>
 <section class="chatpanel" id="chatpanel" role="dialog" aria-label="Ask Lookahead" hidden>
   <div class="cp-head"><h2 id="chat-h">Ask Lookahead</h2><button class="ctx" id="chat-scope" type="button">Unit</button><span class="spacer"></span>
     <button class="cpb" id="chatmin" type="button" aria-label="Minimise chat"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-min"/></svg></button>
@@ -613,7 +717,7 @@ details.more summary:hover{color:var(--ink)}
   <div class="chips" id="chips" role="group" aria-label="Suggested questions"></div>
   <div class="log" id="log" role="log" aria-live="polite"></div>
   <form class="ask" id="ask"><label class="sr" for="q">Question</label>
-    <textarea id="q" rows="1" autocomplete="off" placeholder="Ask about the unit or a room"></textarea>
+    <textarea id="q" rows="1" autocomplete="off" placeholder="Ask about the unit or a bed"></textarea>
     <button type="submit" id="send" aria-label="Send" disabled><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-send"/></svg></button></form>
 </section>
 <div class="tip" id="tip" role="tooltip" hidden></div>
@@ -729,6 +833,11 @@ details.more summary:hover{color:var(--ink)}
   const NAME_OK = /^[\p{L}][\p{L} .,'-]{0,39}$/u, nm1 = v => typeof v==="string" && NAME_OK.test(v.trim()) ? v.trim() : null;
   function cleanName(n){ if(!n || typeof n!=="object") return null; const display=nm1(n.display); if(!display) return null;
     const first=nm1(n.first), last=nm1(n.last); return {display, full:first&&last ? `${first} ${last}` : display}; }
+  /* vitals_12h from rooms.json: only the four vitals, each at most 12 {h, v} points with h in 1..12 and a finite value */
+  const VITK=["heart_rate","map","spo2","respiratory_rate"];
+  const vitalsOf = v => { if(!v || typeof v!=="object") return null; const o={};
+    for(const k of VITK){ const a=(Array.isArray(v[k])?v[k]:[]).filter(x=>x && Number.isInteger(x.h) && x.h>=1 && x.h<=12 && fin(x.v)).slice(0,12).map(x=>({h:x.h, v:Math.round(x.v*10)/10})); if(a.length) o[k]=a; }
+    return Object.keys(o).length ? o : null; };
   function cleanRoom(r){
     if(!r || typeof r!=="object" || !Number.isInteger(r.room) || r.room<1) return null;
     const on0=r.on_now||{}, p0=r.p||{}, sb=r.stopped_before_cut||{}, pr=v=>fin(v)&&v>=0&&v<=1?v:null;
@@ -744,7 +853,8 @@ details.more summary:hover{color:var(--ink)}
       on_life_support:typeof r.on_life_support==="boolean" ? r.on_life_support : SUP.filter(k=>on_now[k]).length>=2,
       stopped_before_cut:{imv:sb.imv===true, vasopressor:sb.vasopressor===true, crrt:sb.crrt===true},
       updated_at:str(r.updated_at,40), cut_time:str(r.cut_time,40), window:{start:str(w.start,40), end:str(w.end,40)},
-      past_12h:(Array.isArray(r.past_12h)?r.past_12h:[]).filter(x=>x&&typeof x.text==="string").slice(0,8).map(x=>({h:fin(x.h)&&x.h!==0?Math.abs(x.h):null, text:x.text.slice(0,200)}))};
+      past_12h:(Array.isArray(r.past_12h)?r.past_12h:[]).filter(x=>x&&typeof x.text==="string").slice(0,8).map(x=>({h:fin(x.h)&&x.h!==0?Math.abs(x.h):null, text:x.text.slice(0,200)})),
+      vitals_12h:vitalsOf(r.vitals_12h)};
   }
   const cleanRooms = list => (Array.isArray(list)?list:[]).map(cleanRoom).filter(Boolean).sort((a,b)=>a.room-b.room).filter((x,i,a)=>!i||x.room!==a[i-1].room);
   const cfRooms = () => { const c=FC&&FC.check_first; return Array.isArray(c) ? c.map(x=>typeof x==="object"&&x?x.room:x).filter(n=>Number.isInteger(n)&&n>=1) : null; };   // objects from the backend, bare numbers from older files
@@ -862,20 +972,21 @@ details.more summary:hover{color:var(--ink)}
   const SHORTN = {imv:"Ventilator", vasopressor:"Vasopressor", crrt:"CRRT"};
   /* flag lines (Dema's threshold toggle): a view setting kept on this device. The page works out every bed's status from p and these lines;
      the level the server sends is not used for status. base = the line for flagging; each support and leaving can be tuned on its own. */
-  const LINE_DEF = {base:.25, imv:.25, vasopressor:.25, crrt:.25, leave:.6};
+  const LINE_DEF = {base:.25, imv:.25, vasopressor:.25, crrt:.25, leave:.6, death:.25, worse:null};      // worse: null = one preset above the Watch line
   let lines = {...LINE_DEF};
   try{ const s=JSON.parse(localStorage.getItem("lookahead-lines")||"null"); if(s && typeof s==="object") for(const k of Object.keys(LINE_DEF)) if(Number.isInteger(s[k]) && s[k]>=1 && s[k]<=99) lines[k]=s[k]/100; }catch(e){ /* no storage: the default lines */ }
-  const saveLines = () => { try{ localStorage.setItem("lookahead-lines", JSON.stringify(Object.fromEntries(Object.keys(lines).map(k=>[k,Math.round(lines[k]*100)])))); }catch(e){ /* storage blocked */ } };
+  const saveLines = () => { try{ localStorage.setItem("lookahead-lines", JSON.stringify(Object.fromEntries(Object.keys(lines).map(k=>[k,lines[k]==null?null:Math.round(lines[k]*100)])))); }catch(e){ /* storage blocked */ } };
   const upLine = v => { const n=[.25,.5,.75].find(x=>x>v+1e-9); return n!=null ? n : Math.min(.99, v+.2); };      // Worsening starts at the next preset up
+  const worseLine = v => lines.worse!=null ? Math.max(lines.worse, Math.min(.99, v+.01)) : upLine(v);      // where Worsening starts for a Watch line v
   const P = v => Math.round(v*100)+"%";
   const DEF = {
-    get worse(){ return `Worsening: new life support ${P(upLine(lines.base))} or more`; }, get watch(){ return `Watch: new life support ${P(lines.base)} or more`; },
+    get worse(){ return `Worsening: new life support ${P(worseLine(lines.base))} or more`; }, get watch(){ return `Watch: new life support ${P(lines.base)} or more`; },
     get flag(){ return `Flag beds at ${P(lines.base)}: a bed is flagged when its chance is ${P(lines.base)} or more`; },
     hold:"Not improving: on life support, unlikely to leave, nothing new expected", get leave(){ return `Leaving: ${P(lines.leave)} or more to leave the ICU`; }, steady:"Steady: none of these",
     any:"Chance of starting any new life support", none:"No life support running at 07:00", get same(){ return `No new life support at ${P(lines.base)} or more`; },
     get stay(){ return `Under ${P(lines.base)} chance of leaving the ICU in the next 24 h`; },
     on:k=>`${ICN[k]} running at 07:00`, start:(k,v)=>`${pct(v)} chance of starting ${START[k]} in the next 24 h`, out:v=>`${pct(v)} chance of leaving the ICU in the next 24 h`,
-    get level(){ return {High:`High: ${P(upLine(lines.base))} or more`, Medium:`Medium: ${P(lines.base)} or more`, Low:`Low: under ${P(lines.base)}`}; },
+    get level(){ return {High:`High: ${P(worseLine(lines.base))} or more`, Medium:`Medium: ${P(lines.base)} or more`, Low:`Low: under ${P(lines.base)}`}; },
     band:{"USUAL":"USUAL: about a typical day", "BUSY":"BUSY: more life support than a typical day", "VERY BUSY":"VERY BUSY: well above a typical day",
       "ON TRACK":"ON TRACK: expected need fits what is free", "TIGHT":"TIGHT: expected need is close to what is free", "SHORT":"SHORT: expected need is more than what is free", "AT LIMIT":"AT LIMIT: as many flagged beds as are free, none spare"},
     ward:{synthetic:"Demo data: synthetic patients made on this screen", "open-demo":"MIMIC-IV Demo: open demo patients", "mimic-iv":"MIMIC-IV · local: real records, kept on this unit's servers"},
@@ -888,7 +999,7 @@ details.more summary:hover{color:var(--ink)}
   const nextList = r => SUP.filter(k=>!r.on_now[k] && r.p[k]!=null && r.p[k]>=lines[k]).sort((a,b)=>r.p[b]-r.p[a]);
   const anyNew = r => 1-SUP.reduce((m,k)=>m*(r.on_now[k]||r.p[k]==null?1:1-r.p[k]),1);
   function traj(r){ const a=anyNew(r), dep=r.p.icu_departure;
-    if(a>=upLine(lines.base) || SUP.some(k=>!r.on_now[k] && r.p[k]!=null && r.p[k]>=upLine(lines[k]))) return "worse";
+    if(a>=worseLine(lines.base) || SUP.some(k=>!r.on_now[k] && r.p[k]!=null && r.p[k]>=worseLine(lines[k]))) return "worse";
     if(a>=lines.base || nextList(r).length) return "watch";
     if(onList(r).length && dep!=null && dep<lines.base) return "hold";
     return dep!=null && dep>=lines.leave ? "leave" : "steady"; }
@@ -915,7 +1026,7 @@ details.more summary:hover{color:var(--ink)}
   let when="next"; try{ const v=localStorage.getItem("lookahead-when"); if(v==="now"||v==="next") when=v; }catch(e){ /* no storage */ }
   const hashNow = () => `#view=${view}&when=${when}`;
   function paintView(){ document.documentElement.dataset.view=view; for(const b of $("seg").children) b.setAttribute("aria-pressed",String(b.dataset.v===view));
-    const N=RM.rooms.length, back=$("back"); back.href=hashNow(); back.innerHTML = svg("arrow","","flip")+(view==="strain" ? "Unit strain" : N ? `All ${N} rooms` : "All rooms"); }
+    const N=RM.rooms.length, back=$("back"); back.href=hashNow(); }
   function setView(v, write){ if(v!=="beds"&&v!=="strain") return; view=v;
     try{ localStorage.setItem("lookahead-view",v); }catch(e){ /* storage blocked */ }
     if(write){ try{ history.replaceState(null,"",hashNow()); }catch(e){ /* keep the old hash */ } }
@@ -926,44 +1037,66 @@ details.more summary:hover{color:var(--ink)}
     document.documentElement.dataset.mode = nowMode() ? "now" : "next";
     const pn = isPending() && when==="next" ? `<b>${PEND_LINE}</b> Showing now: ` : "";
     $("bedsub").innerHTML = nowMode() ? pn+"<b>Now, per patient</b> · life support running at 07:00" : "<b>Forecast, per patient</b> · chance in the next 24 h of starting a ventilator, vasopressor or CRRT, or leaving the ICU";
-    $("strain-title").textContent = isPending() && when==="next" ? `${PEND_LINE} Unit now · life support running at 07:00` : nowMode() ? "Unit now · life support running at 07:00" : "Unit forecast · next 24 h (07:00 to 07:00)"; }
+    $("strain-title").textContent = isPending() && when==="next" ? `${PEND_LINE} Unit now · life support running at 07:00` : nowMode() ? "Unit now · life support running at 07:00" : "Predicted events · next 24 h"; }
+  let slideT=0;
   function setWhen(v, write){ if(v!=="now"&&v!=="next") return; const same=v===when; when=v;
     try{ localStorage.setItem("lookahead-when",v); }catch(e){ /* storage blocked */ }
     if(write && room===null){ try{ history.replaceState(null,"",hashNow()); }catch(e){ /* keep the old hash */ } }
     paintWhen(); if(same) return;
+    { const h=document.documentElement; delete h.dataset.slide; void h.offsetWidth; h.dataset.slide = v==="next" ? "l" : "r"; clearTimeout(slideT); slideT=setTimeout(()=>{ delete h.dataset.slide; }, 300); }
     const y=window.scrollY; paintLegend(); renderStrain(); renderGrid(); if(room!==null) renderRoom(); window.scrollTo(0,y); }       // same grid, same order, same scroll
+  /* swipe: left for the next 24 h, right for now. One finger on a touch screen, or a two-finger sideways swipe on a trackpad. */
+  { const free = e => $("setmenu").hidden && !(e.target.closest && e.target.closest("input,textarea,select,#chatpanel,.setmenu"));
+    let sx=0, sy=0, st=0, on=false, acc=0, last=0, quiet=0;
+    document.addEventListener("touchstart", e=>{ on = e.touches.length===1 && free(e); if(on){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; st=e.timeStamp; } }, {passive:true});
+    document.addEventListener("touchend", e=>{ if(!on) return; on=false; const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+      if(e.timeStamp-st<700 && Math.abs(dx)>60 && Math.abs(dx)>2*Math.abs(dy)) setWhen(dx<0?"next":"now", true); }, {passive:true});
+    document.addEventListener("wheel", e=>{ if(Math.abs(e.deltaX)<=Math.abs(e.deltaY) || !free(e)) return; e.preventDefault();
+      if(e.timeStamp<quiet) return; if(e.timeStamp-last>300) acc=0; last=e.timeStamp; acc+=e.deltaX;
+      if(Math.abs(acc)>90){ setWhen(acc>0?"next":"now", true); acc=0; quiet=e.timeStamp+700; } }, {passive:false}); }
   for(const b of document.querySelectorAll(".when button")){ b.onclick=()=>setWhen(b.dataset.w,true);
     b.onkeydown=e=>{ if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight") return; e.preventDefault(); const o=b.parentElement.querySelector(`button[data-w="${e.key==="ArrowLeft"?"now":"next"}"]`); o.focus(); setWhen(o.dataset.w,true); }; }
 
   /* the flag control: three presets and a small Thresholds popover (per-event steppers with the beds each catches, and a custom line) */
-  const flagCount = k => RM.rooms.filter(r => k==="leave" ? r.p.icu_departure!=null && r.p.icu_departure>=lines.leave : !r.on_now[k] && r.p[k]!=null && r.p[k]>=lines[k]).length;
+  const flagCount = k => RM.rooms.filter(r => k==="leave" ? r.p.icu_departure!=null && r.p.icu_departure>=lines.leave : k==="death" ? r.p.death!=null && r.p.death>=lines.death : !r.on_now[k] && r.p[k]!=null && r.p[k]>=lines[k]).length;
   function paintFlag(){ const pv=Math.round(lines.base*100), even=SUP.every(k=>lines[k]===lines.base);
-    for(const b of $("flag").querySelectorAll("button")) b.disabled=isPending(); if(isPending() && !$("thrpop").hidden) thrOpen(false);
+    for(const b of $("flag").querySelectorAll("button")) b.disabled=isPending();
     for(const b of $("fseg").children) b.setAttribute("aria-pressed", String(even && +b.dataset.p===pv));
     $("flag-l").dataset.tip=DEF.flag; $("flag-l").textContent = even && [50,25,10].includes(pv) ? "Flag beds at" : `Flag beds at ${even?P(lines.base):"custom"}`;
-    const pop=$("thrpop"); if(pop.hidden) return; const keep=document.activeElement && pop.contains(document.activeElement) ? [document.activeElement.dataset.k, document.activeElement.dataset.d] : null;
+    const pop=$("thrpop"), sp=$("stpop"); if(pop.hidden) return; if(isPending()){ sp.innerHTML=""; pop.innerHTML=`<p class="seti">Thresholds can be set once there is a forecast.</p>`; return; }
+    const act=document.activeElement, keep=act && (pop.contains(act)||sp.contains(act)) ? [act.dataset.k, act.dataset.d] : null;
+    const nOf=t=>RM.rooms.filter(r=>traj(r)===t).length, wv=Math.round(worseLine(lines.base)*100);
+    const srow=(k,t,name,v,lo)=>{ const n=nOf(t); return `<div class="lrow"><span class="nm"><i class="sw t-${t}"></i>${name}</span><button type="button" class="step" data-k="${k}" data-d="-5" aria-label="${name}: 5 points lower"${v-5<lo?" disabled":""}>−</button><span class="val">${v}%</span><button type="button" class="step" data-k="${k}" data-d="5" aria-label="${name}: 5 points higher"${v>=95?" disabled":""}>+</button><span class="cnt">${n} ${n===1?"bed":"beds"}</span></div>`; };
+    sp.innerHTML = srow("worse","worse","Worsening",wv,pv+1)+srow("base","watch","Watch",pv,1)+srow("leave","leave","Leaving",Math.round(lines.leave*100),1);
+    for(const b of sp.querySelectorAll(".step")) b.onclick=()=>{ const k=b.dataset.k, d=+b.dataset.d;
+      if(k==="worse"){ lines.worse=Math.max(pv+1,Math.min(99,wv+d))/100; applyLines(); } else if(k==="base") setBase(Math.max(1,Math.min(99,pv+d))); else setLine("leave", Math.round(lines.leave*100)+d); };
     const row=(k,name,icon)=>{ const n=flagCount(k), v=Math.round(lines[k]*100); return `<div class="lrow"><span class="nm">${icon}${name}</span><button type="button" class="step" data-k="${k}" data-d="-5" aria-label="${name}: flag 5 points lower"${v<=5?" disabled":""}>−</button><span class="val">${v}%</span><button type="button" class="step" data-k="${k}" data-d="5" aria-label="${name}: flag 5 points higher"${v>=95?" disabled":""}>+</button><span class="cnt">${n} ${n===1?"bed":"beds"}</span></div>`; };
-    pop.innerHTML=`<h3>Thresholds</h3>${SUP.map(k=>row(k,SHORTN[k],ic(k,false))).join("")}${row("leave","Leaving",ic("leave",false))}
+    pop.innerHTML=`${SUP.map(k=>row(k,SHORTN[k],ic(k,false))).join("")}${row("leave","Leaving",ic("leave",false))}${row("death","Death",svg("death"))}
       <div class="cust"><label for="thr-all">All supports</label><input id="thr-all" type="number" inputmode="numeric" min="1" max="99" step="1" value="${pv}"><span>%</span><span class="spacer"></span><button type="button" class="toggle" id="thr-reset">Reset</button></div>`;
     for(const b of pop.querySelectorAll(".step")) b.onclick=()=>setLine(b.dataset.k, Math.round(lines[b.dataset.k]*100)+ +b.dataset.d);
     $("thr-all").onchange=e=>{ const v=Math.round(+e.target.value); if(v>=1&&v<=99){ setBase(v); $("thr-all").focus(); } else e.target.value=pv; };
     $("thr-reset").onclick=()=>{ lines={...LINE_DEF}; applyLines(); $("thr-reset").focus(); };
-    if(keep && keep[0]){ const t=pop.querySelector(`.step[data-k="${keep[0]}"][data-d="${keep[1]}"]`); if(t) (t.disabled ? pop.querySelector(`.step[data-k="${keep[0]}"]:not(:disabled)`) : t).focus(); } }
+    if(keep && keep[0]){ const box = keep[0]==="worse"||keep[0]==="base" ? sp : act && sp.contains(act) ? sp : pop, t=box.querySelector(`.step[data-k="${keep[0]}"][data-d="${keep[1]}"]`); if(t) (t.disabled ? box.querySelector(`.step[data-k="${keep[0]}"]:not(:disabled)`) : t).focus(); } }
   function applyLines(){ saveLines(); const y=window.scrollY; paintFlag(); paintLegend(); renderStrain(); renderGrid(); if(room!==null) renderRoom(); window.scrollTo(0,y); }      // same grid and order; only the styling changes
-  function setLine(k, v){ lines[k]=Math.max(1,Math.min(99,v))/100; if(k!=="leave") lines.base=Math.min(...SUP.map(s=>lines[s])); applyLines(); }
+  function setLine(k, v){ lines[k]=Math.max(1,Math.min(99,v))/100; if(SUP.includes(k)) lines.base=Math.min(...SUP.map(s=>lines[s])); applyLines(); }
   function setBase(v){ lines.base=v/100; for(const k of SUP) lines[k]=lines.base; applyLines(); }
   for(const b of $("fseg").children) b.onclick=()=>setBase(+b.dataset.p);
-  function thrOpen(on){ $("thrpop").hidden=!on; $("thrbtn").setAttribute("aria-expanded",String(on)); if(on) paintFlag(); }
-  $("thrbtn").onclick=()=>thrOpen($("thrpop").hidden);
-  document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("thrpop").hidden){ thrOpen(false); $("thrbtn").focus(); } });
-  document.addEventListener("pointerdown", e=>{ if(!$("thrpop").hidden && !$("flag").contains(e.target)) thrOpen(false); });
+  /* the settings panel: the gear opens it. Close, Escape or a press outside closes it. */
+  const menu=$("setmenu"), gear=$("gear");
+  function setMenu(on, at){ menu.hidden=!on; $("thrpop").hidden=!on; gear.setAttribute("aria-expanded",String(on));
+    if(!on) return; paintFlag(); $("set-h").focus({preventScroll:true}); if(at) $(at).scrollIntoView({block:"start"}); else menu.scrollTop=0; }
+  gear.onclick=()=>setMenu(menu.hidden);
+  $("setclose").onclick=()=>{ setMenu(false); gear.focus(); };
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !menu.hidden){ setMenu(false); gear.focus(); } });
+  document.addEventListener("pointerdown", e=>{ if(!menu.hidden && !menu.contains(e.target) && !gear.contains(e.target)) setMenu(false); });
   function paintLegend(){
     if(nowMode()) $("legend").innerHTML = SUP.map(k=>`<span${T(DEF.on(k))}>${ic(k,true)}${SHORTN[k]}</span>`).join("")+`<i class="sep"></i><span>Life support running at 07:00</span>`;
-    else $("legend").innerHTML = ["worse","watch","hold","leave"].map(t=>`<span${T(DEF[t])}><i class="sw t-${t}">${svg(TRAJ[t][1])}</i>${TRAJ[t][0]} <b>${RM.rooms.filter(r=>traj(r)===t).length}</b></span>`).join("")
-      +`<i class="sep"></i><span${T("Solid icon: that life support is running at 07:00")}>${SUP.map(k=>ic(k,true)).join("")}on now</span><span${T("Outline icon with a percentage: the chance it starts in the next 24 h")}>${svg("arrow")}${SUP.map(k=>ic(k,false)).join("")}may start</span><span${T(DEF.any)}>${svg("any")}any of them</span>`;
+    else $("legend").innerHTML = ["worse","watch","hold","leave"].map(t=>`<span${T(DEF[t])}><i class="sw t-${t}"></i>${TRAJ[t][0]} <b>${RM.rooms.filter(r=>traj(r)===t).length}</b></span>`).join("")
+      +`<i class="sep"></i>`+SUP.map(k=>`<span${T(`${SHORTN[k]}. Solid: running at 07:00. Outline with a percentage: the chance it starts in the next 24 h`)}>${ic(k,true)}${ic(k,false)}${SHORTN[k]}</span>`).join("")
+      +`<span${T("Leaving the ICU for a ward or step-down unit in the next 24 h")}>${ic("leave",false)}Leaving</span><span${T(DEF.any)}>${svg("any")}Any support</span><span${T("A solid icon is running at 07:00. An outline icon with a percentage is the chance it starts in the next 24 h")}>solid on now · outline may start</span>`;
     $("iconkey").innerHTML = SUP.map(k=>`<span${T(DEF.on(k))}>${ic(k,true,ICN[k]+" running")}${ic(k,false,ICN[k]+" expected")}${SHORTN[k]}</span>`).join("")
       +`<span>${ic("leave",false,"Leaving the ICU")}Leaving</span><span>${svg("any","Any new life support")}Any new support</span><span>Solid: running at 07:00. Outline: the chance it starts.</span>`;
-    $("defflag").textContent = `${DEF.flag}. Worsening starts at the next step up (${P(upLine(lines.base))}). Kept on this device; the Thresholds button tunes each support and the leaving line.`;
+    $("defflag").textContent = `${DEF.flag}. Worsening starts at ${P(worseLine(lines.base))}. Kept on this device; Settings sets the Worsening, Watch and Leaving lines and each event's threshold.`;
     $("defstatus").innerHTML = ["worse","watch","hold","leave","steady"].map(t=>`<span>${esc(DEF[t])}.</span>`).join(" ");
     $("defband").innerHTML = Object.values(DEF.band).map(s=>`<span>${esc(s)}.</span>`).join(" "); }
 
@@ -975,12 +1108,12 @@ details.more summary:hover{color:var(--ink)}
     if(!hasFc() && !(isPending() && hasNow())){
       const off = offline && !FC;
       $("strainbody").innerHTML=`<div class="lh"><h2 id="strain-h">Life support</h2></div><p class="nums"><span><b>No forecast yet</b></span></p><p class="barl">${off?"Can't reach the board server — retrying.":'Updates start at 07:00. Use "Update the unit" to start one.'}</p>`;
-      $("lead").className="lead"; $("deaths").textContent=""; $("capset").textContent=""; tbtn.hidden=true; sl.hidden=true; renderWatch(); return; }
+      delete $("strainview").dataset.cards; $("lead").className="lead"; $("deaths").textContent=""; $("capset").textContent=""; tbtn.hidden=true; sl.hidden=true; $("alerts").hidden=true; renderWatch(); return; }
     const raw=rawY(); if(viewTyp && !(raw&&raw.kind==="capacity"&&raw.typ!=null)) viewTyp=false;
-    if(nowMode()){ const ls=FC.life_support, capd=raw&&raw.kind==="capacity";
+    if(nowMode()){ const ls=FC.life_support, capd=raw&&raw.kind==="capacity"; delete $("strainview").dataset.cards;
       $("strainbody").innerHTML = `<div class="lh"><h2 id="strain-h">Life support</h2><span class="upd" id="upd-strain" ${run?"":"hidden"}>updating</span></div>
         <div class="nums"><span${T("Patients on a ventilator, vasopressor or CRRT at 07:00")}><b>${ls.now_patients}</b><i>patients on life support now</i></span>${capd?`<span${T("Life-support patients tonight's staffing covers")}><b>${raw.ls}</b><i>tonight's staffing covers</i></span>`:""}${capd&&raw.vf!=null?`<span${T("Ventilators free tonight")}><b>${raw.vf}</b><i>ventilators free</i></span>`:""}</div>`;
-      $("lead").className="lead"; $("deaths").textContent=""; sl.hidden=false; sl.setAttribute("aria-label",`Unit now: ${ls.now_patients} on life support`);
+      $("lead").className="lead"; $("deaths").textContent=""; sl.hidden=false; $("alerts").hidden=false; $("albody").innerHTML=""; $("runbadge").hidden=true; sl.setAttribute("aria-label",`Unit now: ${ls.now_patients} on life support`);
       sl.innerHTML=`<span${T("Patients on a ventilator, vasopressor or CRRT at 07:00")}><b>${ls.now_patients}</b> on life support now</span>`;
       $("capset").textContent = capd ? `Capacity set ${raw.set_at?hm(raw.set_at)+" ":""}by ${roleLabel(raw.role||"")||"the team"}` : ""; tbtn.hidden=true; renderWatch(); return; }
     const ls=FC.life_support, y=Y(), q=ls.expected_new_patients, dd=FC.resources.death, load=loadOf();
@@ -992,32 +1125,45 @@ details.more summary:hover{color:var(--ink)}
     $("lead").className = "lead"+(y&&y.level!=="ok"?` lv-${y.level}`:"");
     $("deaths").innerHTML = `<span${T(DEF.bar("Deaths expected in the unit in the next 24 h",dd))}>Deaths expected in the unit <b>${dd.p50}</b> ${rgT(dd)}</span>`;
     sl.hidden=false; sl.setAttribute("aria-label",`Unit forecast: ${ls.now_patients} on life support now, ${q.p50} new expected in 24 hours${y?`, ${y.words}`:""}`);
-    sl.innerHTML = `<span${T("Patients on a ventilator, vasopressor or CRRT at 07:00")}><b>${ls.now_patients}</b> on life support now</span><span class="f"${T(DEF.bar("Patients expected to start life support in the next 24 h",q))}><b>+${q.p50}</b> new expected in 24 h</span>${y?`<span class="band lv-${y.level}"${T(DEF.band[y.words])}>${y.words}</span>`:""}${gapChips()}`;
+    sl.innerHTML = `<span${T("Patients on a ventilator, vasopressor or CRRT at 07:00")}><b>${ls.now_patients}</b> on life support now</span><span class="f"${T(DEF.bar("Patients expected to start life support in the next 24 h",q))}><b>+${q.p50}</b> new expected in 24 h</span>${y?`<span class="band lv-${y.level}"${T(DEF.band[y.words])}>${y.words}</span>`:""}`;
     let cs="";
     if(viewTyp) cs=`Typical day shown on this screen only. Staffing number (${raw.ls}) kept.`;
     else if(raw && raw.kind==="capacity") cs=`Capacity set ${raw.set_at?hm(raw.set_at)+" ":""}by ${roleLabel(raw.role||"")||"the team"}`;
     $("capset").textContent=cs;
     tbtn.hidden = !(raw && raw.kind==="capacity" && raw.typ!=null);
     tbtn.textContent = viewTyp ? "View against tonight's staffing" : "View against a typical day";
+    // the alert line: what is short against what is free, the three highest-risk beds, and when this forecast was made
+    $("strainview").dataset.cards="1";
+    const warn=svg("warn"), w3=topBeds();
+    $("alerts").hidden=false; $("runbadge").hidden=false; $("runbadge").textContent=`Last run ${hm(FC.made_at)}`;
+    $("albody").innerHTML = [["imv","Ventilators"],["crrt","CRRT"]].map(([k,nm])=>{ const g=gapOf(k); return g>0 ? `<span class="al red"${T(DEF.band.SHORT)}>${warn}${nm} short by ${g}</span>` : g===0 && flagCount(k)>0 ? `<span class="al amber"${T(DEF.band["AT LIMIT"])}>${warn}${nm} at the limit, none spare</span>` : ""; }).join("")
+      + (w3.length ? `<span class="hi"><span>Highest-risk beds</span>${w3.map(n=>`<button type="button" class="bedchip" data-room="${n}" aria-label="Open bed ${n}, one of the highest-risk beds">${n}</button>`).join("")}</span>` : "")
+      + (cs ? `<span class="capset">${esc(cs)}</span>` : "");
+    for(const b of $("alerts").querySelectorAll(".bedchip")) b.onclick=()=>openRoom(+b.dataset.room);
     renderWatch();
   }
   /* Dema's capacity bar, used when a number free is set: the whole bar is the total (in use + free); solid = in use now,
      lighter = with the flagged beds; it turns red when that passes the total. */
-  function usageBar(on, free, pred, tip){ const tot=on+free, sum=on+pred, over=sum>tot, max=Math.max(tot,1), x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
-    return `<svg class="ubar" viewBox="0 0 300 46" preserveAspectRatio="xMinYMid meet" role="img" aria-label="${on} in use now, ${sum} with the flagged beds, ${tot} in total${over?": over the total":""}"${tip?T(tip):""}>
+  function usageBar(on, free, pred, tip){ const tot=free!=null?on+free:null, sum=on+pred, over=tot!=null&&sum>tot, max=tot!=null?Math.max(tot,1):Math.max(sum,1)+1, x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
+    return `<svg class="ubar" viewBox="0 0 300 46" preserveAspectRatio="xMinYMid meet" role="img" aria-label="${on} in use now, ${sum} with the flagged beds${tot!=null?`, ${tot} in total${over?": over the total":""}`:", no total set"}"${tip?T(tip):""}>
       <rect x="0" y="0" width="300" height="46" fill="none" pointer-events="all"/><line x1="6" x2="294" y1="25" y2="25" stroke="var(--fig)" stroke-width="10" stroke-linecap="round"/>
       ${sum?`<line x1="6" x2="${x(sum)}" y1="25" y2="25" stroke="${col}" stroke-opacity=".4" stroke-width="10" stroke-linecap="round"/>`:""}
       ${on?`<line x1="6" x2="${x(on)}" y1="25" y2="25" stroke="${col}" stroke-width="10" stroke-linecap="round"/>`:""}
       <line x1="${x(on)}" x2="${x(on)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3"/><text x="${x(on)}" y="11" text-anchor="middle" font-size="14" font-weight="700">${on}</text>
-      ${pred?`<line x1="${x(sum)}" x2="${x(sum)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3" stroke-dasharray="3 2"/>${x(sum)-x(on)>24?`<text x="${Math.min(x(sum),286)}" y="11" text-anchor="${x(sum)>280?"end":"middle"}" font-size="14" font-weight="700">${sum}</text>`:""}`:""}
-      <text x="294" y="45" text-anchor="end" font-size="13">${tot} total</text></svg>`; }
+      ${pred?`<line x1="${x(sum)}" x2="${x(sum)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3" stroke-dasharray="3 2"/>${x(sum)-x(on)>24?`<text x="${Math.min(x(sum),286)}" y="11" text-anchor="${x(sum)>280?"end":"middle"}" font-size="14" font-weight="700">${sum}*</text>`:""}`:""}
+      ${tot!=null?`<text x="294" y="45" text-anchor="end" font-size="13">${tot} total</text>`:""}</svg>`; }
+  /* a bed's top risk: its highest chance among death and the supports it is not on yet; the three highest in the unit pulse (Dema's rule), with ties */
+  const RISKK = ["death","imv","vasopressor","crrt"];
+  const riskOf = (r,k) => k==="death" ? r.p.death : k==="leave" ? r.p.icu_departure : r.on_now[k] ? null : r.p[k];
+  const topRisk = r => { let best=null; for(const k of RISKK){ const v=riskOf(r,k); if(v!=null && (!best || v>best[1])) best=[k,v]; } return best; };
+  const topBeds = () => { const l=RM.rooms.map(r=>[r.room,topRisk(r)]).filter(x=>x[1]).sort((a,b)=>b[1][1]-a[1][1]); if(l.length<=3) return l.map(x=>x[0]);
+    const cut=Math.round(l[2][1][1]*100); return l.filter(x=>Math.round(x[1][1]*100)>=cut).map(x=>x[0]); };      // the top three, plus any bed tied with the third at the shown percent
   const gapOf = k => { const fr=machFree(k); return fr==null ? null : flagCount(k)-fr; };      // flagged beds minus what is free
-  const gapChips = () => [["imv","Ventilators"],["crrt","CRRT"]].map(([k,nm])=>{ const g=gapOf(k); return g>0 ? `<span class="band lv-red"${T(DEF.band.SHORT)}>${nm} short by ${g}</span>` : g===0 && flagCount(k)>0 ? `<span class="band lv-amber"${T(DEF.band["AT LIMIT"])}>${nm} at the limit</span>` : ""; }).join("");
   /* the beds behind each count: solid ink figures are on that support now, the others fill with the chance (2 in 10 or more; leaving at 6 in 10 or more) */
   function renderWatch(){
     const el=$("watch"); if((!hasFc() && !(isPending() && hasNow())) || !RM.rooms.length){ el.innerHTML=""; return; }
     const ls=FC.life_support, y=Y(), rs=RM.rooms, first=FIRST[role()], CARDN={imv:"Ventilator (IMV)", vasopressor:"Vasopressor", crrt:"CRRT"};
-    const fig = (r,cls,p,label,name,dv) => `<button type="button" class="pp${cls?" "+cls:""}" data-room="${r.room}" aria-label="Room ${r.room}${r.name?`, ${esc(r.name.full)}`:""}: ${name}"${T(`Room ${r.room}${r.name?` · ${r.name.display}`:""} · ${name}`)}><span class="av"${p!=null?` style="--p:${Math.round(p*100)}%"`:""} aria-hidden="true"><svg class="base" viewBox="0 0 40 42"><use href="#i-fig"/></svg>${p!=null?`<svg class="fill" viewBox="0 0 40 42"><use href="#i-fig"/></svg>`:""}</span><span class="rm">${r.room}</span>${label?`<span class="pc">${label}</span>`:""}${dv?`<span class="dv" aria-hidden="true">${dv}</span>`:""}</button>`;
+    const fig = (r,cls,p,label,name,dv) => `<button type="button" class="pp${cls?" "+cls:""}" data-room="${r.room}" aria-label="Bed ${r.room}${r.name?`, ${esc(r.name.full)}`:""}: ${name}"${T(`Bed ${r.room}${r.name?` · ${r.name.display}`:""} · ${name}`)}><span class="av"${p!=null?` style="--p:${Math.round(p*100)}%"`:""} aria-hidden="true"><svg class="base" viewBox="0 0 40 42"><use href="#i-fig"/></svg>${p!=null?`<svg class="fill" viewBox="0 0 40 42"><use href="#i-fig"/></svg>`:""}</span><span class="rm">${r.room}</span>${label?`<span class="pc">${label}</span>`:""}${dv?`<span class="dv" aria-hidden="true">${dv}</span>`:""}</button>`;
     const top = Math.max(...SUP.map(k=>ls.expected_by[k].p90));      // the three support bars share one scale
     if(nowMode()){
       el.innerHTML = SUP.map(k=>{ const on=rs.filter(r=>r.on_now[k]); return `<article class="wc" data-k="${k}" style="order:${first===k?0:1}" aria-labelledby="wc-${k}">
@@ -1025,26 +1171,29 @@ details.more summary:hover{color:var(--ink)}
         <div class="nums"><span><b>${ls.now_by[k]}</b><i>on now</i></span>${machFree(k)!=null?`<span${T(`${k==="imv"?"Ventilators":"CRRT machines"} free now`)}><b>${machFree(k)}</b><i>free${machines[k]!=null?` of ${machines[k]}`:""}</i></span>`:""}</div>
         <span class="gl">On now</span>${on.length?`<div class="set">${on.map(r=>fig(r,"on",null,"",`on ${START[k]} now`)).join("")}</div>`:`<p class="nobody">None</p>`}</article>`; }).join("");
       for(const b of el.querySelectorAll(".pp")) b.onclick=()=>openRoom(+b.dataset.room); return; }
-    const set = (list, none) => list.length ? `<div class="set">${list.join("")}</div>` : `<p class="nobody">${none}</p>`;
-    const card = k => { const q=ls.expected_by[k], free = machFree(k);
-      const on=rs.filter(r=>r.on_now[k]), may=rs.filter(r=>!r.on_now[k] && r.p[k]!=null && r.p[k]>=lines[k]).sort((a,b)=>b.p[k]-a.p[k]), n=may.length;
+    /* Dema's cards: one per event. Predicted new* is the beds at or above that event's threshold; the unit forecast (expected count, 8-in-10 range) sits under it. */
+    const NAME={death:"Deaths", imv:"Ventilator", vasopressor:"Vasopressor", crrt:"CRRT", leave:"Leave the ICU to ward or step-down"}, EVW={death:"death in hospital", imv:"starting a ventilator", vasopressor:"starting a vasopressor", crrt:"starting CRRT", leave:"leaving the ICU"}, SHORTEV={death:"Death", imv:"Vent", vasopressor:"Press", crrt:"CRRT"};
+    const w3=topBeds(), nb=n=>n?`${n} ${n===1?"bed":"beds"}`:"no beds", flagged=new Set();
+    const card = k => { const sup=SUP.includes(k), c = k==="death" ? FC.resources.death : k==="leave" ? FC.resources.icu_departure : ls.expected_by[k], q = c && c.p50!=null ? c : null;
+      const may=rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), n=may.length; if(k!=="leave") for(const r of may) flagged.add(r.room);
+      const mach = k==="imv"||k==="crrt", free = sup ? machFree(k) : null, onN = sup ? rs.filter(r=>r.on_now[k]).length : 0;
       const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is free
-      const freeable = k==="vasopressor" ? 0 : on.filter(r=>r.p.icu_departure!=null && r.p.icu_departure>=lines.leave).length;
-      return `<article class="wc${lv?` lv-${lv}`:""}" data-k="${k}" style="order:${first===k?0:1};--w:${Math.max(5,Math.min(10,Math.max(on.length,n)))}" aria-labelledby="wc-${k}">
-        <header>${ic(k,true)}<div><h3 id="wc-${k}">${CARDN[k]}</h3><p class="wsub">patients expected to start ${START[k]} in the next 24 h</p></div>${st?`<span class="band lv-${lv}"${T(DEF.band[st])}>${st}</span>`:""}</header>
-        <div class="nums"><span${T(`Patients on ${START[k]} at 07:00`)}><b>${ls.now_by[k]}</b><i>on now</i></span>${free!=null?`<span${T(`${k==="imv"?"Ventilators":"CRRT machines"} free: ${free}${machines[k]!=null?` of ${machines[k]} on the unit`:""}`)}><b>${free}</b><i>free${machines[k]!=null?` of ${machines[k]}`:""}</i></span>`:""}<span class="f"${T(DEF.bar("Expected new starts",q))}><b>+${q.p50}</b><i>expected new starts (${q.p10} to ${q.p90})</i></span></div>
-        ${free!=null ? usageBar(on.length, free, n, `${on.length} in use now, ${on.length+n} with the ${n} flagged, ${on.length+free} in total`) : bar(q,null,null,top,DEF.bar("Expected new starts",q))}
+      const freeable = k==="imv"||k==="crrt" ? rs.filter(r=>r.on_now[k] && r.p.icu_departure!=null && r.p.icu_departure>=lines.leave).length : 0;
+      const frees = k==="leave" ? ["imv","crrt"].map(x=>[x,may.filter(r=>r.on_now[x]).length]).filter(x=>x[1]) : [];
+      return `<article class="wc${lv?` lv-${lv}`:""}" data-k="${k}" style="order:${first===k?0:1};--w:${Math.max(4,Math.min(10,n))}" aria-labelledby="wc-${k}">
+        <h3 id="wc-${k}">${NAME[k]}${st?`<span class="band lv-${lv}"${T(DEF.band[st])}>${st}</span>`:""}</h3>
+        <div class="stats">${sup?`<span${T(`Patients on ${START[k]} at 07:00`)}><i>On now</i><b>${ls.now_by[k]}</b><small>beds</small></span>`:""}${mach ? (free!=null?`<span class="free"${T(`${k==="imv"?"Ventilators":"CRRT machines"} free: ${free}${machines[k]!=null?` of ${machines[k]} on the unit`:""}`)}><i>Free</i><b>${free}</b><small>${machines[k]!=null?`of ${machines[k]}`:"&nbsp;"}</small></span>`:`<span${T(`No total is set for ${k==="imv"?"ventilators":"CRRT machines"}: set it in Settings, under Capacity`)}><i>Free</i><b>–</b><small><button type="button" class="chg capset-go" aria-label="Set the total ${k==="imv"?"ventilators":"CRRT machines"} in settings">not set</button></small></span>`) : ""}<span class="exp"${T("Beds at or above this event's threshold: a flag per bed, not a certainty")}><i>Predicted new*</i><b>${n}</b></span></div>
+        ${q?`<p class="fc"${T(DEF.bar(`Unit forecast: ${EVW[k]}`,q))}>Unit forecast <b>${q.p50}</b> ${rgT(q)}</p>`:""}
         ${freeable?`<p class="frees"${T(`Beds on ${START[k]} now with ${P(lines.leave)} or more to leave the ICU`)}><i>${ic(k,true)}</i><b>${freeable}</b> may free up if likely leavers go</p>`:""}
-        <span class="gl">On now</span>${set(on.map(r=>fig(r,"on",null,"",`on ${START[k]} now`)),"None")}
-        <span class="gl"${T(DEF.flag)}>Beds at ${P(lines[k])} or more · ${n} ${n===1?"bed":"beds"}</span>${set(may.map(r=>fig(r,r.p[k]>=upLine(lines[k])?"w":"",r.p[k],esc(pct(r.p[k])),`${pct(r.p[k])} chance of starting ${START[k]}`)),"None")}</article>`; };
-    const d=FC.resources.icu_departure, out=rs.filter(r=>r.p.icu_departure!=null && r.p.icu_departure>=lines.leave).sort((a,b)=>b.p.icu_departure-a.p.icu_departure);
-    const frees=["imv","crrt"].map(k=>[k,out.filter(r=>r.on_now[k]).length]).filter(x=>x[1]);
-    el.innerHTML = SUP.map(card).join("")+`<article class="wc" data-k="leave" style="order:${first==="leave"?0:2};--w:${Math.max(5,Math.min(10,out.length))}" aria-labelledby="wc-leave">
-        <header>${ic("leave",false)}<div><h3 id="wc-leave">Leaving the ICU</h3><p class="wsub">patients expected to leave the ICU in the next 24 h</p></div></header>
-        <div class="nums"><span class="f"${T(DEF.bar("Patients expected to leave the ICU",d))}><b>${d.p50}</b><i>expected to leave (${d.p10} to ${d.p90})</i></span></div>
-        ${bar(d,null,null,0,DEF.bar("Patients expected to leave the ICU",d))}
-        ${frees.length?`<p class="frees">If these beds leave, they free ${frees.map(([k,n])=>`<i>${ic(k,true)}</i><b>${n}</b> ${k==="imv"?(n===1?"ventilator":"ventilators"):"CRRT"}`).join(" ")}</p>`:""}
-        <span class="gl">Beds at ${P(lines.leave)} or more · ${out.length} ${out.length===1?"bed":"beds"}</span>${set(out.map(r=>fig(r,"out",r.p.icu_departure,esc(pct(r.p.icu_departure)),`${pct(r.p.icu_departure)} chance of leaving the ICU`,SUP.filter(k=>r.on_now[k]).map(k=>`<i>${ic(k,true)}</i>`).join(""))),"None")}</article>`;
+        ${frees.length?`<p class="frees">If these beds leave, they free ${frees.map(([x,m])=>`<i>${ic(x,true)}</i><b>${m}</b> ${x==="imv"?(m===1?"ventilator":"ventilators"):"CRRT"}`).join(" ")}</p>`:""}
+        ${mach ? usageBar(onN, free, n, `${onN} in use now, ${onN+n} with the ${n} flagged${free!=null?`, ${onN+free} in total`:"; no total set"}`) : ""}
+        <span class="gl">Beds to watch</span>
+        <p class="bedline"${T(DEF.flag)}>Beds at <b>${P(lines[k])}</b> or more · <b>${nb(n)}</b> <button type="button" class="chg" aria-label="Change the threshold for ${NAME[k]} in settings">Change</button></p>
+        ${n?`<div class="set">${may.map(r=>fig(r, k!=="leave" && w3.includes(r.room) && topRisk(r)[0]===k ? "w" : "", null, esc(pct(riskOf(r,k))), `${pct(riskOf(r,k))} chance of ${EVW[k]}`, k==="leave" ? SUP.filter(x=>r.on_now[x]).map(x=>`<i>${ic(x,true)}</i>`).join("") : "")).join("")}</div>`:""}</article>`; };
+    const cards=["death",...SUP,"leave"].map(card).join(""), rest=rs.filter(r=>!flagged.has(r.room));
+    el.innerHTML = cards + (rest.length ? `<article class="wc rest" aria-labelledby="wc-rest"><h3 id="wc-rest">Other beds</h3><p class="bedline"><b>under every threshold · ${nb(rest.length)}</b></p>
+        <div class="set">${rest.map(r=>{ const t=topRisk(r); return fig(r, "", null, t?`${SHORTEV[t[0]]}<br>${esc(pct(t[1]))}`:"–", t?`highest chance: ${EVW[t[0]]}, ${pct(t[1])}`:"no estimate"); }).join("")}</div></article>` : "");
+    for(const b of el.querySelectorAll(".chg")) b.onclick=e=>{ e.stopPropagation(); setMenu(true, b.classList.contains("capset-go") ? "cap-h" : "thr-h"); };
     for(const b of el.querySelectorAll(".pp")) b.onclick=()=>openRoom(+b.dataset.room);
   }
   function renderFooter(){
@@ -1058,39 +1207,46 @@ details.more summary:hover{color:var(--ink)}
   /* the room number stays the identifier; the name sits beside sex and age, cut with an ellipsis, full name in the legend */
   const whoH = r => { const sa=[r.sex,r.age].filter(Boolean).join(" "); if(!r.name && !sa) return "";
     return `<span class="who">${r.name?`<span class="pn"${T(r.name.full)}>${esc(r.name.display)}</span>`:""}${sa?`<span class="sa">${r.name?" · ":""}${esc(sa)}</span>`:""}</span>`; };
-  const rn = n => { const r=R(n); return `room ${n}${r&&r.name?` (${r.name.display})`:""}`; };
+  const rn = n => { const r=R(n); return `bed ${n}${r&&r.name?` (${r.name.display})`:""}`; };
   function bedTile(r){
-    const t=traj(r), [word,shape]=TRAJ[t], who=[r.sex,r.age].filter(Boolean).join(" "), b=document.createElement("button");
+    const t=traj(r), [word]=TRAJ[t], who=[r.sex,r.age].filter(Boolean).join(" "), b=document.createElement("button");
     b.type="button"; b.className="bed t-"+t; b.dataset.room=r.room; b.dataset.level=r.level||"none"; b.dataset.state=t; b.dataset.ftip=DEF[t];
-    b.setAttribute("aria-label",`Room ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${word}. ${flowWords(r)}`);
-    b.innerHTML=`<span class="bt"><span class="rm">${r.room}</span>${whoH(r)}<span class="st"${T(DEF[t])}>${svg(shape)}${word}</span></span>${flow(r)}`;
+    b.setAttribute("aria-label",`Bed ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${word}. ${flowWords(r)}`);
+    { const on=onList(r), it=(tip,icon,v)=>`<span class="nx"${T(tip)}>${icon}<small>${esc(pct(v))}</small></span>`;
+      let next = nextList(r).map(k=>it(DEF.start(k,r.p[k]),ic(k,false),r.p[k])).join("");
+      if(topNew(r)) next += it(DEF.any,svg("any"),anyNew(r));
+      if(showLeave(r)) next += it(DEF.out(r.p.icu_departure),ic("leave",false),r.p.icu_departure);
+      else if(t==="hold") next += `<small class="mu"${T(DEF.stay)}>leaving &lt;${P(lines.base)}</small>`;
+      b.innerHTML=`<span class="bt"><span class="rm">${r.room}</span>${whoH(r)}</span>
+        <span class="nowl" aria-hidden="true">${on.length?on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}</span>`).join(""):`<small class="mu"${T(DEF.none)}>No life support</small>`}</span>
+        <span class="nextl" aria-hidden="true"><span class="cap">Next 24 h</span>${next||`<small class="mu"${T(DEF.same)}>nothing new</small>`}</span>`; }
     if(nowMode()){ const on=onList(r), n=on.length;      // Now: only what is running at 07:00; weight is the number of supports
       b.className="bed s"+Math.min(n,2); b.dataset.state="now-"+n; b.dataset.ftip = n ? `Life support running at 07:00: ${on.map(k=>SHORTN[k]).join(", ")}` : DEF.none;
-      b.setAttribute("aria-label",`Room ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${n?`on ${on.map(k=>SHORTN[k]).join(", ")}`:"no life support"} at 07:00.`);
-      b.innerHTML=`<span class="bt"><span class="rm">${r.room}</span>${whoH(r)}${n>=2?`<span class="st"${T(`On ${n} life supports at 07:00`)}>${n} supports</span>`:""}</span><span class="nowl" aria-hidden="true">${n?"":`<small class="mu"${T(DEF.none)}>No life support</small>`}${on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}<small>${SHORTN[k]}</small></span>`).join("")}</span>`; }
+      b.setAttribute("aria-label",`Bed ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${n?`on ${on.map(k=>SHORTN[k]).join(", ")}`:"no life support"} at 07:00.`);
+      b.innerHTML=`<span class="bt"><span class="rm">${r.room}</span>${whoH(r)}${n>=2?`<span class="st"${T(`On ${n} life supports at 07:00`)}>${n} supports</span>`:""}</span><span class="nowl" aria-hidden="true">${n?"":`<small class="mu"${T(DEF.none)}>No life support</small>`}${on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}</span>`).join("")}</span>`; }
     b.onclick=()=>openRoom(r.room); return b; }
   function renderRail(){
     const el=$("rail"), rs=RM.rooms; el.hidden=!rs.length; if(!rs.length){ el.innerHTML=""; return; }
     if(nowMode()){ const N=[["On 2 or more", rs.filter(r=>onList(r).length>=2).sort((a,b)=>onList(b).length-onList(a).length)], ["On 1", rs.filter(r=>onList(r).length===1)]].filter(g=>g[1].length);
-      el.innerHTML=`<h2 id="rail-h">Sickest now</h2>`+(N.length ? `<div class="rgs">${N.map(([t,l],i)=>`<div class="grp" style="--n:${l.length}"><h3>${t} <span class="n">${l.length}</span></h3><div class="rset" data-i="${i}"></div></div>`).join("")}</div>` : `<p class="none">No room is on life support.</p>`);
+      el.innerHTML=`<h2 id="rail-h">Sickest now</h2>`+(N.length ? `<div class="rgs">${N.map(([t,l],i)=>`<div class="grp" style="--n:${l.length}"><h3>${t} <span class="n">${l.length}</span></h3><div class="rset" data-i="${i}"></div></div>`).join("")}</div>` : `<p class="none">No bed is on life support.</p>`);
       N.forEach(([t,l],i)=>{ const set=el.querySelector(`.rset[data-i="${i}"]`); for(const r of l) set.appendChild(bedTile(r)); }); return; }
     const G=[["worse", rs.filter(r=>traj(r)==="worse").sort((a,b)=>anyNew(b)-anyNew(a))],
              ["hold", rs.filter(r=>traj(r)==="hold").sort((a,b)=>onList(b).length-onList(a).length || a.p.icu_departure-b.p.icu_departure)]].filter(g=>g[1].length);
-    el.innerHTML=`<h2 id="rail-h">Worry first</h2>`+(G.length ? `<div class="rgs">${G.map(([t,l])=>`<div class="grp" style="--n:${l.length}"><h3>${svg(TRAJ[t][1])}${TRAJ[t][0]} <span class="n">${l.length}</span></h3><div class="rset" data-t="${t}"></div></div>`).join("")}</div>` : `<p class="none">No room is worsening or not improving.</p>`);
+    el.innerHTML=`<h2 id="rail-h">Worry first</h2>`+(G.length ? `<div class="rgs">${G.map(([t,l])=>`<div class="grp" style="--n:${l.length}"><h3><i class="sw t-${t}"></i>${TRAJ[t][0]} <span class="n">${l.length}</span></h3><div class="rset" data-t="${t}"></div></div>`).join("")}</div>` : `<p class="none">No bed is worsening or not improving.</p>`);
     for(const [t,l] of G){ const set=el.querySelector(`.rset[data-t="${t}"]`); for(const r of l) set.appendChild(bedTile(r)); }
   }
   function renderGrid(){
     const g=$("grid"), N=RM.rooms.length; g.innerHTML="";
-    $("board-h").textContent = N ? `All ${N} rooms` : "Rooms";
+    $("board-h").textContent = N ? `All ${N} beds` : "Beds";
     paintView(); renderRail(); renderWatch();
-    if(!N){ g.innerHTML=`<p class="note">${offline&&!FC?"Can't reach the board server — retrying.":"No rooms yet. They appear when the first forecast finishes."}</p>`; return; }
+    if(!N){ g.innerHTML=`<p class="note">${offline&&!FC?"Can't reach the board server — retrying.":"No beds yet. They appear when the first forecast finishes."}</p>`; return; }
     for(const r of RM.rooms) g.appendChild(bedTile(r));
   }
 
   /* ---------- room page (#room=N) ---------- */
   const boardview=$("boardview"), roomview=$("roomview");
   const openRoom = n => { if(R(n)) location.hash="room="+n; };
-  const lvOf = v => v>=upLine(lines.base)?"High":v>=lines.base?"Medium":"Low";
+  const lvOf = v => v>=worseLine(lines.base)?"High":v>=lines.base?"Medium":"Low";
   function rrow(label, v, on, icon="", tip=""){
     const nm=`<span class="nm">${icon}${label}</span>`;
     if (on) return `<li>${nm}<span class="lw2 on">On now</span><span class="dots" aria-hidden="true"></span><span class="fq">running at 07:00</span></li>`;
@@ -1106,7 +1262,7 @@ details.more summary:hover{color:var(--ink)}
     const t=traj(r), [tw,ts]=TRAJ[t];
     const nowM = nowMode();
     const sa=[r.sex,r.age].filter(Boolean).join(" ");
-    $("rv-h").innerHTML=`Room ${n} <span class="rvk">${[r.name?esc(r.name.full):"", esc(sa)].filter(Boolean).map(x=>"· "+x).join(" ")}</span>`;
+    $("rv-h").innerHTML=`Bed ${n} <span class="rvk">${[r.name?esc(r.name.full):"", esc(sa)].filter(Boolean).map(x=>"· "+x).join(" ")}</span>`;
     $("rv-st").hidden=$("rv-flow").hidden=nowM;
     $("rv-risk-h").textContent = nowM ? "Life support running at 07:00" : "Five predictions for this patient · chance in the next 24 h";
     $("rv-st").innerHTML=`<span class="st stchip t-${t}"${T(DEF[t])}>${svg(ts)}${tw}</span>`;
@@ -1116,29 +1272,45 @@ details.more summary:hover{color:var(--ink)}
     $("rv-sub").innerHTML=`${nowM?"Now · life support running at 07:00":"Forecast for the next 24 h"} · ${hm(w0)} to ${hm(r.window.end)}${dayWord(r.window.end, w0)} · updated ${hm(r.updated_at)} <span class="upd" id="upd-room" ${run?"":"hidden"}>updating</span>`;
     const ids=RM.rooms.map(x=>x.room), i=ids.indexOf(n), pa=$("rv-prev"), na=$("rv-next");
     if(ids.length<2){ pa.hidden=na.hidden=true; } else { const pv=ids[(i-1+ids.length)%ids.length], nx=ids[(i+1)%ids.length]; pa.hidden=na.hidden=false;
-      pa.href=`#room=${pv}`; pa.innerHTML=svg("arrow","","flip")+`Room ${pv}`; na.href=`#room=${nx}`; na.innerHTML=`Room ${nx}`+svg("arrow"); }
+      pa.href=`#room=${pv}`; pa.innerHTML=svg("arrow","","flip")+`Bed ${pv}`; na.href=`#room=${nx}`; na.innerHTML=`Bed ${nx}`+svg("arrow"); }
     const p=r.p, on=r.on_now;
     if(nowM) $("rv-risks").innerHTML = (isPending() ? `<p class="stopped">${PEND_LINE}</p>` : "") + `<ul class="risks now">${SUP.map(k=>`<li><span class="nm">${ic(k,on[k])}${SHORTN[k]}</span><span class="lw2${on[k]?" on":""}">${on[k]?"On now":"Not running"}</span></li>`).join("")}</ul>${stoppedNote(r)}`;
     else $("rv-risks").innerHTML = `<ul class="risks">${SUP.map(k=>rrow(ROWN[k],p[k],on[k],ic(k,on[k]),p[k]!=null?DEF.start(k,p[k]):"")).join("")}</ul>${stoppedNote(r)}
-      <ul class="risks solo">${rrow("Leaves the ICU (ward or step-down)",p.icu_departure,false,ic("leave",false),p.icu_departure!=null?DEF.out(p.icu_departure):"")}${rrow("Dies in hospital",p.death,false,"",p.death!=null?`${pct(p.death)} chance of death in hospital in the next 24 h`:"")}</ul>`;
+      <ul class="risks solo">${rrow("Leaves the ICU (ward or step-down)",p.icu_departure,false,ic("leave",false),p.icu_departure!=null?DEF.out(p.icu_departure):"")}${rrow("Dies in hospital",p.death,false,svg("death"),p.death!=null?`${pct(p.death)} chance of death in hospital in the next 24 h`:"")}</ul>`;
     const ph=r.past_12h, items=pastOpen?ph:ph.slice(0,5);
     $("past").innerHTML=items.map(x=>`<li>${x.h!=null?`<time datetime="PT${x.h}H">${x.h} h</time>`:`<time>–</time>`}<span>${esc(x.text)}</span></li>`).join("");
     const pm=$("pastmore"); pm.textContent=pastOpen?"Show fewer":`Show ${ph.length-5} more`; pm.hidden=ph.length<=5;
+    // vitals (rooms.json vitals_12h, written by the forecast job from the unit's CLIF vitals table): hourly medians, h = hours before the cut
+    const vt=r.vitals_12h, vc = vt && typeof vt==="object" ? VIT.filter(([k])=>Array.isArray(vt[k]) && vt[k].length).map(([k,nm,u,ref])=>{ const pts=vt[k].filter(x=>Number.isFinite(x.h)&&Number.isFinite(x.v)).sort((a,b)=>b.h-a.h); if(!pts.length) return "";
+        const vs=pts.map(x=>x.v), mn=Math.min(...vs), mx=Math.max(...vs), lo=ref!=null?Math.min(mn,ref):mn, hi=ref!=null?Math.max(mx,ref):mx, span=(hi-lo)||1, last=pts[pts.length-1];
+        const X=h=>Math.round((8+((12-h)/11)*284)*10)/10, Y2=v=>Math.round((12+(1-(v-lo)/span)*52)*10)/10;
+        return `<div class="vit"><div class="vh"><span>${nm}</span><span><b>${last.v}</b><small>${u}</small></span></div>
+          <svg class="spark" viewBox="0 0 300 76" role="img" aria-label="${nm}, last 12 hours: latest ${last.v} ${u}, low ${mn}, high ${mx}">
+            ${ref!=null?`<line class="ref" x1="8" x2="292" y1="${Y2(ref)}" y2="${Y2(ref)}"/><text x="292" y="${Y2(ref)-4}" text-anchor="end" font-size="12">${ref}</text>`:""}
+            <polyline class="ln" points="${pts.map(x=>`${X(x.h)},${Y2(x.v)}`).join(" ")}"/><circle class="dot" cx="${X(last.h)}" cy="${Y2(last.v)}" r="4"/>
+            ${pts.map(x=>`<rect x="${X(x.h)-12}" y="0" width="24" height="76" fill="none" pointer-events="all"${T(`${x.h} h before · ${x.v} ${u}`)}/>`).join("")}
+            <line class="ax" x1="8" x2="292" y1="72" y2="72"/></svg>
+          <div class="vf"><span>−12 h</span><span>low ${mn} · high ${mx}</span><span>now</span></div></div>`; }).join("") : "";
+    $("rv-vit").hidden=!vc; $("vits").innerHTML=vc;
     paintScope();
   }
-  function paintScope(){ const el=$("chat-scope"); el.textContent = chatScope!==null ? `Room ${chatScope}` : "Unit"; el.disabled = room===null;      // what the chat is about; on a room page it switches between that room and the unit
-    el.setAttribute("aria-label", chatScope!==null ? `Asking about room ${chatScope}. Switch to the unit` : room!==null ? `Asking about the unit. Switch to room ${room}` : "Asking about the unit"); }
+  const VIT=[["heart_rate","Heart rate","bpm"],["map","Mean arterial pressure","mmHg",65],["spo2","SpO2","%"],["respiratory_rate","Respiratory rate","/min"]];
+  const closeRoom = () => { location.hash=$("back").getAttribute("href"); };
+  roomview.addEventListener("pointerdown", e=>{ if(e.target===roomview) closeRoom(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape" && room!==null && $("setmenu").hidden) closeRoom(); });
+  function paintScope(){ const el=$("chat-scope"); el.textContent = chatScope!==null ? `Bed ${chatScope}` : "Unit"; el.disabled = room===null;      // what the chat is about; on a room page it switches between that room and the unit
+    el.setAttribute("aria-label", chatScope!==null ? `Asking about bed ${chatScope}. Switch to the unit` : room!==null ? `Asking about the unit. Switch to bed ${room}` : "Asking about the unit"); }
   function showRoom(n){
     const first = room!==n; room=n; if(first){ chatScope=n; pastOpen=false; hold.room=false; put("rv-run",""); }
     $("roomnote").hidden=true;
-    boardview.hidden=true; roomview.hidden=false;
+    roomview.hidden=false;
     renderRoom(); renderChips();
-    if(first){ window.scrollTo(0,0); $("rv-h").focus({preventScroll:true}); }
+    if(first){ roomview.scrollTop=0; $("rv-h").focus({preventScroll:true}); }
   }
   function showBoard(missing){
     const was=room; room=null; pastOpen=false; chatScope=null;
     roomview.hidden=true; boardview.hidden=false;
-    const note=$("roomnote"); if(missing!=null){ note.hidden=false; note.textContent=`Room ${missing} is not in this forecast.`; } else note.hidden=true;
+    const note=$("roomnote"); if(missing!=null){ note.hidden=false; note.textContent=`Bed ${missing} is not in this forecast.`; } else note.hidden=true;
     paintScope(); renderGrid(); renderChips();
     if(was!==null){ const t=document.querySelector(`${view==="strain"?"#watch":"#grid"} [data-room="${was}"]`); if(t){ t.focus({preventScroll:true}); t.scrollIntoView({block:"center"}); } }
   }
@@ -1162,7 +1334,8 @@ details.more summary:hover{color:var(--ink)}
   function runLine(scope,n){ if(isPending() && hasNow()) return `Now as of ${hm(FC.cut_time||FC.made_at)} · forecast not ready yet`;
     if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
     const t = scope==="room"&&R(n) ? R(n).updated_at : FC.made_at;
-    return `Updated ${hm(t)}${scope==="room"?" (room "+n+")":""}${demoOn()?` · ${LIVE?esc(DEMO_LABEL):"Demo clock: recorded patients, time advanced "+FC.demo_clock_hours+" h"}`:""}`; }
+    const demo = demoOn() ? (LIVE?esc(DEMO_LABEL):"Demo clock: recorded patients, time advanced "+FC.demo_clock_hours+" h") : "";
+    return scope==="room" ? `Updated ${hm(t)} (bed ${n})${demo?` · ${demo}`:""}` : demo; }      // the unit's time is the alert line's "Last run"; the header keeps only the demo-clock note
   function say2(scope, text, refusal){ if(refusal) hold[scope]=true; put(scope==="room"?"rv-run":"runstate", esc(text)); }
   function idleLine(){ if(run) return; if(offline){ hold.unit=false; put("runstate", OFFLINE_LINE+(FC?". Showing the last forecast.":"")); return; } if(hold.unit) return; put("runstate", `<b>${runLine("unit")}</b>`); }
   function refreshAll(){
@@ -1173,22 +1346,22 @@ details.more summary:hover{color:var(--ink)}
   }
   function markRunning(on){
     for(const id of ["upd-strain","upd-grid","upd-room"]){ const e=$(id); if(e) e.hidden=!on; }
-    for(const id of ["rerun","rv-update"]){ const b=$(id); b.setAttribute("aria-disabled",String(on)); b.textContent = on?"Updating…": id==="rerun"?"Update the unit":"Update this room"; }
+    for(const id of ["rerun","rv-update"]){ const b=$(id); b.setAttribute("aria-disabled",String(on)); b.textContent = on?"Updating…": id==="rerun"?"Update the unit":"Update this bed"; }
   }
   const sigOf = () => [FC&&FC.made_at, RM.made_at].concat(RM.rooms.map(r=>r.room+":"+r.updated_at+":"+r.level)).join("|");
   async function startUpdate(scope, n, who){
-    if(scope==="room" && !R(n)) return `Room ${n} is not in this forecast.`;
+    if(scope==="room" && !R(n)) return `Bed ${n} is not in this forecast.`;
     const body={scope, role:who||role()}; if(scope==="room") body.room=n;
     const res=LIVE ? await api.liveRerun(body) : await api.rerun(body);
     if(!res.started){ const why=str(res.reason,200)||"The update did not start."; say2(scope, why, true); return why; }
     hold.unit=hold.room=false; markRunning(true);
-    const what = scope==="room"?"room "+n:"the unit";
+    const what = scope==="room"?"bed "+n:"the unit";
     if(LIVE){ run={live:true,scope,n,before:sigOf(),idle:0}; if(typeof res.demo_clock_label==="string") DEMO_LABEL=res.demo_clock_label;
       say2(scope, `Updating ${what} for ${roleLabel(body.role)}. The last forecast stays on screen.`); schedulePoll(POLL_MS);
-      return `Started ${str(res.name,60)||"the update"} (${scope==="room"?"room "+n:"unit"}). The numbers refresh in place when it finishes.`; }
+      return `Started ${str(res.name,60)||"the update"} (${scope==="room"?"bed "+n:"unit"}). The numbers refresh in place when it finishes.`; }
     say2(scope, `Updating ${what}${who==="schedule"?" (morning run)":" for "+roleLabel(body.role)}. The last forecast stays on screen.`);
     const tm = setInterval(async()=>{ const s=await api.status(); if(s.state!=="done") return; clearInterval(tm); finishRun(scope,n); }, POLL_MS);
-    return `Started ${res.name} (${scope==="room"?"room "+n:"unit"}). The numbers refresh in place when it finishes.`;
+    return `Started ${res.name} (${scope==="room"?"bed "+n:"unit"}). The numbers refresh in place when it finishes.`;
   }
   function finishRun(scope, n){
     const now=Date.now(); seedN+=7; run=null;
@@ -1275,14 +1448,14 @@ details.more summary:hover{color:var(--ink)}
   const CHAT_DOWN = "Can't reach the chat right now. Try again.";
   let chatScope=null, chatSeen=null, askCtl=null;      // chatScope: a room number, or null for the unit
   const UNIT_Q = ["Who should we worry about first?","How many ventilators will we need?","Who is likely to leave today?","Summarise the next 24 hours"];
-  const roomQ = n => { const r=R(n); return [`Why is this room ${r?TRAJ[traj(r)][0]:"flagged"}?`,"What changed in the last 12 hours?","Chance of leaving the ICU?"]; };
+  const roomQ = n => { const r=R(n); return [`Why is this bed ${r?TRAJ[traj(r)][0]:"flagged"}?`,"What changed in the last 12 hours?","Chance of leaving the ICU?"]; };
   function renderChips(){      // suggested questions: only while the conversation is empty, and they follow the context
     const el=$("chips"); el.innerHTML=""; el.hidden = !!log.querySelector(".msg"); if(el.hidden) return;
-    const qs = isPending() ? (chatScope!==null ? ["What is running in this room now?","What changed in the last 12 hours?"] : ["Who is sickest now?","How many are on a ventilator now?"]) : chatScope!==null ? roomQ(chatScope) : UNIT_Q;
+    const qs = isPending() ? (chatScope!==null ? ["What is running in this bed now?","What changed in the last 12 hours?"] : ["Who is sickest now?","How many are on a ventilator now?"]) : chatScope!==null ? roomQ(chatScope) : UNIT_Q;
     for(const q of qs){ const b=document.createElement("button"); b.type="button"; b.className="chip"; b.textContent=q; b.onclick=()=>ask(q); el.appendChild(b); }
   }
   /* an answer: every piece is escaped; numbers are bold and room numbers that exist become links */
-  function fmt(text){ const re=/\b(rooms?\s+)(\d+(?:(?:,\s*|\s+and\s+)\d+)*)|(\+?\d+(?:[.:]\d+)?%?)/gi; let out="", i=0, m;
+  function fmt(text){ const re=/\b((?:rooms?|beds?)\s+)(\d+(?:(?:,\s*|\s+and\s+)\d+)*)|(\+?\d+(?:[.:]\d+)?%?)/gi; let out="", i=0, m;
     while((m=re.exec(text))){ out+=esc(text.slice(i,m.index)); i=re.lastIndex;
       out += m[1] ? esc(m[1])+esc(m[2]).replace(/\d+/g, n=>R(+n)?`<a href="#room=${+n}">${+n}</a>`:`<b>${+n}</b>`) : `<b>${esc(m[3])}</b>`; }
     return out+esc(text.slice(i)); }
@@ -1293,47 +1466,47 @@ details.more summary:hover{color:var(--ink)}
 
   const cnt = q => `median ${q.p50} in the next 24 hours (range ${q.p10} to ${q.p90})`;
   const worryRooms = () => { const rs=RM.rooms; return [rs.filter(r=>traj(r)==="worse").sort((a,b)=>anyNew(b)-anyNew(a)).map(r=>r.room), rs.filter(r=>traj(r)==="hold").map(r=>r.room)]; };
-  const worryLine = () => { const [w,h]=worryRooms(); return w.length||h.length ? `Worry first: ${[w.length?`worsening, ${w.map(rn).join(", ")}`:"", h.length?`not improving, ${h.map(rn).join(", ")}`:""].filter(Boolean).join("; ")}.` : "No room is worsening or not improving."; };
+  const worryLine = () => { const [w,h]=worryRooms(); return w.length||h.length ? `Worry first: ${[w.length?`worsening, ${w.map(rn).join(", ")}`:"", h.length?`not improving, ${h.map(rn).join(", ")}`:""].filter(Boolean).join("; ")}.` : "No bed is worsening or not improving."; };
   function summary(){ if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
     const ls=FC.life_support, y=Y(), d=FC.resources.icu_departure;
     return `${ls.now_patients} patients are on life support now and ${ls.expected_new_patients.p50} more are expected (${ls.expected_new_patients.p10} to ${ls.expected_new_patients.p90}). IMV +${ls.expected_by.imv.p50}, vasopressor +${ls.expected_by.vasopressor.p50}, CRRT +${ls.expected_by.crrt.p50}. ${d.p50} expected to leave the ICU (${d.p10} to ${d.p90}). ${y?`${y.words} ${YNAME(y)}. `:""}${worryLine()}`; }
   function answer(q){
     const t=q.toLowerCase(), room=chatScope;      // the chat's own context, not the page's
     if(isPending() && hasNow()){ const ls=FC.life_support, rs=RM.rooms, on=k=>rs.filter(r=>r.on_now[k]).map(r=>rn(r.room));
-      if(room && R(room) && /(what changed|last 12)/.test(t)){ const ph=R(room).past_12h.slice(0,3); return ph.length ? `Room ${room}, last 12 hours: ${ph.map(x=>`${x.h!=null?x.h+" h ago, ":""}${x.text}`).join("; ")}.` : `Room ${room}: nothing recorded in the last 12 hours.`; }
-      if(room && R(room)){ const o=onList(R(room)); return `Room ${room} now: ${o.length?`on ${o.map(k=>SHORTN[k]).join(", ")}`:"no life support"}. ${PEND_LINE}`; }
-      if(/(sickest|worry|which rooms)/.test(t)){ const two=rs.filter(r=>onList(r).length>=2).map(r=>rn(r.room)); return two.length ? `Sickest now, on two or more supports: ${two.join(", ")}.` : "No room is on two or more supports now."; }
+      if(room && R(room) && /(what changed|last 12)/.test(t)){ const ph=R(room).past_12h.slice(0,3); return ph.length ? `Bed ${room}, last 12 hours: ${ph.map(x=>`${x.h!=null?x.h+" h ago, ":""}${x.text}`).join("; ")}.` : `Bed ${room}: nothing recorded in the last 12 hours.`; }
+      if(room && R(room)){ const o=onList(R(room)); return `Bed ${room} now: ${o.length?`on ${o.map(k=>SHORTN[k]).join(", ")}`:"no life support"}. ${PEND_LINE}`; }
+      if(/(sickest|worry|which (?:rooms|beds))/.test(t)){ const two=rs.filter(r=>onList(r).length>=2).map(r=>rn(r.room)); return two.length ? `Sickest now, on two or more supports: ${two.join(", ")}.` : "No bed is on two or more supports now."; }
       for(const [re,k] of [[/vent|imv/,"imv"],[/pressor/,"vasopressor"],[/crrt|dialys/,"crrt"]]) if(re.test(t)) return `${ls.now_by[k]} on ${START[k]} now${on(k).length?`: ${on(k).join(", ")}`:""}.`;
       return `${PEND_LINE} Now: ${ls.now_patients} patients on life support (ventilator ${ls.now_by.imv}, vasopressor ${ls.now_by.vasopressor}, CRRT ${ls.now_by.crrt}).`; }
     if(/worry about first/.test(t)) return hasFc() ? worryLine() : "No forecast yet. Updates start at 07:00.";
     if(/(should (we|i)|recommend|dose|dosing|treat|prescrib|order (a|an|the)|wean)/.test(t)) return "That's outside this forecast. I can tell you what the unit is likely to need in the next 24 hours.";
-    const mr=t.match(/\b(update|re-?run|refresh)\b.{0,24}\broom\s*(\d+)/);
-    if(mr){ const n=+mr[2]; if(!R(n)) return `Room ${n} is not in this forecast.`; return startUpdate("room",n); }
+    const mr=t.match(/\b(update|re-?run|refresh)\b.{0,24}\b(?:room|bed)\s*(\d+)/);
+    if(mr){ const n=+mr[2]; if(!R(n)) return `Bed ${n} is not in this forecast.`; return startUpdate("room",n); }
     if(/\b(update|re-?run|refresh)\b.{0,24}\b(unit|forecast|board)\b/.test(t)) return startUpdate("unit");
     if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
     if(/summari[sz]e/.test(t)) return summary();
-    if(room && R(room) && /why is this room/.test(t)){ const r=R(room), s=traj(r); return `Room ${room} is ${TRAJ[s][0]}. ${DEF[s]}. ${flowWords(r)}`; }
-    if(room && R(room) && /(what changed|last 12)/.test(t)){ const ph=R(room).past_12h.slice(0,3); return ph.length ? `Room ${room}, last 12 hours: ${ph.map(x=>`${x.h!=null?x.h+" h ago, ":""}${x.text}`).join("; ")}.` : `Room ${room}: nothing recorded in the last 12 hours.`; }
-    if(room && R(room) && /chance of leaving/.test(t)){ const v=R(room).p.icu_departure; return v==null ? `Room ${room}: no estimate for leaving the ICU.` : `Room ${room}: ${inTen(v)} chance of leaving the ICU in the next 24 hours.`; }
+    if(room && R(room) && /why is this (?:room|bed)/.test(t)){ const r=R(room), s=traj(r); return `Bed ${room} is ${TRAJ[s][0]}. ${DEF[s]}. ${flowWords(r)}`; }
+    if(room && R(room) && /(what changed|last 12)/.test(t)){ const ph=R(room).past_12h.slice(0,3); return ph.length ? `Bed ${room}, last 12 hours: ${ph.map(x=>`${x.h!=null?x.h+" h ago, ":""}${x.text}`).join("; ")}.` : `Bed ${room}: nothing recorded in the last 12 hours.`; }
+    if(room && R(room) && /chance of leaving/.test(t)){ const v=R(room).p.icu_departure; return v==null ? `Bed ${room}: no estimate for leaving the ICU.` : `Bed ${room}: ${inTen(v)} chance of leaving the ICU in the next 24 hours.`; }
     if(/likely to leave/.test(t)){ const o=RM.rooms.filter(r=>r.p.icu_departure!=null&&r.p.icu_departure>=lines.leave).sort((a,b)=>b.p.icu_departure-a.p.icu_departure);
-      return o.length ? `Most likely to leave: ${o.map(r=>`${rn(r.room)} ${inTen(r.p.icu_departure)}`).join(", ")}. Unit: ${cnt(FC.resources.icu_departure)}.` : `No room is at ${P(lines.leave)} or more to leave the ICU.`; }
-    const rr=t.match(/room (\d+): what is most likely/), rn0=rr?+rr[1]:room, r0=rn0?R(rn0):null;
-    if((rr||(room&&/most likely/.test(t)))){ if(!r0) return `Room ${rn0} is not in this forecast.`;
+      return o.length ? `Most likely to leave: ${o.map(r=>`${rn(r.room)} ${inTen(r.p.icu_departure)}`).join(", ")}. Unit: ${cnt(FC.resources.icu_departure)}.` : `No bed is at ${P(lines.leave)} or more to leave the ICU.`; }
+    const rr=t.match(/(?:room|bed) (\d+): what is most likely/), rn0=rr?+rr[1]:room, r0=rn0?R(rn0):null;
+    if((rr||(room&&/most likely/.test(t)))){ if(!r0) return `Bed ${rn0} is not in this forecast.`;
       const r=r0, items=[["IMV",r.p.imv],["vasopressor",r.p.vasopressor],["CRRT",r.p.crrt],["ICU discharge",r.p.icu_departure],["death",r.p.death]].filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,2);
       const on=[["IMV","imv"],["vasopressor","vasopressor"],["CRRT","crrt"]].filter(x=>r.on_now[x[1]]).map(x=>x[0]);
-      return `Room ${r.room}, next 24 hours${r.level?` (${r.level} for new life support)`:""}: ${items.map(x=>`${x[0]} (${inTen(x[1])})`).join(", then ")}.${on.length?` On now: ${on.join(", ")}.`:""}`; }
-    if(room && R(room) && /(intubat|vent)/.test(t)){ const r=R(room), v=r.p.imv; return v==null?(r.on_now.imv?`Room ${room} is already on IMV, so it is not counted as a new start.`:`Room ${room}: no estimate for IMV.`):`Room ${room}: ${inTen(v)} chance of starting a ventilator in the next 24 hours.`; }
+      return `Bed ${r.room}, next 24 hours${r.level?` (${r.level} for new life support)`:""}: ${items.map(x=>`${x[0]} (${inTen(x[1])})`).join(", then ")}.${on.length?` On now: ${on.join(", ")}.`:""}`; }
+    if(room && R(room) && /(intubat|vent)/.test(t)){ const r=R(room), v=r.p.imv; return v==null?(r.on_now.imv?`Bed ${room} is already on IMV, so it is not counted as a new start.`:`Bed ${room}: no estimate for IMV.`):`Bed ${room}: ${inTen(v)} chance of starting a ventilator in the next 24 hours.`; }
     if(/short/.test(t)){ const ls=FC.life_support, y=Y(), load=loadOf();
       if(!y) return `Now plus new life support: ${cnt(load)}.`;
       return y.kind==="capacity" ? `${y.words} vs tonight's staffing: now plus new life support ${cnt(load)}; staffing covers ${y.ls}${y.vf!=null?`; ${y.vf} ventilators free, IMV starts ${cnt(ls.expected_by.imv)}`:""}.`
         : `${y.words} vs a typical day: now plus new life support ${cnt(load)}${y.typ!=null?`; a typical day is about ${y.typ}`:""}. No capacity is set for tonight.`; }
-    if(/(check first|worry|highest|which rooms|rooms)/.test(t))return worryLine();
+    if(/(check first|worry|highest|which (?:rooms|beds)|rooms|beds)/.test(t))return worryLine();
     if(/vent|imv/.test(t)) return vq(FC.resources.ventilator)?`IMV starts: ${cnt(FC.resources.ventilator)}.`:"No estimate for IMV starts yet.";
     if(/(pressor|norepi|pharm)/.test(t)) return vq(FC.resources.vasopressor)?`Vasopressor starts: ${cnt(FC.resources.vasopressor)}.`:"No estimate for vasopressor starts yet.";
     if(/crrt|dialys/.test(t)) return vq(FC.resources.crrt)?`CRRT starts: ${cnt(FC.resources.crrt)}.`:"No estimate for CRRT starts yet.";
     if(/death|die/.test(t)) return `Deaths: ${cnt(FC.resources.death)}.`;
     if(/(leave|bed|out|transfer|discharg)/.test(t)) return `ICU discharges (to ward or step-down): ${cnt(FC.resources.icu_departure)}.`;
-    return "I can answer from this forecast: life support, IMV, vasopressor and CRRT starts, discharges, deaths, which rooms to worry about first, or one room. Say \"update room 12\" or \"update the unit\" to start an update.";
+    return "I can answer from this forecast: life support, IMV, vasopressor and CRRT starts, discharges, deaths, which beds to worry about first, or one bed. Say \"update bed 12\" or \"update the unit\" to start an update.";
   }
   async function ask(q){ openChat(false); say(roleLabel(role()),q,"q");
     const th=say("","Thinking…","t"), stop=document.createElement("button"); stop.type="button"; stop.className="stop"; stop.textContent="Stop"; th.appendChild(stop);
@@ -1391,17 +1564,19 @@ details.more summary:hover{color:var(--ink)}
   window.addEventListener("scroll", hideTip, {passive:true}); window.addEventListener("hashchange", hideTip);
 
   /* ---------- theme ---------- */
-  let theme="day"; const tb=$("theme");
-  tb.onclick=()=>{ theme=theme==="day"?"night":"day"; document.documentElement.dataset.board=theme; tb.setAttribute("aria-pressed",String(theme==="night")); $("theme-l").textContent=theme==="day"?"Night board":"Day board"; };
+  const themeBtns=$("setmenu").querySelectorAll("button[data-t]");
+  function setTheme(t){ document.documentElement.dataset.board=t; for(const b of themeBtns) b.setAttribute("aria-pressed",String(b.dataset.t===t)); }
+  for(const b of themeBtns) b.onclick=()=>setTheme(b.dataset.t);
 
   /* ---------- start ---------- */
   function start(){
     chatSeen = FC && typeof FC.made_at==="string" ? FC.made_at : null;
     if(isPending()) when="now";      // nothing to forecast yet: open on Now (not saved)
     paintFlag(); paintCapForm(); paintWhen(); paintLegend(); paintWard(); renderStrain(); renderFooter(); renderGrid(); renderChips(); idleLine();
-    // deep links for review captures: #room=7, #view=strain, #when=now, #pending (the model is not ready), #night, #role=pharmacy, #fast (quick runs), #morning (the scheduled run in progress), #synthetic (never read the API)
+    // deep links for review captures: #room=7, #view=strain, #when=now, #pending (the model is not ready), #night, #settings (the panel open), #role=pharmacy, #fast (quick runs), #morning (the scheduled run in progress), #synthetic (never read the API)
     let h=location.hash; try{ h=decodeURIComponent(h); }catch(e){ /* malformed hash: use it raw */ }
-    if(flag("night")) tb.click();
+    if(flag("night")) setTheme("night");
+    if(flag("settings")) setMenu(true);
     const rm=h.match(/role=([a-z ]+)/i); if(rm && hasOwn(ROLE_LABEL, rm[1])){ $("role").value=rm[1]; if(hasFc()) renderStrain(); renderChips(); }
     if(!LIVE && flag("morning")) startUpdate("unit",null,"schedule");
     route(false);
