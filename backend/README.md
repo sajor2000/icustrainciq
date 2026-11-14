@@ -17,7 +17,7 @@ Everything the Lookahead board needs at run time, copied from the ICU-Twin repo
 | `scripts/make_ready.sh` | Writes `fuzzball/ready/`: every workflow rendered for the final cohort, with the code commit and its checksum |
 | `app/static/index.html` | The page the board serves (copy of `mockups/command-center.html`) |
 | `icutwin/` | Tokenizer, model definition and probe scoring used to score patients |
-| `fuzzball/` | Workflow templates (Fuzzball 4.3): `t7-code` (publishes this folder to the cluster), `t7-fit`, `t7-ward`, `t7-forecast`, `t7-twin`; `ready/` holds them rendered for the final cohort. `t7-smoke` is no longer on the run path |
+| `fuzzball/` | Workflow templates (Fuzzball 4.3): `t7-code` (publishes this folder to the cluster), `t7-fit`, `t7-ward`, `t7-forecast`, `t7-twin`, `t7-twin-nochat` (board and dispatcher without Nemotron, for one node down); `ready/` holds them rendered for the final cohort. `t7-smoke` is no longer on the run path |
 | `clif_demo/` | Open MIMIC-IV Demo in CLIF format (the default stage ward) |
 | `docs/` | `CONTRACT.md` (JSON shapes), `LIVE_DEMO.md` (runbook), `FUZZBALL_VALIDATION.md` (checked against the live cluster, storage map), `FUZZBALL_TEST_PLAN.md` (first run on the cluster), `COMPUTE_PLAN.md`, `FUZZBALL_43_REVIEW.md`, `CHAT_AGENT.md` |
 

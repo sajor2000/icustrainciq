@@ -171,7 +171,7 @@ def test_capacity_validates_saves_and_logs_role_only(stack, caplog):
 def test_ask_degrades_without_nemotron_and_update_asks_still_work(stack):
     base, tmp, fake, page = stack
     c, r = jcall(base, "/api/ask", {"question": "vents?", "role": "ICU nurse"})
-    assert "not answering" in r["answer"]
+    assert r["answer"] == board.NO_CHAT  # no exception name, no host
     c, r = jcall(
         base, "/api/ask", {"question": "please update room 12", "role": "ICU physician"}
     )
@@ -193,6 +193,36 @@ def test_ask_degrades_without_nemotron_and_update_asks_still_work(stack):
         == "Forecast not started: Updated 0 minutes ago. You can update again at 11:50."
     )
     assert r["made_at"] == "2026-11-14T07:00:00-06:00"
+
+
+def test_ask_without_a_chat_model_is_one_plain_line(tmp_path, caplog):
+    """t7-twin-nochat: --nemotron "" (and a model that is down) never leak an error"""
+    fake = FakeCli(tmp_path)
+    disp, dbase = serve(dsp.make_handler(fake))
+    fc = tmp_path / "forecast.json"
+    fc.write_text(json.dumps({"made_at": "2026-11-14T07:00:00-06:00"}))
+    assert board.parse_args(["--forecast", "x", "--nemotron", ""]).nemotron == ""
+    for endpoint in ("", "http://127.0.0.1:9", "not a url"):
+        web, base = serve(board.make_handler(fc, endpoint, dbase))
+        try:
+            with caplog.at_level("INFO", logger="board"):
+                c, r = jcall(
+                    base, "/api/ask", {"question": "vents today?", "role": "ICU nurse"}
+                )
+            assert c == 200 and r["answer"] == board.NO_CHAT, endpoint
+            for leak in ("Error", "Exception", "urlopen", "Traceback", "127.0.0.1"):
+                assert leak not in json.dumps(r), (endpoint, leak)
+            c, r = jcall(
+                base, "/api/ask", {"question": "update room 3", "role": "ICU nurse"}
+            )
+            assert r["answer"].startswith(
+                ("Started t7-forecast-room3-", "Forecast not")
+            )
+            assert jcall(base, "/api/forecast")[0] == 200
+        finally:
+            web.shutdown()
+    assert "vents today" not in " ".join(x.getMessage() for x in caplog.records)
+    disp.shutdown()
 
 
 def test_capacity_vents_free_is_optional(stack):

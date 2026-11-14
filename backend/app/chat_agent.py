@@ -474,12 +474,12 @@ class ChatAgent:
         }
         if tools:
             body.update(tools=TOOLS, tool_choice="auto")
-        req = urllib.request.Request(
-            f"{self.endpoint}/v1/chat/completions",
-            data=json.dumps(body).encode(),
-            headers={"Content-Type": "application/json"},
-        )
         try:
+            req = urllib.request.Request(  # a malformed address raises here
+                f"{self.endpoint}/v1/chat/completions",
+                data=json.dumps(body).encode(),
+                headers={"Content-Type": "application/json"},
+            )
             with urllib.request.urlopen(req, timeout=max(1.0, timeout)) as r:
                 return json.load(r)["choices"][0]["message"]
         except urllib.error.HTTPError as e:

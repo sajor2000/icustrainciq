@@ -3,6 +3,8 @@
 
 Usage: python app/board.py --forecast /store/forecast.json --nemotron http://nemotron:8000 \
          --dispatcher http://dispatcher:9000 --port 8080
+       --nemotron "" runs without the chat model: /api/ask answers "Chat is not available right now."
+       (an "update room 12" / "update the unit" ask still starts a run through the dispatcher)
 
 The page itself is `app/static/index.html`, read from disk on every request, so a new
 page goes live without restarting the workflow. Everything else is JSON:
@@ -71,6 +73,8 @@ CAPACITY_MAX = capacity_mod.CAPACITY_MAX
 BODY_CAP = 4096
 SOCKET_TIMEOUT_S = 10  # a slow or stalled client cannot hold a handler thread
 REFUSED = {"ok": False, "reason": "request refused"}
+# the chat model is not configured, still loading or down: one plain line, no error name
+NO_CHAT = "Chat is not available right now."
 SECURITY_HEADERS = {
     "X-Frame-Options": "DENY",
     "X-Content-Type-Options": "nosniff",
@@ -360,18 +364,19 @@ def make_handler(
             out: dict = {}
             if not q.strip():
                 out = {"answer": "Ask a question about the forecast."}
-            elif agent.available:
+            elif nemotron and agent.available:
                 try:
                     out = agent.ask(q, role, room, seen)
                 except ToolsUnsupported:  # vLLM without tool calling: single-shot below
                     out = {}
                 except ModelDown as e:
-                    # an update request still works without the model (deterministic path below)
-                    out = (
-                        {}
-                        if parse_update_ask(q, room)
-                        else {"answer": f"Nemotron is not answering yet ({e})."}
-                    )
+                    # an update request still works without the model (deterministic
+                    # path below); the reason goes to the log, never to the page
+                    log.info("chat unavailable reason=%s", e)
+                    out = {} if parse_update_ask(q, room) else {"answer": NO_CHAT}
+                except Exception as e:  # never a dropped connection or a traceback
+                    log.info("chat failed reason=%s", type(e).__name__)
+                    out = {} if parse_update_ask(q, room) else {"answer": NO_CHAT}
             if not out:
                 update = parse_update_ask(q, room)
                 if (
@@ -384,13 +389,14 @@ def make_handler(
                     answer = update_answer(
                         call_dispatcher("/run", body), scope, r_no, role
                     )
+                elif not nemotron:  # no chat model in this workflow (t7-twin-nochat)
+                    answer = NO_CHAT
                 else:
                     try:
                         answer = ask(q)
-                    except (
-                        Exception
-                    ) as e:  # keep the board up if Nemotron is still loading
-                        answer = f"Nemotron is not answering yet ({type(e).__name__})."
+                    except Exception as e:  # keep the board up if Nemotron is loading
+                        log.info("chat unavailable reason=%s", type(e).__name__)
+                        answer = NO_CHAT
                 made_at = load().get("made_at")
                 if line := updated_line(seen, made_at):
                     answer = f"{line}\n{answer}"
@@ -414,7 +420,12 @@ def serve(a) -> ThreadingHTTPServer:
 def parse_args(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--forecast", type=pathlib.Path, required=True)
-    ap.add_argument("--nemotron", default="http://nemotron:8000")
+    ap.add_argument(
+        "--nemotron",
+        default="http://nemotron:8000",
+        help='the chat model\'s address; "" = no chat (fuzzball/t7-twin-nochat.fz): '
+        "the board, capacity and updates work, a question gets one plain line",
+    )
     ap.add_argument("--dispatcher", default="", help="e.g. http://dispatcher:9000")
     ap.add_argument("--static", type=pathlib.Path, default=STATIC)
     ap.add_argument("--port", type=int, default=8080)

@@ -1,0 +1,115 @@
+version: v4
+# t7-twin-nochat: the demo app WITHOUT the chat model, for when only one node (one GPU) is up
+# (docs/COMPUTE_PLAN.md section 6, mode F). The board and the dispatcher are the same services as in
+# t7-twin.fz (a test keeps the two files in step); there is no `nemotron` service and no GPU is held, so the
+# one GPU stays free for `t7-forecast` updates (07:00 daily, and the unit or one room on request).
+# The board is started with --nemotron "": a question in the chat gets "Chat is not available right now.";
+# "update the unit" / "update room 12" typed in the chat still start a run through the dispatcher.
+# Run this INSTEAD of t7-twin, never beside it (two dispatchers would both start the 07:00 run):
+# stop t7-twin first, then start this as t7-twin (the same name, so the runbook's commands still apply).
+#   python scripts/render_fz.py fuzzball/t7-twin-nochat.fz [--cohort] -o /tmp/t7-twin-nochat.fz   (or fuzzball/ready/t7-twin-nochat.fz)
+#   fuzzball workflow validate /tmp/t7-twin-nochat.fz && fuzzball workflow start /tmp/t7-twin-nochat.fz --name t7-twin
+#   fuzzball workflow connect --name board --endpoint web <workflow-id>
+volumes:
+  store:
+    name: twin-store            # persistent: code, packages, rooms.json, forecast.json, capacity.json, runs.jsonl
+    use: team7
+
+services:
+  board:
+    image: {uri: "docker://python:3.12-slim"}
+    # No chat model in this workflow: the board, rooms, capacity and updates work; the chat says
+    # "Chat is not available right now.".
+    mounts: {/store: store}
+    env: [TZ=America/Chicago]
+    resource: {cpu: {cores: 2}, memory: {size: 4GB}}
+    persist: true
+    network:
+      ports: [{name: web, port: 8080}]
+      endpoints: [{name: web, port-name: web, protocol: https, type: subdomain, scope: group}]
+    readiness-probe: {tcp-socket: {port: 8080}, initial-delay-seconds: 10, period-seconds: 10, failure-threshold: 30}
+    script: |
+      #!/bin/bash
+      # tzdata so TZ shows "Forecast updated at HH:MM" in hospital time; the board runs without it
+      (apt-get -qq update && apt-get -qq install -y tzdata) >/dev/null 2>&1 || true
+      # Never exit nonzero: on Fuzzball 4.3.1 a service that exits with an error fails the WHOLE workflow
+      # (release notes v4.3.1), which would take Nemotron and the dispatcher down with the board. Restart instead.
+      while true; do
+        python /store/code/app/board.py --forecast /store/forecast.json --nemotron "" \
+          --dispatcher http://dispatcher:9000 --port 8080 --behind-proxy || true
+        echo "BOARD EXITED: restarting in 5 s"; sleep 5
+      done
+
+  dispatcher:
+    # The clock and the human trigger (CPU only, no GPU). Fuzzball 4.3 has no built-in cron, so this
+    # service starts t7-forecast.fz at 07:00 sharp daily (retrying for 10 min; a missed run shows in /status)
+    # and on request: the board's "Update the unit" and
+    # "Update this room" buttons or an explicit ask in the chat. It uses the workflow token Fuzzball injects
+    # (FB_TOKEN, FB_API_HOST: start/list/stop as the team7 user) and refreshes it daily.
+    # t7-forecast.fz is a template: Fuzzball 4.3 has no workflow parameters, so each run is a rendered copy
+    # (scope, room, demo-clock hours) under /store/rendered.
+    # Guards: one run at a time (t7-forecast*, t7-build, t7-smoke, t7-fit); 20 minutes between updates of the
+    # same scope (per room for rooms). The log (/store/runs.jsonl) has time, role, scope, room, workflow id.
+    image: {uri: "docker://python:3.12-slim"}
+    mounts: {/store: store}
+    env:
+      - TZ=America/Chicago
+      - FB_UI_URL=https://ui.fb-hack.civilfritz.net   # confirm the cluster web UI address at the venue
+      - FB_CLI_SHA256=unset   # sha256 of the CLI the cluster serves: replace after the first run prints it (unset: warn and run)
+    resource: {cpu: {cores: 1}, memory: {size: 2GB}}
+    persist: true
+    network:
+      ports: [{name: api, port: 9000}]
+    readiness-probe: {tcp-socket: {port: 9000}, initial-delay-seconds: 20, period-seconds: 10, failure-threshold: 30}
+    script: |
+      #!/bin/bash
+      # No `set -e`, and no path to a nonzero exit: on Fuzzball 4.3.1 a service that exits with an error fails
+      # the WHOLE workflow (release notes v4.3.1), so a failed apt-get, download or checksum here would take
+      # Nemotron and the board down. Instead every step retries, and if the CLI cannot be installed or
+      # verified the service stays up DEGRADED: it answers /status and /run with "dispatcher unavailable:
+      # <reason>" (the board shows it; GET /health is 503), starts nothing, and logs DISPATCHER UNAVAILABLE.
+      set -uo pipefail
+      degraded() {
+        echo "DISPATCHER UNAVAILABLE: $1 (no 07:00 run, no updates; the board and chat keep working)"
+        while true; do
+          python /store/code/app/dispatcher.py --unavailable "$1" --port 9000 || true
+          sleep 5
+        done
+      }
+      retry() {  # retry <tries> <seconds> <command...>
+        local n=$1 s=$2; shift 2
+        for i in $(seq 1 "$n"); do "$@" && return 0; echo "attempt $i of $n failed: $1"; sleep "$s"; done
+        return 1
+      }
+      install_tools() { apt-get -qq update >/dev/null && apt-get -qq install -y wget ca-certificates tzdata >/dev/null; }
+      retry 10 15 install_tools || degraded "could not install wget (apt-get failed 10 times)"
+      # The CLI binary is larger than a container's writable layer, so it goes on tmpfs (/dev/shm), which is
+      # container-local: not the shared, writable /store (anyone with the volume could swap a binary there
+      # that this service runs with the workflow token). docs: in-workflow-api-access, "Installing the CLI".
+      CLI_DIR=$(mktemp -d /dev/shm/fbcli.XXXXXX) || degraded "no room for the Fuzzball CLI on /dev/shm"
+      chmod 700 "$CLI_DIR"; CLI="$CLI_DIR/fuzzball"
+      # the cluster serves a CLI matching its version; arm64 for the GB10 nodes (do not enable set -x: token)
+      fetch_cli() {
+        wget -q --ca-certificate /run/fuzzball-substrate/trusted-certs/root-ca.crt \
+          --header "Cookie: fwi.access-token=${FB_TOKEN}" -O "$CLI" "${FB_UI_URL}/api/download/cli/linux/arm64" && test -s "$CLI"
+      }
+      retry 10 15 fetch_cli || degraded "could not download the Fuzzball CLI from FB_UI_URL"
+      GOT=$(sha256sum "$CLI" | cut -d' ' -f1)
+      if [ -n "${FB_CLI_SHA256:-}" ] && [ "$FB_CLI_SHA256" != "unset" ]; then
+        if [ "$GOT" != "$FB_CLI_SHA256" ]; then
+          echo "Fuzzball CLI sha256 $GOT does not match FB_CLI_SHA256: refusing to run it"; rm -f "$CLI"
+          degraded "the Fuzzball CLI checksum does not match FB_CLI_SHA256"
+        fi
+      else
+        echo "WARNING: FB_CLI_SHA256 is not set; the downloaded CLI is unverified. Its sha256 is $GOT: pin it in env above."
+      fi
+      chmod 500 "$CLI"
+      # The ward: the open demo by default (nothing after --port 9000). TEMPLATE token, filled by scripts/render_fz.py:
+      # for the final cohort (render_fz.py --cohort; fuzzball/ready/t7-twin.fz) it is
+      # "--real-ward --clif-dir /data/dashboard_data --names /data/dashboard_data/name.parquet". These are only
+      # written into each t7-forecast copy: this service does not mount mimic_clif and cannot read a patient file.
+      while true; do
+        python /store/code/app/dispatcher.py --fuzzfile /store/code/fuzzball/t7-forecast.fz \
+          --log /store/runs.jsonl --rooms /store/rooms.json --at 07:00 --tz America/Chicago --min-gap 20 --cli "$CLI" --port 9000 @DISPATCH_WARD@ || true
+        echo "DISPATCHER EXITED: restarting in 5 s (the run log and the gaps are read back from /store/runs.jsonl)"; sleep 5
+      done

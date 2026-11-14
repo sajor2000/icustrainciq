@@ -197,10 +197,10 @@ One node means 20 cores, 128 GB and **one GPU**. Chat and new forecasts cannot b
 
 | Mode | What runs | What is lost | Needs |
 |---|---|---|---|
-| **F: board + forecasts, no chat (recommended)** | board, dispatcher, forecast on the one GPU | Chat says Nemotron is not answering | A copy of `t7-twin.fz` without the `nemotron` service. The board has no dependency on Nemotron by design. |
+| **F: board + forecasts, no chat (recommended)** | board, dispatcher, forecast on the one GPU | Chat says "Chat is not available right now." | `fuzzball/t7-twin-nochat.fz` (rendered: `fuzzball/ready/t7-twin-nochat.fz`): `t7-twin` without the `nemotron` service, started under the name `t7-twin`. The board has no dependency on Nemotron by design. |
 | C: chat, no new forecasts | Nemotron, board, dispatcher; board shows the last good forecast | "Update" buttons and the 07:00 run | Nemotron without `exclusive` (19 cores, 106 GB fit one node). Do not press Update: the `extract` would wait for good. |
 
-Choose F. The forecast is the product; the board is built to work without the chat. Prepare the no-chat file before the demo.
+Choose F. The forecast is the product; the board is built to work without the chat. The no-chat file is in the repo (`fuzzball/ready/t7-twin-nochat.fz`); a test keeps its board and dispatcher identical to `t7-twin.fz`.
 
 Facts behind this:
 - Work on a lost node fails at once and names the node [HEALTH]. Services have no restart policy here, so the affected `t7-twin` services are gone.

@@ -20,6 +20,7 @@ r t7-code     t7-code          --code-ref "$REF" --code-sha256 "$SHA"
 r t7-fit      t7-fit           --cohort
 r t7-ward     t7-ward          --cohort
 r t7-twin     t7-twin          --cohort
+r t7-twin-nochat t7-twin-nochat --cohort
 r t7-forecast t7-forecast-unit --cohort --scope unit
 r t7-forecast t7-forecast-room12 --cohort --scope room --room 12
 if grep -l '@[A-Z0-9_][A-Z0-9_]*@' "$OUT"/*.fz; then echo "a token is left in the files above"; exit 1; fi

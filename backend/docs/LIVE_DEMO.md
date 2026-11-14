@@ -232,14 +232,16 @@ Superseded by section 9: the fit step is its own workflow (`t7-fit`), so an upda
 | Situation | What happens | What to do |
 |---|---|---|
 | Node with the **forecast** GPU fails mid-run | the job fails (one-shot jobs have no automatic retry; `policy.restart: on-node-fault` is the only retry option) | dispatcher guard clears when the workflow errors; press Rerun; it lands on the free node; the board keeps the last good forecast |
-| Node with **Nemotron** fails | Expect **all of `t7-twin` to fail**: on Fuzzball 4.3.1 a service that fails (a node fault, or an exit with an error) fails the workflow (release notes v4.3.1), so the board and dispatcher go with it and the endpoint URL is removed. Whether a node loss ends only the service on that node is not documented (`FUZZBALL_TEST_PLAN.md`, live check) | `fuzzball workflow describe <twin-id>`; restart `t7-twin` (the model reloads from `hfcache`, minutes) and read the new URL. If only one node is left, start the no-chat copy (`COMPUTE_PLAN.md` mode F). The files on `twin-store` are untouched, so the board comes back with the last forecast |
+| Node with **Nemotron** fails | Expect **all of `t7-twin` to fail**: on Fuzzball 4.3.1 a service that fails (a node fault, or an exit with an error) fails the workflow (release notes v4.3.1), so the board and dispatcher go with it and the endpoint URL is removed. Whether a node loss ends only the service on that node is not documented (`FUZZBALL_TEST_PLAN.md`, live check) | `fuzzball workflow describe <twin-id>`; restart `t7-twin` (the model reloads from `hfcache`, minutes) and read the new URL. If only one node is left, start `fuzzball/ready/t7-twin-nochat.fz` as `--name t7-twin` (`COMPUTE_PLAN.md` mode F: board and dispatcher, no Nemotron, the one GPU free for forecasts). The files on `twin-store` are untouched, so the board comes back with the last forecast |
 | Both GPUs end up on one node's workflows | the forecast job pends (`INSUFFICIENT_RESOURCES`) | `fuzzball workflow why <id> <alloc>`; free the GPU by stopping the stale workflow (lane 2 owns that) |
 | The board or dispatcher is on the failed node | same as above: expect the whole workflow to fail | restart `t7-twin`; the dispatcher gets a new token and the board comes back on a new URL (`workflow endpoints`) |
 | The board or dispatcher **process** crashes, or the dispatcher cannot install or verify the Fuzzball CLI | Nothing else is lost. Both scripts in `t7-twin.fz` loop and never exit with an error. A dispatcher without a usable CLI stays up degraded: `/api/runs` says `{"available": false, "reason": "dispatcher unavailable: ..."}`, its log says `DISPATCHER UNAVAILABLE`, `GET /health` on it is 503, no 07:00 run and no updates start | read `fuzzball workflow log <twin-id> dispatcher -n 50`; fix the cause (`FB_UI_URL`, `FB_CLI_SHA256`) and restart `t7-twin` at a quiet moment |
 | A forecast run waits and never starts | the dispatcher stops a run still pending after 5 minutes, or not ended after 45; `/api/runs` has `stuck` with the reason; the next ask or the next 07:00 retry starts a new run | `fuzzball workflow why <id> <alloc>` to see what holds the GPU |
 | Cluster API unreachable | dispatcher refuses ("cannot list workflows"); the board still serves the last files | section 6 fallbacks |
 
-The board has no `depends-on` on Nemotron (G7), so a Nemotron that is still loading does not keep the board down. A Nemotron that **crashes** is different: `vllm serve` exiting with an error fails the workflow (row above).
+The board has no `depends-on` on Nemotron (G7), so a Nemotron that is still loading does not keep the board down. While it loads, or when it is down, the chat answers "Chat is not available right now." and nothing else changes.
+
+**When to use `fuzzball/ready/t7-twin-nochat.fz`.** Use it instead of `t7-twin.fz`, never beside it, when (a) only one node, so one GPU, is up, or (b) Nemotron will not load and the forecast must still update. It runs the same board and dispatcher with no chat model and holds no GPU: rooms, strain, capacity, the 07:00 run and the Update buttons work; "update the unit" typed in the chat still starts a run; any other question gets "Chat is not available right now.". Stop `t7-twin`, then `fuzzball workflow validate fuzzball/ready/t7-twin-nochat.fz && fuzzball workflow start fuzzball/ready/t7-twin-nochat.fz --name t7-twin`, then read the new URL (`fuzzball workflow endpoints <id> board web`). Switch back the same way when the second node returns. A Nemotron that **crashes** is different: `vllm serve` exiting with an error fails the workflow (row above).
 
 ---
 
@@ -288,7 +290,7 @@ The agent loop lives in `app/chat_agent.py` with the board changes in `app/board
 | held-out trust | `/store/heldout_metrics.json` (to build, G11) | per task AUROC and calibration on patients the probe never saw | counts and rates only |
 | honesty | system prompt | name the horizon, quote the 80% range, evidence not cause, no treatment advice, "the forecast does not cover that", say these are replayed open demo patients | |
 
-Failure behaviour the agent must keep: Nemotron unreachable returns a one-line "not answering yet" and the board keeps working; questions are never logged; a rerun answer states the dispatcher's reason verbatim.
+Failure behaviour the agent must keep: Nemotron unreachable (or no chat model configured) returns the one line "Chat is not available right now." and the board keeps working; questions are never logged; a rerun answer states the dispatcher's reason verbatim.
 
 ---
 
@@ -341,7 +343,7 @@ Write down: extract seconds, total seconds, new `made_at`, `forecast.json` carry
 
 | Check | Go | No-go action |
 |---|---|---|
-| Our two nodes ready | yes | restart on the other node; if only one node: board plus forecast on it, no Nemotron (chat off) |
+| Our two nodes ready | yes | restart on the other node; if only one node: `fuzzball/ready/t7-twin-nochat.fz` (board plus forecast on it, no Nemotron, chat off; section 2.5) |
 | `t7-twin` started, `board`, `nemotron`, `dispatcher` Started | yes | `describe`, `log`; restart `t7-twin` (minutes for Nemotron) |
 | `forecast.json` and `rooms.json` < 24 h old, same run, 25 rooms | yes | press Update the unit; if refused, read the reason |
 | `life_support` and `yardstick` present | yes | check the aggregate flags in the `score` job; the page shows "pending run" (acceptable) |
@@ -359,7 +361,7 @@ Close other workflows that hold a GPU (`workflow list --status started`), open t
 | Failure | Do |
 |---|---|
 | Cluster or API down | present the laptop page, say it is the same page on synthetic data; never claim it is live |
-| Nemotron down or slow | board works; the chat says so; keep rooms, strain, rerun |
+| Nemotron down or slow | board works; the chat says "Chat is not available right now."; keep rooms, strain, rerun. If it will not come back: `fuzzball/ready/t7-twin-nochat.fz` (section 2.5) |
 | Update refused or workflow errors | show the reason; the last good forecast stays; start by hand; if the node is bad, see section 2.5 |
 | `t7-twin` token or CLI problem | the update button shows the reason; render and start `t7-forecast.fz` by hand (section 9) or through the demo MCP |
 | `rooms.json` missing | room drawer on mock generator labelled SYNTHETIC |

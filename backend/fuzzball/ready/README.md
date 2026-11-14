@@ -12,6 +12,7 @@ cd backend && scripts/make_ready.sh            # code = origin/main; or: scripts
 | `t7-fit.fz` | `--name t7-fit` | once per model (one GPU) |
 | `t7-ward.fz` | `--name t7-ward` | after `t7-fit`; again when the ward changes |
 | `t7-twin.fz` | `--name t7-twin` | the board, the dispatcher and Nemotron |
+| `t7-twin-nochat.fz` | `--name t7-twin` | **instead of** `t7-twin.fz` when only one node (one GPU) is up: the board and the dispatcher, no Nemotron. Stop `t7-twin` first; never run both |
 | `t7-forecast-unit.fz` | `--name t7-forecast-manual` | the first unit forecast, by hand, only while no dispatcher update runs |
 | `t7-forecast-room12.fz` | example only | room updates are started by the dispatcher from the board |
 

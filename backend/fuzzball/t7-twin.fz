@@ -48,7 +48,8 @@ services:
   board:
     image: {uri: "docker://python:3.12-slim"}
     # No depends-on nemotron (LIVE_DEMO G7): the board, rooms, capacity and updates work while the model
-    # is loading or down; the chat says "Nemotron is not answering yet".
+    # is loading or down; the chat says "Chat is not available right now.".
+    # One node down: fuzzball/t7-twin-nochat.fz is this file without the nemotron service.
     mounts: {/store: store}
     env: [TZ=America/Chicago]
     resource: {cpu: {cores: 2}, memory: {size: 4GB}}

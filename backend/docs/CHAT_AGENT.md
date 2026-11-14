@@ -67,7 +67,7 @@ One line per question through the `chat_agent` logger: time, role, tool names, m
 
 | Failure | What happens |
 |---|---|
-| Nemotron down or loading | `ModelDown`: the board answers "Nemotron is not answering yet (...)". A rerun request still works through the dispatcher. |
+| Nemotron down or loading | `ModelDown`: the board answers "Chat is not available right now." (the reason goes to the board's log, not to the page). A rerun request still works through the dispatcher. The same line is the answer when the board runs with `--nemotron ""` (`fuzzball/t7-twin-nochat.fz`). |
 | vLLM without tool calling (HTTP 400/404/422 on `tools`; a 400 that says the context is too long is `ModelDown`, not this) | `ToolsUnsupported`: the board uses the old single-shot path (forecast JSON in the prompt) and skips the agent for 60 s before probing again. |
 | The model returns non-dict `tool_calls` | They are dropped; the reply is taken as the answer. |
 | A tool raises | The model gets `{"error": "tool failed (...)"}` and can say so. |

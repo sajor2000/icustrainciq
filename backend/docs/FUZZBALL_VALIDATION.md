@@ -16,9 +16,18 @@ Files: `fuzzball/ready/` (rendered for the final cohort by `scripts/make_ready.s
 | `t7-twin.fz` | fails: volume "twin-store" not found | validated |
 | `t7-forecast-unit.fz` | fails: volume "twin-store" not found | validated |
 | `t7-forecast-room12.fz` | fails: volume "twin-store" not found | validated |
+| `t7-twin-nochat.fz` (added later the same day) | **not checked**: see below | **not checked** |
 | `t7-smoke.fz` (template, not in `ready/`) and `t7-fit.fz` for the open demo | not checked as is | validated |
 
 The missing volume is the only error in every file. The scratch copies were made with `sed 's/name: twin-store /name: hfcache /'` outside the repo and are not kept.
+
+### `t7-twin-nochat.fz`: not yet validated against the server
+
+`fuzzball/ready/t7-twin-nochat.fz` (the board and the dispatcher, no Nemotron; `COMPUTE_PLAN.md` mode F) was added on 2026-11-14 in the evening. `fuzzball workflow validate` was tried on it and on a stand-in copy the same way as above, from a machine that was no longer on the cluster's network: both calls ended with `rpc error: code = Unavailable ... dial tcp 172.16.0.133:443: i/o timeout`. So the server has **not** checked this file. What is known without the server: it is `t7-twin.fz` with the `nemotron` service and the `hfcache` volume removed and the board started with `--nemotron ""`; `tests/test_dispatcher.py::test_nochat_twin_is_the_twin_without_nemotron` asserts the dispatcher service is identical and the board differs in that one argument; it parses as YAML with the pinned image and the one volume `twin-store`. To do, from the cluster's network, before relying on it:
+
+```
+fuzzball workflow validate fuzzball/ready/t7-twin-nochat.fz     # expect only: volume "twin-store" not found, until the volume exists
+```
 
 ## The one volume to create
 

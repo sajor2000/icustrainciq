@@ -626,8 +626,9 @@ VOLUMES = {  # docs/FUZZBALL_VALIDATION.md: one volume we write, one we only rea
     "t7-ward": {"mimic_clif", "twin-store"},
     "t7-forecast": {"mimic_clif", "twin-store"},
     "t7-twin": {"twin-store", "hfcache"},
+    "t7-twin-nochat": {"twin-store"},
 }
-ORDER = {  # job -> the jobs it waits for (docs/diagrams/workflow.html, backend.html)
+ORDER = {  # job -> the jobs it waits for (docs/diagrams/workflow.html)
     "t7-code": {"publish": [], "deps": [], "check": ["publish", "deps"]},
     "t7-smoke": {
         "prefetch": [],
@@ -645,6 +646,7 @@ ORDER = {  # job -> the jobs it waits for (docs/diagrams/workflow.html, backend.
     "t7-ward": {"load": [], "tokenize": ["load"]},
     "t7-forecast": {"precheck": [], "extract": ["precheck"], "score": ["extract"]},
     "t7-twin": {},  # services only
+    "t7-twin-nochat": {},  # services only: t7-twin without the chat model
 }
 
 
@@ -691,7 +693,7 @@ def test_every_fuzzfile_renders_to_yaml_with_pinned_images_and_no_token_left():
                 mounts = set(spec.get("mounts") or doc["defaults"]["job"]["mounts"])
                 for root in ("/data", "/store", "/work", "/cache"):
                     # t7-twin's dispatcher only passes /data paths on to t7-forecast: no mount
-                    if (name, root) != ("t7-twin", "/data") and re.search(
+                    if (name[:7], root) != ("t7-twin", "/data") and re.search(
                         rf"(?<![\w.]){root}/", spec["script"]
                     ):
                         assert root in mounts, (name, unit, root)
@@ -1040,6 +1042,46 @@ def test_render_fz_script_fills_every_template_or_exits_1(tmp_path, capsys):
         assert rf.main([str(FUZZ / f"{name}.fz"), "-o", str(tmp_path / "x.fz")]) == 0
     assert rf.main([str(FUZZ / "t7-ward.fz"), "--cohort", "-o", str(out)]) == 0
     assert out.read_text() == render_any("t7-ward", **COHORT, names=d.COHORT_NAMES)
+
+
+def test_nochat_twin_is_the_twin_without_nemotron():
+    """one node down (docs/COMPUTE_PLAN.md mode F): the same board and dispatcher,
+    no chat model, no GPU, no hfcache"""
+    import yaml
+
+    for ward in ({}, COHORT):
+        twin = yaml.safe_load(render_any("t7-twin", **ward))
+        lite = yaml.safe_load(render_any("t7-twin-nochat", **ward))
+        assert set(lite["services"]) == {"board", "dispatcher"}
+        assert set(lite["volumes"]) == {"store"}
+        assert lite["volumes"]["store"] == twin["volumes"]["store"]
+        for s in lite["services"].values():
+            assert "devices" not in s["resource"] and not s["resource"].get("exclusive")
+        assert lite["services"]["dispatcher"] == twin["services"]["dispatcher"]
+        b, lb = twin["services"]["board"], lite["services"]["board"]
+        assert {k: v for k, v in lb.items() if k != "script"} == {
+            k: v for k, v in b.items() if k != "script"
+        }
+        # the only difference in what runs: the board has no chat model to call
+        assert lb["script"] == b["script"].replace(
+            "--nemotron http://nemotron:8000", '--nemotron ""'
+        )
+        assert "nemotron:8000" not in render_any("t7-twin-nochat", **ward)
+
+
+def test_make_ready_renders_every_template_on_the_run_path():
+    """scripts/make_ready.sh writes one ready file per template except t7-smoke
+    (off the run path), and the ready files kept in git have no token left"""
+    script = (FUZZ.parent / "scripts" / "make_ready.sh").read_text()
+    rendered = set(re.findall(r"^r (t7-[a-z-]+) ", script, re.M))
+    assert rendered == set(ORDER) - {"t7-smoke"}
+    names = set(re.findall(r"^r t7-[a-z-]+ +(t7-[a-z0-9-]+) ", script, re.M))
+    ready = FUZZ / "ready"
+    assert {f.stem for f in ready.glob("*.fz")} == names
+    for f in ready.glob("*.fz"):
+        assert d.unfilled(f.read_text()) == [], f.name
+    readme = (ready / "README.md").read_text()
+    assert all(f"`{n}.fz`" in readme for n in names)
 
 
 def test_smoke_has_no_exclusive_and_every_job_has_a_timeout():

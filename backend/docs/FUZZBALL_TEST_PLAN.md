@@ -43,7 +43,7 @@ If `extract` is still Pending after 2 minutes:
 
 1. `fuzzball workflow why <forecast-id> <allocation-id>` and `fuzzball queue show --mine` (`scheduler-admin/queue-observability`). Expect `INSUFFICIENT_RESOURCES` and what holds the node.
 2. Do nothing else for 5 minutes: the dispatcher stops a forecast that is still pending after 5 minutes and says so in `/api/runs` (`stuck`).
-3. Degraded option, `COMPUTE_PLAN.md` mode F: board and forecasts, no chat. Stop `t7-twin`, start a copy of `t7-twin.fz` without the `nemotron` service (prepare and validate it beforehand), update the unit. The board is built to work without the chat.
+3. Degraded option, `COMPUTE_PLAN.md` mode F: board and forecasts, no chat. Stop `t7-twin`, start `fuzzball/ready/t7-twin-nochat.fz` under the same name (`fuzzball workflow validate fuzzball/ready/t7-twin-nochat.fz && fuzzball workflow start fuzzball/ready/t7-twin-nochat.fz --name t7-twin`), update the unit. It is `t7-twin` without the `nemotron` service: the same board and dispatcher, no GPU held. The chat answers "Chat is not available right now."; everything else works. Never run it beside `t7-twin` (two dispatchers).
 4. Do not "fix" it by adding `exclusive` anywhere.
 
 ## 1. Before anything
@@ -158,6 +158,7 @@ fuzzball workflow endpoints <twin-id> board web         # the board's URL
 | Dispatcher log | a WARNING with the CLI's sha256 the first time: put it in `FB_CLI_SHA256` in `t7-twin.fz` for the next start |
 | `DISPATCHER UNAVAILABLE: ...` in the log | the service is up but starts nothing; the board says "dispatcher unavailable". Fix `FB_UI_URL` or the checksum, restart `t7-twin` |
 | Placement | Nemotron on one node; board and dispatcher both on the other (`describe`). If they landed on different nodes Nemotron stays Pending: stop and start again |
+| Only one node (one GPU) is up | start `fuzzball/ready/t7-twin-nochat.fz` as `--name t7-twin` instead: two services Started (`board`, `dispatcher`), no Nemotron, the GPU stays free for forecasts. Go back to `t7-twin.fz` when the second node returns (stop one, start the other) |
 | The URL | `endpoints` prints it; a team7 member signed in to the Web UI can also use the Connect button on the workflow page. The endpoint is `scope: group`: other callers need a token (`fuzzball workflow endpoints generate-token <endpoint-id>`) |
 
 ### Step 5: the first unit forecast
