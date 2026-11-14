@@ -1,16 +1,16 @@
 <!DOCTYPE html>
+<!-- Design source: DESIGN.md (section "Diagrams"). Written by docs/diagrams/make_figures.py; edit there, then export the PNG. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lookahead · How to run it on the cluster</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Geist', system-ui, sans-serif; background: #f5f5f5; color: #2d3142; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
-    .frame { max-width: 1340px; width: 100%; min-width: 0; }
-    .eyebrow { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #4f5d75; margin-bottom: 0.5rem; }
-    h1 { font-family: 'Instrument Serif', serif; font-size: clamp(1.6rem, 2.4vw + 0.75rem, 2.2rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1.5rem; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #F3F5F9; color: #111827; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 1.5rem; }
+    .frame { max-width: 1320px; width: 100%; min-width: 0; }
+    .eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #4A5567; margin-bottom: 0.5rem; }
+    h1 { font-size: 1.375rem; font-weight: 700; line-height: 1.15; margin-bottom: 1.5rem; }
     .diagram-container { width: 100%; overflow-x: auto; }
     svg { width: 100%; min-width: 1280px; display: block; }
     @media print { .diagram-container { overflow: visible; } svg { min-width: 0; } }
@@ -18,149 +18,29 @@
 </head>
 <body>
   <div class="frame">
-    <p class="eyebrow">Lookahead · How to run it on the cluster</p>
-    <h1>Seven steps in order: create one volume, publish the code, fit the probes, stage the ward, start the twin, run the first forecast, open the board</h1>
+    <p class="eyebrow">Lookahead · run order</p>
+    <h1>One volume to create, then five workflows in order</h1>
     <div class="diagram-container">
-    <svg viewBox="0 0 1280 916" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="workflow-title workflow-desc">
-      <title id="workflow-title">How to run Lookahead on the cluster</title>
-      <desc id="workflow-desc">The run order on the local Lenovo PGX machines under Fuzzball. Already done: the volume mimic_clif holds the 25 demo patients with fictional names, the trained patient model and the training tokens, and is only read. To do first: create the one new volume, twin-store. Ready to run, in order: t7-code publishes the code and packages; t7-fit fits the five probes with one GPU job; t7-ward checks the cohort and stages the 25 rooms; t7-twin starts the board, the dispatcher and Nemotron, which holds the first GPU; the dispatcher starts t7-forecast, which uses the second GPU and writes rooms.json and forecast.json to twin-store; last, open the board in the browser.</desc>
-      <defs>
-        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
-        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
-        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
-      </defs>
-      <rect width="100%" height="100%" fill="#f5f5f5"/>
-      <rect x="16" y="280" width="200" height="168" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8" stroke-dasharray="4,4"/>
-      <rect x="28" y="272" width="164" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="32" y="284" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.12em">CLINICIAN'S BROWSER</text>
-      <rect x="240" y="40" width="1024" height="676" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.55)" stroke-width="1.2" stroke-dasharray="4,4"/>
-      <rect x="252" y="32" width="436" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="256" y="44" fill="#2d3142" font-weight="600" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.12em">LOCAL LENOVO PGX (FUZZBALL) · 2 × GB10 · ONE GPU EACH</text>
-      <path d="M 920,140 H 1000" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="938" y="116" width="44" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="960" y="128" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">THEN</text>
-      <path d="M 1120,192 V 320" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="1132" y="248" width="44" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="1138" y="260" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.04em">THEN</text>
-      <path d="M 1000,372 H 920" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="930" y="348" width="60" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="960" y="360" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">PROBES</text>
-      <path d="M 680,372 H 600" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="604" y="348" width="72" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="640" y="360" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">25 ROOMS</text>
-      <path d="M 432,424 V 520" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
-      <rect x="444" y="464" width="60" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="450" y="476" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.04em">STARTS</text>
-      <path d="M 600,606 H 680" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="610" y="582" width="60" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="640" y="594" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">WRITES</text>
-      <path d="M 200,372 H 264" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
-      <rect x="206" y="348" width="52" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="232" y="360" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">HTTPS</text>
-      <rect x="264" y="88" width="336" height="172" rx="6" fill="#f5f5f5"/>
-      <rect x="264" y="88" width="336" height="172" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
-      <rect x="272" y="96" width="140" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="342" y="108" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DONE · READ ONLY</text>
-      <text x="432" y="134" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">mimic_clif · already there</text>
-      <text x="432" y="153" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">exists · read by steps 3, 4 and 6</text>
-      <rect x="272" y="168" width="320" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="280" y="184" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">dashboard_data/</text>
-      <text x="584" y="184" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">25 patients, fictional names</text>
-      <rect x="272" y="196" width="320" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="280" y="212" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">model_output/final/</text>
-      <text x="584" y="212" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">trained patient model</text>
-      <rect x="272" y="224" width="320" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="280" y="240" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">tokenized_output/</text>
-      <text x="584" y="240" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">training tokens</text>
-      <rect x="680" y="88" width="240" height="104" rx="6" fill="#f5f5f5"/>
-      <rect x="680" y="88" width="240" height="104" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
-      <rect x="688" y="96" width="132" height="16" rx="2" fill="transparent" stroke="#bf4520" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="754" y="108" fill="#bf4520" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">1 · TO DO FIRST</text>
-      <text x="800" y="134" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Create twin-store</text>
-      <text x="800" y="153" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">fuzzball volume create</text>
-      <text x="800" y="170" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">team7 twin-store --size 50GiB</text>
-      <rect x="1000" y="88" width="240" height="104" rx="6" fill="#f5f5f5"/>
-      <rect x="1000" y="88" width="240" height="104" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="1008" y="96" width="132" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="1074" y="108" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">2 · READY · CPU</text>
-      <text x="1120" y="134" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">t7-code</text>
-      <text x="1120" y="153" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">pinned commit of backend/</text>
-      <text x="1120" y="170" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">+ Python packages</text>
-      <rect x="1000" y="320" width="240" height="104" rx="6" fill="#f5f5f5"/>
-      <rect x="1000" y="320" width="240" height="104" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="1008" y="328" width="180" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="1098" y="340" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">3 · READY · 1 GPU JOB</text>
-      <text x="1120" y="366" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">t7-fit</text>
-      <text x="1120" y="385" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">fits the five probes</text>
-      <text x="1120" y="402" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">once per model</text>
-      <rect x="680" y="320" width="240" height="104" rx="6" fill="#f5f5f5"/>
-      <rect x="680" y="320" width="240" height="104" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="688" y="328" width="132" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="754" y="340" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">4 · READY · CPU</text>
-      <text x="800" y="366" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">t7-ward</text>
-      <text x="800" y="385" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">checks cohort and names</text>
-      <text x="800" y="402" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">stages the 25 rooms</text>
-      <rect x="264" y="320" width="336" height="104" rx="6" fill="#f5f5f5"/>
-      <rect x="264" y="320" width="336" height="104" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="272" y="328" width="236" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="390" y="340" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">5 · READY · GPU 1 OF 2, HELD</text>
-      <text x="432" y="366" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">t7-twin</text>
-      <text x="432" y="385" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">board :8080 · dispatcher :9000</text>
-      <text x="432" y="402" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">Nemotron 3 Nano, as is, from hfcache</text>
-      <rect x="264" y="520" width="336" height="172" rx="6" fill="#f5f5f5"/>
-      <rect x="264" y="520" width="336" height="172" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="272" y="528" width="188" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="366" y="540" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">6 · READY · GPU 2 OF 2</text>
-      <text x="432" y="566" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">t7-forecast</text>
-      <text x="432" y="585" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">first run: Update the unit, or 07:00</text>
-      <rect x="272" y="600" width="320" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="280" y="616" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">precheck</text>
-      <text x="584" y="616" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">job · CPU</text>
-      <rect x="272" y="628" width="320" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="280" y="644" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">extract</text>
-      <text x="584" y="644" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">job · GPU · our patient model</text>
-      <rect x="272" y="656" width="320" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="280" y="672" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">score</text>
-      <text x="584" y="672" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">job · CPU · the five probes</text>
-      <rect x="680" y="520" width="560" height="172" rx="6" fill="#f5f5f5"/>
-      <rect x="680" y="520" width="560" height="172" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
-      <rect x="688" y="528" width="268" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="822" y="540" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VOLUME · WHAT STEPS 2 TO 6 WRITE</text>
-      <text x="960" y="566" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">twin-store</text>
-      <text x="960" y="585" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">the one volume Lookahead writes</text>
-      <rect x="688" y="600" width="544" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="696" y="616" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">code/ · py/</text>
-      <text x="1224" y="616" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">t7-code: this repo's backend/ and its packages</text>
-      <rect x="688" y="628" width="544" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="696" y="644" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">probes/ · train/ · stage/</text>
-      <text x="1224" y="644" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">t7-fit, t7-ward: probes, features, the 25 staged rooms</text>
-      <rect x="688" y="656" width="544" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="696" y="672" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">rooms.json · forecast.json</text>
-      <text x="1224" y="672" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">t7-forecast; capacity.json, runs.jsonl: t7-twin</text>
-      <rect x="32" y="320" width="168" height="104" rx="6" fill="#f5f5f5"/>
-      <rect x="32" y="320" width="168" height="104" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
-      <rect x="40" y="328" width="76" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="78" y="340" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">7 · LAST</text>
-      <text x="116" y="366" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Open the board</text>
-      <text x="116" y="385" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">workflow connect</text>
-      <text x="116" y="402" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">--endpoint web</text>
-      <line x1="40" y1="740" x2="1240" y2="740" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-      <text x="40" y="764" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.16em">LEGEND</text>
-      <rect x="40" y="778" width="16" height="12" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
-      <text x="66" y="789" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Done: already on the cluster</text>
-      <rect x="280" y="778" width="16" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
-      <text x="306" y="789" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">To do first</text>
-      <rect x="412" y="778" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <text x="438" y="789" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Ready to run, not run yet</text>
-      <rect x="632" y="776" width="28" height="16" rx="2" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.55)" stroke-width="1.2" stroke-dasharray="4,4"/>
-      <text x="670" y="789" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Local Lenovo PGX (Fuzzball)</text>
-      <rect x="880" y="776" width="28" height="16" rx="2" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8" stroke-dasharray="4,4"/>
-      <text x="918" y="789" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Other host</text>
-      <text x="40" y="816" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Nothing has run end to end yet. Steps 2 to 6 are files in backend/fuzzball/ready/. They pass validation on the live server once twin-store exists (checked with a stand-in volume).</text>
-      <text x="40" y="834" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Each step: fuzzball workflow validate &lt;file&gt; &amp;&amp; fuzzball workflow start &lt;file&gt; --name &lt;name&gt;. Lane 2 starts and stops shared workflows; ask first.</text>
-      <text x="40" y="852" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">GPUs: Nemotron holds GPU 1 while t7-twin is up. One GPU job at a time uses GPU 2: the t7-fit extract, or a t7-forecast extract. The extract no longer reserves a whole node.</text>
-      <text x="40" y="870" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Two models: the patient model, trained by us (t7-build in the ICU-Twin repo, finished), runs in the forecast job. NVIDIA Nemotron 3 Nano is used as is for the chat.</text>
-      <text x="40" y="888" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Storage: mimic_clif is only read. Everything written goes to twin-store, which then holds tokens and per-stay scores: treat it as restricted. Nemotron weights are on hfcache.</text>
+    <svg viewBox="0 0 1280 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="workflow-title workflow-desc">
+      <title id="workflow-title">How to run it on the cluster</title>
+      <desc id="workflow-desc">Seven steps in order: create the twin-store volume, then run t7-code, t7-fit, t7-ward and t7-twin, start the first forecast, and open the board. The demo patients and the trained model are already on the cluster.</desc>
+      <defs><marker id="workflow-arrow-ink" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#111827"/></marker><marker id="workflow-arrow-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#1E5BB8"/></marker><marker id="workflow-arrow-ink2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4A5567"/></marker></defs>
+      <rect width="100%" height="100%" fill="#F3F5F9"/>
+      <path d="M 296,96 L 344,96" fill="none" stroke="#111827" stroke-width="1.5" marker-end="url(#workflow-arrow-ink)"/>
+      <path d="M 616,96 L 664,96" fill="none" stroke="#111827" stroke-width="1.5" marker-end="url(#workflow-arrow-ink)"/>
+      <path d="M 936,96 L 984,96" fill="none" stroke="#111827" stroke-width="1.5" marker-end="url(#workflow-arrow-ink)"/>
+      <path d="M 1120,152 L 1120,208" fill="none" stroke="#111827" stroke-width="1.5" marker-end="url(#workflow-arrow-ink)"/>
+      <path d="M 984,264 L 936,264" fill="none" stroke="#111827" stroke-width="1.5" marker-end="url(#workflow-arrow-ink)"/>
+      <path d="M 664,264 L 616,264" fill="none" stroke="#111827" stroke-width="1.5" marker-end="url(#workflow-arrow-ink)"/>
+      <rect x="24" y="40" width="272" height="112" rx="12" fill="#FFFFFF" stroke="#7A8597" stroke-width="1"/><rect x="40" y="52" width="145" height="22" rx="5" fill="#FCE8C3" stroke="#C27A14" stroke-width="1.5"/><text x="112.5" y="67" fill="#8A4B08" font-size="12" font-weight="800" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="middle" letter-spacing="0.05em">1 · TO DO FIRST</text><text x="40" y="94" fill="#111827" font-size="16" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">Create twin-store</text><text x="40" y="114" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">fuzzball volume create team7</text><text x="40" y="134" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">twin-store --size 50GiB</text>
+      <rect x="344" y="40" width="272" height="112" rx="12" fill="#FFFFFF" stroke="#7A8597" stroke-width="1"/><rect x="360" y="52" width="93" height="22" rx="5" fill="#FFFFFF" stroke="#7A8597" stroke-width="1.5"/><text x="406.5" y="67" fill="#4A5567" font-size="12" font-weight="800" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="middle" letter-spacing="0.05em">2 · READY</text><text x="360" y="94" fill="#111827" font-size="16" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">t7-code</text><text x="360" y="114" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">publishes the code</text><text x="360" y="134" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">and the Python packages</text>
+      <rect x="664" y="40" width="272" height="112" rx="12" fill="#FFFFFF" stroke="#7A8597" stroke-width="1"/><rect x="680" y="52" width="180" height="22" rx="5" fill="#FFFFFF" stroke="#7A8597" stroke-width="1.5"/><text x="770.0" y="67" fill="#4A5567" font-size="12" font-weight="800" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="middle" letter-spacing="0.05em">3 · READY · ONE GPU</text><text x="680" y="94" fill="#111827" font-size="16" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">t7-fit</text><text x="680" y="114" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">fits the five classifiers,</text><text x="680" y="134" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">once per model</text>
+      <rect x="984" y="40" width="272" height="112" rx="12" fill="#FFFFFF" stroke="#7A8597" stroke-width="1"/><rect x="1000" y="52" width="93" height="22" rx="5" fill="#FFFFFF" stroke="#7A8597" stroke-width="1.5"/><text x="1046.5" y="67" fill="#4A5567" font-size="12" font-weight="800" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="middle" letter-spacing="0.05em">4 · READY</text><text x="1000" y="94" fill="#111827" font-size="16" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">t7-ward</text><text x="1000" y="114" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">checks the cohort,</text><text x="1000" y="134" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">stages the 25 rooms</text>
+      <rect x="984" y="208" width="272" height="112" rx="12" fill="#FFFFFF" stroke="#7A8597" stroke-width="1"/><rect x="1000" y="220" width="162" height="22" rx="5" fill="#FFFFFF" stroke="#7A8597" stroke-width="1.5"/><text x="1081.0" y="235" fill="#4A5567" font-size="12" font-weight="800" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="middle" letter-spacing="0.05em">5 · READY · GPU 1</text><text x="1000" y="262" fill="#111827" font-size="16" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">t7-twin</text><text x="1000" y="282" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">board server, dispatcher,</text><text x="1000" y="302" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">Nemotron 3 Nano</text>
+      <rect x="664" y="208" width="272" height="112" rx="12" fill="#D2E2F8" stroke="#1E5BB8" stroke-width="1"/><rect x="680" y="220" width="162" height="22" rx="5" fill="#FFFFFF" stroke="#7A8597" stroke-width="1.5"/><text x="761.0" y="235" fill="#4A5567" font-size="12" font-weight="800" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="middle" letter-spacing="0.05em">6 · READY · GPU 2</text><text x="680" y="262" fill="#111827" font-size="16" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">First forecast</text><text x="680" y="282" fill="#111827" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">press Update the unit,</text><text x="680" y="302" fill="#111827" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">or wait for 07:00</text>
+      <rect x="344" y="208" width="272" height="112" rx="12" fill="#FFFFFF" stroke="#7A8597" stroke-width="1"/><rect x="360" y="220" width="85" height="22" rx="5" fill="#FFFFFF" stroke="#7A8597" stroke-width="1.5"/><text x="402.5" y="235" fill="#4A5567" font-size="12" font-weight="800" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="middle" letter-spacing="0.05em">7 · LAST</text><text x="360" y="262" fill="#111827" font-size="16" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">Open the board</text><text x="360" y="282" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">fuzzball workflow connect</text><text x="360" y="302" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">--name board --endpoint web</text>
+      <rect x="24" y="208" width="272" height="112" rx="12" fill="#E8ECF2" stroke="#7A8597" stroke-width="1"/><rect x="40" y="220" width="85" height="22" rx="5" fill="#FFFFFF" stroke="#18794E" stroke-width="1.5"/><text x="82.5" y="235" fill="#18794E" font-size="12" font-weight="800" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="middle" letter-spacing="0.05em">0 · DONE</text><text x="40" y="262" fill="#111827" font-size="16" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">Already on the cluster</text><text x="40" y="282" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">25 demo patients, trained model,</text><text x="40" y="302" fill="#4A5567" font-size="13" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">on mimic_clif (read only)</text>
+      <text x="16" y="392" fill="#4A5567" font-size="14" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">Nothing has run end to end yet. Steps 2 to 6 are files in backend/fuzzball/ready/; each waits for the one before it.</text>
     </svg>
     </div>
   </div>

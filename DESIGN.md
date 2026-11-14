@@ -512,3 +512,23 @@ Cluster cards, bed figures, risk-threshold toggle and capacity model: Dema (deet
 - **Don't** write hedging or disclaimer copy on the board.
 - **Don't** add a sixth prediction or a forecast count without its range.
 - **Don't** bring in icons from an external set; extend the drawn family on the 24 grid.
+
+## Diagrams
+
+Figures in `docs/diagrams/` and on the project page (`docs/index.html`) use this design system: the same tokens, the same system font, the same icon family. They are written by `docs/diagrams/make_figures.py` and recorded for the diagram-design skill as the profile `lookahead` (`.diagram-design`; a copy is in `docs/diagrams/lookahead-profile.md`, to place in `~/.diagram-design/profiles/lookahead.md` on a new machine).
+
+| Diagram role | Token and treatment |
+|---|---|
+| Ground | `board` |
+| Structure: a service, a page, a step | `surface` card, 1px `line` border, radius .75rem, `ink` title, `ink-2` second line |
+| Data store: a Fuzzball volume | `board-2` fill, 1px `line` border |
+| Our patient model | solid `blue` (`level-high`) with `on-level-high` text; at most one per figure |
+| What our model produces: classifiers, forecast files, the forecast step | `level-medium` fill, 1px `blue` border, `ink` text |
+| NVIDIA model, used as is | solid `ink` with `board` text |
+| Boundary: patient data stays inside | 1.5px dashed `ink` container, radius 1rem, `ink` label in Label type |
+| Arrow, a call between parts | `ink`, 1.5px |
+| Arrow, the forecast being written or read | `blue`, 1.5px |
+| Arrow, on request | `ink-2`, dashed |
+| Step status | the status chip: green border and word (Done), `amber-bg` with `amber-edge` (To do first), `line` border with an `ink-2` word (Ready) |
+
+Type is the board's scale: node title 1rem at 700 (1.125rem on the two README figures), second line .8125rem (.875rem), tags and arrow labels .75rem at 700 in capitals with 0.05em tracking, caption .875rem in `ink-2`. Icons come from the board's sprite, outline, 1.75 stroke. Figures have no shadows and no red; every figure has one caption line and no legend block.
