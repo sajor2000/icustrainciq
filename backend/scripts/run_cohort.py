@@ -309,6 +309,7 @@ def main(argv=None) -> None:
     )
     ap.add_argument("--unit-name", default=aggregate.UNIT_NAME)
     ap.add_argument("--capacity", type=pathlib.Path)
+    aggregate.add_staffing_args(ap)
     ap.add_argument("--baseline", type=pathlib.Path)
     ap.add_argument("--seed", type=int, default=stage_ward.SEED)
     ap.add_argument(
@@ -394,6 +395,7 @@ def main(argv=None) -> None:
         forecast_state=state,
         clif=clif,
         unit_name=a.unit_name,
+        staffing=aggregate.staffing_rules(a),
     )
     forecast["made_at"] = now  # one run, one time in both files
     forecast["cut_after_arrival_hours"] = a.cut_after_arrival_hours

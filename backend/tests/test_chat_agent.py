@@ -362,6 +362,24 @@ def test_life_support_and_capacity_tools(env, tmp_path):
     assert '"crrt_total":2' in got and '"crrt_free":0' in got and "SHORT" in got
 
 
+def test_staffing_tool(env, tmp_path):
+    f, a = env([tc("get_staffing"), text("ok")])
+    a.ask("How many nurses do we need tonight?", "ICU nurse")
+    assert "pending run" in tool_msgs(f)[0]["content"]  # an older forecast file
+    fc = json.loads((tmp_path / "forecast.json").read_text())
+    fc["staffing_now"] = {"nurses": 14, "one_to_one": 3, "one_to_two": 22, "rt": 1}
+    fc["staffing_next_24h"] = {
+        "nurses": {"available": True, "p10": 14, "p50": 15, "p90": 16},
+        "rt": {"available": False, "p10": None, "p50": None, "p90": None},
+    }
+    (tmp_path / "forecast.json").write_text(json.dumps(fc))
+    f, a = env([tc("get_staffing"), text("ok")])
+    out = a.ask("How many nurses do we need tonight?", "ICU nurse")
+    got = json.loads(tool_msgs(f)[0]["content"])["tool_result"]
+    assert got["now"]["nurses"] == 14 and got["next_24h"]["nurses"]["p90"] == 16
+    assert got["unavailable"] == ["rt"] and out["trace"] == ["get_staffing"]
+
+
 def test_unit_forecast_has_five_rows_and_check_first_no_strain(env):
     f, a = env([tc("get_unit_forecast"), text("ok")])
     a.ask("unit?", "ICU nurse")

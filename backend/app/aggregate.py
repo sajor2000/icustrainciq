@@ -473,7 +473,15 @@ def patient_table(
             pr = np.where(run, np.nan, pr)
         p[name] = pr
         skipped[name] = none & ~excluded
-    return {"p": p, "on": on, "stopped": stopped, "skipped": skipped}
+    # vasoactive agents running at the cut: only raw CLIF can count them
+    agents = [(clif or {}).get(sid, {}).get("vasoactives") for sid in ids] or [None] * n
+    return {
+        "p": p,
+        "on": on,
+        "stopped": stopped,
+        "skipped": skipped,
+        "vasoactives": [None if v is None else int(v) for v in agents],
+    }
 
 
 def p_any_life_support(p: dict[str, np.ndarray]) -> np.ndarray:
@@ -567,6 +575,130 @@ def life_support_block(tab: dict) -> dict:
         "expected_new_patients": new,
         "expected_by": {s: _support_counts(tab, s) for s in SUPPORTS},
     }
+
+
+STAFFING = {  # the board's staffing rule (docs/CONTRACT.md "staffing")
+    "nurse_ratio": 2,  # patients per nurse, for everyone not 1:1
+    "one_to_one_crrt": True,  # a patient on CRRT has a nurse alone
+    "one_to_one_vasoactives": 2,  # ...and one on this many vasoactives (0 = off)
+    "rt_ratio": 6,  # ventilated patients per respiratory therapist
+}
+
+
+def add_staffing_args(ap: argparse.ArgumentParser) -> None:
+    ap.add_argument(
+        "--nurse-ratio",
+        type=int,
+        default=STAFFING["nurse_ratio"],
+        help="patients per nurse for those not 1:1 (default 2)",
+    )
+    ap.add_argument(
+        "--one-to-one-vasoactives",
+        type=int,
+        default=STAFFING["one_to_one_vasoactives"],
+        help="vasoactive infusions at which a patient is 1:1 (default 2; 0 = never)",
+    )
+    ap.add_argument(
+        "--no-one-to-one-crrt",
+        action="store_true",
+        help="a patient on CRRT is not 1:1 (default: 1:1)",
+    )
+    ap.add_argument(
+        "--rt-ratio",
+        type=int,
+        default=STAFFING["rt_ratio"],
+        help="ventilated patients per respiratory therapist (default 6)",
+    )
+
+
+def staffing_rules(a) -> dict:
+    """the rule set from parsed arguments (add_staffing_args)"""
+    if a.nurse_ratio < 1 or a.rt_ratio < 1 or a.one_to_one_vasoactives < 0:
+        raise SystemExit("staffing ratios must be whole numbers of 1 or more")
+    return {
+        "nurse_ratio": a.nurse_ratio,
+        "one_to_one_crrt": not a.no_one_to_one_crrt,
+        "one_to_one_vasoactives": a.one_to_one_vasoactives,
+        "rt_ratio": a.rt_ratio,
+    }
+
+
+def _ceil_div(n, d: int):
+    return -(-n // d)
+
+
+def _through(q: dict, f) -> dict:
+    """p10 / p50 / p90 of f(count) for a non-decreasing f: the quantiles map through"""
+    return {k: int(f(q[k])) for k in ("p10", "p50", "p90")}
+
+
+def staffing_blocks(
+    tab: dict, rules: dict | None = None, pending: bool = False
+) -> tuple[dict, dict]:
+    """(staffing_now, staffing_next_24h) for forecast.json.
+
+    Now: a patient is 1:1 when on CRRT or on `one_to_one_vasoactives` or more
+    vasoactive infusions at the cut (the count comes from raw CLIF; without it no
+    patient is 1:1 for vasoactives and `vasoactives_known` is false). nurses =
+    1:1 patients + ceil(the others / nurse_ratio); rt = ceil(ventilated / rt_ratio).
+
+    Next 24 h (exact Poisson-binomial, like the unit counts): 1:1 = those 1:1 now
+    plus patients who start CRRT; rt = ceil((ventilated now + IMV starts) /
+    rt_ratio). Approximations: every bed stays filled (no one leaves or stops a
+    support), and a second vasoactive started in the window is not forecast, so
+    only patients already at the vasoactive count now are 1:1 for that reason."""
+    r = {**STAFFING, **(rules or {})}
+    on = tab["on"]
+    n = int(on["imv"].size)
+    agents = tab.get("vasoactives") or [None] * n
+    known = n > 0 and all(v is not None for v in agents)
+    many = np.array(
+        [
+            bool(r["one_to_one_vasoactives"])
+            and v is not None
+            and v >= r["one_to_one_vasoactives"]
+            for v in agents
+        ],
+        bool,
+    )
+    alone = many | (on["crrt"] if r["one_to_one_crrt"] else np.zeros(n, bool))
+    vented = int(on["imv"].sum())
+    nurses = lambda k: k + _ceil_div(n - k, r["nurse_ratio"])  # noqa: E731
+    rts = lambda v: _ceil_div(v, r["rt_ratio"])  # noqa: E731
+    k = int(alone.sum())
+    now = {
+        "nurses": int(nurses(k)),
+        "one_to_one": k,
+        "one_to_two": n - k,
+        "rt": int(rts(vented)),
+        "vented": vented,
+        "vasoactives_known": known,
+        "rules": r,
+    }
+
+    def no_data(support: str) -> bool:
+        sk = tab["skipped"][SUPPORT_RESOURCE[support]]
+        return pending or bool(sk.any() and (sk | on[support]).all())
+
+    nxt = {"nurses": dict(NO_COUNTS), "rt": dict(NO_COUNTS)}
+    if not pending and (not no_data("crrt") or not r["one_to_one_crrt"]):
+        p = tab["p"]["crrt"] if r["one_to_one_crrt"] else np.zeros(n)
+        starts = pmf_quantiles(pb_pmf(np.where(alone, 0.0, np.nan_to_num(p))))
+        nxt["nurses"] = {
+            "available": True,
+            **_through(starts, lambda s: nurses(k + s)),
+            "one_to_one": _through(starts, lambda s: k + s),
+        }
+    if not no_data("imv"):
+        starts = pmf_quantiles(pb_pmf(tab["p"]["ventilator"]))
+        nxt["rt"] = {
+            "available": True,
+            **_through(starts, lambda s: rts(vented + s)),
+            "vented": _through(starts, lambda s: vented + s),
+        }
+    for v in nxt.values():
+        v.pop("expected", None)
+    return now, nxt
 
 
 CAPACITY_MAX = 50  # life-support patients a 25-bed unit could plausibly hold
@@ -872,6 +1004,7 @@ def build_forecast(
     forecast_state: str = READY,
     clif: dict | None = None,
     unit_name: str = UNIT_NAME,
+    staffing: dict | None = None,
 ) -> dict:
     """forecast.json (docs/CONTRACT.md) from a probe-score table; unit scope.
     clif_now: raw CLIF folder; what is on at the cut then comes from it (`clif`: the
@@ -897,6 +1030,7 @@ def build_forecast(
     ls = life_support_block(tab)
     pending = forecast_state == PENDING
     totals = read_machine_totals(capacity)
+    staff_now, staff_next = staffing_blocks(tab, staffing, pending)
     cap = read_capacity(capacity)
     if cap and cap["vents_free"] is None:  # derived from the ventilator total
         cap["vents_free"] = capacity_mod.free("imv", totals, ls["now_by"]["imv"])
@@ -931,6 +1065,8 @@ def build_forecast(
             typical_life_support_rate(labels) if labels is not None else None,
         ),
         "machines": machine_yardsticks(tab, totals, pending),
+        "staffing_now": staff_now,
+        "staffing_next_24h": staff_next,
         "check_first": []
         if pending
         else check_first(unit, tab, read_room_map(stage_csv)),
@@ -991,6 +1127,7 @@ def main_rep(a) -> None:
         ward=ward,
         clif_now=a.clif_now,
         unit_name=a.unit_name,
+        staffing=staffing_rules(a),
     )
     write_json(a.out, forecast)
     ls = forecast["life_support"]  # counts only
@@ -1081,6 +1218,7 @@ def main() -> None:
         default="rep",
         help="rep: probe probabilities (the board's method); mc: sampled futures",
     )
+    add_staffing_args(ap)
     a = ap.parse_args()
     if a.score == "rep":
         return main_rep(a)
