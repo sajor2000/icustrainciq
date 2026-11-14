@@ -1314,14 +1314,17 @@ details.more summary:hover{color:var(--ink)}
     if(ls==="" && vt==="" && ct==="" && ns==="" && rs0===""){ msg.textContent="Enter at least one number: machines on the unit, nurses or RTs on shift, or the patients tonight's staffing covers."; $("cap-vt").focus(); return; }
     machines={imv:vt===""?null:+vt, crrt:ct===""?null:+ct, nurses:ns===""?null:+ns, rt:rs0===""?null:+rs0}; saveMachines();      // the device copy, used when the server has no such field
     const vfN = vt==="" ? null : Math.max(0, +vt-inUse("imv"));
-    /* POST /api/capacity: only the fields the user filled in; an empty field is left out, never sent as null */
-    const body={role:role()}; if(ls!=="") body.life_support_patients=+ls; if(vt!==""){ body.vents_total=+vt; body.vents_free=vfN; } if(ct!=="") body.crrt_total=+ct; if(ns!=="") body.nurses_on_shift=+ns; if(rs0!=="") body.rt_on_shift=+rs0;
+    /* POST /api/capacity: only the totals and numbers the user filled in; an empty field is left out, never sent as null.
+       No free count is sent: the server derives what is free from the total on every read. */
+    const body={role:role()}; if(ls!=="") body.life_support_patients=+ls; if(vt!=="") body.vents_total=+vt; if(ct!=="") body.crrt_total=+ct; if(ns!=="") body.nurses_on_shift=+ns; if(rs0!=="") body.rt_on_shift=+rs0;
     if(!LIVE && ls===""){ renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device."; return; }
     let rs;
-    if(LIVE){ try{ rs=await postJSON("/api/capacity", body); }catch(err){ rs={ok:false,reason:"The board server did not answer. Try again in a moment."}; } }
+    if(LIVE){ try{ rs=await postJSON("/api/capacity", body); }catch(err){ rs={ok:false,transport:true}; } }
     else rs=await api.capacity(body);
-    if(!rs.ok){ if(LIVE && ls===""){ renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device. The server needs the staffing number to save capacity."; return; }
-      msg.textContent=str(rs.reason,200)||"Capacity was not saved."; return; }
+    if(!rs.ok){ const srvHas=["imv","crrt","nurses","rt"].some(k=>srvTotal(k)!==undefined);      // does this server keep these numbers itself?
+      if(srvHas){ paintCapForm(); msg.textContent = rs.transport ? "Not saved — the board server did not answer. Try again." : `Not saved. ${str(rs.reason,200)||"The board server refused the numbers."}`; return; }
+      renderStrain(); if(room!==null) renderRoom();      // an older server: the device copy is what the board shows
+      msg.textContent = rs.transport ? "Kept on this device only — the board server did not answer." : ls==="" ? "Saved on this device. This board server does not store machine totals or staff on shift." : `Not saved on the server. ${str(rs.reason,200)||""} The totals are kept on this device.`; return; }
     const sv=rs.capacity && typeof rs.capacity==="object" ? rs.capacity : {}, setAt=typeof sv.set_at==="string"?sv.set_at:typeof sv.updated_at==="string"?sv.updated_at:iso(Date.now());
     viewTyp=false;
     if(LIVE){ if(rs.capacity && typeof rs.capacity==="object") SRVCAP=rs.capacity;
