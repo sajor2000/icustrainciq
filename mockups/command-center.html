@@ -182,6 +182,10 @@ details.allrooms[open] summary{margin-bottom:8px}
 .cl.hot{position:relative;border:2px solid var(--short);padding:15px 17px;background:color-mix(in srgb,var(--short) 6%,var(--surface));box-shadow:0 0 0 5px color-mix(in srgb,var(--short) 22%,transparent),var(--card,0 0 0 transparent)}
 .cl.hot h3 .status{background:var(--short);border-color:var(--short);color:var(--surface)}
 .cl h3 .status[hidden],.cl .expl[hidden]{display:none}
+/* at the limit: every free one would be used, none spare. A calm amber edge and badge, no pulse. */
+.cl.limit{border:2px solid var(--tight);padding:15px 17px}
+.cl.limit h3 .status{background:var(--tight);border-color:var(--tight);color:var(--surface)}
+.cl.limit .exp b{color:var(--tight)}
 .cl.hot .exp b{color:var(--short)}
 .cl.hot::before,.cl.hot::after{content:"";position:absolute;inset:-2px;border:4px solid var(--short);border-radius:inherit;opacity:0;pointer-events:none;
   animation:ripple 1.6s cubic-bezier(.2,.6,.3,1) infinite}
@@ -264,7 +268,8 @@ details.allrooms[open] summary{margin-bottom:8px}
 .strip .pill{font-size:11px;font-weight:800;letter-spacing:.05em;line-height:1;padding:4px 7px;border-radius:999px;color:var(--surface);background:var(--short)}
 .strip .okdot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
 .strip .al.warn{color:var(--short);font-weight:700}
-.strip .al svg{width:18px;height:18px;flex:none;fill:var(--short);stroke:var(--short);stroke-width:1.5;stroke-linejoin:round}
+.strip .al.lim{color:var(--tight);font-weight:700}
+.strip .al svg{width:18px;height:18px;flex:none;fill:currentColor;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round}
 .strip .al svg .ex{fill:none;stroke:var(--surface);stroke-width:2;stroke-linecap:round}
 .strip .rev{display:inline-flex;align-items:center;gap:6px}
 .strip .lab{margin-right:2px;font-size:13px;font-weight:400;color:var(--ink-2)}
@@ -278,6 +283,7 @@ details.allrooms[open] summary{margin-bottom:8px}
 /* Alternative: settings is a side panel on the right; the board stays visible beside it so line changes show at once */
 [data-view="alt"] .setmenu{position:fixed;top:0;right:0;bottom:0;left:auto;z-index:60;width:min(340px,100vw);min-width:0;gap:8px;padding:16px 20px 24px;overflow:auto;
   background:var(--surface);border:0;border-left:1px solid var(--line);border-radius:0;box-shadow:-16px 0 40px rgba(10,15,25,.16)}
+.setmenu>*{flex-shrink:0}
 .sethead{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
 .sethead h2{margin:0;font-size:18px}
 .setmenu .sethead .close{min-height:36px;padding:4px 12px}
@@ -289,6 +295,8 @@ details.allrooms[open] summary{margin-bottom:8px}
 .pctin{position:relative;display:block}
 .pctin input{width:100%;height:32px;font:inherit;font-size:15px;font-weight:800;text-align:right;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:0 20px 0 4px;-moz-appearance:textfield;appearance:textfield}
 .pctin input::-webkit-inner-spin-button,.pctin input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.pctin.plain input{padding:0 4px;text-align:center}
+.lrow .cnt{line-height:1.25}
 .pctin i{position:absolute;right:7px;top:50%;transform:translateY(-50%);font-style:normal;font-size:13px;font-weight:600;color:var(--ink-2);pointer-events:none}
 .lrow .cnt{text-align:right}
 .setmenu .lrow .step{display:grid;place-items:center;width:32px;height:32px;min-height:0;padding:0;border-radius:8px;font-size:17px;line-height:1}
@@ -423,12 +431,15 @@ details.more summary:hover{color:var(--ink)}
         <button type="button" data-t="day" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>Light</button>
         <button type="button" data-t="night" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.6 6.6 0 0 0 10.5 10.5Z"/></svg>Dark</button>
         <h3 class="seth">Thresholds</h3>
-        <p class="range seti">A bed is listed under an event when its chance is at or above that event's threshold. Predicted new* on the card is the number of those beds. The TIGHT / SHORT warning compares Predicted new* with what is free, so it moves with the threshold too. Remembered on this device.</p>
+        <p class="range seti">A bed is listed under an event when its chance is at or above that event's threshold. Predicted new* on the card is the number of those beds. SHORT (more predicted than free) and AT LIMIT (exactly as many) compare Predicted new* with what is free, so they move with the threshold too. Remembered on this device.</p>
         <div id="linesbox"></div>
         <span class="label" id="thr-l">Set every threshold to</span>
         <div class="views" id="thr" role="group" aria-labelledby="thr-l"><button type="button" data-v="50">50%</button><button type="button" data-v="25">25%</button><button type="button" data-v="10">10%</button><button type="button" data-v="custom" aria-controls="customrow" aria-expanded="false">Custom</button></div>
         <div class="custom" id="customrow" hidden><label for="customv" class="sr">Custom threshold for every event, percent</label>
           <span class="pctin"><input id="customv" type="number" min="1" max="99" step="1" inputmode="numeric" placeholder="1 to 99"><i aria-hidden="true">%</i></span><button type="button" id="customgo">Apply to all</button></div>
+        <h3 class="seth">Capacity</h3>
+        <p class="range seti">Total on the unit for each resource. Free = total minus in use now. Lower a total if a machine is lost or out of service; leave it blank if not set. Remembered on this device.</p>
+        <div id="capbox"></div>
       </div>
     </div>
     <div class="runbox">
@@ -473,7 +484,7 @@ details.more summary:hover{color:var(--ink)}
           <button class="toggle resttoggle" id="resttoggle" type="button" aria-pressed="false">Hide other beds</button>
         </div>
         <div id="clusters"></div>
-        <p class="note">* Predicted counts every bed at or above the event's threshold as a start; each is a chance, not a certainty. Set each threshold in Settings (remembered on this device); a bed can appear under more than one event. Already on before 07:00 is not counted as new. The three highest-risk beds pulse red, and a card pulses red when its predicted beds reach or pass what is free. Leaving the ICU is not a risk, so those figures fill grey. Beds are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
+        <p class="note">* Predicted counts every bed at or above the event's threshold as a start; each is a chance, not a certainty. Set each threshold in Settings (remembered on this device); a bed can appear under more than one event. Already on before 07:00 is not counted as new. The three highest-risk beds pulse red, and a card pulses red when its predicted beds are more than what is free; at exactly the limit it turns amber without pulsing. Leaving the ICU is not a risk, so those figures fill grey. Beds are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
       </section>
     </div>
 
@@ -632,7 +643,7 @@ details.more summary:hover{color:var(--ink)}
     // Alternative view: one line. The verdict in words (the cluster cards carry the numbers), then the three beds to review.
     if(document.documentElement.dataset.view==="alt") document.getElementById("brief").innerHTML =
       `<li class="strip"><span class="alerts">${ex.length ? ex.map(e=>{ const n=live(e.k).filter(r=>r.p[e.k]>=thrBy[e.k]).length-cap[e.k];
-          return `<span class="al warn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 18.5 17h-17Z"/><path class="ex" d="M10 8v4.2M10 14.6v.2"/></svg>${e.bl} ${n>0?`short by ${n}`:"at the limit, none spare"}</span>`; }).join("") : `<span class="al"><span class="okdot" aria-hidden="true"></span>Nothing short where a capacity is set</span>`}</span>
+          return `<span class="al ${n>0?"warn":"lim"}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 18.5 17h-17Z"/><path class="ex" d="M10 8v4.2M10 14.6v.2"/></svg>${e.bl} ${n>0?`short by ${n}`:"at the limit, none spare"}</span>`; }).join("") : `<span class="al"><span class="okdot" aria-hidden="true"></span>Nothing short where a capacity is set</span>`}</span>
         <span class="rev"><span class="lab">Highest-risk beds</span>${t3.map(r=>`<button class="roomlink bedchip" type="button" data-room="${r.n}" aria-label="Open bed ${r.n}, one of the three highest-risk beds">${r.n}</button>`).join("")}</span></li>`;
     else document.getElementById("brief").innerHTML =
       `<li>${l1}</li><li>${busy}</li><li>${tw("Review rooms")} ${t3.map(r=>`<button class="roomlink" type="button" data-room="${r.n}">${r.n}</button>`).join(", ")}</li>`;
@@ -673,6 +684,23 @@ details.more summary:hover{color:var(--ink)}
   for(const k of KEYS) thrBy[k]=.25;
   try{ const saved=JSON.parse(localStorage.getItem("icu-alt-lines")||"{}"); for(const k of KEYS) if(okLine(saved[k])) thrBy[k]=saved[k]/100; }catch(e){ /* no storage: lines last for this visit */ }
   const saveLines=()=>{ try{ localStorage.setItem("icu-alt-lines",JSON.stringify(Object.fromEntries(KEYS.map(k=>[k,Math.round(thrBy[k]*100)])))); }catch(e){} };
+  // capacity: the user sets a total per resource in Settings; what is free is the total minus what is in use now.
+  // The ventilator total starts from the placeholder (in use + 3 free) until someone sets it.
+  const RES=["vent","press","crrt"], inUse=k=>rooms.filter(r=>r.on[k]).length, total={vent:inUse("vent")+cap.vent}, userCap={};
+  try{ const saved=JSON.parse(localStorage.getItem("icu-alt-capacity")||"{}"); for(const k of RES){ if(saved[k]===null){ delete total[k]; userCap[k]=true; } else if(Number.isInteger(saved[k])&&saved[k]>=0&&saved[k]<=99){ total[k]=saved[k]; userCap[k]=true; } } }catch(e){ /* no storage */ }
+  const applyCap=()=>{ for(const k of RES){ if(total[k]==null) delete cap[k]; else cap[k]=Math.max(0,total[k]-inUse(k)); } }; applyCap();
+  function renderCap(){ document.getElementById("capbox").innerHTML=RES.map(k=>{ const e=EV.find(x=>x.k===k), u=inUse(k);
+    return `<div class="lrow" data-k="${k}"><span class="nm">${e.bl}</span><button type="button" class="step" data-d="-1" aria-label="One fewer ${e.name.toLowerCase()} in total"${total[k]==null||total[k]<=0?" disabled":""}>−</button>
+      <span class="pctin plain"><input type="number" min="0" max="99" step="1" inputmode="numeric" placeholder="–" value="${total[k]??""}" aria-label="Total ${e.bl.toLowerCase()} on the unit"></span>
+      <button type="button" class="step" data-d="1" aria-label="One more ${e.name.toLowerCase()} in total">+</button><span class="cnt range">${u} in use${total[k]!=null?`<br>${cap[k]} free`:""}</span></div>`; }).join(""); }
+  function setTotal(k,v,focusSel){ if(v==null) delete total[k]; else total[k]=Math.max(0,Math.min(99,v)); userCap[k]=true; applyCap();
+    try{ localStorage.setItem("icu-alt-capacity",JSON.stringify(Object.fromEntries(RES.filter(x=>userCap[x]).map(x=>[x,total[x]??null])))); }catch(e){}
+    renderRows(); renderClusters(); renderCap(); const f=document.querySelector(`#capbox [data-k="${k}"] ${focusSel}`); if(f&&!f.disabled) f.focus(); }
+  document.getElementById("capbox").addEventListener("click",e=>{ const st=e.target.closest(".step"); if(!st) return; const k=st.closest(".lrow").dataset.k, d=+st.dataset.d;
+    setTotal(k, total[k]==null ? inUse(k)+(d>0?1:0) : total[k]+d, `.step[data-d="${d}"]`); });
+  document.getElementById("capbox").addEventListener("change",e=>{ if(e.target.type!=="number") return; const k=e.target.closest(".lrow").dataset.k, v=Math.round(+e.target.value);
+    if(e.target.value==="") setTotal(k,null,"input"); else if(Number.isInteger(v)&&v>=0&&v<=99) setTotal(k,v,"input"); else renderCap(); });
+  document.getElementById("capbox").addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.type==="number"){ e.preventDefault(); e.target.blur(); } });
   function setLines(fn){ for(const k of KEYS) thrBy[k]=fn(k); saveLines(); renderClusters(); }
   const FIG=`<circle cx="20" cy="10.5" r="8.5"/><path d="M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z"/>`;
   const chip=(r,e,v,label,w3)=>`<button type="button" class="pp${e.k==="out"?" neutral":""}${e.k!=="out"&&w3.includes(r.n)&&top(r)[0].k===e.k?" w":""}" data-room="${r.n}" aria-pressed="${room===r.n}" aria-label="Bed ${r.n}: ${e.name} ${pct(v)}" title="Bed ${r.n}: ${e.name} ${pct(v)}">
@@ -680,19 +708,21 @@ details.more summary:hover{color:var(--ink)}
   const live=k=>rooms.filter(r=>!Number.isNaN(r.p[k]));
   const nbeds=n=>n?`${n} ${n===1?"bed":"beds"}`:"no beds";
   // Alternative view: the warning follows the line. Predicted new* (beds at or above the line) against what is free:
-  // more than free = SHORT, exactly free = TIGHT (none spare), fewer = ON TRACK. No capacity set = no status.
+  // more than free = SHORT (red, pulsing), exactly free = AT LIMIT (amber, calm: none spare), fewer = ON TRACK. No capacity set = no status.
   function altStatus(k){ const free=cap[k]; if(free==null) return ["none",""]; const n=live(k).filter(r=>r.p[k]>=thrBy[k]).length;
-    return n>free ? ["short","SHORT"] : n===free ? ["tight","TIGHT"] : ["ok","ON TRACK"]; }
-  // capacity bar (ventilator and CRRT cards): solid = in use now (first line, numbered), lighter = with the predicted beds (second line, numbered with *),
-  // red line = total (in use + free) where a capacity is set
-  function usageBar(on,free,pred){ const base=on??0, tot=free!=null?base+free:null, max=Math.max(base+pred,tot??0,1)+1, x=v=>6+(v/max)*288;
-    return `<svg viewBox="0 0 300 42" role="img" aria-label="${base} in use now, ${base+pred} with the predicted beds${tot!=null?`, ${tot} in total`:""}">
-      <line x1="6" x2="294" y1="22" y2="22" stroke="var(--rule)" stroke-width="6" stroke-linecap="round"/>
-      ${base?`<line x1="6" x2="${x(base)}" y1="22" y2="22" stroke="var(--magnet)" stroke-width="10" stroke-linecap="round"/>`:""}
-      ${pred?`<line x1="${x(base)}" x2="${x(base+pred)}" y1="22" y2="22" stroke="var(--magnet)" stroke-opacity=".38" stroke-width="10"/>`:""}
-      <line x1="${x(base)}" x2="${x(base)}" y1="13" y2="31" stroke="var(--ink)" stroke-width="3"/><text x="${x(base)}" y="9" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">${base}</text>
-      ${pred?`<line x1="${x(base+pred)}" x2="${x(base+pred)}" y1="13" y2="31" stroke="var(--ink)" stroke-width="3" stroke-dasharray="3 2"/><text x="${x(base+pred)}" y="9" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">${base+pred}*</text>`:""}
-      ${tot!=null?`<line x1="${x(tot)}" x2="${x(tot)}" y1="14" y2="34" stroke="var(--short)" stroke-width="2"/><text x="${x(tot)}" y="41" text-anchor="middle" font-size="11" fill="var(--ink-2)">${tot} total</text>`:""}</svg>`; }
+    return n>free ? ["short","SHORT"] : n===free ? ["tight","AT LIMIT"] : ["ok","ON TRACK"]; }
+  // capacity bar (ventilator and CRRT cards). Where a total is set, the whole bar is that total: solid = in use now (first line, numbered),
+  // lighter = with the predicted beds (second line, numbered with *). If in use + predicted is more than the total, the whole bar turns red;
+  // nothing is drawn past the end. With no total set, the bar just scales to what is shown.
+  function usageBar(on,free,pred){ const base=on??0, tot=free!=null?base+free:null, sum=base+pred, over=tot!=null&&sum>tot, max=tot!=null?Math.max(tot,1):Math.max(sum,1)+1,
+      x=v=>6+(Math.min(v,max)/max)*288, col=over?"var(--short)":"var(--magnet)", near=x(sum)-x(base)<26;
+    return `<svg viewBox="0 0 300 42" role="img" aria-label="${base} in use now, ${sum} with the predicted beds${tot!=null?`, ${tot} in total${over?": over the total":""}`:""}">
+      <line x1="6" x2="294" y1="22" y2="22" stroke="${over?"color-mix(in srgb,var(--short) 30%,var(--surface))":"var(--rule)"}" stroke-width="10" stroke-linecap="round"/>
+      ${sum?`<line x1="6" x2="${x(sum)}" y1="22" y2="22" stroke="${col}" stroke-opacity=".4" stroke-width="10" stroke-linecap="round"/>`:""}
+      ${base?`<line x1="6" x2="${x(base)}" y1="22" y2="22" stroke="${col}" stroke-width="10" stroke-linecap="round"/>`:""}
+      <line x1="${x(base)}" x2="${x(base)}" y1="13" y2="31" stroke="var(--ink)" stroke-width="3"/><text x="${x(base)}" y="9" text-anchor="${near&&pred?"end":"middle"}" font-size="12" font-weight="700" fill="var(--ink)">${base}</text>
+      ${pred?`<line x1="${x(sum)}" x2="${x(sum)}" y1="13" y2="31" stroke="var(--ink)" stroke-width="3" stroke-dasharray="3 2"/><text x="${x(sum)}" y="9" text-anchor="${x(sum)>280?"end":near?"start":"middle"}" font-size="12" font-weight="700" fill="${over?"var(--short)":"var(--ink)"}">${near?"\u00a0":""}${sum}*</text>`:""}
+      ${tot!=null?`<text x="294" y="41" text-anchor="end" font-size="11" fill="${over?"var(--short)":"var(--ink-2)"}">${tot} total</text>`:""}</svg>`; }
   // refresh one card for its line: value, count, slider fill, marks, beds
   function updateCard(k){
     const card=document.querySelector(`.cl[data-k="${k}"]`); if(!card) return; const e=EV.find(x=>x.k===k), t=Math.round(thrBy[k]*100), w3=ranked().slice(0,3).map(r=>r.n);
@@ -706,8 +736,8 @@ details.more summary:hover{color:var(--ink)}
     if(row){ row.querySelector("input").value=t; row.querySelector(".cnt").textContent=nbeds(rs.length); row.querySelector(".step[data-d='-5']").disabled=t<=LO; row.querySelector(".step[data-d='5']").disabled=t>=HI; }
     // a pulsing card with no bed at its line would look wrong: the warning comes from the unit count (many smaller chances added up),
     // so say that and show the three beds with the highest chance
-    const [scls,sword]=altStatus(k), hot=scls==="short"||scls==="tight", badge=card.querySelector("h3 .status");
-    card.classList.toggle("hot",hot); card.classList.toggle("short",scls==="short"); card.classList.toggle("tight",scls==="tight");
+    const [scls,sword]=altStatus(k), hot=scls==="short", badge=card.querySelector("h3 .status");
+    card.classList.toggle("hot",hot); card.classList.toggle("short",scls==="short"); card.classList.toggle("limit",scls==="tight");
     badge.hidden=scls==="none"; badge.className=`status ${scls}`; badge.textContent=sword;
     const shown=rs.length||!hot ? rs : live(k).slice().sort((a,b)=>b.p[k]-a.p[k]).slice(0,3), why=card.querySelector(".why");
     why.hidden=!!rs.length||!hot; if(!why.hidden) why.textContent=`No bed reaches ${t}%. Highest chances:`;
@@ -730,7 +760,7 @@ details.more summary:hover{color:var(--ink)}
       // a cluster card: the unit line for that event (median, 80% range bar, what is free, status), its line control, then its beds
       html+=`<section class="cl" data-k="${k}"><h3>${e.row.replace(/ \(.*\)/,"").replace(/ starts$/,"")}<span class="status" hidden></span>${mine.includes(k)?`<span class="own">your row</span>`:""}</h3>
         <div class="stats">${k in rooms[0].on ? `<div><span class="sl">On now</span><b>${rooms.filter(r=>r.on[k]).length}</b><span class="range">beds</span></div>
-          <div><span class="sl">Free</span><b class="${cap[k]!=null?"free":""}">${cap[k]!=null?cap[k]:"–"}</b><span class="range">${cap[k]!=null?"placeholder":"not set"}</span></div>`:""}
+          <div><span class="sl">Free</span><b class="${cap[k]!=null?"free":""}">${cap[k]!=null?cap[k]:"–"}</b><span class="range">${cap[k]==null?"not set":userCap[k]?`of ${total[k]}`:"placeholder"}</span></div>`:""}
           <div class="exp"><span class="sl">Predicted new*</span><b>${c.p50}</b></div></div>
         ${k==="vent"||k==="crrt"?`<div class="ub"></div>`:""}
         <p class="sec two">Beds to watch</p>
@@ -900,7 +930,7 @@ details.more summary:hover{color:var(--ink)}
   document.addEventListener("click",e=>{ if(!menu.hidden && !document.getElementById("settings").contains(e.target)) setMenu(false); });
   document.getElementById("settings").addEventListener("keydown",e=>{ if(e.key==="Escape" && !menu.hidden){ setMenu(false); gear.focus(); } });
 
-  renderBrief(); renderGrid(); renderRows(); renderChips(); renderAll();
+  renderBrief(); renderGrid(); renderRows(); renderChips(); renderAll(); renderCap();
   // deep links for review captures: #room=7 opens a room, #night switches the board, #role=pharmacy picks a role
   let h=location.hash; try{ h=decodeURIComponent(h); }catch(e){ /* malformed hash: use it raw */ }
   if(/(^|[#&])alt(&|$)/.test(h)) setView("alt");
