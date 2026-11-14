@@ -21,7 +21,7 @@ Keep values short (about 14 characters fit in a slot on the sheet).
 | `train-scaling` | Training time on 1 GPU against 2, for example "9 h → 5 h" | Vaishvik | `t7-build` run times; only if both were run |
 | `forecast-time` | Seconds from pressing "Update the unit" to the board redrawing | Fuzzball lane | rehearsal, `COMPUTE_PLAN.md` checklist step 5 |
 | `chat-tokens-per-sec` | Nemotron 3 Nano tokens per second on one GB10 | Services lane | vLLM log during a chat question |
-| `heldout-accuracy` | Held-out result for the five predictions, for example "AUROC 0.7–0.8" | Vaishvik | `t7-fit` output on patients the model never saw |
+| `heldout-accuracy` | **Filled:** held-out AUROC 0.77–0.93 (see `docs/RESULTS.md`) | Vaishvik | done 2026-11-14 |
 | `team-other-members` | The two team members not named in the repo | J.C. | the team |
 | `workflow-count` (has a value: 5) | Number of Fuzzball workflow files | Fuzzball lane | `ls backend/fuzzball/*.fz`; 5 were committed on Nov 14, a sixth (`t7-code.fz`) was uncommitted |
 

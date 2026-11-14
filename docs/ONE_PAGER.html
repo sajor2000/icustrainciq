@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lookahead in one page</title>
+<style>
+@page{size:Letter;margin:.45in}
+:root{--ink:#111827;--ink2:#4A5567;--blue:#1E5BB8;--board:#F3F5F9;--rule:rgba(17,24,39,.14)}
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:8.5in;padding:.45in;color:var(--ink);background:#fff;font:9.4pt/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+h1{font-size:20pt;line-height:1.05;margin:0;font-weight:800;letter-spacing:-.01em}
+.sub{color:var(--ink2);margin:.25em 0 .6em;font-size:8.6pt}
+.cat{background:var(--board);border-left:3px solid var(--blue);padding:.45em .7em;margin:0 0 .5em}
+h2{font-size:8.6pt;text-transform:uppercase;letter-spacing:.06em;color:var(--blue);margin:.7em 0 .2em;font-weight:700}
+p{margin:0 0 .35em}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:.6em}
+.box{border:1px solid var(--rule);padding:.4em .6em;background:var(--board)}
+.box b{display:block;margin-bottom:.15em}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:.4em;margin:.3em 0 .4em;padding:0;list-style:none;counter-reset:s}
+.flow li{counter-increment:s;background:var(--board);border:1px solid var(--rule);padding:.4em .5em;font-size:8.8pt}
+.flow li::before{content:counter(s);display:inline-block;background:var(--blue);color:#fff;font-weight:700;width:1.5em;height:1.5em;line-height:1.5em;text-align:center;border-radius:50%;margin-right:.35em;font-size:8pt}
+.res{border:1px solid var(--ink);padding:.4em .6em;font-weight:600}
+@media (max-width:640px){.flow,.cols{grid-template-columns:1fr}}
+@media print{body{padding:0;max-width:none}h2,.flow,.cols{break-inside:avoid}}
+</style></head><body><main>
+<h1>Lookahead in one page</h1>
+<p class="sub">CIQ x NVIDIA Local AI Hackathon, team7. For judges from NVIDIA, CIQ and VAST. Decision support only: not a medical device, not prospectively validated. The board shows staffing and machine needs, not treatments.</p>
+<p class="cat"><b>Category and aim.</b> Healthcare data science, novel methods (GEM), run locally. The aim is privacy and low investment: a small ICU or smaller hospital on two desk-size machines it owns, with patient data staying on site.</p>
+
+<h2>What it does</h2>
+<p>At 07:00 rounds, each ICU patient who has been in the ICU at least 24 hours gets up to five predictions for the next 24 hours: leaves the ICU, starts a ventilator, a vasopressor or CRRT (kidney dialysis), dies. Six small classifiers feed the five (ward plus step-down is "leaves the ICU"). Patients are added up into unit counts with a likely range (8 in 10).</p>
+
+<h2>The model</h2>
+<p>The team calls it GEM (the repo says Gemma4 and Nemotron). We trained it from scratch on MIMIC-IV-Ext-CLIF patient timelines, written as sequences of events (a lab, a drug start, a transfer) over our own vocabulary of about 1,200 tokens. No pretrained weights from Google or NVIDIA, no fine-tuning. We borrowed the layer pattern of NVIDIA Nemotron 3.5 Bolt E4B, not a copy: at size m (about 35M parameters), 16 layers, every sixth one full attention, the rest sliding-window. The plan was 3 epochs; the model we use is an early checkpoint, about 60% of a run, because the runs were stopped.</p>
+
+<h2>From chart to prediction</h2>
+<ol class="flow" role="list">
+<li>The patient's last 4,096 events before the cut become a list.</li>
+<li>GEM reads the list once. It does not write out the next 24 hours. It keeps a summary of the patient so far: the hidden state.</li>
+<li>A probe, a small classifier, reads that summary and gives a chance for each question. Each was trained on past stays, using what really happened in the next 24 hours.</li>
+<li>Patients are added up into unit counts.</li>
+</ol>
+<p>We first tried about 100 sampled futures per patient and dropped it for one pass.</p>
+
+<h2>Results</h2>
+<p class="res">Held-out AUROC is 0.77 to 0.93 across the six classifiers, on retrospective MIMIC-IV, one dataset. Which checkpoint was scored is not stated. Backtest against persistence and GB10 run times: Not ready yet.</p>
+
+<h2>Fuzzball 4.3 on two Lenovo ThinkStation PGX (NVIDIA GB10)</h2>
+<div class="cols">
+<div class="box"><b>Ran</b>Data copied in through the team-only object cache onto a persistent volume; a two-node training run, stopped early; packaging of a checkpoint with a passing load test.</div>
+<div class="box"><b>Built to run, not yet run</b>A forecast workflow (one GPU, then CPU); a service workflow holding Nemotron 3 Nano (chat) on the other GPU, the board on port 8080 and a dispatcher that starts the forecast for 07:00 rounds and on "Update the unit". The dispatcher's use of Fuzzball's injected token (4.3 has no built-in cron) is design to confirm on the cluster.</div>
+</div>
+
+<h2>Privacy</h2>
+<p>Real MIMIC-IV stays counts-only by default; real-ward views are allowed locally under the team's data agreement. Rooms shown by default are the open MIMIC-IV Demo ward.</p>
+</main></body></html>

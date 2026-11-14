@@ -69,17 +69,11 @@ Removed from the board: hypotension and ICU readmission. A task already under wa
 
 **Unit strain** (its own tab; one line of it sits in the header): "N patients on now · +M expected (range)" and a one-word yardstick. With a capacity set ("Set tonight's capacity": life-support patients tonight's staffing covers, optionally ventilators free) the word is ON TRACK (p90 at or under it), TIGHT (p90 over it) or SHORT (the median over it), named "vs tonight's staffing"; otherwise USUAL, BUSY or VERY BUSY "vs a typical day". Then a card for IMV, vasopressor, CRRT and leaving the ICU (the role's card first): on now, expected with its range, and the beds behind the count. "Deaths expected" is one small line. There is no shift brief.
 
-**Staffing** (D23): a nurse is 1:1 for a patient on CRRT or on two or more vasoactive infusions and 1:2 for everyone else; one respiratory therapist covers six ventilated patients. Unit strain shows nurses and RTs needed now and in the next 24 hours, against the number on shift when entered.
-
 **Updates**: "Update the unit" (header) and "Update this room" (room page) start a forecast for the unit or one room, for the role chosen (never a name), at most once every 20 minutes. The last forecast stays on screen and is marked "updating"; the numbers refresh in place; a refusal reads "Updated 12 minutes ago. You can update again at 13:17." The 07:00 morning run is the scheduled update. The chat can start an update only when asked ("update room 12", "update the unit"). In the demo the replay clock is advanced and labelled ("Demo clock: recorded patients, time advanced N h").
 
 ## How this forecast was made
 
-A native model: trained from scratch on our own token vocabulary (about 1,200 tokens) over MIMIC-IV-Ext-CLIF patient timelines. Not fine-tuned, no pretrained weights. Only the layer layout comes from NVIDIA Nemotron 3.5 Bolt E4B (Gemma4 text), per ICU-Twin `icutwin/config/decoder.yaml`: five sliding-window layers to one full-attention layer, grouped-query attention, shared key/value, per-layer input embeddings, logit softcapping. Sizes s (12.3M parameters at vocabulary 1,200), m, l; training uses m.
-
-The five predictions come from one forward pass per patient up to the cut: a logistic probe per task reads the last layer's hidden state (`icutwin/scoring/extractor.py`, `rep_based.py`). Patients are added up into unit counts with an 8-in-10 range.
-
-On Fuzzball 4.3 across two GB10 nodes: data in through the object cache onto `mimic_clif`, a CPU tokenize job, a two-node training job, a probe job on both GPUs, a forecast workflow (extract on one GPU, probes and counts on CPU), and a `t7-twin` workflow holding Nemotron 3 Nano (other GPU), the board (service on port 8080) and a dispatcher. Fuzzball 4.3 has no cron or workflow parameters, so the dispatcher starts the 07:00 run and every "Update" itself. Accuracy and run times: Not ready yet. Real MIMIC-IV stays counts-only; rooms are the open MIMIC-IV Demo stage ward (D6). Full account in [`README.md`](README.md).
+A native model, trained from scratch on our own token vocabulary; one forward pass per patient, then small classifiers on its last-layer summary; how Fuzzball ran it and what is only written so far. Full account, with sources: [`README.md`](README.md#how-this-forecast-was-made). One page for judges: [`ONE_PAGER.md`](docs/ONE_PAGER.md). Accuracy and its limits: [`RESULTS.md`](docs/RESULTS.md).
 
 ## Product Principles
 

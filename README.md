@@ -1,119 +1,109 @@
-# Lookahead: ICU forecast for the next 24 hours
+# Lookahead: the ICU's next 24 hours, on two local machines
 
-**Taking this over? Start with [`HANDOFF.md`](HANDOFF.md).**
+A bed board that tells a small ICU at 07:00 what the next 24 hours will need. Team7, CIQ × NVIDIA × Lenovo Local AI Hackathon, Chicago, Nov 14–15, 2026.
 
-*The next 24 hours, in one place.* The command-center board for **Lookahead** (backend working name ICU-Twin), team7's project at the CIQ × NVIDIA Local AI Hackathon (Chicago, Nov 14–15, 2026).
+**Project page with every figure and screenshot:** https://sajor2000.github.io/icustrainciq/ · **Taking this over?** Start with [`HANDOFF.md`](HANDOFF.md).
 
-**What Lookahead does.** For 07:00 morning rounds, it forecasts every patient who has been in the ICU at least 24 hours: a small transformer trained on local hardware (MIMIC-IV in CLIF format) reads each patient's history in one forward pass, a probe gives the probability of five events in the next 24 hours, and the patients are added up into a **strain panel**: how many patients are on life support now (IMV, vasopressor, CRRT, running at 07:00), how many more are expected, and one word that compares that with tonight's staffing or a typical day. Each bed shows what is running now, what may start, and one status. Pharmacy, respiratory therapy, the ICU team and the bed manager each read their own line first. NVIDIA Nemotron 3 Nano, running locally, answers questions from the counts. Everything runs on two Lenovo ThinkStation PGX (NVIDIA GB10) nodes through CIQ Fuzzball; patient data never leaves them.
+## The problem
 
-**Why it matters: the rural ICU.** A small or rural hospital has one ICU, a few ventilators and CRRT machines, no data-science team and no cloud contract for patient data. When the unit runs short, the nearest help is a transfer hours away, so knowing at 07:00 what the next 24 hours will need is worth the most there. Lookahead is sized for that hospital: one 25-bed unit, two desk-size local machines, nothing in the cloud, and patient data that never leaves the building. The model is trained and run on local hardware; it is trained on MIMIC-IV in CLIF format, and a hospital with CLIF-format data can run the same pipeline on its own records.
+A small or rural hospital has one ICU, a few ventilators and dialysis machines, no data-science team and no cloud contract for patient data. When the unit runs short, the nearest help is a transfer hours away. The team learns it is short when it already is.
 
-**Two models.** We trained one: the patient model. It reads each chart as a sequence of events; at 07:00 we take the output of its last layer for each patient, and five small classifiers turn that into the five predictions clinicians asked for (ventilator, vasopressor, CRRT, leaving the ICU, death). The chat uses NVIDIA Nemotron 3 Nano as it is; it answers from the forecast and predicts nothing itself. Both run on the two local machines.
+Lookahead answers one question each morning: who is on life support now, who is likely to need it by tomorrow, and does the unit have the machines and staff for that. It runs in the building, so patient data never leaves.
 
-**This repo** is the full app except model training: the board page (`mockups/`), the backend that serves and feeds it (`backend/`: board server, dispatcher, chat agent, forecast builders, Fuzzball workflows), and the team's docs and diagrams (`docs/`). Model training lives in [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin).
+> **Key.** ICU: the intensive care unit. Life support: a machine or drug that does the work of a failing organ. Ventilator: breathes for the patient. Vasopressor: a drug drip that holds blood pressure up. CRRT: continuous dialysis, for failed kidneys.
 
-## The board
+## How we used the stack
 
-Synthetic data in the mockup ([`mockups/command-center.html`](mockups/command-center.html)); the same page reads the live API when `app/board.py` serves it. Two tabs. **Bed board**: every bed reads now, then the next 24 hours (solid icons for the ventilator, vasopressor or CRRT running at 07:00, an arrow, outline icons for what may start with its chance, "3 in 10"), with one status per bed (Worsening, Watch, Not improving, Leaving, Steady) and a "Worry first" rail on top. **Unit strain**: patients on life support now, how many more are expected, one word against tonight's staffing or a typical day, and a card per support with the beds behind each count. A room opens its own page; "Update the unit" and "Update this room" start a forecast; "Ask" opens a chat panel beside the board. The cluster cards, bed figures and range bars come from Dema's (deetherese) design on the `alternative` branch.
+![Two Lenovo machines run by CIQ Fuzzball: one GPU serves NVIDIA Nemotron 3 Nano, the other runs our patient model](docs/diagrams/stack.png)
 
-![Bed board, Next 24 h: each bed reads now, then the forecast](docs/screenshots/beds-next.png)
+- **Lenovo ThinkStation PGX × 2, each with an NVIDIA GB10.** The whole product runs on these two desk-size machines. Nothing is in the cloud.
+- **CIQ Fuzzball 4.3.** Workflows fit the classifiers, stage the unit and run each forecast. Services keep the board server, the dispatcher and the chat model up. Volumes hold the patient data, the model and the results. The board's "Update the unit" button starts a Fuzzball job.
+- **NVIDIA Nemotron 3 Nano on vLLM.** It answers questions in the chat. We use it as it is; we did not train it. It reads the forecast and predicts nothing.
+- **Our patient model.** We trained it on the two machines, across both GPUs, on MIMIC-IV in CLIF format. It runs in the forecast job on the second GPU.
 
-| Bed board, Now: current sickness only | Unit strain, Next 24 h |
-|---|---|
-| ![Bed board, now](docs/screenshots/beds-now.png) | ![Unit strain, forecast](docs/screenshots/strain-next.png) |
+Two models, two jobs: ours knows ICU data and makes the forecast; NVIDIA's knows language and explains it.
 
-| Unit strain, Now | Capacity set: flagged beds outnumber free ventilators |
-|---|---|
-| ![Unit strain, now](docs/screenshots/strain-now.png) | ![Unit strain, SHORT](docs/screenshots/strain-short.png) |
+## What we did
 
-| Room page | Ask Lookahead (chat widget) |
-|---|---|
-| ![Room page](docs/screenshots/room-page.png) | ![Chat widget](docs/screenshots/chat-widget.png) |
+![Chart data, our patient model, five classifiers, the board, the chat](docs/diagrams/flow.png)
 
-| "Flag beds at" and Thresholds | A legend on hover | Forecast not ready yet |
-|---|---|---|
-| ![Thresholds](docs/screenshots/thresholds.png) | ![Tooltip](docs/screenshots/tooltip.png) | ![Pending](docs/screenshots/pending.png) |
+- **Trained a patient model** that reads a chart as a sequence of events. At 07:00 it reads each patient once; we keep its last layer.
+- **Fitted five small classifiers** on that layer: ventilator, vasopressor, CRRT, leaving the ICU, death, each as a chance for the next 24 hours.
+- **Built the board**: every bed shows now, then the next 24 hours, with one status; "Worry first" lists the beds to see first; Unit strain adds the patients up with a range and compares them with tonight's machines and staff.
+- **Built the services**: a board server, a dispatcher that starts the 07:00 run and the on-request runs, and a chat agent that answers from the forecast through tools.
+- **Wrote the Fuzzball workflows**: setup (`t7-code`, `t7-fit`, `t7-ward`), services (`t7-twin`) and the forecast (`t7-forecast`), as ready-to-run files in `backend/fuzzball/ready/`. The six files on the run path passed `fuzzball workflow validate` against the live cluster, with a stand-in for the one volume still to create.
+- **Tested it**: 249 backend tests pass (`cd backend && uv run --extra dev --extra model pytest -q`).
+- **Where it stands**: the demo patients and the trained model are on the cluster. Nothing of ours has run end to end on the cluster yet; the board runs today on a laptop with made-up data. The run list is in [`HANDOFF.md`](HANDOFF.md).
 
-| Phone, bed board | Phone, unit strain | Night board | Wall screen, 1920 px |
-|---|---|---|---|
-| ![Phone, bed board](docs/screenshots/beds-next-phone.png) | ![Phone, unit strain](docs/screenshots/strain-phone.png) | ![Night board](docs/screenshots/night.png) | ![Wall screen](docs/screenshots/wall-1920.png) |
+## How well it predicts
 
-Icon family: ![Icons](docs/screenshots/icons.png)
-
-## How it runs
-
-Nothing is hosted in the cloud. The real app runs on two local Lenovo PGX machines under Fuzzball; a laptop can run a demo copy with synthetic data. The team's guide, with every figure, the endpoint table and the run commands: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-
-![What runs where](docs/diagrams/hosting.png)
-
-![Technical architecture](docs/diagrams/architecture.png)
-
-![Update the unit, end to end](docs/diagrams/trigger.png)
-
-More figures: [frontend](docs/diagrams/frontend.png), [backend](docs/diagrams/backend.png), [how to run it on the cluster](docs/diagrams/workflow.png), [API map](docs/diagrams/api.png), [the 07:00 run](docs/diagrams/sequence.png).
+On held-out patients (cut at ICU arrival + 24 h, event in the next 24 h): AUROC **0.93** for death, **0.88** for leaving to step-down, **0.88** for CRRT start, **0.80** for leaving to a ward, **0.78** for ventilator start and **0.77** for vasopressor start. Full table with ranges, AUPRC and Brier: [`docs/RESULTS.md`](docs/RESULTS.md).
 
 ## How this forecast was made
 
-**A native model.** Every number on the board comes from one model we trained ourselves, from scratch, on our own vocabulary of patient-event tokens (about 1,200: lab bins, drug starts, transfers, time gaps, a clock token) built from MIMIC-IV-Ext-CLIF patient timelines. It is not fine-tuned and starts with no pretrained weights, from Google or from NVIDIA. Only the layer layout is borrowed, from NVIDIA Nemotron 3.5 Bolt E4B (Gemma4 text), as set in ICU-Twin `icutwin/config/decoder.yaml`: five sliding-window layers, then one full-attention layer (the last layer is always full), grouped-query attention, key/value shared across the last layers, per-layer input embeddings, and logit softcapping. The config defines three sizes: s (12.3M parameters at a vocabulary of 1,200), m (about 35M) and l (about 70M). Training is size m for three epochs (`examples/train_fuzzball.yaml`, `workflows/job_3_train`), with a time-to-next-token loss added to next-token loss. The checkpoint packaged as `final` is step 2616 of 4351 from run `ep2-20261114c`; those training runs were stopped (`backend/docs/FUZZBALL_VALIDATION.md`).
+Not a medical device and not prospectively validated. The board shows staffing and machine needs, not treatments.
 
-**Five predictions from one pass.** For each patient the model reads the events up to the cut in one forward pass (`icutwin/scoring/extractor.py`). The hidden state of the last layer at the last event goes to a logistic probe per task (`icutwin/scoring/rep_based.py`; standardize, then logistic regression with cross-validation). The probe heads are ward, step-down, IMV, vasopressor start, CRRT start and death, each for the next 24 hours (`examples/probe_tasks.yaml`); the board reports ward and step-down together as ICU discharge. Probes are fit once per model on the train split and only applied by the daily update. `app/aggregate.py` adds patients up into unit counts with a likely range (8 in 10). Nothing is generated or simulated (decision D2).
+**A native model.** The predictions come from one model we trained ourselves, from scratch, on our own vocabulary of patient-event tokens (about 1,200: lab bins, drug starts, transfers, time gaps, a clock token) built from MIMIC-IV-Ext-CLIF patient timelines. It is not fine-tuned and starts with no pretrained weights, from Google or from NVIDIA. We borrowed the layer pattern of NVIDIA Nemotron 3.5 Bolt E4B (Gemma4 text), not a copy of the model. In ICU-Twin `icutwin/config/decoder.yaml`, size m has 16 layers, every sixth one full attention (the last layer is always full) and the rest sliding-window, with grouped-query attention, key/value shared across the last layers, per-layer input embeddings and logit softcapping. The config defines three sizes: s (12.3M parameters at a vocabulary of 1,200), m (about 35M) and l (about 70M). Training uses size m with a time-to-next-token loss added to next-token loss. The config plans 3 epochs. The model used is the checkpoint at step 2616 of 4351 from run `ep2-20261114c`, about 60% of that run; the training runs were stopped (`backend/docs/FUZZBALL_VALIDATION.md`, `HANDOFF.md`).
 
-**From chart to prediction, in four steps.**
-1. *Read the chart.* The patient's history up to the cut becomes a list of event tokens (the last 4,096 before the cut).
-2. *One pass through GEM.* The model reads the list once. It does not write out the next 24 hours. At each position it forms an internal summary of everything so far: the hidden state. We take the hidden state of the last layer at the last event, a list of numbers that stands for "this patient right now" (`extractor.py`, `hidden_states[-1]` at the last real token).
-3. *Five small questions on that summary.* One logistic probe per task turns the numbers into a chance that the event happens in the next 24 hours. Each probe was fit on past stays, with the answer taken from what really happened in the 24 hours after the cut in the training data, and skipping stays where the event had already happened (`rep_based.py`, `fit_label`).
-4. *Add up the patients.* Chances become unit counts with a likely range.
+**From chart to prediction.**
+1. *Read the chart.* The patient's last 4,096 events before the cut become a list of tokens. The cut is 24 hours after ICU arrival when the classifiers are fit, and 07:00 on the board.
+2. *One pass through the model.* It reads the list once and does not write out the next 24 hours. At the last event it holds a summary of the patient so far, the hidden state of the last layer (`icutwin/scoring/extractor.py`, `hidden_states[-1]` at the last real token).
+3. *Small classifiers on that summary.* A probe is a small classifier on the hidden state: standardized features into logistic regression with cross-validation (`icutwin/scoring/rep_based.py`). There are six heads (ward, step-down, IMV, vasopressor start, CRRT start, death; `examples/probe_tasks.yaml`) for five board predictions; ward plus step-down is ICU discharge. Each was fit on past stays, labelled by what really happened in the 24 hours after the cut, skipping stays where the event had already happened. A patient with the support already running gets no new-start prediction for it.
+4. *Add up the patients.* `app/aggregate.py` turns per-patient chances into unit counts with a likely range (8 in 10), a model-based range that treats patients as independent.
 
-*Why not generate the 24 hours?* We built that first: sample many possible futures and count how often the event occurs. We dropped it (decision D2) because one pass is faster, needs one GPU for minutes, and gives the same kind of answer directly. The generating code is kept for reference. This is a standard "linear probe" technique; the five answers are only as good as what the hidden state captures, which is why accuracy is Not ready yet until a held-out check is published.
+The first design generated about 100 sampled futures per patient and counted outcomes; we dropped it (decision D2) for one forward pass per patient.
 
-**How Fuzzball ran it.** Two Lenovo ThinkStation PGX nodes (NVIDIA GB10, one GPU each). The scheduler places work, so jobs are not pinned to a named node, and no node names are recorded in the repos.
+**Results.** Held-out AUROC runs from 0.77 (vasopressor start) to 0.93 (death) across the six heads: [`docs/RESULTS.md`](docs/RESULTS.md). It is a retrospective check on one dataset, MIMIC-IV. `docs/RESULTS.md` does not say which checkpoint it scored. Backtest against persistence and GB10 run times: Not ready yet.
 
-| Step | Fuzzfile | Where |
-|---|---|---|
-| Data in: tar to the object cache (`fb://group/`, team only), then copy onto volume `mimic_clif` | `workflows/job_1_data_move` (ICU-Twin) | CPU |
-| Tokenize the CLIF tables and drop the demo patients; log and QC report leave by object-cache egress | `workflows/job_2_tokenize` | CPU |
-| Train, data-parallel over both nodes (`multinode`, 2 nodes, `torchrun`, NCCL over TCP sockets) | `workflows/job_3_train` | both GPUs |
-| Package a checkpoint as the model folder `final/` | `workflows/job_3_1_package` | CPU |
-| Extract hidden states on both GPUs, fit the probes, write `probe_metrics.json` | `workflows/job_4_probe` | both GPUs, then CPU |
-| Publish the board code and packages, pinned to one commit by sha256 | `backend/fuzzball/t7-code.fz` | CPU |
-| Fit probes on the app side; stage the 25 open-demo rooms | `t7-fit.fz`, `t7-ward.fz` | one GPU, then CPU |
-| One update: precheck, extract, score | `t7-forecast.fz` | one GPU for the extract, rest CPU |
-| Always on: Nemotron 3 Nano (chat), the board, the dispatcher | `t7-twin.fz` | other GPU, plus CPU |
+**Fuzzball: what ran, and what is only written.** Two Lenovo ThinkStation PGX nodes (NVIDIA GB10, one GPU each); the scheduler places work, so nothing is pinned to a named node, and no node names are recorded in the repos.
 
-Volumes: `mimic_clif` (credentialed data, the model, training tokens; read-only by rule in the forecast workflows), `twin-store` (code, probes, `forecast.json`, `rooms.json`, run log), `hfcache` (Nemotron weights), and scratch volumes Fuzzball removes when a workflow ends. Results an agent can read back leave through the object cache; the object cache never overwrites, so each run gets its own path. The board is a Fuzzball service on port 8080 with an https endpoint (group scope). Fuzzball 4.3 has no cron and no workflow parameters, so a dispatcher service, using the workflow token Fuzzball injects, starts the 07:00 run and every rerun: "Update the unit" posts to the board, the board to the dispatcher, and the dispatcher fills a copy of `t7-forecast.fz` and runs `workflow start` (one run at a time, 20 minutes between updates of the same scope). Details: [`ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+*Ran on the cluster:*
+- Data move: the CLIF files went through the team-only object cache onto the persistent volume `mimic_clif` (`workflows/job_1_data_move` in ICU-Twin; `docs/FUZZBALL_RUNS.md`).
+- A training run on both nodes (the `workflows/job_3_train` shape: `multinode`, 2 nodes, data-parallel). It was stopped at the checkpoint above.
+- Packaging that checkpoint into the model folder `final/`, with a load test that printed `LOADTEST OK` (`workflows/job_3_1_package`).
+- Probe fitting and held-out scoring happened on the local machines (`docs/RESULTS.md`); which workflow did it is not recorded in the job status tables.
 
-**Not ready yet:** accuracy (`probe_metrics.json` is defined but no results are published), backtest against persistence, and run times on the GB10s (no `results/bench.jsonl`; nothing timed). Real MIMIC-IV stays counts-only; room pages use the open MIMIC-IV Demo stage ward (D6). Decision support only.
+*Written, validated against the cluster with a stand-in for the missing volume, not yet run* (`backend/fuzzball/ready/`, `HANDOFF.md`; `FUZZBALL_VALIDATION.md` says no workflow in this repo has run, and `twin-store` was missing):
+- `t7-code` publishes the board code, `t7-fit` and `t7-ward` fit the board's saved probes and stage the 25 open-demo rooms, `t7-forecast` is built to run one update (extract on one GPU, score on CPU).
+- `t7-twin` is built to hold three services: Nemotron 3 Nano on one GPU (chat), the board on port 8080 (https endpoint, group scope) and a dispatcher.
+- The dispatcher is designed to start the forecast early enough to be ready for 07:00 rounds (it is set to start at 07:00 and retry for 10 minutes; decision D9 says 06:30) and on "Update the unit": it fills a copy of the Fuzzfile and runs `workflow start`, one run at a time, 20 minutes between updates of the same scope. It is designed to use the workflow token Fuzzball injects because Fuzzball 4.3 has no built-in cron. Both are design to confirm on the cluster.
 
-## Who uses it
+Volumes: `mimic_clif` (credentialed data, the model, training tokens), `twin-store` (code, probes, forecast files), `hfcache` (Nemotron weights), and scratch volumes Fuzzball removes at the end of a workflow. Results an agent reads back leave through the object cache, which never overwrites. More: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-Every role's morning, step by step: [`docs/USER_JOURNEY.md`](docs/USER_JOURNEY.md).
+**Privacy.** Real MIMIC-IV stays counts-only by default. D19 allows real-ward views locally under the team's data agreement. Rooms shown by default are the open MIMIC-IV Demo stage ward (D6).
 
-## Run it locally
+## The board
+
+![Bed board, Next 24 h: each bed shows now, then the forecast](docs/screenshots/beds-next.png)
+
+| Now: life support running at 07:00 | Unit strain: the unit added up |
+|---|---|
+| ![Bed board, Now](docs/screenshots/beds-now.png) | ![Unit strain, Next 24 h](docs/screenshots/strain-next.png) |
+
+![Ask Lookahead: the chat answers from the forecast](docs/screenshots/chat-widget.png)
+
+## Run it
 
 ```bash
-python3 -m http.server 8000   # from this repo, then open:
-# http://localhost:8000/mockups/command-center.html   (#night, #room=20, #role=pharmacy, #fast, #synthetic)
+# 1. The board with made-up data (own terminal; it keeps running)
+python3 -m http.server 8000        # open http://localhost:8000/mockups/command-center.html#synthetic
+
+# 2. Backend tests, from the repo root
+(cd backend && uv run --extra dev --extra model pytest -q)
+
+# 3. The board server on example data (own terminal; it keeps running)
+(cd backend && uv run python app/board.py --forecast ../examples/forecast.json --static ../mockups/command-center.html --port 8080)
 ```
 
-## Start here
+## More
 
-| Read | For |
-|---|---|
-| [`HANDOFF.md`](HANDOFF.md) | where things stand, who owns what, how to run it, what to do next on the cluster |
-| [`docs/ONE_PAGER.md`](docs/ONE_PAGER.md) | one printable page for judges: the model, how it predicts, how Fuzzball ran it |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | the team's guide: what runs where, tech stack, architecture and API figures, how the board starts a Fuzzball job, how to run it locally and on the cluster |
-| [`docs/USER_JOURNEY.md`](docs/USER_JOURNEY.md) | the 07:00 morning: charge nurse, physician, pharmacy, respiratory therapy, bed manager, midday rerun, night shift, judges |
-| [`docs/FRONTEND_SPEC.md`](docs/FRONTEND_SPEC.md) | screens, data contract (`forecast.json`, `rooms.json`, `/api/runs`, `/api/rerun`, `/api/capacity`, `/api/ask`), states, rules |
-| [`docs/DECISIONS.md`](docs/DECISIONS.md) | team decisions (ICU-only cohort, 07:00 rounds, probe scoring, five predictions, per-room views on the stage ward only, auditability, the two triggers) |
-| [`mockups/command-center.html`](mockups/command-center.html) | the reviewed mockup: open it in a browser (synthetic data, works offline; `#night`, `#room=20` and `#role=pharmacy` deep links) |
-| [`DESIGN.md`](DESIGN.md), [`PRODUCT.md`](PRODUCT.md) | the visual system and product context the Impeccable skill reads |
-| [`examples/forecast.json`](examples/forecast.json), [`examples/rooms.json`](examples/rooms.json) | a synthetic forecast and stage-ward rooms in the exact shape the board receives |
+- **Project page:** https://sajor2000.github.io/icustrainciq/ (how it predicts, all screenshots, architecture, run steps)
+- **[`HANDOFF.md`](HANDOFF.md):** where things stand, who owns what, the cluster run list
+- **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md):** what runs where, tech stack, endpoints
+- **[`docs/submission/`](docs/submission/):** the one-sheet and the five-minute demo script
+- **[`backend/README.md`](backend/README.md):** the backend, module by module
+- **Design system:** [`DESIGN.md`](DESIGN.md) is the one source for the board, the figures and the project page
+- **Model training:** [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin)
+- **Team and credits:** team7. Cluster cards, bed figures, the flag-line toggle and the capacity model are Dema's (deetherese) design.
 
-## Working on the design with Impeccable
-
-This repo is set up for the [Impeccable](https://impeccable.style) design skill: `PRODUCT.md`, `DESIGN.md`, `.impeccable/design.json` and the mockup's direction contract in `.impeccable/surfaces/`. In Claude Code run `/impeccable critique mockups/command-center.html`, `/impeccable polish ...` or `/impeccable shape <new screen>`; it loads this context automatically. The 2026-11-14 Lookahead build passed `impeccable detect` with 0 anti-patterns.
-
-## Rules
-
-- Synthetic or open demo data only in this repo. No patient data, credentials, internal IP addresses or personal paths.
-- Every number shows its range (8 in 10 likely outcomes); chances are whole percentages ("23%"); status is never shown by colour alone; decision support, never a treatment recommendation.
+Demo data only: the mockup uses made-up patients, and names on the board are fictional. Lookahead is a research prototype, not a medical device; it supports decisions and recommends no treatment.

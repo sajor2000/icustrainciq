@@ -5,7 +5,7 @@ Lookahead ("The next 24 hours, in one place.") is the ICU team's board for 07:00
 ## How it runs
 
 - Static HTML, CSS and vanilla JavaScript in one file; no build step, no Node in the image, works offline.
-- Served by `app/board.py` (as `app/static/index.html`) on the team's two NVIDIA GB10 nodes. Served over http(s), the page reads the same-origin API below. Only when opened from `file://`, or with `#synthetic`, does it use its built-in synthetic generator, labelled "Demo data". A transient load failure over http(s) never switches a live board to synthetic data: the page retries (3 tries with backoff, then every few seconds), shows "Can't reach the board server — retrying" and keeps the last good data. The data-source label (a small outlined tag in the top strip, not a warning) reads "MIMIC-IV Demo" (`ward.source` `open-demo`, the default), "MIMIC-IV · local" (`mimic-iv`, real MIMIC-IV room views approved for local use) or "Demo data" (synthetic). `forecast.json` and `rooms.json` carry `"ward": {"source": "open-demo"|"mimic-iv"|"synthetic", "label": "..."}`; `synthetic` (the example files) reads "Demo data".
+- Served by `app/board.py` (as `app/static/index.html`) on the team's two NVIDIA GB10 nodes. Served over http(s), the page reads the same-origin API below. Only when opened from `file://`, or with `#synthetic`, does it use its built-in synthetic generator, labelled "Demo data". A transient load failure over http(s) never switches a live board to synthetic data: the page retries (3 tries with backoff, then every few seconds), shows "Can't reach the board server — retrying" and keeps the last good data. The data-source label (a small outlined tag in the top strip, not a warning) reads "MIMIC-IV Demo" (`ward.source` `open-demo`, the default), "MIMIC-IV · local" (`mimic-iv`, real MIMIC-IV room views approved for local use) or "Demo data" (synthetic). `forecast.json` and `rooms.json` carry `"ward": {"source": "open-demo"|"mimic-iv", "label": "..."}`.
 - Every server-supplied string reaches the page through one `esc()` helper or `textContent`; numbers are checked with `Number.isFinite`; `level`, `sex`, `age` and yardstick words are checked against fixed sets. The page loads no third-party scripts (CSP: self and Google Fonts only).
 - Every POST (`/api/rerun`, `/api/capacity`, `/api/ask`) is same origin with `Content-Type: application/json` and `X-Lookahead: 1`; a refusal such as `403 {"ok":false,"reason":"request refused"}` shows its reason.
 - Review flags in the URL hash: `#view=beds`, `#view=strain`, `#when=now`, `#when=next`, `#pending`, `#night`, `#room=7`, `#role=pharmacy`, `#fast` (short polls and runs), `#morning` (the scheduled run in progress, fallback only), `#synthetic`.
@@ -18,35 +18,7 @@ Five predictions only, all for the next 24 h, 07:00 to 07:00: ICU discharge, IMV
 
 ## How this forecast was made
 
-**A native model.** Every number on the board comes from one model we trained ourselves, from scratch, on our own vocabulary of patient-event tokens (about 1,200: lab bins, drug starts, transfers, time gaps, a clock token) built from MIMIC-IV-Ext-CLIF patient timelines. It is not fine-tuned and starts with no pretrained weights, from Google or from NVIDIA. Only the layer layout is borrowed, from NVIDIA Nemotron 3.5 Bolt E4B (Gemma4 text), as set in ICU-Twin `icutwin/config/decoder.yaml`: five sliding-window layers, then one full-attention layer (the last layer is always full), grouped-query attention, key/value shared across the last layers, per-layer input embeddings, and logit softcapping. The config defines three sizes: s (12.3M parameters at a vocabulary of 1,200), m (about 35M) and l (about 70M). Training is size m for three epochs (`examples/train_fuzzball.yaml`, `workflows/job_3_train`), with a time-to-next-token loss added to next-token loss. The checkpoint packaged as `final` is step 2616 of 4351 from run `ep2-20261114c`; those training runs were stopped (`backend/docs/FUZZBALL_VALIDATION.md`).
-
-**Five predictions from one pass.** For each patient the model reads the events up to the cut in one forward pass (`icutwin/scoring/extractor.py`). The hidden state of the last layer at the last event goes to a logistic probe per task (`icutwin/scoring/rep_based.py`; standardize, then logistic regression with cross-validation). The probe heads are ward, step-down, IMV, vasopressor start, CRRT start and death, each for the next 24 hours (`examples/probe_tasks.yaml`); the board reports ward and step-down together as ICU discharge. Probes are fit once per model on the train split and only applied by the daily update. `app/aggregate.py` adds patients up into unit counts with a likely range (8 in 10). Nothing is generated or simulated (decision D2).
-
-**From chart to prediction, in four steps.**
-1. *Read the chart.* The patient's history up to the cut becomes a list of event tokens (the last 4,096 before the cut).
-2. *One pass through GEM.* The model reads the list once. It does not write out the next 24 hours. At each position it forms an internal summary of everything so far: the hidden state. We take the hidden state of the last layer at the last event, a list of numbers that stands for "this patient right now" (`extractor.py`, `hidden_states[-1]` at the last real token).
-3. *Five small questions on that summary.* One logistic probe per task turns the numbers into a chance that the event happens in the next 24 hours. Each probe was fit on past stays, with the answer taken from what really happened in the 24 hours after the cut in the training data, and skipping stays where the event had already happened (`rep_based.py`, `fit_label`).
-4. *Add up the patients.* Chances become unit counts with a likely range.
-
-*Why not generate the 24 hours?* We built that first: sample many possible futures and count how often the event occurs. We dropped it (decision D2) because one pass is faster, needs one GPU for minutes, and gives the same kind of answer directly. The generating code is kept for reference. This is a standard "linear probe" technique; the five answers are only as good as what the hidden state captures, which is why accuracy is Not ready yet until a held-out check is published.
-
-**How Fuzzball ran it.** Two Lenovo ThinkStation PGX nodes (NVIDIA GB10, one GPU each). The scheduler places work, so jobs are not pinned to a named node, and no node names are recorded in the repos.
-
-| Step | Fuzzfile | Where |
-|---|---|---|
-| Data in: tar to the object cache (`fb://group/`, team only), then copy onto volume `mimic_clif` | `workflows/job_1_data_move` (ICU-Twin) | CPU |
-| Tokenize the CLIF tables and drop the demo patients; log and QC report leave by object-cache egress | `workflows/job_2_tokenize` | CPU |
-| Train, data-parallel over both nodes (`multinode`, 2 nodes, `torchrun`, NCCL over TCP sockets) | `workflows/job_3_train` | both GPUs |
-| Package a checkpoint as the model folder `final/` | `workflows/job_3_1_package` | CPU |
-| Extract hidden states on both GPUs, fit the probes, write `probe_metrics.json` | `workflows/job_4_probe` | both GPUs, then CPU |
-| Publish the board code and packages, pinned to one commit by sha256 | `backend/fuzzball/t7-code.fz` | CPU |
-| Fit probes on the app side; stage the 25 open-demo rooms | `t7-fit.fz`, `t7-ward.fz` | one GPU, then CPU |
-| One update: precheck, extract, score | `t7-forecast.fz` | one GPU for the extract, rest CPU |
-| Always on: Nemotron 3 Nano (chat), the board, the dispatcher | `t7-twin.fz` | other GPU, plus CPU |
-
-Volumes: `mimic_clif` (credentialed data, the model, training tokens; read-only by rule in the forecast workflows), `twin-store` (code, probes, `forecast.json`, `rooms.json`, run log), `hfcache` (Nemotron weights), and scratch volumes Fuzzball removes when a workflow ends. Results an agent can read back leave through the object cache; the object cache never overwrites, so each run gets its own path. The board is a Fuzzball service on port 8080 with an https endpoint (group scope). Fuzzball 4.3 has no cron and no workflow parameters, so a dispatcher service, using the workflow token Fuzzball injects, starts the 07:00 run and every rerun: "Update the unit" posts to the board, the board to the dispatcher, and the dispatcher fills a copy of `t7-forecast.fz` and runs `workflow start` (one run at a time, 20 minutes between updates of the same scope). Details: [`ARCHITECTURE.md`](ARCHITECTURE.md).
-
-**Not ready yet:** accuracy (`probe_metrics.json` is defined but no results are published), backtest against persistence, and run times on the GB10s (no `results/bench.jsonl`; nothing timed). Real MIMIC-IV stays counts-only; room pages use the open MIMIC-IV Demo stage ward (D6). Decision support only.
+A native model, trained from scratch on our own token vocabulary; one forward pass per patient, then small classifiers on its last-layer summary; how Fuzzball ran it and what is only written so far. Full account, with sources: [`README.md`](../README.md#how-this-forecast-was-made). One page for judges: [`ONE_PAGER.md`](ONE_PAGER.md). Accuracy and its limits: [`RESULTS.md`](RESULTS.md).
 
 ## Data the board reads
 
@@ -184,39 +156,6 @@ The board is read at 07:00 by a tired team at a workstation or a wall screen, of
 | One horizon | Next 24 h, 07:00 to 07:00. No time slider; the switch only hides or shows the forecast. | Nothing to choose before reading. |
 | Definitions folded | Every rule and the model details sit in one closed section at the foot. | The curious can look; the 07:00 reader never has to. |
 | Day and night boards | Same layout and words; the user picks the board. | Nothing moves when the lights go down. |
-
-## Capacity fields (`/api/capacity`)
-
-"Set tonight's capacity" sends `POST /api/capacity` with `role` and **only the fields the user filled in**; an empty field is left out, never sent as `null`:
-
-| Field | Meaning |
-|---|---|
-| `vents_total` | ventilators on the unit (0 to 50) |
-| `crrt_total` | CRRT machines on the unit (0 to 50) |
-| `nurses_on_shift` | nurses on shift (0 to 50) |
-| `rt_on_shift` | respiratory therapists on shift (0 to 50) |
-| `life_support_patients` | life-support patients tonight's staffing covers (optional; drives the unit yardstick) |
-| `vents_free` | sent with `vents_total` for an older server: total minus ventilators in use now |
-
-The response is `{"ok": true, "capacity": {...}}` (or `{"ok": false, "reason"}`, shown). On load and on every refresh the page reads `GET /api/capacity` (either the object itself or `{"capacity": {...}}`) and the forecast's `yardstick.capacity` block. For each of `vents_total`, `crrt_total`, `nurses_on_shift`, `rt_on_shift`: **when the server returns the key, its value wins** (even `null`); when the key is absent (an older backend) or in `#synthetic` mode the copy kept on the device (`lookahead-machines`) is used. A saved `life_support_patients` from `GET /api/capacity` recomputes the yardstick on load when the forecast does not carry it yet, so a saved shortage survives a reload. The line "Capacity set 07:12 by ICU nurse (charge)" comes from the server's `set_at` (or `updated_at`) and `set_by_role`. An older server that refuses a save without `life_support_patients` leaves the numbers on the device and says so.
-
-## Staffing (D23)
-
-Rules: a nurse is **1:1** for a patient on CRRT or on **two or more vasoactive infusions**, **1:2** for everyone else; one **respiratory therapist per six ventilated patients**, rounded up.
-
-- Data, all optional: per room `on_now_detail: {"vasoactives": int|null}`; in `forecast.json` `staffing_now: {nurses, one_to_one, one_to_two, rt, vented}` and `staffing_next_24h: {nurses: {p10,p50,p90}, rt: {p10,p50,p90}}`. When they are absent the page works them out: 1:1 from `on_now.crrt` and the vasoactive count (a vasopressor flag alone counts as one agent); next 24 h adds expected CRRT starts (new 1:1 beds) and ventilator starts from `life_support.expected_by`, and assumes a bed that empties is refilled.
-- **Unit strain**: a Staffing card leads the row. Nurses: needed now, next 24 h with its range, "1:1 × 3 · 1:2 × 22". Respiratory therapists: needed now, next 24 h with its range, "5 ventilated". With "Nurses on shift" or "RTs on shift" entered, the block shows the number on shift and SHORT (need above it) or AT LIMIT (equal); the header strain line adds "Nurses short by 2" or "RT short by 1".
-- **Bed tiles**: Now shows a quiet "1:1" tag on a 1:1 bed (legend: "1:1 nurse: on CRRT" or "1:1 nurse: on 2 vasoactive infusions"); nothing for 1:2. Next 24 h shows "1:1 likely" only when the chance of starting CRRT is at the flag line or more.
-- **Room page**: the sub-line starts "Nursing 1:1 (on CRRT)" or "Nursing 1:2". **Chat** (offline): "How many nurses do we need?" answers with the numbers.
-
-## Robustness (review of PR #3)
-
-- **One task without counts** (a skipped probe returns null counts): only that task reads "No estimate"; every other count, bar and figure still shows. The board needs only the Now counts and the unit total to draw.
-- **Stale forecast**: when `made_at` is a day old or more the run line reads "Forecast from yesterday 07:00 · update the unit" on an amber ground and the header strain line carries "From yesterday" (or "From 2 days ago").
-- **Flags survive navigation**: `#synthetic`, `#pending`, `#fast` and `#night` are kept in every link and hash the page writes, so a served demo stays a demo after a reload.
-- **Chat**: closing the chat drops any reply still on its way; `seen_made_at` is the forecast the last answer used, not the page's latest.
-- **Refresh keeps keyboard focus** on the same bed or figure.
-- **Synthetic examples**: `examples/forecast.json` and `examples/rooms.json` carry `"ward": {"source": "synthetic", "label": "Demo data"}`; the page shows "Demo data" for that source.
 
 ## Forecast not ready (`forecast_state: "pending-model"`)
 

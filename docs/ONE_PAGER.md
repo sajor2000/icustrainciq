@@ -1,25 +1,25 @@
 # Lookahead in one page
 
-*CIQ x NVIDIA Local AI Hackathon, team7. For judges from NVIDIA, CIQ and VAST. Decision support only; research prototype on retrospective data.*
+*CIQ x NVIDIA Local AI Hackathon, team7. For judges from NVIDIA, CIQ and VAST. Decision support only: not a medical device, not prospectively validated. The board shows staffing and machine needs, not treatments.*
 
-**Category and angle.** Healthcare data science, novel methods (GEM), run locally. Privacy and low investment: a small ICU or smaller hospital runs it on two desk-size machines it owns, patient data stays on site, no large cloud or data-science spend.
+**Category and aim.** Healthcare data science, novel methods (GEM), run locally. The aim is privacy and low investment: a small ICU or smaller hospital on two desk-size machines it owns, with patient data staying on site.
 
-**What it does.** For 07:00 morning rounds, every patient who has been in the ICU at least 24 hours gets five predictions for the next 24 hours: leaves the ICU, starts a ventilator (IMV), starts a vasopressor, starts CRRT, dies in hospital. The board adds patients up into unit counts with a likely range (8 in 10 outcomes) and shows chances as natural frequencies, for example "3 in 10".
+**What it does.** At 07:00 rounds, each ICU patient who has been in the ICU at least 24 hours gets up to five predictions for the next 24 hours: leaves the ICU, starts a ventilator, a vasopressor or CRRT (kidney dialysis), dies. Six small classifiers feed the five (ward plus step-down is "leaves the ICU"). Patients are added up into unit counts with a likely range (8 in 10).
 
-**The model: native, not fine-tuned.** The team calls it GEM (the repo says Gemma4 and Nemotron). We trained it from scratch, from random weights, on MIMIC-IV-Ext-CLIF patient timelines written as sequences of events (a lab bin, a drug start, a transfer, a clock tick) over our own vocabulary of about 1,200 tokens. It uses no pretrained weights from Google or NVIDIA and is not fine-tuned. We copied only the layer layout of NVIDIA Nemotron 3.5 Bolt E4B (Gemma4 text): five sliding-window layers, then one full-attention layer; grouped-query attention; shared key/value layers; per-layer input embeddings; logit softcapping. Sizes in the config: s (12.3M parameters at a vocabulary of 1,200), m (about 35M), l (about 70M). Training uses m.
+**The model.** The team calls it GEM (the repo says Gemma4 and Nemotron). We trained it from scratch on MIMIC-IV-Ext-CLIF patient timelines, written as sequences of events (a lab, a drug start, a transfer) over our own vocabulary of about 1,200 tokens. No pretrained weights from Google or NVIDIA, no fine-tuning. We borrowed the layer pattern of NVIDIA Nemotron 3.5 Bolt E4B, not a copy: at size m (about 35M parameters), 16 layers, every sixth one full attention, the rest sliding-window. The plan was 3 epochs; the model we use is an early checkpoint, about 60% of a run, because the runs were stopped.
 
-**From chart to prediction.** (1) The patient's history up to the cut becomes a list of event tokens. (2) GEM reads the list once. It does not write out the next 24 hours; it forms an internal summary of the patient, the last layer's hidden state at the last event (`extractor.py`). (3) One small logistic probe per question turns that summary into a chance of the event in the next 24 hours; each was fit on past stays, using what really happened in the 24 hours after the cut (`rep_based.py`). (4) Patients are added up into unit counts with a range. We first built a version that generated many possible futures and counted outcomes; we dropped it (D2) because one pass is faster and answers directly.
+**From chart to prediction.**
+1. The patient's last 4,096 events before the cut become a list.
+2. GEM reads the list once. It does not write out the next 24 hours. It keeps a summary of the patient so far: the hidden state.
+3. A probe, a small classifier, reads that summary and gives a chance for each question. Each was trained on past stays, using what really happened in the next 24 hours.
+4. Patients are added up.
 
-**How we used Fuzzball 4.3, on two Lenovo ThinkStation PGX (NVIDIA GB10, one GPU each).**
-- *Data in:* a tar goes to the team-only object cache (`fb://group/`), then a workflow copies it onto the persistent volume `mimic_clif`.
-- *Tokenize:* a CPU job; its log and QC report leave through object-cache egress.
-- *Train:* a 2-node `multinode` job, one GPU per node, `torchrun`. A second 2-node job extracts hidden states on both GPUs and fits the probes.
-- *Forecast:* `t7-forecast.fz` runs extract (one GPU), then score and aggregate on CPU.
-- *Always on:* `t7-twin.fz` holds three services: Nemotron 3 Nano on the other GPU (chat), the board on port 8080 (https endpoint, group scope), and a dispatcher.
-- *Clock and rerun:* Fuzzball 4.3 has no cron and no workflow parameters. The dispatcher starts the 07:00 run with the token Fuzzball injects. "Update the unit" posts to the dispatcher, which fills a copy of the Fuzzfile and runs `workflow start`: one run at a time, 20 minutes apart.
+We first tried about 100 sampled futures per patient and dropped it for one pass.
 
-**Privacy.** Real MIMIC-IV stays counts-only on restricted volumes. Rooms on the board are the open MIMIC-IV Demo stage ward (decision D6), which never trained the model.
+**Results.** Held-out AUROC is 0.77 to 0.93 across the six classifiers, on retrospective MIMIC-IV, one dataset. Which checkpoint was scored is not stated. Backtest against persistence and GB10 run times: Not ready yet.
 
-**Results.** Accuracy, backtest and run times: Not ready yet. No `results/bench.jsonl` exists and nothing has been timed on the GB10s.
+**Fuzzball 4.3 on two Lenovo ThinkStation PGX (NVIDIA GB10).**
+*Ran:* data copied in through the team-only object cache onto a persistent volume; a two-node training run, stopped early; packaging of a checkpoint with a passing load test.
+*Built to run, not yet run:* a forecast workflow (one GPU, then CPU); a service workflow holding Nemotron 3 Nano (chat) on the other GPU, the board on port 8080 and a dispatcher that starts the forecast for 07:00 rounds and on "Update the unit". The dispatcher's use of Fuzzball's injected token (4.3 has no built-in cron) is design to confirm on the cluster.
 
-Repos: sajor2000/icustrainciq (board, backend, docs); vaishvikc/ICU-Twin (tokenizer, model, scoring).
+**Privacy.** Real MIMIC-IV stays counts-only by default; real-ward views are allowed locally under the team's data agreement. Rooms shown by default are the open MIMIC-IV Demo ward.
