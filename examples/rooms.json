@@ -1,0 +1,1860 @@
+{
+  "made_at": "2026-11-14T07:00:00",
+  "rooms": [
+    {
+      "room": 1,
+      "age": "40",
+      "sex": "F",
+      "name": {
+        "display": "Petrov, R.",
+        "first": "Ruth",
+        "last": "Petrov",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.06,
+        "vasopressor": 0.15,
+        "crrt": 0.07,
+        "icu_departure": 0.32,
+        "death": 0.06
+      },
+      "any_life_support": 0.26,
+      "level": "medium",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Lactate 3.1 (up from 2.2)"
+        },
+        {
+          "h": 2,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 3,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 4,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 6,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 8,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 10,
+          "text": "Sedation lightened"
+        },
+        {
+          "h": 12,
+          "text": "Temperature 38.4"
+        }
+      ]
+    },
+    {
+      "room": 2,
+      "age": "47",
+      "sex": "M",
+      "name": {
+        "display": "Okafor, H.",
+        "first": "Henry",
+        "last": "Okafor",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": true,
+        "vasopressor": true,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": true,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": null,
+        "vasopressor": null,
+        "crrt": 0.08,
+        "icu_departure": 0.19,
+        "death": 0.08
+      },
+      "any_life_support": 0.08,
+      "level": "low",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Temperature 38.4"
+        },
+        {
+          "h": 2,
+          "text": "Lactate 3.1 (up from 2.2)"
+        },
+        {
+          "h": 3,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 4,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 6,
+          "text": "Lactate 3.1 (up from 2.2)"
+        },
+        {
+          "h": 8,
+          "text": "Sedation lightened"
+        },
+        {
+          "h": 10,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 12,
+          "text": "Mean arterial pressure 62"
+        }
+      ]
+    },
+    {
+      "room": 3,
+      "age": "54",
+      "sex": "M",
+      "name": {
+        "display": "Castillo, L.",
+        "first": "Luis",
+        "last": "Castillo",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": true
+      },
+      "p": {
+        "imv": 0.07,
+        "vasopressor": 0.05,
+        "crrt": 0.03,
+        "icu_departure": 0.66,
+        "death": 0.02
+      },
+      "any_life_support": 0.14,
+      "level": "low",
+      "out": true,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Temperature 38.4"
+        },
+        {
+          "h": 2,
+          "text": "Sedation lightened"
+        },
+        {
+          "h": 3,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 4,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 6,
+          "text": "Chest x-ray ordered"
+        },
+        {
+          "h": 8,
+          "text": "Norepinephrine 0.08 mcg/kg/min"
+        },
+        {
+          "h": 10,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 12,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        }
+      ]
+    },
+    {
+      "room": 4,
+      "age": "61",
+      "sex": "F",
+      "name": {
+        "display": "Costa, P.",
+        "first": "Priya",
+        "last": "Costa",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.03,
+        "vasopressor": 0.04,
+        "crrt": 0.02,
+        "icu_departure": 0.92,
+        "death": 0.02
+      },
+      "any_life_support": 0.09,
+      "level": "low",
+      "out": true,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 2,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 3,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 4,
+          "text": "Lactate 3.1 (up from 2.2)"
+        },
+        {
+          "h": 6,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 8,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 10,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 12,
+          "text": "Mean arterial pressure 62"
+        }
+      ]
+    },
+    {
+      "room": 5,
+      "age": "68",
+      "sex": "M",
+      "name": {
+        "display": "Fraser, J.",
+        "first": "James",
+        "last": "Fraser",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": true,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": null,
+        "vasopressor": 0.16,
+        "crrt": 0.06,
+        "icu_departure": 0.08,
+        "death": 0.11
+      },
+      "any_life_support": 0.21,
+      "level": "medium",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Norepinephrine 0.08 mcg/kg/min"
+        },
+        {
+          "h": 2,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 3,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 4,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 6,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 8,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 10,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 12,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        }
+      ]
+    },
+    {
+      "room": 6,
+      "age": "75",
+      "sex": "F",
+      "name": {
+        "display": "Reyes, F.",
+        "first": "Fatima",
+        "last": "Reyes",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.09,
+        "vasopressor": 0.39,
+        "crrt": 0.04,
+        "icu_departure": 0.43,
+        "death": 0.08
+      },
+      "any_life_support": 0.47,
+      "level": "high",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Sedation lightened"
+        },
+        {
+          "h": 2,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 3,
+          "text": "Norepinephrine 0.08 mcg/kg/min"
+        },
+        {
+          "h": 4,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 6,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 8,
+          "text": "Sedation lightened"
+        },
+        {
+          "h": 10,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 12,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        }
+      ]
+    },
+    {
+      "room": 7,
+      "age": "82",
+      "sex": "M",
+      "name": {
+        "display": "Morales, M.",
+        "first": "Mateo",
+        "last": "Morales",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": true,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.07,
+        "vasopressor": 0.06,
+        "crrt": 0.03,
+        "icu_departure": 0.26,
+        "death": 0.07
+      },
+      "any_life_support": 0.15,
+      "level": "low",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "FiO2 0.6"
+        },
+        {
+          "h": 2,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 3,
+          "text": "Chest x-ray ordered"
+        },
+        {
+          "h": 4,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 6,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 8,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 10,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 12,
+          "text": "Urine output 20 mL/h"
+        }
+      ]
+    },
+    {
+      "room": 8,
+      "age": "89",
+      "sex": "M",
+      "name": {
+        "display": "Kim, D.",
+        "first": "Daniel",
+        "last": "Kim",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": true,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.09,
+        "vasopressor": 0.1,
+        "crrt": null,
+        "icu_departure": 0.44,
+        "death": 0.02
+      },
+      "any_life_support": 0.18,
+      "level": "low",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Chest x-ray ordered"
+        },
+        {
+          "h": 2,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 3,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 4,
+          "text": "Lactate 3.1 (up from 2.2)"
+        },
+        {
+          "h": 6,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 8,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 10,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 12,
+          "text": "Chest x-ray ordered"
+        }
+      ]
+    },
+    {
+      "room": 9,
+      "age": "46",
+      "sex": "F",
+      "name": {
+        "display": "Kowalski, A.",
+        "first": "Ana",
+        "last": "Kowalski",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": true,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.2,
+        "vasopressor": null,
+        "crrt": 0.05,
+        "icu_departure": 0.11,
+        "death": 0.07
+      },
+      "any_life_support": 0.24,
+      "level": "medium",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Sedation lightened"
+        },
+        {
+          "h": 2,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 3,
+          "text": "Norepinephrine 0.08 mcg/kg/min"
+        },
+        {
+          "h": 4,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 6,
+          "text": "FiO2 0.6"
+        },
+        {
+          "h": 8,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 10,
+          "text": "Lactate 3.1 (up from 2.2)"
+        },
+        {
+          "h": 12,
+          "text": "FiO2 0.6"
+        }
+      ]
+    },
+    {
+      "room": 10,
+      "age": "53",
+      "sex": "M",
+      "name": {
+        "display": "Mensah, T.",
+        "first": "Tariq",
+        "last": "Mensah",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.03,
+        "vasopressor": 0.07,
+        "crrt": 0.01,
+        "icu_departure": 0.51,
+        "death": 0.02
+      },
+      "any_life_support": 0.11,
+      "level": "low",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Lactate 3.1 (up from 2.2)"
+        },
+        {
+          "h": 2,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 3,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 4,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 6,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 8,
+          "text": "Lactate 3.1 (up from 2.2)"
+        },
+        {
+          "h": 10,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 12,
+          "text": "CBC and BMP drawn"
+        }
+      ]
+    },
+    {
+      "room": 11,
+      "age": "60",
+      "sex": "F",
+      "name": {
+        "display": "Rivera, M.",
+        "first": "Mei",
+        "last": "Rivera",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": true,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.16,
+        "vasopressor": 0.21,
+        "crrt": 0.06,
+        "icu_departure": 0.28,
+        "death": 0.03
+      },
+      "any_life_support": 0.38,
+      "level": "medium",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 2,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 3,
+          "text": "Chest x-ray ordered"
+        },
+        {
+          "h": 4,
+          "text": "FiO2 0.6"
+        },
+        {
+          "h": 6,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 8,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 10,
+          "text": "Norepinephrine 0.08 mcg/kg/min"
+        },
+        {
+          "h": 12,
+          "text": "Heart rate 118"
+        }
+      ]
+    },
+    {
+      "room": 12,
+      "age": "67",
+      "sex": "M",
+      "name": {
+        "display": "Singh, T.",
+        "first": "Thomas",
+        "last": "Singh",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": true,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": null,
+        "vasopressor": 0.23,
+        "crrt": 0.05,
+        "icu_departure": 0.23,
+        "death": 0.1
+      },
+      "any_life_support": 0.27,
+      "level": "medium",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 2,
+          "text": "Norepinephrine 0.08 mcg/kg/min"
+        },
+        {
+          "h": 3,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 4,
+          "text": "FiO2 0.6"
+        },
+        {
+          "h": 6,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 8,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 10,
+          "text": "Chest x-ray ordered"
+        },
+        {
+          "h": 12,
+          "text": "Urine output 20 mL/h"
+        }
+      ]
+    },
+    {
+      "room": 13,
+      "age": "74",
+      "sex": "M",
+      "name": {
+        "display": "Yilmaz, O.",
+        "first": "Omar",
+        "last": "Yilmaz",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": true,
+        "crrt": true,
+        "ecmo": null
+      },
+      "on_life_support": true,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.29,
+        "vasopressor": null,
+        "crrt": null,
+        "icu_departure": 0.17,
+        "death": 0.04
+      },
+      "any_life_support": 0.29,
+      "level": "medium",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "FiO2 0.6"
+        },
+        {
+          "h": 2,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 3,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 4,
+          "text": "Chest x-ray ordered"
+        },
+        {
+          "h": 6,
+          "text": "Sedation lightened"
+        },
+        {
+          "h": 8,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 10,
+          "text": "Lactate 3.1 (up from 2.2)"
+        },
+        {
+          "h": 12,
+          "text": "Urine output 20 mL/h"
+        }
+      ]
+    },
+    {
+      "room": 14,
+      "age": "81",
+      "sex": "F",
+      "name": {
+        "display": "Bello, R.",
+        "first": "Ruth",
+        "last": "Bello",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": true,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": true
+      },
+      "p": {
+        "imv": 0.07,
+        "vasopressor": null,
+        "crrt": 0.03,
+        "icu_departure": 0.24,
+        "death": 0.04
+      },
+      "any_life_support": 0.1,
+      "level": "low",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Temperature 38.4"
+        },
+        {
+          "h": 2,
+          "text": "FiO2 0.6"
+        },
+        {
+          "h": 3,
+          "text": "FiO2 0.6"
+        },
+        {
+          "h": 4,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 6,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 8,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 10,
+          "text": "Lactate 3.1 (up from 2.2)"
+        },
+        {
+          "h": 12,
+          "text": "Temperature 38.4"
+        }
+      ]
+    },
+    {
+      "room": 15,
+      "age": "88",
+      "sex": "M",
+      "name": {
+        "display": "Bauer, H.",
+        "first": "Henry",
+        "last": "Bauer",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.03,
+        "vasopressor": 0.06,
+        "crrt": 0.01,
+        "icu_departure": 0.66,
+        "death": 0.03
+      },
+      "any_life_support": 0.1,
+      "level": "low",
+      "out": true,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 2,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 3,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 4,
+          "text": "Sedation lightened"
+        },
+        {
+          "h": 6,
+          "text": "Lactate 3.1 (up from 2.2)"
+        },
+        {
+          "h": 8,
+          "text": "Sedation lightened"
+        },
+        {
+          "h": 10,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 12,
+          "text": "Urine output 20 mL/h"
+        }
+      ]
+    },
+    {
+      "room": 16,
+      "age": "45",
+      "sex": "F",
+      "name": {
+        "display": "Lindqvist, E.",
+        "first": "Elena",
+        "last": "Lindqvist",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.13,
+        "vasopressor": 0.09,
+        "crrt": 0.08,
+        "icu_departure": 0.65,
+        "death": 0.05
+      },
+      "any_life_support": 0.27,
+      "level": "medium",
+      "out": true,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 2,
+          "text": "Temperature 38.4"
+        },
+        {
+          "h": 3,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 4,
+          "text": "Chest x-ray ordered"
+        },
+        {
+          "h": 6,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 8,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 10,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 12,
+          "text": "SpO2 91% on 6 L"
+        }
+      ]
+    },
+    {
+      "room": 17,
+      "age": "52",
+      "sex": "M",
+      "name": {
+        "display": "Alvarez, A.",
+        "first": "Arjun",
+        "last": "Alvarez",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.04,
+        "vasopressor": 0.03,
+        "crrt": 0.01,
+        "icu_departure": 0.91,
+        "death": 0.03
+      },
+      "any_life_support": 0.08,
+      "level": "low",
+      "out": true,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "FiO2 0.6"
+        },
+        {
+          "h": 2,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 3,
+          "text": "Temperature 38.4"
+        },
+        {
+          "h": 4,
+          "text": "Norepinephrine 0.08 mcg/kg/min"
+        },
+        {
+          "h": 6,
+          "text": "Temperature 38.4"
+        },
+        {
+          "h": 8,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 10,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 12,
+          "text": "SpO2 91% on 6 L"
+        }
+      ]
+    },
+    {
+      "room": 18,
+      "age": "59",
+      "sex": "M",
+      "name": {
+        "display": "Nguyen, J.",
+        "first": "James",
+        "last": "Nguyen",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": true,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.07,
+        "vasopressor": 0.09,
+        "crrt": 0.03,
+        "icu_departure": 0.54,
+        "death": 0.02
+      },
+      "any_life_support": 0.18,
+      "level": "low",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "FiO2 0.6"
+        },
+        {
+          "h": 2,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 3,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 4,
+          "text": "FiO2 0.6"
+        },
+        {
+          "h": 6,
+          "text": "Norepinephrine 0.08 mcg/kg/min"
+        },
+        {
+          "h": 8,
+          "text": "Chest x-ray ordered"
+        },
+        {
+          "h": 10,
+          "text": "Sedation lightened"
+        },
+        {
+          "h": 12,
+          "text": "CBC and BMP drawn"
+        }
+      ]
+    },
+    {
+      "room": 19,
+      "age": "66",
+      "sex": "F",
+      "name": {
+        "display": "Novak, F.",
+        "first": "Fatima",
+        "last": "Novak",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": true,
+        "vasopressor": true,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": true,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": null,
+        "vasopressor": null,
+        "crrt": 0.04,
+        "icu_departure": 0.24,
+        "death": 0.05
+      },
+      "any_life_support": 0.04,
+      "level": "low",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 2,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 3,
+          "text": "Temperature 38.4"
+        },
+        {
+          "h": 4,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 6,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 8,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 10,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 12,
+          "text": "Norepinephrine 0.08 mcg/kg/min"
+        }
+      ]
+    },
+    {
+      "room": 20,
+      "age": "73",
+      "sex": "M",
+      "name": {
+        "display": "Ward, M.",
+        "first": "Mateo",
+        "last": "Ward",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.4,
+        "vasopressor": 0.43,
+        "crrt": 0.16,
+        "icu_departure": 0.3,
+        "death": 0.07
+      },
+      "any_life_support": 0.71,
+      "level": "high",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 2,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 3,
+          "text": "Norepinephrine 0.08 mcg/kg/min"
+        },
+        {
+          "h": 4,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 6,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 8,
+          "text": "Temperature 38.4"
+        },
+        {
+          "h": 10,
+          "text": "FiO2 0.6"
+        },
+        {
+          "h": 12,
+          "text": "Chest x-ray ordered"
+        }
+      ]
+    },
+    {
+      "room": 21,
+      "age": "80",
+      "sex": "F",
+      "name": {
+        "display": "Dubois, G.",
+        "first": "Grace",
+        "last": "Dubois",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": true,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": null,
+        "vasopressor": 0.15,
+        "crrt": 0.06,
+        "icu_departure": 0.18,
+        "death": 0.11
+      },
+      "any_life_support": 0.2,
+      "level": "medium",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 2,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 3,
+          "text": "FiO2 0.6"
+        },
+        {
+          "h": 4,
+          "text": "Norepinephrine 0.08 mcg/kg/min"
+        },
+        {
+          "h": 6,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 8,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 10,
+          "text": "Temperature 38.4"
+        },
+        {
+          "h": 12,
+          "text": "SpO2 91% on 6 L"
+        }
+      ]
+    },
+    {
+      "room": 22,
+      "age": "87",
+      "sex": "M",
+      "name": {
+        "display": "Hughes, K.",
+        "first": "Kofi",
+        "last": "Hughes",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": true,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.07,
+        "vasopressor": 0.03,
+        "crrt": 0.02,
+        "icu_departure": 0.46,
+        "death": 0.03
+      },
+      "any_life_support": 0.12,
+      "level": "low",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 2,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 3,
+          "text": "Sedation lightened"
+        },
+        {
+          "h": 4,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 6,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 8,
+          "text": "Temperature 38.4"
+        },
+        {
+          "h": 10,
+          "text": "Norepinephrine 0.08 mcg/kg/min"
+        },
+        {
+          "h": 12,
+          "text": "SpO2 91% on 6 L"
+        }
+      ]
+    },
+    {
+      "room": 23,
+      "age": "44",
+      "sex": "M",
+      "name": {
+        "display": "Tanaka, T.",
+        "first": "Tariq",
+        "last": "Tanaka",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.07,
+        "vasopressor": 0.14,
+        "crrt": 0.09,
+        "icu_departure": 0.54,
+        "death": 0.04
+      },
+      "any_life_support": 0.27,
+      "level": "medium",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 2,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 3,
+          "text": "Chest x-ray ordered"
+        },
+        {
+          "h": 4,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 6,
+          "text": "Lactate 3.1 (up from 2.2)"
+        },
+        {
+          "h": 8,
+          "text": "Sedation lightened"
+        },
+        {
+          "h": 10,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 12,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        }
+      ]
+    },
+    {
+      "room": 24,
+      "age": "51",
+      "sex": "F",
+      "name": {
+        "display": "Osei, M.",
+        "first": "Mei",
+        "last": "Osei",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": true,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false
+      },
+      "p": {
+        "imv": 0.08,
+        "vasopressor": null,
+        "crrt": 0.09,
+        "icu_departure": 0.26,
+        "death": 0.04
+      },
+      "any_life_support": 0.16,
+      "level": "low",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 2,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 3,
+          "text": "Chest x-ray ordered"
+        },
+        {
+          "h": 4,
+          "text": "Heart rate 118"
+        },
+        {
+          "h": 6,
+          "text": "FiO2 0.6"
+        },
+        {
+          "h": 8,
+          "text": "Sedation lightened"
+        },
+        {
+          "h": 10,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 12,
+          "text": "FiO2 0.6"
+        }
+      ]
+    },
+    {
+      "room": 25,
+      "age": "58",
+      "sex": "M",
+      "name": {
+        "display": "Haddad, T.",
+        "first": "Thomas",
+        "last": "Haddad",
+        "fictional": true
+      },
+      "updated_at": "2026-11-14T07:00:00",
+      "cut_time": "2026-11-14T07:00:00",
+      "window": {
+        "start": "2026-11-14T07:00:00",
+        "end": "2026-11-15T07:00:00"
+      },
+      "scope": "unit",
+      "on_now": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": false,
+        "ecmo": null
+      },
+      "on_life_support": false,
+      "stopped_before_cut": {
+        "imv": false,
+        "vasopressor": false,
+        "crrt": true
+      },
+      "p": {
+        "imv": 0.08,
+        "vasopressor": 0.08,
+        "crrt": 0.03,
+        "icu_departure": 0.3,
+        "death": 0.05
+      },
+      "any_life_support": 0.18,
+      "level": "low",
+      "out": false,
+      "past_12h": [
+        {
+          "h": 1,
+          "text": "Creatinine 2.4 (up from 1.8)"
+        },
+        {
+          "h": 2,
+          "text": "Mean arterial pressure 62"
+        },
+        {
+          "h": 3,
+          "text": "SpO2 91% on 6 L"
+        },
+        {
+          "h": 4,
+          "text": "CBC and BMP drawn"
+        },
+        {
+          "h": 6,
+          "text": "Norepinephrine 0.08 mcg/kg/min"
+        },
+        {
+          "h": 8,
+          "text": "Urine output 20 mL/h"
+        },
+        {
+          "h": 10,
+          "text": "Temperature 38.4"
+        },
+        {
+          "h": 12,
+          "text": "Urine output 20 mL/h"
+        }
+      ]
+    }
+  ],
+  "ward": {
+    "source": "open-demo",
+    "label": "MIMIC-IV Demo"
+  },
+  "dropped": 0
+}

@@ -1,0 +1,65 @@
+version: v4
+# t7-fit: the ONE-TIME step between t7-build and t7-forecast (docs/LIVE_DEMO.md G2, G3). Run it once after
+# t7-build has published the model, and again only when the model changes. A forecast update never refits.
+#   fuzzball workflow validate fuzzball/t7-fit.fz && fuzzball workflow start fuzzball/t7-fit.fz --name t7-fit
+# Jobs: stage (CPU: pick the 25 stage-ward stays, tokenize and winnow the open demo data, check the vocabulary),
+# extract (one GPU: features for train, tuning and held_out), fit (CPU: logistic probes, saved to twin-store).
+# The extract uses ONE GPU (the dispatcher refuses updates while a t7-fit runs, so the GPU is free).
+# Prints counts only; no patient rows.
+volumes:
+  store:
+    name: twin-store
+    use: team7
+  rows:
+    name: clif_work
+    use: team7
+  tooling:
+    name: tooling
+    use: team7
+
+defaults:
+  job:
+    mounts: {/store: store, /rows: rows, /tooling: tooling}
+    env: [HOME=/tmp, TMPDIR=/tmp, "PYTHONPATH=/tooling/py:/store/code"]
+
+jobs:
+  stage:
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    resource: {cpu: {cores: 8}, memory: {size: 32GB}}
+    policy: {timeout: {execute: 30m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      mkdir -p /rows/stage && cd /rows/stage
+      python /store/code/app/stage_ward.py /store/code/clif_demo --out /rows/stage/stage_ward.csv   # seed 20261114, 25 rooms; prints counts and a digest
+      printf 'clif_path: /store/code/clif_demo\ntimezone: US/Eastern\nfiletype: parquet\n' > site.yaml
+      python -c "from icutwin.tokenizer.cli import main; main()" pipeline site.yaml                   # -> /rows/stage/tokenized_output
+      python -c "from icutwin.scoring.winnower import main; main()" tokenized_output -c /store/code/examples/winnow_24h.yaml
+      # the stage vocabulary must equal the training one, or the token ids would not match the model
+      cmp /rows/stage/tokenized_output/vocab.yaml /rows/tokenized_output/vocab.yaml && echo "vocab: identical"
+      echo "stage rooms: $(($(wc -l < /rows/stage/stage_ward.csv) - 1))"
+
+  extract:
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    resource: {cpu: {cores: 16}, memory: {size: 100GB}, devices: {nvidia.com/gpu: 1}, exclusive: true}
+    policy: {timeout: {execute: 2h}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      python -c "from icutwin.scoring.extractor import main; main()" /rows/tokenized_output -m /store/model/mdl-icutwin
+      ls /rows/tokenized_output/features-*.parquet | wc -l
+
+  fit:
+    depends-on: [{name: extract, status: FINISHED}, {name: stage, status: FINISHED}]
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    resource: {cpu: {cores: 16}, memory: {size: 64GB}}
+    policy: {timeout: {execute: 1h}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      mkdir -p /store/probes
+      # fits one probe per task on the train features, scores held_out, saves the probes and manifest.json
+      python -c "from icutwin.scoring.rep_based import main; main()" /rows/tokenized_output -m /store/model/mdl-icutwin \
+        -c /store/code/examples/probe_tasks.yaml --save-probes /store/probes/mdl-icutwin
+      ls /store/probes/mdl-icutwin | wc -l
+      python -c "import json; m=json.load(open('/store/probes/mdl-icutwin/manifest.json')); print('probes saved:', len(m.get('tasks', m)))"

@@ -1,0 +1,81 @@
+# icutwin-winnow: the prediction tasks (outcomes, derived labels, cut time)
+outcome_tokens: # supports patterns with fnmatch
+  - ADT//TRANSFER_IN//icu
+  - ADT//TRANSFER_IN//ward # bed manager: ICU beds freed
+  - ADT//TRANSFER_IN//stepdown
+  - RESP//device_category//imv
+  - RESP//device_category//nippv # respiratory therapy prep
+  - RESP//device_category//high_flow_nc
+  - MED_CON//angiotensin//* # pharmacy prep (vasopressors)
+  - MED_CON//dopamine//*
+  - MED_CON//epinephrine//*
+  - MED_CON//norepinephrine//*
+  - MED_CON//phenylephrine//*
+  - MED_CON//vasopressin//*
+  - HOSP//discharge_category//expired
+
+# derived labels: LABEL//* built from token values
+# (no vocab change); a label hits on any [token fnmatch, op, value] row, or on any
+# row of the token when op/value are left out; flagged _past/_future like tokens
+labels:
+  LABEL//pressor_init: # dose > 0
+    - [MED_CON//angiotensin//*, ">", 0]
+    - [MED_CON//dopamine//*, ">", 0]
+    - [MED_CON//epinephrine//*, ">", 0]
+    - [MED_CON//norepinephrine//*, ">", 0]
+    - [MED_CON//phenylephrine//*, ">", 0]
+    - [MED_CON//vasopressin//*, ">", 0]
+  LABEL//crrt_init: [[CRRT//crrt_init]]
+  LABEL//hyperk_init: [[LAB_RES//potassium//*, ">=", 6.5]] # mmol/L
+  LABEL//hypok_init: [[LAB_RES//potassium//*, "<", 2.5]]
+  LABEL//anemia_init: [[LAB_RES//hemoglobin//*, "<", 7.0]] # g/dL
+  LABEL//hypona_init: [[LAB_RES//sodium//*, "<", 120]] # mmol/L
+  LABEL//hyperna_init: [[LAB_RES//sodium//*, ">=", 160]]
+  LABEL//tachy_init: [[VITAL//heart_rate//*, ">=", 130]] # bpm
+  LABEL//hypertension_init: # mmHg
+    - [VITAL//sbp//*, ">=", 180]
+    - [VITAL//dbp//*, ">=", 120]
+  LABEL//hypotension_init:
+    - [VITAL//map//*, "<", 65]
+    - [VITAL//sbp//*, "<", 90]
+
+# what is actually running at the cut (demo pivot for Vaishvik; D8 life support). Each
+# name becomes one boolean column in <split>_for_inference.parquet, from the records
+# before the cut: unlike LABEL//*_past (started at any time before it), a support that
+# was stopped before the cut is False.
+at_cut:
+  LABEL//imv_at_cut: # last respiratory-support device record is IMV
+    last_of: [RESP//device_category//*]
+    running_if: [RESP//device_category//imv]
+  LABEL//pressor_at_cut: # last non-null dose of any pressor is > 0 (no stop signal
+    dose_gt: 0 #            in the tokens: a stop is charted as dose 0)
+    groups:
+      - MED_CON//angiotensin//*
+      - MED_CON//dopamine//*
+      - MED_CON//epinephrine//*
+      - MED_CON//norepinephrine//*
+      - MED_CON//phenylephrine//*
+      - MED_CON//vasopressin//*
+  LABEL//crrt_at_cut: # CRRT//crrt_init is a charted-row flag with no stop/end value:
+    any_of: [CRRT//crrt_init] #   running = a CRRT row in the 24 h before the cut
+    within_s: 86400
+
+threshold:
+  # choose one and only one of the following (after_first_occurrence wins if set)
+  duration_s: 86400 # 24h after the stay's first token
+  # first_occurrence: ADT//TRANSFER_IN//icu
+  # after_first_occurrence: # D3: 24 h after ICU arrival (examples/winnow_24h.yaml)
+  #   token: ADT//TRANSFER_IN//icu
+  #   duration_s: 86400
+  #   offset_s: 0 # demo clock: added to duration_s (also icutwin-winnow --demo-clock-hours);
+  #   duration_s + offset_s must be > 0 (the cut stays after ICU arrival)
+  #   stay_until_cut: ADT//TRANSFER_IN//* # drop stays that left the ICU before the cut
+
+# outcome window after the prediction threshold; null = the rest of the stay.
+# examples/winnow_24h.yaml sets 86400 (next 24 h). Listed here so -c accepts it.
+horizon_after_threshold_s: null
+
+splits: # select which splits to prepare; rep-based scoring needs train and tuning
+  - train
+  - tuning
+  - held_out

@@ -1,0 +1,4 @@
+# t7-smoke: a few steps on the open demo cohort, only to prove the stack runs on GB10.
+# Not a model to report numbers from.
+training_args:
+  max_steps: 30

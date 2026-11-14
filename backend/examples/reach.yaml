@@ -1,0 +1,14 @@
+# generative scoring for the medium decoder: REACH only
+# `icutwin-gen-score tokenized_output -m model_output/mdl-icutwin -c examples/reach.yaml`
+#
+# REACH is the M2 trajectory, which is derived from the M1 pass, so M1 must stay
+# enabled: methods: [M2] alone would have no futures to derive from.
+score:
+  n_samp: 32 # sampling reconstructions per stay per trajectory (100 in the default)
+
+generation:
+  methods: [M1, M2] # explicit; M1 is the pass M2 is derived from
+
+engine:
+  mem_fraction: 0.85
+  patient_chunk_size: 64 # stays generated per SGLang batch

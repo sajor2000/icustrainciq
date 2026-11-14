@@ -1,0 +1,395 @@
+# respiratory_support tokens; globals in ../tokens.yaml
+continuous:
+- code: RESP//fio2_set
+  table: respiratory_support
+  value_column: fio2_set
+  time_column: recorded_dttm
+  unit: fraction
+  plausible:
+  - 0.21
+  - 1.0
+  edges:
+  - 0.21
+  - 0.24
+  - 0.3
+  - 0.35
+  - 0.4
+  - 0.5
+  - 0.6
+  - 0.65
+  - 0.8
+  - 1.0
+  reviewed: true
+- code: RESP//flow_rate_set
+  table: respiratory_support
+  value_column: flow_rate_set
+  time_column: recorded_dttm
+  unit: L/min
+  plausible:
+  - -50.0
+  - 100.0
+  edges:
+  - -50.0
+  - 24.6
+  - 30.0
+  - 35.0
+  - 40.0
+  - 45.0
+  - 50.0
+  - 55.0
+  - 60.0
+  - 70.0
+  - 100.0
+  reviewed: true
+- code: RESP//inspiratory_time_set
+  table: respiratory_support
+  value_column: inspiratory_time_set
+  time_column: recorded_dttm
+  unit: sec
+  plausible:
+  - -1.0
+  - 50.0
+  edges:
+  - -1.0
+  - 0.54
+  - 0.65
+  - 0.7
+  - 0.8
+  - 0.9
+  - 1.0
+  - 1.15
+  - 1.3
+  - 50.0
+  reviewed: true
+- code: RESP//lpm_set
+  table: respiratory_support
+  value_column: lpm_set
+  time_column: recorded_dttm
+  unit: L/min
+  plausible:
+  - 0.0
+  - 60.0
+  edges:
+  - 0.0
+  - 2.0
+  - 3.0
+  - 6.0
+  - 8.0
+  - 10.0
+  - 15.0
+  - 35.0
+  - 40.0
+  - 50.0
+  - 60.0
+  reviewed: true
+- code: RESP//mean_airway_pressure_obs
+  table: respiratory_support
+  value_column: mean_airway_pressure_obs
+  time_column: recorded_dttm
+  unit: cmH2O
+  plausible:
+  - 0.0
+  - 50.0
+  edges:
+  - 0.0
+  - 6.8
+  - 8.3
+  - 10.0
+  - 12.0
+  - 14.0
+  - 16.0
+  - 18.0
+  - 19.0
+  - 22.0
+  - 50.0
+  reviewed: true
+- code: RESP//minute_vent_obs
+  table: respiratory_support
+  value_column: minute_vent_obs
+  time_column: recorded_dttm
+  unit: L/min
+  plausible:
+  - 0.0
+  - 40.0
+  edges:
+  - 0.0
+  - 3.75
+  - 5.3
+  - 6.9
+  - 8.4
+  - 9.92
+  - 11.5
+  - 13.0
+  - 14.6
+  - 16.2
+  - 40.0
+  reviewed: true
+- code: RESP//peak_inspiratory_pressure_obs
+  table: respiratory_support
+  value_column: peak_inspiratory_pressure_obs
+  time_column: recorded_dttm
+  unit: cmH2O
+  plausible:
+  - -50.0
+  - 100.0
+  edges:
+  - -50.0
+  - 11.0
+  - 16.0
+  - 21.0
+  - 25.0
+  - 30.0
+  - 35.0
+  - 39.0
+  - 44.0
+  - 49.0
+  - 100.0
+  reviewed: true
+- code: RESP//peak_inspiratory_pressure_set
+  table: respiratory_support
+  value_column: peak_inspiratory_pressure_set
+  time_column: recorded_dttm
+  unit: cmH2O
+  plausible:
+  - -50.0
+  - 100.0
+  edges:
+  - -50.0
+  - 8.0
+  - 12.0
+  - 15.0
+  - 18.0
+  - 22.0
+  - 25.0
+  - 28.0
+  - 32.0
+  - 35.0
+  - 100.0
+  reviewed: true
+- code: RESP//peep_obs
+  table: respiratory_support
+  value_column: peep_obs
+  time_column: recorded_dttm
+  unit: cmH2O
+  plausible:
+  - 0.0
+  - 50.0
+  edges:
+  - 0.0
+  - 4.5
+  - 5.0
+  - 6.0
+  - 7.0
+  - 8.0
+  - 8.4
+  - 10.0
+  - 11.0
+  - 13.0
+  - 50.0
+  reviewed: true
+- code: RESP//peep_set
+  table: respiratory_support
+  value_column: peep_set
+  time_column: recorded_dttm
+  unit: cmH2O
+  plausible:
+  - 0.0
+  - 30.0
+  edges:
+  - 0.0
+  - 5.0
+  - 7.0
+  - 8.0
+  - 10.0
+  - 12.0
+  - 13.0
+  - 30.0
+  reviewed: true
+- code: RESP//plateau_pressure_obs
+  table: respiratory_support
+  value_column: plateau_pressure_obs
+  time_column: recorded_dttm
+  unit: cmH2O
+  plausible:
+  - 0.0
+  - 100.0
+  edges:
+  - 0.0
+  - 11.0
+  - 15.0
+  - 18.0
+  - 21.0
+  - 24.0
+  - 28.0
+  - 31.0
+  - 34.0
+  - 38.0
+  - 100.0
+  reviewed: true
+- code: RESP//pressure_control_set
+  table: respiratory_support
+  value_column: pressure_control_set
+  time_column: recorded_dttm
+  unit: cmH2O
+  plausible:
+  - -50.0
+  - 50.0
+  edges:
+  - -50.0
+  - 10.0
+  - 12.0
+  - 15.0
+  - 18.0
+  - 21.0
+  - 24.0
+  - 26.0
+  - 28.0
+  - 32.0
+  - 50.0
+  reviewed: true
+- code: RESP//pressure_support_set
+  table: respiratory_support
+  value_column: pressure_support_set
+  time_column: recorded_dttm
+  unit: cmH2O
+  plausible:
+  - -50.0
+  - 50.0
+  edges:
+  - -50.0
+  - 5.0
+  - 8.0
+  - 9.0
+  - 10.0
+  - 12.0
+  - 14.0
+  - 15.0
+  - 16.0
+  - 50.0
+  reviewed: true
+- code: RESP//resp_rate_obs
+  table: respiratory_support
+  value_column: resp_rate_obs
+  time_column: recorded_dttm
+  unit: breaths/min
+  plausible:
+  - 0.0
+  - 200.0
+  edges:
+  - 0.0
+  - 12.0
+  - 15.0
+  - 18.0
+  - 21.0
+  - 24.0
+  - 27.0
+  - 30.0
+  - 34.0
+  - 37.0
+  - 200.0
+  reviewed: true
+- code: RESP//resp_rate_set
+  table: respiratory_support
+  value_column: resp_rate_set
+  time_column: recorded_dttm
+  unit: breaths/min
+  plausible:
+  - 0.0
+  - 200.0
+  edges:
+  - 0.0
+  - 10.0
+  - 14.0
+  - 16.0
+  - 18.0
+  - 22.0
+  - 24.0
+  - 26.0
+  - 30.0
+  - 32.0
+  - 200.0
+  reviewed: true
+- code: RESP//tidal_volume_obs
+  table: respiratory_support
+  value_column: tidal_volume_obs
+  time_column: recorded_dttm
+  unit: mL
+  plausible:
+  - 100.0
+  - 3000.0
+  edges:
+  - 100.0
+  - 224.0
+  - 290.0
+  - 354.0
+  - 418.0
+  - 481.0
+  - 546.0
+  - 611.0
+  - 676.0
+  - 767.0
+  - 3000.0
+  reviewed: true
+- code: RESP//tidal_volume_set
+  table: respiratory_support
+  value_column: tidal_volume_set
+  time_column: recorded_dttm
+  unit: mL
+  plausible:
+  - 100.0
+  - 3000.0
+  edges:
+  - 100.0
+  - 300.0
+  - 320.0
+  - 350.0
+  - 380.0
+  - 410.0
+  - 450.0
+  - 480.0
+  - 500.0
+  - 550.0
+  - 3000.0
+  reviewed: true
+categorical:
+- code: RESP//device_category
+  table: respiratory_support
+  column: device_category
+  time_column: recorded_dttm
+  mapping:
+    IMV: imv
+    NIPPV: nippv
+    CPAP: cpap
+    High Flow NC: high_flow_nc
+    Face Mask: face_mask
+    Trach Collar: trach_collar
+    Nasal Cannula: nasal_cannula
+    Room Air: room_air
+    Other: other
+  other: true
+- code: RESP//mode_category
+  table: respiratory_support
+  column: mode_category
+  time_column: recorded_dttm
+  mapping:
+    Assist Control-Volume Control: assist_control_volume_control
+    Pressure Control: pressure_control
+    Pressure-Regulated Volume Control: pressure_regulated_volume_control
+    SIMV: simv
+    Pressure Support/CPAP: pressure_support_cpap
+    Volume Support: volume_support
+    Blow by: other
+    Other: other
+  other: true
+- code: RESP//tracheostomy_initiated
+  table: respiratory_support
+  column: tracheostomy
+  time_column: recorded_dttm
+  mapping:
+    '1': present
+    'yes': present
+  ignore:
+  - '0'
+  - 'no'
+  other: false
+  flag: true

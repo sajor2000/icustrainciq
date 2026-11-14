@@ -1,0 +1,48 @@
+# token spec: the single source of truth for every token, bin edge, unit,
+# mapping and the timeline order. This file holds the global keys; each CLIF
+# table's entries live in tokens/<table>.yaml, merged on load.
+# Any change needs a spec_version bump. Bins are the shipped Pathology-focused
+# Binning with Clinical review (PBC) edges; continuous values get bins only.
+spec_version: 27
+clif_version: '2.1'
+reference:
+  table: hospitalization
+  start_time: admission_dttm
+  end_time: discharge_dttm
+time:
+  insert_spacers: true
+  spacers:
+    5m-15m: 5
+    15m-1h: 15
+    1h-2h: 60
+    2h-6h: 120
+  insert_clocks: true
+  clocks:
+  - '00'
+  - '04'
+  - 08
+  - '12'
+  - '16'
+  - '20'
+ordering:
+- BOS
+- HOSP_PREV_DX
+- HOSP//age_charted
+- PATIENT//sex
+- PATIENT//race
+- PATIENT//ethnicity
+- HOSP//admission_type
+- TIME
+- CLCK
+- ADT
+- CODE_STATUS
+- VITAL
+- LAB_ORD
+- LAB_RES
+- MED_CON
+- MED_INT
+- PA
+- RESP
+- CRRT
+- HOSP//discharge_category
+- EOS

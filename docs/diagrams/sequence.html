@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lookahead · The 07:00 run, end to end</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Geist', system-ui, sans-serif; background: #f5f5f5; color: #2d3142; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1340px; width: 100%; min-width: 0; }
+    .eyebrow { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #4f5d75; margin-bottom: 0.5rem; }
+    h1 { font-family: 'Instrument Serif', serif; font-size: clamp(1.6rem, 2.4vw + 0.75rem, 2.2rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1.5rem; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { width: 100%; min-width: 1280px; display: block; }
+    @media print { .diagram-container { overflow: visible; } svg { min-width: 0; } }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Lookahead · The 07:00 run, end to end</p>
+    <h1>At 07:00 the dispatcher starts the forecast by itself, retries for 10 minutes if it must, and the open board picks up the new numbers</h1>
+    <div class="diagram-container">
+    <svg viewBox="0 0 1280 968" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="sequence-title sequence-desc">
+      <title id="sequence-title">The 07:00 scheduled run, end to end</title>
+      <desc id="sequence-desc">At 07:00 the dispatcher's own clock fires; inside a retry window of 10 minutes it lists the workflows to see that no GPU workflow is running and starts a unit-scope copy of t7-forecast through Fuzzball, logging each attempt to runs.jsonl; the jobs precheck, extract and score write rooms.json and then forecast.json to twin-store; the open board page polls run status, which reports the scheduled state, reloads the forecast and rooms, and shows the 07:00 board.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <line x1="136" y1="120" x2="136" y2="776" stroke="rgba(45,49,66,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="388" y1="120" x2="388" y2="776" stroke="rgba(45,49,66,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="640" y1="120" x2="640" y2="776" stroke="rgba(45,49,66,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="892" y1="120" x2="892" y2="776" stroke="rgba(45,49,66,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="1144" y1="120" x2="1144" y2="776" stroke="rgba(45,49,66,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+      <rect x="568" y="212" width="372" height="124" rx="4" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <rect x="568" y="212" width="52" height="20" rx="2" fill="#f5f5f5" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <text x="594" y="226" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">LOOP</text>
+      <text x="656" y="234" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.04em">[retry each 60 s, 10 min max]</text>
+      <rect x="636" y="160" width="8" height="212" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="0.8"/>
+      <rect x="888" y="392" width="8" height="88" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="0.8"/>
+      <rect x="384" y="516" width="8" height="228" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="0.8"/>
+      <path d="M 644,164 H 672 Q 680,164 680,172 V 180 Q 680,188 672,188 H 644" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="692" y="168" width="136" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="698" y="180" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.04em">07:00 CUT REACHED</text>
+      <path d="M 644,272 H 892" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="672" y="248" width="192" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="768" y="260" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">WORKFLOW LIST · GPU FREE?</text>
+      <path d="M 644,316 H 892" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="686" y="292" width="164" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="768" y="304" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">WORKFLOW START · UNIT</text>
+      <path d="M 644,368 H 1144" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="698" y="344" width="136" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="766" y="356" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">LOG TO RUNS.JSONL</text>
+      <path d="M 896,396 H 924 Q 932,396 932,404 V 412 Q 932,420 924,420 H 896" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="944" y="400" width="200" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="950" y="412" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.04em">PRECHECK → EXTRACT → SCORE</text>
+      <path d="M 896,476 H 1144" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="924" y="452" width="192" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="1020" y="464" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">ROOMS, THEN FORECAST.JSON</text>
+      <path d="M 136,520 H 384" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="156" y="496" width="208" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="260" y="508" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">GET /API/RUNS · EVERY 5 MIN</text>
+      <path d="M 392,564 H 640" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="470" y="540" width="92" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="516" y="552" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">GET /STATUS</text>
+      <path d="M 640,608 H 392" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <rect x="442" y="584" width="148" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="516" y="596" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">SCHEDULED.STATE: OK</text>
+      <path d="M 136,652 H 384" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="146" y="628" width="228" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="260" y="640" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">GET /API/FORECAST · /API/ROOMS</text>
+      <path d="M 392,696 H 1144" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="454" y="672" width="120" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="514" y="684" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">READ BOTH FILES</text>
+      <path d="M 384,740 H 136" fill="none" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <rect x="178" y="716" width="164" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="260" y="728" fill="#bf4520" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">07:00 BOARD ON SCREEN</text>
+      <rect x="20" y="16" width="232" height="116" rx="8" fill="none" stroke="rgba(45,49,66,0.20)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <rect x="32" y="8" width="164" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="36" y="20" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.12em">CLINICIAN'S BROWSER</text>
+      <rect x="272" y="16" width="988" height="116" rx="8" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="1.2" stroke-dasharray="4,4"/>
+      <rect x="284" y="8" width="316" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="288" y="20" fill="#2d3142" font-weight="600" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.12em">LOCAL LENOVO PGX (FUZZBALL) · 2 × GB10</text>
+      <rect x="32" y="40" width="208" height="80" rx="6" fill="#f5f5f5"/>
+      <rect x="32" y="40" width="208" height="80" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="40" y="48" width="44" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="62" y="60" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PAGE</text>
+      <text x="136" y="86" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Board page</text>
+      <text x="136" y="105" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">open on the unit screen</text>
+      <rect x="284" y="40" width="208" height="80" rx="6" fill="#f5f5f5"/>
+      <rect x="284" y="40" width="208" height="80" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+      <rect x="292" y="48" width="116" height="16" rx="2" fill="transparent" stroke="#bf4520" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="350" y="60" fill="#bf4520" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">t7-twin · CPU</text>
+      <text x="388" y="86" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Board server</text>
+      <text x="388" y="105" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">service board · :8080</text>
+      <rect x="536" y="40" width="208" height="80" rx="6" fill="#f5f5f5"/>
+      <rect x="536" y="40" width="208" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="544" y="48" width="116" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="602" y="60" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">t7-twin · CPU</text>
+      <text x="640" y="86" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Dispatcher</text>
+      <text x="640" y="105" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">service dispatcher · :9000</text>
+      <rect x="788" y="40" width="208" height="80" rx="6" fill="#f5f5f5"/>
+      <rect x="788" y="40" width="208" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="796" y="48" width="100" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="846" y="60" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">t7-forecast</text>
+      <text x="892" y="86" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Forecast jobs</text>
+      <text x="892" y="105" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">CPU → GPU 2 of 2 → CPU</text>
+      <rect x="1040" y="40" width="208" height="80" rx="6" fill="#f5f5f5"/>
+      <rect x="1040" y="40" width="208" height="80" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <rect x="1048" y="48" width="60" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="1078" y="60" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VOLUME</text>
+      <text x="1144" y="86" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">twin-store</text>
+      <text x="1144" y="105" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">Fuzzball volume · team7</text>
+      <line x1="40" y1="792" x2="1240" y2="792" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="40" y="816" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.16em">LEGEND</text>
+      <rect x="40" y="830" width="16" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+      <text x="66" y="841" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">The only door for the browser</text>
+      <rect x="288" y="828" width="28" height="16" rx="2" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <text x="326" y="841" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Retry window</text>
+      <line x1="440" y1="836" x2="466" y2="836" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <text x="474" y="841" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">API call</text>
+      <line x1="564" y1="836" x2="590" y2="836" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <text x="598" y="841" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Return</text>
+      <line x1="672" y1="836" x2="698" y2="836" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <text x="706" y="841" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">What the team sees</text>
+      <rect x="856" y="828" width="28" height="16" rx="2" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.55)" stroke-width="1.2" stroke-dasharray="4,4"/>
+      <text x="894" y="841" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Local Lenovo PGX (Fuzzball)</text>
+      <rect x="1104" y="828" width="28" height="16" rx="2" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <text x="1142" y="841" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Other host</text>
+      <text x="40" y="868" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Where it runs: everything in the Local Lenovo PGX zone is a Fuzzball service, job or volume on the two on-site Lenovo PGX (GB10) machines. Nothing is hosted in the cloud.</text>
+      <text x="40" y="886" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Nobody presses anything. Fuzzball 4.3 has no cron, so the dispatcher is the clock: 07:00 America/Chicago, unit scope, demo clock 0, and the 20 minute gap does not apply.</text>
+      <text x="40" y="904" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Retry: while a GPU workflow is running, the cluster cannot be listed, or the start fails, it tries again each minute for 10 minutes. Every attempt goes to runs.jsonl.</text>
+      <text x="40" y="922" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">scheduled.state in GET /api/runs: pending (inside the window), ok (a run started), failed (retries ran out; the reason is in detail), missed (no scheduled run since the cut).</text>
+      <text x="40" y="940" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Catch-up: a dispatcher that starts after 07:00 with no scheduled run since the cut runs it once. Until the files land, the board keeps the last forecast.</text>
+    </svg>
+    </div>
+  </div>
+</body>
+</html>

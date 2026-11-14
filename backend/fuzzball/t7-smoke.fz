@@ -1,0 +1,120 @@
+version: v4
+# t7-smoke: the 9:30 check on one GB10 node, open data only (MIMIC-IV Demo in CLIF, tracked in the repo).
+# Proves training and SGLang sampling run on GB10, then seeds twin-store and clif_work with a tiny
+# demo-trained model so t7-forecast and t7-twin can run before t7-build finishes. Never overwrites a
+# real model: if /store/model/mdl-icutwin exists, the seed step skips. Also downloads the Nemotron
+# weights (pinned revision) into hfcache on CPU. @CODE_REF@ and @CODE_SHA256@ are filled in by sed first
+# (see the ingress below); the setup and prefetch steps refuse a file that still has them. Uses ONE GPU at a time; t7-build's CPU steps can run alongside.
+#   fuzzball workflow validate fuzzball/t7-smoke.fz && fuzzball workflow start fuzzball/t7-smoke.fz
+volumes:
+  store:
+    name: twin-store
+    use: team7
+  rows:
+    name: clif_work
+    use: team7
+  tooling:
+    name: tooling
+    use: team7
+  hf:
+    name: hfcache               # Nemotron weights for t7-twin, downloaded here on CPU
+    use: team7
+  work:
+    use: team7
+    size: 20GB
+    ingress:
+      # PINNED code: the tarball of one commit, checked against its sha256 in the setup step. Before validate/start:
+      #   sed "s/@CODE_REF@/<40-hex commit sha>/g;s/@CODE_SHA256@/<sha256 of that tarball>/g" fuzzball/t7-smoke.fz > /tmp/t7-smoke.fz
+      # (sha256: curl -sL https://codeload.github.com/vaishvikc/ICU-Twin/tar.gz/<sha> | sha256sum; the requirements/ locks must be in that commit)
+      - source: {uri: "https://codeload.github.com/vaishvikc/ICU-Twin/tar.gz/@CODE_REF@"}
+        destination: {uri: "file://code.tar.gz"}
+
+defaults:
+  job:
+    mounts: {/store: store, /rows: rows, /tooling: tooling, /work: work}
+    env: [HOME=/work/home, TMPDIR=/work/tmp, HF_HOME=/work/cache/hf]
+
+jobs:
+  prefetch:
+    # CPU only: download Nemotron 3 Nano FP8 into hfcache now, so t7-twin starts fast after training
+    image: {uri: "docker://python:3.12-slim"}
+    mounts: {/cache: hf, /work: work}
+    env: [HF_HOME=/cache/hf]
+    resource: {cpu: {cores: 4}, memory: {size: 8GB}}
+    policy: {timeout: {execute: 2h}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      CODE_REF="@CODE_REF@"; CODE_SHA256="@CODE_SHA256@"
+      case "$CODE_REF$CODE_SHA256" in *@*|"") echo "CODE_REF / CODE_SHA256 not set: sed them in first (docs/LIVE_DEMO.md, supply chain)"; exit 1;; esac
+      echo "$CODE_SHA256  /work/code.tar.gz" | sha256sum -c - || { echo "code tarball does not match CODE_SHA256: refusing to run it"; exit 1; }
+      mkdir -p /tmp/req && tar -xzf /work/code.tar.gz -C /tmp/req --strip-components=1 --wildcards '*/requirements/t7-prefetch.txt'
+      pip install -q --no-deps --require-hashes -r /tmp/req/requirements/t7-prefetch.txt
+      # the model revision is pinned (commit of nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8 on Hugging Face,
+      # looked up 2026-11-14 via the model API); t7-twin serves the same --revision
+      REV=9bee19446c0dfd01f356e10979d225b2a6621944
+      python -c "import sys; from huggingface_hub import snapshot_download as d; print(d('nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8', revision=sys.argv[1]))" "$REV"
+      du -sh /cache/hf
+
+  setup:
+    # same installs as t7-build (PyTorch image) and t7-forecast (SGLang image)
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    resource: {cpu: {cores: 8}, memory: {size: 32GB}}
+    policy: {timeout: {execute: 45m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      CODE_REF="@CODE_REF@"; CODE_SHA256="@CODE_SHA256@"
+      case "$CODE_REF$CODE_SHA256" in *@*|"") echo "CODE_REF / CODE_SHA256 not set: sed them in first (docs/LIVE_DEMO.md, supply chain)"; exit 1;; esac
+      echo "$CODE_SHA256  /work/code.tar.gz" | sha256sum -c - || { echo "code tarball does not match CODE_SHA256: refusing to run it"; exit 1; }
+      mkdir -p /work/code /work/home /work/tmp && tar -xzf /work/code.tar.gz -C /work/code --strip-components=1
+      test -f /work/code/icutwin/model/decoder.py || { echo 'code ref has no icutwin/'; exit 1; }
+      pip install -q --target /tooling/py --upgrade --no-deps --require-hashes -r /work/code/requirements/t7-model.txt
+
+  train-demo:
+    # tokenize the demo cohort and train a tiny model for 30 steps on one GPU
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    depends-on: [{name: setup, status: FINISHED}]
+    env: [HOME=/work/home, TMPDIR=/work/tmp, HF_HOME=/work/cache/hf, PYTHONPATH=/tooling/py:/work/code]
+    resource: {cpu: {cores: 16}, memory: {size: 64GB}, devices: {nvidia.com/gpu: 1}, exclusive: true}
+    policy: {timeout: {execute: 45m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      mkdir -p /work/smoke && cd /work/smoke
+      printf 'clif_path: /work/code/clif_demo\ntimezone: US/Eastern\nfiletype: parquet\n' > site.yaml
+      python -c "from icutwin.tokenizer.cli import main; main()" pipeline site.yaml
+      python -c "from icutwin.scoring.winnower import main; main()" tokenized_output -c /work/code/examples/winnow_24h.yaml  # cut 24 h after ICU arrival (D3)
+      python -m icutwin.model.decoder tokenized_output -o model_output --size s -c /work/code/examples/smoke_decoder.yaml
+      ls model_output/mdl-icutwin
+
+  sglang:
+    # Vaishvik's SGLang checks on the demo-trained model: engine up, futures sampled, SGLang matches HF
+    image: {uri: "docker://lmsysorg/sglang:v0.5.21"}
+    depends-on: [{name: train-demo, status: FINISHED}]
+    env: [HOME=/work/home, TMPDIR=/work/tmp, HF_HOME=/work/cache/hf, PYTHONPATH=/tooling/py-gen:/work/code]
+    resource: {cpu: {cores: 16}, memory: {size: 64GB}, devices: {nvidia.com/gpu: 1}, exclusive: true}
+    policy: {timeout: {execute: 45m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      pip install -q --target /tooling/py-gen --no-deps --require-hashes -r /work/code/requirements/t7-gen.txt
+      python -c "import transformers, sglang, torch; print('transformers', transformers.__version__, 'sglang', sglang.__version__, 'cuda', torch.version.cuda)"
+      cd /work/smoke && ln -sfn /work/code/examples examples
+      python /work/code/scripts/sglang_smoke.py
+      python /work/code/scripts/sglang_parity.py
+
+  seed:
+    # give t7-forecast and t7-twin something to run on before t7-build publishes the real model
+    image: {uri: "docker://python:3.12-slim"}
+    depends-on: [{name: sglang, status: FINISHED}]
+    resource: {cpu: {cores: 2}, memory: {size: 8GB}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      if [ -e /store/model/mdl-icutwin ]; then echo "a model is already published; not seeding"; exit 0; fi
+      mkdir -p /store/model
+      rm -rf /store/code && cp -r /work/code /store/code
+      cp -r /work/smoke/model_output/mdl-icutwin /store/model/
+      rm -rf /rows/tokenized_output && cp -r /work/smoke/tokenized_output /rows/
+      echo "seeded twin-store and clif_work with the demo-trained smoke model (open data)"

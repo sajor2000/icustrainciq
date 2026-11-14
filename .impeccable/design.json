@@ -1,585 +1,1008 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-14T17:05:09Z",
-  "title": "Design System: ICU-Twin",
+  "generatedAt": "2026-11-14T19:52:35Z",
+  "title": "Design System: Lookahead (ICU-Twin)",
   "extensions": {
     "colorMeta": {
       "board": {
         "role": "neutral",
-        "displayName": "Enamel Board",
-        "canonical": "oklch(96.9% 0.004 122)",
+        "displayName": "Board Grey",
+        "canonical": "#F3F5F9",
         "tonalRamp": [
-          "#0B0B0A",
-          "#252523",
-          "#414240",
-          "#61625F",
-          "#828380",
-          "#A4A5A3",
-          "#C8C9C7",
-          "#EEEFEC"
+          "oklch(15% 0.003 265)",
+          "oklch(27% 0.004 265)",
+          "oklch(38% 0.005 265)",
+          "oklch(50% 0.005 265)",
+          "oklch(62% 0.005 265)",
+          "oklch(74% 0.004 265)",
+          "oklch(85% 0.004 265)",
+          "oklch(95% 0.003 265)"
         ]
       },
       "board-2": {
         "role": "neutral",
-        "displayName": "Board Shadow",
-        "canonical": "oklch(93.7% 0.007 124)",
+        "displayName": "Board Grey 2",
+        "canonical": "#E8ECF2",
         "tonalRamp": [
-          "#0A0C09",
-          "#242622",
-          "#41433F",
-          "#60625E",
-          "#81837F",
-          "#A4A6A1",
-          "#C8CAC5",
-          "#EDEFEA"
+          "oklch(15% 0.004 258)",
+          "oklch(27% 0.006 258)",
+          "oklch(38% 0.007 258)",
+          "oklch(50% 0.009 258)",
+          "oklch(62% 0.008 258)",
+          "oklch(74% 0.007 258)",
+          "oklch(85% 0.006 258)",
+          "oklch(95% 0.004 258)"
         ]
       },
       "surface": {
         "role": "neutral",
-        "displayName": "Magnet Surface",
-        "canonical": "oklch(100.0% 0.000 90)",
+        "displayName": "Card White",
+        "canonical": "#FFFFFF",
         "tonalRamp": [
-          "#0B0B0B",
-          "#252525",
-          "#424242",
-          "#616161",
-          "#828282",
-          "#A5A5A5",
-          "#C9C9C9",
-          "#EEEEEE"
+          "oklch(15% 0.000 90)",
+          "oklch(27% 0.000 90)",
+          "oklch(38% 0.000 90)",
+          "oklch(50% 0.000 90)",
+          "oklch(62% 0.000 90)",
+          "oklch(74% 0.000 90)",
+          "oklch(85% 0.000 90)",
+          "oklch(95% 0.000 90)"
         ]
       },
       "ink": {
         "role": "neutral",
-        "displayName": "Marker Navy",
-        "canonical": "oklch(27.8% 0.023 241)",
+        "displayName": "Ink",
+        "canonical": "#111827",
         "tonalRamp": [
-          "#030C14",
-          "#1B2730",
-          "#37444E",
-          "#56636E",
-          "#76848F",
-          "#99A7B3",
-          "#BCCCD7",
-          "#E1F1FD"
+          "oklch(15% 0.016 265)",
+          "oklch(27% 0.020 265)",
+          "oklch(38% 0.025 265)",
+          "oklch(50% 0.030 265)",
+          "oklch(62% 0.029 265)",
+          "oklch(74% 0.024 265)",
+          "oklch(85% 0.020 265)",
+          "oklch(95% 0.016 265)"
         ]
       },
       "ink-2": {
         "role": "neutral",
-        "displayName": "Faded Marker",
-        "canonical": "oklch(45.2% 0.024 239)",
+        "displayName": "Ink 2",
+        "canonical": "#4A5567",
         "tonalRamp": [
-          "#030C14",
-          "#1A2730",
-          "#37444E",
-          "#55636E",
-          "#76858F",
-          "#98A8B3",
-          "#BCCCD7",
-          "#E1F1FD"
+          "oklch(15% 0.016 260)",
+          "oklch(27% 0.021 260)",
+          "oklch(38% 0.026 260)",
+          "oklch(50% 0.031 260)",
+          "oklch(62% 0.030 260)",
+          "oklch(74% 0.025 260)",
+          "oklch(85% 0.020 260)",
+          "oklch(95% 0.016 260)"
         ]
       },
       "rule": {
         "role": "neutral",
-        "displayName": "Rule (ink at 12%)",
-        "canonical": "oklch(27.8% 0.023 241)",
+        "displayName": "Hairline",
+        "canonical": "rgba(17,24,39,.10)",
         "tonalRamp": [
-          "#030C14",
-          "#1B2730",
-          "#37444E",
-          "#56636E",
-          "#76848F",
-          "#99A7B3",
-          "#BCCCD7",
-          "#E1F1FD"
+          "oklch(15% 0.016 265)",
+          "oklch(27% 0.020 265)",
+          "oklch(38% 0.025 265)",
+          "oklch(50% 0.030 265)",
+          "oklch(62% 0.029 265)",
+          "oklch(74% 0.024 265)",
+          "oklch(85% 0.020 265)",
+          "oklch(95% 0.016 265)"
         ]
       },
-      "magnet": {
-        "role": "primary",
-        "displayName": "Magnet Blue",
-        "canonical": "oklch(53.2% 0.121 251)",
-        "tonalRamp": [
-          "#00003B",
-          "#00225C",
-          "#00427F",
-          "#2363A3",
-          "#4786C8",
-          "#6AA9EE",
-          "#8DCEFF",
-          "#B2F4FF"
-        ]
-      },
-      "magnet-ink": {
+      "line": {
         "role": "neutral",
-        "displayName": "Magnet Ink",
-        "canonical": "oklch(100.0% 0.000 90)",
+        "displayName": "Line",
+        "canonical": "#7A8597",
         "tonalRamp": [
-          "#0B0B0B",
-          "#252525",
-          "#424242",
-          "#616161",
-          "#828282",
-          "#A5A5A5",
-          "#C9C9C9",
-          "#EEEEEE"
+          "oklch(15% 0.015 260)",
+          "oklch(27% 0.019 260)",
+          "oklch(38% 0.024 260)",
+          "oklch(50% 0.028 260)",
+          "oklch(62% 0.028 260)",
+          "oklch(74% 0.023 260)",
+          "oklch(85% 0.019 260)",
+          "oklch(95% 0.015 260)"
+        ]
+      },
+      "blue": {
+        "role": "primary",
+        "displayName": "Forecast Blue",
+        "canonical": "#1E5BB8",
+        "tonalRamp": [
+          "oklch(15% 0.078 259)",
+          "oklch(27% 0.103 259)",
+          "oklch(38% 0.125 259)",
+          "oklch(50% 0.150 259)",
+          "oklch(62% 0.146 259)",
+          "oklch(74% 0.121 259)",
+          "oklch(85% 0.099 259)",
+          "oklch(95% 0.078 259)"
         ]
       },
       "focus": {
         "role": "primary",
         "displayName": "Focus Blue",
-        "canonical": "oklch(53.2% 0.121 251)",
+        "canonical": "#1E5BB8",
         "tonalRamp": [
-          "#00003B",
-          "#00225C",
-          "#00427F",
-          "#2363A3",
-          "#4786C8",
-          "#6AA9EE",
-          "#8DCEFF",
-          "#B2F4FF"
+          "oklch(15% 0.078 259)",
+          "oklch(27% 0.103 259)",
+          "oklch(38% 0.125 259)",
+          "oklch(50% 0.150 259)",
+          "oklch(62% 0.146 259)",
+          "oklch(74% 0.121 259)",
+          "oklch(85% 0.099 259)",
+          "oklch(95% 0.078 259)"
         ]
       },
       "selection": {
         "role": "primary",
-        "displayName": "Selection (magnet at 22%)",
-        "canonical": "oklch(53.2% 0.121 251)",
+        "displayName": "Selection Blue",
+        "canonical": "rgba(30,91,184,.22)",
         "tonalRamp": [
-          "#00003B",
-          "#00225C",
-          "#00427F",
-          "#2363A3",
-          "#4786C8",
-          "#6AA9EE",
-          "#8DCEFF",
-          "#B2F4FF"
+          "oklch(15% 0.078 259)",
+          "oklch(27% 0.103 259)",
+          "oklch(38% 0.125 259)",
+          "oklch(50% 0.150 259)",
+          "oklch(62% 0.146 259)",
+          "oklch(74% 0.121 259)",
+          "oklch(85% 0.099 259)",
+          "oklch(95% 0.078 259)"
         ]
       },
-      "status-ok": {
-        "role": "status",
-        "displayName": "On-Track Green",
-        "canonical": "oklch(53.1% 0.095 162)",
+      "figure": {
+        "role": "neutral",
+        "displayName": "Figure Grey",
+        "canonical": "#DDE2EA",
         "tonalRamp": [
-          "#001501",
-          "#003216",
-          "#005132",
-          "#207250",
-          "#479471",
-          "#6BB893",
-          "#8FDDB6",
-          "#B4FFDB"
+          "oklch(15% 0.006 260)",
+          "oklch(27% 0.008 260)",
+          "oklch(38% 0.010 260)",
+          "oklch(50% 0.011 260)",
+          "oklch(62% 0.011 260)",
+          "oklch(74% 0.009 260)",
+          "oklch(85% 0.008 260)",
+          "oklch(95% 0.006 260)"
         ]
       },
-      "status-tight": {
-        "role": "status",
-        "displayName": "Tight Amber (3.87:1 on board; below the 4.5:1 bar)",
-        "canonical": "oklch(59.3% 0.133 57)",
+      "level-medium": {
+        "role": "primary",
+        "displayName": "Watch Blue",
+        "canonical": "#D2E2F8",
         "tonalRamp": [
-          "#2A0000",
-          "#4C0700",
-          "#6F2B00",
-          "#924C00",
-          "#B76E31",
-          "#DD9155",
-          "#FFB579",
-          "#FFDA9E"
+          "oklch(15% 0.017 256)",
+          "oklch(27% 0.022 256)",
+          "oklch(38% 0.027 256)",
+          "oklch(50% 0.033 256)",
+          "oklch(62% 0.032 256)",
+          "oklch(74% 0.026 256)",
+          "oklch(85% 0.021 256)",
+          "oklch(95% 0.017 256)"
         ]
       },
-      "status-short": {
-        "role": "status",
+      "on-level-medium": {
+        "role": "neutral",
+        "displayName": "Text on Watch Blue",
+        "canonical": "#111827",
+        "tonalRamp": [
+          "oklch(15% 0.016 265)",
+          "oklch(27% 0.020 265)",
+          "oklch(38% 0.025 265)",
+          "oklch(50% 0.030 265)",
+          "oklch(62% 0.029 265)",
+          "oklch(74% 0.024 265)",
+          "oklch(85% 0.020 265)",
+          "oklch(95% 0.016 265)"
+        ]
+      },
+      "level-high": {
+        "role": "primary",
+        "displayName": "Worsening Blue",
+        "canonical": "#1E5BB8",
+        "tonalRamp": [
+          "oklch(15% 0.078 259)",
+          "oklch(27% 0.103 259)",
+          "oklch(38% 0.125 259)",
+          "oklch(50% 0.150 259)",
+          "oklch(62% 0.146 259)",
+          "oklch(74% 0.121 259)",
+          "oklch(85% 0.099 259)",
+          "oklch(95% 0.078 259)"
+        ]
+      },
+      "on-level-high": {
+        "role": "neutral",
+        "displayName": "Text on Worsening Blue",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "oklch(15% 0.000 90)",
+          "oklch(27% 0.000 90)",
+          "oklch(38% 0.000 90)",
+          "oklch(50% 0.000 90)",
+          "oklch(62% 0.000 90)",
+          "oklch(74% 0.000 90)",
+          "oklch(85% 0.000 90)",
+          "oklch(95% 0.000 90)"
+        ]
+      },
+      "ok": {
+        "role": "secondary",
+        "displayName": "Leaving Green",
+        "canonical": "#18794E",
+        "tonalRamp": [
+          "oklch(15% 0.054 158)",
+          "oklch(27% 0.071 158)",
+          "oklch(38% 0.086 158)",
+          "oklch(50% 0.103 158)",
+          "oklch(62% 0.100 158)",
+          "oklch(74% 0.084 158)",
+          "oklch(85% 0.068 158)",
+          "oklch(95% 0.054 158)"
+        ]
+      },
+      "amber": {
+        "role": "tertiary",
+        "displayName": "Tight Amber",
+        "canonical": "#8A4B08",
+        "tonalRamp": [
+          "oklch(15% 0.054 59)",
+          "oklch(27% 0.071 59)",
+          "oklch(38% 0.087 59)",
+          "oklch(50% 0.103 59)",
+          "oklch(62% 0.101 59)",
+          "oklch(74% 0.084 59)",
+          "oklch(85% 0.068 59)",
+          "oklch(95% 0.054 59)"
+        ]
+      },
+      "amber-bg": {
+        "role": "tertiary",
+        "displayName": "Tight Amber Ground",
+        "canonical": "#FCE8C3",
+        "tonalRamp": [
+          "oklch(15% 0.026 83)",
+          "oklch(27% 0.034 83)",
+          "oklch(38% 0.041 83)",
+          "oklch(50% 0.050 83)",
+          "oklch(62% 0.048 83)",
+          "oklch(74% 0.040 83)",
+          "oklch(85% 0.033 83)",
+          "oklch(95% 0.026 83)"
+        ]
+      },
+      "amber-edge": {
+        "role": "tertiary",
+        "displayName": "Tight Amber Edge",
+        "canonical": "#C27A14",
+        "tonalRamp": [
+          "oklch(15% 0.067 68)",
+          "oklch(27% 0.087 68)",
+          "oklch(38% 0.106 68)",
+          "oklch(50% 0.127 68)",
+          "oklch(62% 0.124 68)",
+          "oklch(74% 0.103 68)",
+          "oklch(85% 0.084 68)",
+          "oklch(95% 0.067 68)"
+        ]
+      },
+      "red": {
+        "role": "tertiary",
         "displayName": "Short Red",
-        "canonical": "oklch(52.3% 0.156 24)",
+        "canonical": "#B3261E",
         "tonalRamp": [
-          "#2D0000",
-          "#510003",
-          "#751F20",
-          "#9A413E",
-          "#C0635E",
-          "#E78680",
-          "#FFAAA3",
-          "#FFCFC7"
+          "oklch(15% 0.088 29)",
+          "oklch(27% 0.115 29)",
+          "oklch(38% 0.140 29)",
+          "oklch(50% 0.167 29)",
+          "oklch(62% 0.162 29)",
+          "oklch(74% 0.135 29)",
+          "oklch(85% 0.110 29)",
+          "oklch(95% 0.088 29)"
+        ]
+      },
+      "on-red": {
+        "role": "neutral",
+        "displayName": "Text on Short Red",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "oklch(15% 0.000 90)",
+          "oklch(27% 0.000 90)",
+          "oklch(38% 0.000 90)",
+          "oklch(50% 0.000 90)",
+          "oklch(62% 0.000 90)",
+          "oklch(74% 0.000 90)",
+          "oklch(85% 0.000 90)",
+          "oklch(95% 0.000 90)"
+        ]
+      },
+      "shadow-04": {
+        "role": "neutral",
+        "displayName": "Shadow tint 4%",
+        "canonical": "rgba(16,24,40,.04)",
+        "tonalRamp": [
+          "oklch(15% 0.017 263)",
+          "oklch(27% 0.022 263)",
+          "oklch(38% 0.027 263)",
+          "oklch(50% 0.032 263)",
+          "oklch(62% 0.031 263)",
+          "oklch(74% 0.026 263)",
+          "oklch(85% 0.021 263)",
+          "oklch(95% 0.017 263)"
+        ]
+      },
+      "shadow-06": {
+        "role": "neutral",
+        "displayName": "Shadow tint 6%",
+        "canonical": "rgba(16,24,40,.06)",
+        "tonalRamp": [
+          "oklch(15% 0.017 263)",
+          "oklch(27% 0.022 263)",
+          "oklch(38% 0.027 263)",
+          "oklch(50% 0.032 263)",
+          "oklch(62% 0.031 263)",
+          "oklch(74% 0.026 263)",
+          "oklch(85% 0.021 263)",
+          "oklch(95% 0.017 263)"
+        ]
+      },
+      "shadow-12": {
+        "role": "neutral",
+        "displayName": "Shadow tint 12%",
+        "canonical": "rgba(16,24,40,.12)",
+        "tonalRamp": [
+          "oklch(15% 0.017 263)",
+          "oklch(27% 0.022 263)",
+          "oklch(38% 0.027 263)",
+          "oklch(50% 0.032 263)",
+          "oklch(62% 0.031 263)",
+          "oklch(74% 0.026 263)",
+          "oklch(85% 0.021 263)",
+          "oklch(95% 0.017 263)"
+        ]
+      },
+      "shadow-18": {
+        "role": "neutral",
+        "displayName": "Shadow tint 18%",
+        "canonical": "rgba(16,24,40,.18)",
+        "tonalRamp": [
+          "oklch(15% 0.017 263)",
+          "oklch(27% 0.022 263)",
+          "oklch(38% 0.027 263)",
+          "oklch(50% 0.032 263)",
+          "oklch(62% 0.031 263)",
+          "oklch(74% 0.026 263)",
+          "oklch(85% 0.021 263)",
+          "oklch(95% 0.017 263)"
         ]
       },
       "night-board": {
         "role": "neutral",
-        "displayName": "Charcoal Board",
-        "canonical": "oklch(24.5% 0.012 248)",
+        "displayName": "Night Board Grey",
+        "canonical": "#0E131B",
         "tonalRamp": [
-          "#070C10",
-          "#21262B",
-          "#3D4348",
-          "#5C6268",
-          "#7D8389",
-          "#9FA6AC",
-          "#C3CAD1",
-          "#E8EFF6"
+          "oklch(15% 0.009 260)",
+          "oklch(27% 0.012 260)",
+          "oklch(38% 0.014 260)",
+          "oklch(50% 0.017 260)",
+          "oklch(62% 0.017 260)",
+          "oklch(74% 0.014 260)",
+          "oklch(85% 0.011 260)",
+          "oklch(95% 0.009 260)"
         ]
       },
       "night-board-2": {
         "role": "neutral",
-        "displayName": "Charcoal Shadow",
-        "canonical": "oklch(28.1% 0.015 244)",
+        "displayName": "Night Board Grey 2",
+        "canonical": "#1C2533",
         "tonalRamp": [
-          "#060C11",
-          "#1F262C",
-          "#3C4349",
-          "#5A6269",
-          "#7B848B",
-          "#9EA6AE",
-          "#C1CAD2",
-          "#E6F0F8"
+          "oklch(15% 0.014 259)",
+          "oklch(27% 0.019 259)",
+          "oklch(38% 0.023 259)",
+          "oklch(50% 0.028 259)",
+          "oklch(62% 0.027 259)",
+          "oklch(74% 0.022 259)",
+          "oklch(85% 0.018 259)",
+          "oklch(95% 0.014 259)"
         ]
       },
       "night-surface": {
         "role": "neutral",
-        "displayName": "Night Magnet Surface",
-        "canonical": "oklch(29.2% 0.017 245)",
+        "displayName": "Night Card White",
+        "canonical": "#151C28",
         "tonalRamp": [
-          "#060C12",
-          "#1E262D",
-          "#3B434B",
-          "#59626A",
-          "#7A848C",
-          "#9DA6AF",
-          "#C0CBD4",
-          "#E5F0F9"
+          "oklch(15% 0.013 261)",
+          "oklch(27% 0.017 261)",
+          "oklch(38% 0.020 261)",
+          "oklch(50% 0.024 261)",
+          "oklch(62% 0.023 261)",
+          "oklch(74% 0.020 261)",
+          "oklch(85% 0.016 261)",
+          "oklch(95% 0.013 261)"
         ]
       },
       "night-ink": {
         "role": "neutral",
-        "displayName": "Chalk",
-        "canonical": "oklch(93.8% 0.009 135)",
+        "displayName": "Night Ink",
+        "canonical": "#E6E9EF",
         "tonalRamp": [
-          "#0A0C08",
-          "#232622",
-          "#40433E",
-          "#5F625D",
-          "#80847E",
-          "#A3A6A1",
-          "#C7CAC5",
-          "#ECF0EA"
+          "oklch(15% 0.004 265)",
+          "oklch(27% 0.006 265)",
+          "oklch(38% 0.007 265)",
+          "oklch(50% 0.008 265)",
+          "oklch(62% 0.008 265)",
+          "oklch(74% 0.007 265)",
+          "oklch(85% 0.005 265)",
+          "oklch(95% 0.004 265)"
         ]
       },
       "night-ink-2": {
         "role": "neutral",
-        "displayName": "Faded Chalk",
-        "canonical": "oklch(76.0% 0.015 162)",
+        "displayName": "Night Ink 2",
+        "canonical": "#A3ADBD",
         "tonalRamp": [
-          "#060D09",
-          "#1F2723",
-          "#3B4540",
-          "#5A645F",
-          "#7B8580",
-          "#9DA8A2",
-          "#C1CCC6",
-          "#E6F2EB"
+          "oklch(15% 0.013 260)",
+          "oklch(27% 0.017 260)",
+          "oklch(38% 0.020 260)",
+          "oklch(50% 0.024 260)",
+          "oklch(62% 0.023 260)",
+          "oklch(74% 0.019 260)",
+          "oklch(85% 0.016 260)",
+          "oklch(95% 0.013 260)"
         ]
       },
       "night-rule": {
         "role": "neutral",
-        "displayName": "Night Rule (chalk at 14%)",
-        "canonical": "oklch(93.8% 0.009 135)",
+        "displayName": "Night Hairline",
+        "canonical": "rgba(230,233,239,.13)",
         "tonalRamp": [
-          "#0A0C08",
-          "#232622",
-          "#40433E",
-          "#5F625D",
-          "#80847E",
-          "#A3A6A1",
-          "#C7CAC5",
-          "#ECF0EA"
+          "oklch(15% 0.004 265)",
+          "oklch(27% 0.006 265)",
+          "oklch(38% 0.007 265)",
+          "oklch(50% 0.008 265)",
+          "oklch(62% 0.008 265)",
+          "oklch(74% 0.007 265)",
+          "oklch(85% 0.005 265)",
+          "oklch(95% 0.004 265)"
         ]
       },
-      "night-magnet": {
-        "role": "primary",
-        "displayName": "Night Magnet Blue",
-        "canonical": "oklch(74.7% 0.092 249)",
-        "tonalRamp": [
-          "#00072F",
-          "#00254F",
-          "#114470",
-          "#346593",
-          "#5587B7",
-          "#77AADC",
-          "#9ACFFF",
-          "#BFF4FF"
-        ]
-      },
-      "night-magnet-ink": {
+      "night-line": {
         "role": "neutral",
-        "displayName": "Night Magnet Ink",
-        "canonical": "oklch(19.6% 0.014 244)",
+        "displayName": "Night Line",
+        "canonical": "#667286",
         "tonalRamp": [
-          "#070C11",
-          "#20262B",
-          "#3C4349",
-          "#5B6269",
-          "#7C838A",
-          "#9EA6AD",
-          "#C2CAD2",
-          "#E7F0F7"
+          "oklch(15% 0.017 261)",
+          "oklch(27% 0.022 261)",
+          "oklch(38% 0.027 261)",
+          "oklch(50% 0.032 261)",
+          "oklch(62% 0.031 261)",
+          "oklch(74% 0.026 261)",
+          "oklch(85% 0.021 261)",
+          "oklch(95% 0.017 261)"
+        ]
+      },
+      "night-blue": {
+        "role": "primary",
+        "displayName": "Night Forecast Blue",
+        "canonical": "#8DBBFF",
+        "tonalRamp": [
+          "oklch(15% 0.054 258)",
+          "oklch(27% 0.070 258)",
+          "oklch(38% 0.086 258)",
+          "oklch(50% 0.102 258)",
+          "oklch(62% 0.100 258)",
+          "oklch(74% 0.083 258)",
+          "oklch(85% 0.068 258)",
+          "oklch(95% 0.054 258)"
         ]
       },
       "night-focus": {
         "role": "primary",
         "displayName": "Night Focus Blue",
-        "canonical": "oklch(81.0% 0.072 247)",
+        "canonical": "#A9CCFF",
         "tonalRamp": [
-          "#000A27",
-          "#002746",
-          "#1E4566",
-          "#3E6588",
-          "#5F86AC",
-          "#81AAD1",
-          "#A4CEF6",
-          "#C8F4FF"
+          "oklch(15% 0.040 258)",
+          "oklch(27% 0.052 258)",
+          "oklch(38% 0.064 258)",
+          "oklch(50% 0.076 258)",
+          "oklch(62% 0.074 258)",
+          "oklch(74% 0.062 258)",
+          "oklch(85% 0.050 258)",
+          "oklch(95% 0.040 258)"
         ]
       },
       "night-selection": {
         "role": "primary",
-        "displayName": "Night Selection (magnet at 28%)",
-        "canonical": "oklch(74.7% 0.092 249)",
+        "displayName": "Night Selection Blue",
+        "canonical": "rgba(141,187,255,.3)",
         "tonalRamp": [
-          "#00072F",
-          "#00254F",
-          "#114470",
-          "#346593",
-          "#5587B7",
-          "#77AADC",
-          "#9ACFFF",
-          "#BFF4FF"
+          "oklch(15% 0.054 258)",
+          "oklch(27% 0.070 258)",
+          "oklch(38% 0.086 258)",
+          "oklch(50% 0.102 258)",
+          "oklch(62% 0.100 258)",
+          "oklch(74% 0.083 258)",
+          "oklch(85% 0.068 258)",
+          "oklch(95% 0.054 258)"
         ]
       },
-      "night-status-ok": {
-        "role": "status",
-        "displayName": "Night On-Track Green",
-        "canonical": "oklch(75.6% 0.106 162)",
+      "night-figure": {
+        "role": "neutral",
+        "displayName": "Night Figure Grey",
+        "canonical": "#2B3445",
         "tonalRamp": [
-          "#001600",
-          "#003313",
-          "#005230",
-          "#07734E",
-          "#3B966E",
-          "#61BA90",
-          "#86DFB4",
-          "#ABFFD9"
+          "oklch(15% 0.016 263)",
+          "oklch(27% 0.021 263)",
+          "oklch(38% 0.026 263)",
+          "oklch(50% 0.031 263)",
+          "oklch(62% 0.030 263)",
+          "oklch(74% 0.025 263)",
+          "oklch(85% 0.020 263)",
+          "oklch(95% 0.016 263)"
         ]
       },
-      "night-status-tight": {
-        "role": "status",
+      "night-level-medium": {
+        "role": "primary",
+        "displayName": "Night Watch Blue",
+        "canonical": "#1B2E50",
+        "tonalRamp": [
+          "oklch(15% 0.033 261)",
+          "oklch(27% 0.043 261)",
+          "oklch(38% 0.052 261)",
+          "oklch(50% 0.062 261)",
+          "oklch(62% 0.061 261)",
+          "oklch(74% 0.050 261)",
+          "oklch(85% 0.041 261)",
+          "oklch(95% 0.033 261)"
+        ]
+      },
+      "night-on-level-medium": {
+        "role": "neutral",
+        "displayName": "Night Text on Watch Blue",
+        "canonical": "#F1F4F9",
+        "tonalRamp": [
+          "oklch(15% 0.004 261)",
+          "oklch(27% 0.005 261)",
+          "oklch(38% 0.006 261)",
+          "oklch(50% 0.007 261)",
+          "oklch(62% 0.007 261)",
+          "oklch(74% 0.006 261)",
+          "oklch(85% 0.005 261)",
+          "oklch(95% 0.004 261)"
+        ]
+      },
+      "night-level-high": {
+        "role": "primary",
+        "displayName": "Night Worsening Blue",
+        "canonical": "#8DBBFF",
+        "tonalRamp": [
+          "oklch(15% 0.054 258)",
+          "oklch(27% 0.070 258)",
+          "oklch(38% 0.086 258)",
+          "oklch(50% 0.102 258)",
+          "oklch(62% 0.100 258)",
+          "oklch(74% 0.083 258)",
+          "oklch(85% 0.068 258)",
+          "oklch(95% 0.054 258)"
+        ]
+      },
+      "night-on-level-high": {
+        "role": "neutral",
+        "displayName": "Night Text on Worsening Blue",
+        "canonical": "#0B1220",
+        "tonalRamp": [
+          "oklch(15% 0.015 263)",
+          "oklch(27% 0.020 263)",
+          "oklch(38% 0.024 263)",
+          "oklch(50% 0.029 263)",
+          "oklch(62% 0.028 263)",
+          "oklch(74% 0.023 263)",
+          "oklch(85% 0.019 263)",
+          "oklch(95% 0.015 263)"
+        ]
+      },
+      "night-ok": {
+        "role": "secondary",
+        "displayName": "Night Leaving Green",
+        "canonical": "#6CC59B",
+        "tonalRamp": [
+          "oklch(15% 0.052 162)",
+          "oklch(27% 0.068 162)",
+          "oklch(38% 0.083 162)",
+          "oklch(50% 0.100 162)",
+          "oklch(62% 0.097 162)",
+          "oklch(74% 0.081 162)",
+          "oklch(85% 0.066 162)",
+          "oklch(95% 0.052 162)"
+        ]
+      },
+      "night-amber": {
+        "role": "tertiary",
         "displayName": "Night Tight Amber",
-        "canonical": "oklch(77.7% 0.120 69)",
+        "canonical": "#F0B466",
         "tonalRamp": [
-          "#260000",
-          "#471100",
-          "#693100",
-          "#8C5200",
-          "#B07321",
-          "#D5964A",
-          "#FCBB6F",
-          "#FFE094"
+          "oklch(15% 0.058 72)",
+          "oklch(27% 0.076 72)",
+          "oklch(38% 0.093 72)",
+          "oklch(50% 0.111 72)",
+          "oklch(62% 0.108 72)",
+          "oklch(74% 0.090 72)",
+          "oklch(85% 0.073 72)",
+          "oklch(95% 0.058 72)"
         ]
       },
-      "night-status-short": {
-        "role": "status",
-        "displayName": "Night Short Red",
-        "canonical": "oklch(73.8% 0.124 27)",
+      "night-amber-bg": {
+        "role": "tertiary",
+        "displayName": "Night Tight Amber Ground",
+        "canonical": "#3B2D12",
         "tonalRamp": [
-          "#2D0000",
-          "#510000",
-          "#751F1C",
-          "#9A413B",
-          "#C0635B",
-          "#E7867C",
-          "#FFAA9F",
-          "#FFCFC4"
+          "oklch(15% 0.023 82)",
+          "oklch(27% 0.030 82)",
+          "oklch(38% 0.036 82)",
+          "oklch(50% 0.043 82)",
+          "oklch(62% 0.042 82)",
+          "oklch(74% 0.035 82)",
+          "oklch(85% 0.028 82)",
+          "oklch(95% 0.023 82)"
+        ]
+      },
+      "night-amber-edge": {
+        "role": "tertiary",
+        "displayName": "Night Tight Amber Edge",
+        "canonical": "#C58A2F",
+        "tonalRamp": [
+          "oklch(15% 0.062 74)",
+          "oklch(27% 0.081 74)",
+          "oklch(38% 0.098 74)",
+          "oklch(50% 0.118 74)",
+          "oklch(62% 0.114 74)",
+          "oklch(74% 0.095 74)",
+          "oklch(85% 0.078 74)",
+          "oklch(95% 0.062 74)"
+        ]
+      },
+      "night-red": {
+        "role": "tertiary",
+        "displayName": "Night Short Red",
+        "canonical": "#F28B82",
+        "tonalRamp": [
+          "oklch(15% 0.062 26)",
+          "oklch(27% 0.082 26)",
+          "oklch(38% 0.099 26)",
+          "oklch(50% 0.119 26)",
+          "oklch(62% 0.116 26)",
+          "oklch(74% 0.096 26)",
+          "oklch(85% 0.078 26)",
+          "oklch(95% 0.062 26)"
+        ]
+      },
+      "night-on-red": {
+        "role": "neutral",
+        "displayName": "Night Text on Short Red",
+        "canonical": "#1B0C0A",
+        "tonalRamp": [
+          "oklch(15% 0.013 28)",
+          "oklch(27% 0.017 28)",
+          "oklch(38% 0.021 28)",
+          "oklch(50% 0.025 28)",
+          "oklch(62% 0.024 28)",
+          "oklch(74% 0.020 28)",
+          "oklch(85% 0.016 28)",
+          "oklch(95% 0.013 28)"
         ]
       }
     },
     "typographyMeta": {
-      "headline": {
-        "displayName": "Headline",
-        "purpose": "Unit name in the top strip only."
+      "lead-numeral": {
+        "displayName": "Lead numeral",
+        "purpose": "The two counts on the Life support lead card."
       },
-      "title": {
-        "displayName": "Title",
-        "purpose": "Panel headings; the open room heading steps up to 22px."
+      "room-heading": {
+        "displayName": "Room heading",
+        "purpose": "Room number on the room page; 2rem on phone."
       },
       "numeral": {
         "displayName": "Numeral",
-        "purpose": "Median count in each margin row, right-aligned; 22px under 420px."
+        "purpose": "Counts on support cards; room numbers in the Worry first rail and on wall screens."
       },
       "room-number": {
-        "displayName": "Room Number",
-        "purpose": "Room number on each magnet; 20px under 560px."
+        "displayName": "Room number",
+        "purpose": "Room number on a bed tile."
+      },
+      "room-number-phone": {
+        "displayName": "Room number phone",
+        "purpose": "Room number on a bed tile at 560px and below."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Unit name in the header."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section and card headings; counts in the strain summary pill."
+      },
+      "body-large": {
+        "displayName": "Body large",
+        "purpose": "Room page rows and room status chip; N in 10 on wall screens."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Base text; row names 14px/600; risk table 14px."
+        "purpose": "Base text."
       },
-      "body-sm": {
-        "displayName": "Body small",
-        "purpose": "Subtitles, legend, magnet risk line, chips, event history."
+      "control": {
+        "displayName": "Control",
+        "purpose": "Buttons, tabs, chat messages, N in 10 on desktop tiles."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Ranges, count captions, status words on tiles, notes."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Status words ON TRACK / TIGHT / SHORT, uppercase."
+        "purpose": "Status chip, field labels, N in 10 under figures and on phone tiles."
       }
     },
     "shadows": [
       {
-        "name": "magnet-contact",
-        "value": "0 1px 1px rgba(0,0,0,.18), 0 2px 4px rgba(0,0,0,.06)",
-        "purpose": "Magnets only; everything else is flat."
+        "name": "card",
+        "value": "0 1px 2px rgba(16,24,40,.06),0 4px 12px rgba(16,24,40,.04)",
+        "purpose": "Bed tiles, cards, the strain summary pill and the room page strip on the day board. The night board sets it to none."
+      },
+      {
+        "name": "floating-panel",
+        "value": "0 2px 4px rgba(16,24,40,.12),0 16px 40px rgba(16,24,40,.18)",
+        "purpose": "The chat panel below 1200px. Docked from 1200px it has no shadow."
       }
     ],
+    "focus": {
+      "value": "outline:3px solid var(--focus);outline-offset:2px;border-radius:.5rem",
+      "day": "#1E5BB8",
+      "night": "#A9CCFF",
+      "purpose": "Every focusable element. The person figure draws the ring on its silhouette with a 3px offset."
+    },
     "motion": [
       {
         "name": "board-swap",
         "value": "background-color .2s ease-out, color .2s ease-out",
-        "purpose": "Day/night board switch and magnet refill."
+        "purpose": "Day to night board change on the body."
       },
       {
-        "name": "magnet-lift",
-        "value": "transform .15s ease-out; translateY(-1px) on hover",
-        "purpose": "Magnet hover."
+        "name": "lift",
+        "value": "transform .15s ease-out (translateY(-1px))",
+        "purpose": "Hover on a bed tile or a person figure."
+      },
+      {
+        "name": "chevron-turn",
+        "value": "transform .15s ease-out (rotate(180deg))",
+        "purpose": "The capacity disclosure chevron."
       },
       {
         "name": "reduced-motion",
-        "value": "transition: none",
-        "purpose": "All transitions off under prefers-reduced-motion: reduce."
+        "value": "transition:none; animation:none",
+        "purpose": "prefers-reduced-motion removes all motion. Nothing pulses or loops."
       }
     ],
-    "focus": {
-      "value": "outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px",
-      "purpose": "Every :focus-visible element on both boards."
-    },
     "breakpoints": [
       {
-        "name": "stack",
-        "value": "960px"
-      },
-      {
-        "name": "compact-magnets",
+        "name": "phone",
         "value": "560px"
       },
       {
-        "name": "tight-rows",
-        "value": "420px"
+        "name": "tablet",
+        "value": "960px"
+      },
+      {
+        "name": "chat-dock",
+        "value": "1200px"
+      },
+      {
+        "name": "wall",
+        "value": "1800px"
+      }
+    ],
+    "boards": {
+      "attribute": "data-board",
+      "values": [
+        "day",
+        "night"
+      ],
+      "note": "The two boards swap custom properties only. Night tokens are the night- prefixed colors; --card is none at night."
+    },
+    "rootScale": {
+      "default": "100%",
+      "from1800px": "120%"
+    },
+    "icons": {
+      "grid": 24,
+      "stroke": 1.75,
+      "caps": "round",
+      "joins": "round",
+      "color": "currentColor",
+      "solid": "-on symbols: running now",
+      "outline": "plain symbols: expected",
+      "symbols": [
+        "vent",
+        "vent-on",
+        "pump",
+        "pump-on",
+        "crrt",
+        "crrt-on",
+        "leave",
+        "leave-on",
+        "person",
+        "person-on",
+        "fig",
+        "up",
+        "watch",
+        "hold",
+        "steady",
+        "none",
+        "any",
+        "chev",
+        "same",
+        "arrow",
+        "moon",
+        "chat",
+        "beds",
+        "strain"
+      ],
+      "provenance": "Drawn for this board; no icon copied or adapted from an external set. The person figure is Dema's (deetherese).",
+      "sheet": "docs/screenshots/icons.png"
+    },
+    "credits": [
+      {
+        "who": "Dema (GitHub: deetherese)",
+        "source": "origin/alternative, mockups/command-center.html",
+        "what": "Cluster cards, person figure that fills with a bed's chance, range bar with an ink line for free capacity, status chip, card radius / hairline / shadow language, segmented view switch."
+      },
+      {
+        "who": "Earlier board",
+        "source": "commit 65b36c6",
+        "what": "The blue acuity scale."
       }
     ]
   },
   "components": [
     {
-      "name": "Magnet",
+      "name": "Bed tile (five trajectory statuses)",
       "kind": "custom",
-      "refersTo": "magnet",
-      "description": "Room tile shaded by highest risk; ink picked for 4.5:1.",
-      "html": "<div class=\"ds-grid\"><button class=\"ds-mag\" style=\"background:color-mix(in srgb,var(--magnet,#2F6FB0) 8%,var(--surface,#FFFFFF))\" aria-label=\"Room 4: Ventilator 3 percent\"><span class=\"ds-rm\">4</span><span class=\"ds-top1\">Ventilator 3%</span></button><button class=\"ds-mag\" style=\"background:#2F6FB0;color:#FFFFFF\" aria-pressed=\"true\" aria-label=\"Room 7: Vasopressor 52 percent, on ventilator\"><span class=\"ds-rm\">7</span><span class=\"ds-top1\">Vasopressor 52%</span><span class=\"ds-on\"><span>VENT</span></span></button></div>",
-      "css": ".ds-grid{display:grid;grid-template-columns:repeat(2,168px);gap:12px;font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}.ds-mag{position:relative;min-height:92px;text-align:left;border:1.5px solid var(--ink,#1E2A33);border-radius:6px;padding:8px 10px;cursor:pointer;color:var(--ink,#1E2A33);font:inherit;box-shadow:0 1px 1px rgba(0,0,0,.18),0 2px 4px rgba(0,0,0,.06);transition:background-color .2s ease-out,transform .15s ease-out}.ds-mag:hover{transform:translateY(-1px)}.ds-mag[aria-pressed=\"true\"]{outline:3px solid var(--ink,#1E2A33);outline-offset:2px}.ds-mag:focus-visible{outline:3px solid var(--focus,#2F6FB0);outline-offset:2px}.ds-rm{display:block;font-size:26px;font-weight:800;line-height:1}.ds-top1{display:block;margin-top:6px;font-size:13px;font-weight:600}.ds-on{position:absolute;top:8px;right:8px;display:flex;gap:4px}.ds-on>span{font-size:11px;font-weight:700;letter-spacing:.04em;border:1.2px solid currentColor;border-radius:3px;padding:0 4px;line-height:16px}"
+      "refersTo": "bed-tile-steady",
+      "description": "One room as a change: room number, one trajectory status (fill or border, shape, word), then solid icons for now, an arrow, outline icons with N in 10 for the next 24 hours. Fill scale from the earlier board at commit 65b36c6.",
+      "html": "<div class=\"ds-beds\"><button type=\"button\" class=\"ds-bed ds-t-worse\"><span class=\"ds-bt\"><span class=\"ds-rm\">12</span><span class=\"ds-who\">F 67</span><span class=\"ds-st\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M12 4.5 21 19.5H3z\"/></svg>Worsening</span></span><span class=\"ds-flow\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8\"/><path fill=\"currentColor\" d=\"M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z\"/><path fill=\"currentColor\" d=\"M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z\"/></svg><svg class=\"ds-ic ds-arr\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3.5 12h16M14 6.5l5.5 5.5-5.5 5.5\" stroke-width=\"2.25\"/></svg><span class=\"ds-nx\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><g transform=\"rotate(45 12 12)\"><path d=\"M9 1.5h6M12 1.5v4M8 5.5h8M12 15.5v2.7\"/><rect x=\"9.2\" y=\"5.5\" width=\"5.6\" height=\"10\" rx=\"1\"/><path d=\"M9.2 10.2h2.3\"/></g><path d=\"M4.2 17.6c1.1 1.3 1.8 2.1 1.8 3a1.8 1.8 0 0 1-3.6 0c0-.9.7-1.7 1.8-3z\"/></svg><small>5 in 10</small></span><span class=\"ds-nx\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"8\" y=\"2.5\" width=\"8\" height=\"3.4\" rx=\"1.2\"/><rect x=\"8\" y=\"18.1\" width=\"8\" height=\"3.4\" rx=\"1.2\"/><path d=\"M9.5 5.9v12.2M14.5 5.9v12.2M12 8.5v7\"/><path d=\"M9.5 16H6.5a3 3 0 0 1-3-3V9.5M1.7 11.3 3.5 9.5l1.8 1.8\"/><path d=\"M14.5 8h3a3 3 0 0 1 3 3v3.5M18.7 12.7l1.8 1.8 1.8-1.8\"/></svg><small>3 in 10</small></span></span></button><button type=\"button\" class=\"ds-bed ds-t-watch\"><span class=\"ds-bt\"><span class=\"ds-rm\">07</span><span class=\"ds-who\">M 54</span><span class=\"ds-st\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 6.5 19.5 19h-15z\" stroke-width=\"2.5\"/></svg>Watch</span></span><span class=\"ds-flow\"><svg class=\"ds-ic ds-mark\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"5\" stroke-width=\"1.5\"/></svg><svg class=\"ds-ic ds-arr\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3.5 12h16M14 6.5l5.5 5.5-5.5 5.5\" stroke-width=\"2.25\"/></svg><span class=\"ds-nx\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8\"/><path d=\"M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z\"/><path d=\"M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z\"/></svg><small>3 in 10</small></span></span></button><button type=\"button\" class=\"ds-bed ds-t-hold\"><span class=\"ds-bt\"><span class=\"ds-rm\">03</span><span class=\"ds-who\">M 71</span><span class=\"ds-st\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 8.5h16M4 15.5h16\" stroke-width=\"3.5\"/></svg>Not improving</span></span><span class=\"ds-flow\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8\"/><path fill=\"currentColor\" d=\"M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z\"/><path fill=\"currentColor\" d=\"M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z\"/></svg><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><g transform=\"rotate(45 12 12)\"><path d=\"M9 1.5h6M12 1.5v4M8 5.5h8M12 15.5v2.7\"/><rect fill=\"currentColor\" x=\"9.2\" y=\"5.5\" width=\"5.6\" height=\"10\" rx=\"1\"/></g><path fill=\"currentColor\" d=\"M4.2 17.6c1.1 1.3 1.8 2.1 1.8 3a1.8 1.8 0 0 1-3.6 0c0-.9.7-1.7 1.8-3z\"/></svg><svg class=\"ds-ic ds-arr\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3.5 12h16M14 6.5l5.5 5.5-5.5 5.5\" stroke-width=\"2.25\"/></svg><svg class=\"ds-ic ds-mark\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 12h12\"/></svg></span></button><button type=\"button\" class=\"ds-bed ds-t-leave\"><span class=\"ds-bt\"><span class=\"ds-rm\">09</span><span class=\"ds-who\">F 48</span><span class=\"ds-st\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2.5 9.5v10M2.5 16.5H18v3\"/><path d=\"M8.5 16.5v-3.2h6.3a3.2 3.2 0 0 1 3.2 3.2\"/><circle cx=\"5.6\" cy=\"13.6\" r=\"1.5\"/><path d=\"M12.5 6h9M18.5 3l3 3-3 3\"/></svg>Leaving</span></span><span class=\"ds-flow\"><svg class=\"ds-ic ds-mark\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"5\" stroke-width=\"1.5\"/></svg><svg class=\"ds-ic ds-arr\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3.5 12h16M14 6.5l5.5 5.5-5.5 5.5\" stroke-width=\"2.25\"/></svg><span class=\"ds-nx\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2.5 9.5v10M2.5 16.5H18v3\"/><path d=\"M8.5 16.5v-3.2h6.3a3.2 3.2 0 0 1 3.2 3.2\"/><circle cx=\"5.6\" cy=\"13.6\" r=\"1.5\"/><path d=\"M12.5 6h9M18.5 3l3 3-3 3\"/></svg><small>8 in 10</small></span></span></button><button type=\"button\" class=\"ds-bed ds-t-steady\"><span class=\"ds-bt\"><span class=\"ds-rm\">15</span><span class=\"ds-who\">M 62</span><span class=\"ds-st\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle fill=\"currentColor\" cx=\"12\" cy=\"12\" r=\"3.5\" stroke=\"none\"/></svg>Steady</span></span><span class=\"ds-flow\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><g transform=\"rotate(45 12 12)\"><path d=\"M9 1.5h6M12 1.5v4M8 5.5h8M12 15.5v2.7\"/><rect fill=\"currentColor\" x=\"9.2\" y=\"5.5\" width=\"5.6\" height=\"10\" rx=\"1\"/></g><path fill=\"currentColor\" d=\"M4.2 17.6c1.1 1.3 1.8 2.1 1.8 3a1.8 1.8 0 0 1-3.6 0c0-.9.7-1.7 1.8-3z\"/></svg><svg class=\"ds-ic ds-arr\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3.5 12h16M14 6.5l5.5 5.5-5.5 5.5\" stroke-width=\"2.25\"/></svg><svg class=\"ds-ic ds-mark\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 12h12\"/></svg></span></button></div>",
+      "css": ".ds-beds{display:grid;grid-template-columns:repeat(auto-fill,minmax(12rem,1fr));gap:.75rem;font:.9375rem/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}.ds-bed{--t-bg:var(--surface,#FFFFFF);--t-fg:var(--ink,#111827);--t-2:var(--ink-2,#4A5567);display:flex;flex-direction:column;gap:.5rem;min-width:0;min-height:5.75rem;text-align:left;padding:.625rem .75rem;border:1px solid var(--rule,rgba(17,24,39,.10));border-radius:.75rem;background:var(--t-bg);color:var(--t-fg);cursor:pointer;box-shadow:var(--card,0 1px 2px rgba(16,24,40,.06),0 4px 12px rgba(16,24,40,.04));font:inherit;transition:transform .15s ease-out}.ds-bed:hover{transform:translateY(-1px)}.ds-bed:focus-visible{outline:3px solid var(--focus,#1E5BB8);outline-offset:2px;border-radius:.5rem}.ds-bed.ds-t-worse{--t-bg:var(--lv-high,#1E5BB8);--t-fg:var(--on-high,#FFFFFF);--t-2:var(--on-high,#FFFFFF);border-color:var(--lv-high,#1E5BB8)}.ds-bed.ds-t-watch{--t-bg:var(--lv-medium,#D2E2F8);--t-fg:var(--on-medium,#111827);--t-2:var(--on-medium,#111827);border-color:var(--lv-medium,#D2E2F8)}.ds-bed.ds-t-hold{--t-bg:var(--board-2,#E8ECF2);border:3px solid var(--ink,#111827);padding:calc(.625rem - 2px) calc(.75rem - 2px)}.ds-bed.ds-t-leave{border:2px solid var(--ok,#18794E);padding:calc(.625rem - 1px) calc(.75rem - 1px)}.ds-bt{display:flex;flex-wrap:wrap;align-items:baseline;gap:.125rem .5rem}.ds-rm{font-size:1.75rem;font-weight:800;line-height:1;letter-spacing:-.01em}.ds-who{font-size:.8125rem;font-weight:600;color:var(--t-2)}.ds-st{display:inline-flex;align-items:center;gap:.3125rem;font-size:.8125rem;font-weight:700;white-space:nowrap;margin-left:auto;align-self:center}.ds-st .ds-ic{width:.875rem;height:.875rem}.ds-t-leave .ds-st{color:var(--ok,#18794E)}.ds-t-steady .ds-st{color:var(--ink-2,#4A5567);font-weight:600}.ds-flow{display:flex;align-items:center;gap:.375rem;margin-top:auto;min-height:1.75rem}.ds-flow .ds-ic{width:1.75rem;height:1.75rem}.ds-flow .ds-arr{width:1rem;height:1rem;color:var(--t-2);opacity:.9}.ds-flow .ds-mark{color:var(--t-2)}.ds-nx{display:inline-flex;align-items:center;gap:.1875rem}.ds-nx small{font-size:.875rem;font-weight:700;white-space:nowrap}.ds-ic{width:1.375rem;height:1.375rem;flex:none;display:block;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}"
     },
     {
-      "name": "Task row with range bar",
-      "kind": "custom",
-      "refersTo": "status-word",
-      "description": "Task count: median (p50), 80% range bar with the range in words, ink capacity line, status word or 'no capacity set'.",
-      "html": "<div class=\"ds-row\"><span class=\"ds-name\">Ventilator starts<br><span class=\"ds-range\">2 to 6 · 4 free</span></span><span class=\"ds-n\">4</span><svg viewBox=\"0 0 300 28\" aria-hidden=\"true\"><line x1=\"8\" x2=\"258\" y1=\"14\" y2=\"14\" stroke=\"rgba(30,42,51,.12)\" stroke-width=\"6\" stroke-linecap=\"round\"/><line x1=\"70\" x2=\"195\" y1=\"14\" y2=\"14\" stroke=\"#2F6FB0\" stroke-width=\"10\" stroke-linecap=\"round\"/><line x1=\"133\" x2=\"133\" y1=\"4\" y2=\"24\" stroke=\"#1E2A33\" stroke-width=\"3\"/><rect x=\"131.5\" y=\"1\" width=\"3\" height=\"26\" fill=\"#B23A3A\"/></svg><span class=\"ds-status ds-tight\">TIGHT</span></div>",
-      "css": ".ds-row{display:grid;grid-template-columns:120px 44px minmax(0,1fr) 78px;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--rule,rgba(30,42,51,.12));font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums;color:var(--ink,#1E2A33);width:420px}.ds-name{font-weight:600;font-size:14px}.ds-range{font-size:12px;font-weight:400;color:var(--ink-2,#4A5862)}.ds-n{font-size:28px;font-weight:800;line-height:1;text-align:right}.ds-row svg{width:100%;height:28px;display:block}.ds-status{font-size:12px;font-weight:800;letter-spacing:.05em;text-align:center;border-radius:4px;padding:3px 4px;border:1.5px solid currentColor}.ds-ok{color:var(--ok,#2E7D5B)}.ds-tight{color:var(--tight,#9A5410)}.ds-short{color:var(--short,#B23A3A)}"
-    },
-    {
-      "name": "Board toggle",
-      "kind": "button",
-      "refersTo": "board-toggle",
-      "description": "Switches day and night boards; label names the target board.",
-      "html": "<button class=\"ds-toggle\" aria-pressed=\"false\" type=\"button\">Night board</button>",
-      "css": ".ds-toggle{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--ink,#1E2A33);border:1.5px solid var(--ink,#1E2A33);border-radius:8px;padding:7px 12px;cursor:pointer;font:600 15px/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif}.ds-toggle:hover{background:var(--board-2,#E9EBE6)}.ds-toggle:focus-visible{outline:3px solid var(--focus,#2F6FB0);outline-offset:2px;border-radius:6px}"
-    },
-    {
-      "name": "Suggested-question chip",
+      "name": "Status chip",
       "kind": "chip",
-      "refersTo": "chip",
-      "description": "One-tap question above the chat: at most three by role plus Rerun the forecast; 44 px target; the chat starts empty.",
-      "html": "<div class=\"ds-picker\"><button class=\"ds-chip\" type=\"button\">What will we be short of tonight?</button><button class=\"ds-chip\" type=\"button\">Which rooms are highest risk?</button><button class=\"ds-chip\" type=\"button\">Rerun the forecast</button></div>",
-      "css": ".ds-picker{display:flex;flex-wrap:wrap;gap:6px;font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif}.ds-chip{font:inherit;font-size:13px;font-weight:600;color:var(--ink,#1E2A33);background:transparent;border:1.5px solid var(--ink,#1E2A33);border-radius:999px;padding:3px 10px;cursor:pointer}.ds-chip[aria-pressed=\"true\"]{background:var(--ink,#1E2A33);color:var(--board,#F4F5F2)}.ds-chip:focus-visible{outline:3px solid var(--focus,#2F6FB0);outline-offset:2px}"
+      "refersTo": "status-chip-ok",
+      "description": "Dema's (deetherese) status chip. The word is always shown; amber only for TIGHT and BUSY, red only for SHORT and VERY BUSY, green for ON TRACK and USUAL.",
+      "html": "<div class=\"ds-bands\"><span class=\"ds-band\">ON TRACK</span><span class=\"ds-band ds-amber\">TIGHT</span><span class=\"ds-band ds-red\">SHORT</span><span class=\"ds-band\">USUAL</span><span class=\"ds-band ds-amber\">BUSY</span><span class=\"ds-band ds-red\">VERY BUSY</span><span class=\"ds-band ds-none\">Not ready yet</span></div>",
+      "css": ".ds-bands{display:flex;flex-wrap:wrap;gap:.5rem;font:.9375rem/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}.ds-band{display:inline-flex;align-items:center;font-size:.75rem;font-weight:800;letter-spacing:.05em;line-height:1.2;border:1.5px solid var(--ok,#18794E);border-radius:.3125rem;padding:.1875rem .5rem;color:var(--ok,#18794E);background:var(--surface,#FFFFFF);white-space:nowrap}.ds-band.ds-amber{background:var(--amber-bg,#FCE8C3);border-color:var(--amber-edge,#C27A14);color:var(--amber,#8A4B08)}.ds-band.ds-red{background:var(--red,#B3261E);border-color:var(--red,#B3261E);color:var(--on-red,#FFFFFF)}.ds-band.ds-none{border-color:var(--line,#7A8597);color:var(--ink-2,#4A5567);letter-spacing:0;font-weight:600}"
     },
     {
-      "name": "Ask the board",
-      "kind": "input",
-      "refersTo": "ask-input",
-      "description": "Chat log with question and answer messages, input and Ask button.",
-      "html": "<div class=\"ds-chat\"><div class=\"ds-log\"><div class=\"ds-msg ds-q\"><span class=\"ds-who\">ICU team</span>How many ventilators will we need in the next 24 hours?</div><div class=\"ds-msg ds-a\"><span class=\"ds-who\">Nemotron 3 Nano (mock)</span>Ventilators, next 24 h: 4 new starts likely (80% range 2 to 6); 4 are free, so the busy case is tight.</div></div><form class=\"ds-ask\" onsubmit=\"return false\"><input aria-label=\"Question\" placeholder=\"How many ventilators will we need in the next 24 hours?\"><button type=\"submit\">Ask</button></form></div>",
-      "css": ".ds-chat{font:15px/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;color:var(--ink,#1E2A33);max-width:420px}.ds-log{display:flex;flex-direction:column;gap:8px;margin:6px 0 10px}.ds-msg{padding:8px 10px;border-radius:8px;font-size:14px;max-width:92%}.ds-q{align-self:flex-end;background:var(--board-2,#E9EBE6)}.ds-a{align-self:flex-start;border:1.5px solid var(--rule,rgba(30,42,51,.12))}.ds-who{display:block;font-size:12px;font-weight:700;color:var(--ink-2,#4A5862);margin-bottom:2px}.ds-ask{display:flex;gap:8px}.ds-ask input{flex:1;min-width:0;font:inherit;color:var(--ink,#1E2A33);background:var(--board,#F4F5F2);border:1.5px solid var(--ink,#1E2A33);border-radius:8px;padding:8px 10px}.ds-ask input::placeholder{color:var(--ink-2,#4A5862)}.ds-ask input:focus-visible,.ds-ask button:focus-visible{outline:3px solid var(--focus,#2F6FB0);outline-offset:2px}.ds-ask button{font:inherit;font-weight:700;background:var(--ink,#1E2A33);color:var(--board,#F4F5F2);border:0;border-radius:8px;padding:8px 14px;cursor:pointer}.ds-ask button:hover{opacity:.9}"
+      "name": "Segmented tabs",
+      "kind": "nav",
+      "refersTo": "segmented-tabs",
+      "description": "Dema's (deetherese) segmented view switch: Bed board (default) and Unit strain.",
+      "html": "<div class=\"ds-seg\" role=\"group\" aria-label=\"Board view\"><button type=\"button\" aria-pressed=\"true\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3.5\" y=\"3.5\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"13.5\" y=\"3.5\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"3.5\" y=\"13.5\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"13.5\" y=\"13.5\" width=\"7\" height=\"7\" rx=\"1.5\"/></svg>Bed board</button><button type=\"button\" aria-pressed=\"false\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 20V11M10 20V4M16 20v-6M22 20H2\" stroke-width=\"2.25\"/></svg>Unit strain</button></div>",
+      "css": ".ds-seg{display:inline-flex;padding:.1875rem;background:var(--board-2,#E8ECF2);border:1px solid var(--rule,rgba(17,24,39,.10));border-radius:.8125rem;font:.9375rem/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}.ds-seg button{display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem;padding:0 1.125rem;border:0;border-radius:.625rem;background:transparent;font:inherit;font-weight:700;cursor:pointer;color:var(--ink,#111827)}.ds-seg button:hover{background:var(--surface,#FFFFFF)}.ds-seg button[aria-pressed=\"true\"]{background:var(--ink,#111827);color:var(--board,#F3F5F9)}.ds-seg button:focus-visible{outline:3px solid var(--focus,#1E5BB8);outline-offset:2px;border-radius:.5rem}.ds-seg .ds-ic{width:1.125rem;height:1.125rem}.ds-ic{width:1.375rem;height:1.375rem;flex:none;display:block;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}"
     },
     {
-      "name": "Honesty labels",
+      "name": "Strain summary pill",
       "kind": "custom",
-      "refersTo": "synthetic-badge",
-      "description": "SYNTHETIC DATA badge, (mock), pending run, not forecast.",
-      "html": "<div class=\"ds-honest\"><span class=\"ds-synthetic\">SYNTHETIC DATA</span><span>Shift brief (mock)</span><span>Forecast · 1 GPU: <span class=\"ds-pending\">pending run</span></span><span class=\"ds-range\">not forecast</span></div>",
-      "css": ".ds-honest{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;font:14px/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;color:var(--ink,#1E2A33)}.ds-synthetic{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--short,#B23A3A);border:1.5px solid currentColor;border-radius:4px;padding:2px 6px;white-space:nowrap}.ds-pending{color:var(--ink-2,#4A5862);font-style:italic}.ds-range{font-size:12px;color:var(--ink-2,#4A5862)}"
+      "refersTo": "strain-pill",
+      "description": "Header link to Unit strain: on now in ink, expected in blue, then the status chip.",
+      "html": "<a class=\"ds-sline\" href=\"#view=strain\"><span><b>9</b> on life support</span><span class=\"ds-f\"><b>+3</b> expected</span><span class=\"ds-band ds-amber\">TIGHT</span></a>",
+      "css": ".ds-sline{display:inline-flex;align-items:center;flex-wrap:wrap;gap:.125rem .5rem;min-height:2.75rem;padding:.25rem .875rem;background:var(--surface,#FFFFFF);border:1px solid var(--rule,rgba(17,24,39,.10));border-radius:999px;box-shadow:var(--card,0 1px 2px rgba(16,24,40,.06),0 4px 12px rgba(16,24,40,.04));color:var(--ink,#111827);text-decoration:none;font-size:.875rem;font-weight:600;font-family: system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}.ds-sline:hover{border-color:var(--line,#7A8597)}.ds-sline:focus-visible{outline:3px solid var(--focus,#1E5BB8);outline-offset:2px;border-radius:.5rem}.ds-sline b{font-size:1.125rem;font-weight:800;line-height:1}.ds-sline .ds-f,.ds-sline .ds-f b{color:var(--blue,#1E5BB8)}.ds-band{display:inline-flex;align-items:center;font-size:.75rem;font-weight:800;letter-spacing:.05em;line-height:1.2;border:1.5px solid var(--ok,#18794E);border-radius:.3125rem;padding:.1875rem .5rem;color:var(--ok,#18794E);background:var(--surface,#FFFFFF);white-space:nowrap}.ds-band.ds-amber{background:var(--amber-bg,#FCE8C3);border-color:var(--amber-edge,#C27A14);color:var(--amber,#8A4B08)}.ds-band.ds-red{background:var(--red,#B3261E);border-color:var(--red,#B3261E);color:var(--on-red,#FFFFFF)}.ds-band.ds-none{border-color:var(--line,#7A8597);color:var(--ink-2,#4A5567);letter-spacing:0;font-weight:600}"
+    },
+    {
+      "name": "Support card with range bar and person figures",
+      "kind": "card",
+      "refersTo": "support-card",
+      "description": "Dema's (deetherese) cluster card: counts, the range bar (track, blue 8-in-10 range, bead at the median, solid ink line for free or covered, dashed line for a typical day) and person figures that fill to a bed's chance (solid ink is on now).",
+      "html": "<article class=\"ds-wc\"><header><svg class=\"ds-ic ds-big\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8\"/><path fill=\"currentColor\" d=\"M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z\"/><path fill=\"currentColor\" d=\"M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z\"/></svg><h3>IMV</h3><span class=\"ds-band ds-amber\">TIGHT</span></header><div class=\"ds-nums\"><span><b>6</b><i>on now</i></span><span><b>2</b><i>free</i></span><span class=\"ds-f\"><b>+2<small>1 to 4</small></b><i>expected</i></span></div><svg class=\"ds-bar\" viewBox=\"0 0 300 24\" preserveAspectRatio=\"xMinYMid meet\" aria-hidden=\"true\"><line class=\"ds-trk\" x1=\"6\" x2=\"294\" y1=\"12\" y2=\"12\"/><line class=\"ds-rng\" x1=\"78\" x2=\"186\" y1=\"12\" y2=\"12\"/><line class=\"ds-typ\" x1=\"150\" x2=\"150\" y1=\"1\" y2=\"23\"/><rect class=\"ds-cap\" x=\"220.5\" y=\"0\" width=\"3\" height=\"24\"/><circle class=\"ds-med\" cx=\"114\" cy=\"12\" r=\"4.5\"/></svg><span class=\"ds-gl\">On now</span><div class=\"ds-set\"><button type=\"button\" class=\"ds-pp ds-on\"><span class=\"ds-av\"><svg class=\"ds-base\" viewBox=\"0 0 40 42\"><circle cx=\"20\" cy=\"10.5\" r=\"8.5\"/><path d=\"M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z\"/></svg></span><span class=\"ds-prm\">12</span><span class=\"ds-pc\"></span></button><button type=\"button\" class=\"ds-pp ds-on\"><span class=\"ds-av\"><svg class=\"ds-base\" viewBox=\"0 0 40 42\"><circle cx=\"20\" cy=\"10.5\" r=\"8.5\"/><path d=\"M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z\"/></svg></span><span class=\"ds-prm\">03</span><span class=\"ds-pc\"></span></button></div><span class=\"ds-gl\">May start</span><div class=\"ds-set\"><button type=\"button\" class=\"ds-pp \"><span class=\"ds-av\" style=\"--p:30%\"><svg class=\"ds-base\" viewBox=\"0 0 40 42\"><circle cx=\"20\" cy=\"10.5\" r=\"8.5\"/><path d=\"M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z\"/></svg><svg class=\"ds-fill\" viewBox=\"0 0 40 42\"><circle cx=\"20\" cy=\"10.5\" r=\"8.5\"/><path d=\"M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z\"/></svg></span><span class=\"ds-prm\">07</span><span class=\"ds-pc\">3 in 10</span></button><button type=\"button\" class=\"ds-pp \"><span class=\"ds-av\" style=\"--p:60%\"><svg class=\"ds-base\" viewBox=\"0 0 40 42\"><circle cx=\"20\" cy=\"10.5\" r=\"8.5\"/><path d=\"M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z\"/></svg><svg class=\"ds-fill\" viewBox=\"0 0 40 42\"><circle cx=\"20\" cy=\"10.5\" r=\"8.5\"/><path d=\"M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z\"/></svg></span><span class=\"ds-prm\">18</span><span class=\"ds-pc\">6 in 10</span></button></div></article>",
+      "css": ".ds-wc{max-width:22rem;padding:1rem 1.125rem;background:var(--surface,#FFFFFF);color:var(--ink,#111827);border:2px solid var(--amber-edge,#C27A14);border-radius:1rem;box-shadow:var(--card,0 1px 2px rgba(16,24,40,.06),0 4px 12px rgba(16,24,40,.04));font:.9375rem/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}.ds-wc header{display:flex;align-items:center;gap:.625rem}.ds-wc .ds-big{width:2.5rem;height:2.5rem}.ds-wc h3{margin:0;font-size:1.125rem;line-height:1.2}.ds-wc header .ds-band{margin-left:auto}.ds-nums{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.25rem 1.5rem;margin-top:.5rem}.ds-nums>span{display:flex;flex-direction:column}.ds-nums i{font-style:normal;font-size:.8125rem;color:var(--ink-2,#4A5567)}.ds-nums b{font-size:2rem;font-weight:800;line-height:1.05;letter-spacing:-.01em}.ds-f b{color:var(--blue,#1E5BB8)}.ds-f small{font-size:.8125rem;font-weight:400;color:var(--ink-2,#4A5567);margin-left:.375rem;letter-spacing:0}.ds-gl{display:block;margin:.875rem 0 .5rem;padding-top:.75rem;border-top:1px solid var(--rule,rgba(17,24,39,.10));font-size:.8125rem;font-weight:700;color:var(--ink-2,#4A5567)}.ds-band{display:inline-flex;align-items:center;font-size:.75rem;font-weight:800;letter-spacing:.05em;line-height:1.2;border:1.5px solid var(--ok,#18794E);border-radius:.3125rem;padding:.1875rem .5rem;color:var(--ok,#18794E);background:var(--surface,#FFFFFF);white-space:nowrap}.ds-band.ds-amber{background:var(--amber-bg,#FCE8C3);border-color:var(--amber-edge,#C27A14);color:var(--amber,#8A4B08)}.ds-band.ds-red{background:var(--red,#B3261E);border-color:var(--red,#B3261E);color:var(--on-red,#FFFFFF)}.ds-band.ds-none{border-color:var(--line,#7A8597);color:var(--ink-2,#4A5567);letter-spacing:0;font-weight:600}.ds-bar{display:block;width:100%;height:1.25rem;margin-top:.5rem}.ds-trk{stroke:var(--fig,#DDE2EA);stroke-width:6;stroke-linecap:round}.ds-rng{stroke:var(--blue,#1E5BB8);stroke-width:10;stroke-linecap:round}.ds-med{fill:var(--surface,#FFFFFF);stroke:var(--blue,#1E5BB8);stroke-width:3}.ds-cap{fill:var(--ink,#111827)}.ds-typ{stroke:var(--ink,#111827);stroke-width:2.5;stroke-dasharray:4 3}.ds-set{display:grid;grid-template-columns:repeat(auto-fill,3.25rem);justify-content:start;gap:.625rem .5rem}.ds-pp{width:3.25rem;min-height:2.75rem;display:flex;flex-direction:column;align-items:center;gap:1px;background:transparent;border:0;padding:0;cursor:pointer;color:var(--ink,#111827);font:inherit}.ds-av{position:relative;width:2.5rem;height:2.625rem;margin-bottom:.1875rem;transition:transform .15s ease-out}.ds-pp:hover .ds-av{transform:translateY(-1px)}.ds-av svg{position:absolute;inset:0;width:100%;height:100%;display:block}.ds-base{fill:var(--fig,#DDE2EA)}.ds-fill{fill:var(--blue,#1E5BB8);clip-path:inset(calc(100% - var(--p)) 0 0 0)}.ds-pp.ds-on .ds-base{fill:var(--ink,#111827)}.ds-pp.ds-out .ds-fill{fill:var(--ok,#18794E)}.ds-prm{font-size:.9375rem;font-weight:800;line-height:1.1}.ds-pc{font-size:.75rem;font-weight:600;line-height:1.15;text-align:center;color:var(--ink-2,#4A5567);white-space:nowrap}.ds-pp:focus-visible{outline:0}.ds-pp:focus-visible .ds-av{outline:3px solid var(--focus,#1E5BB8);outline-offset:3px;border-radius:.5rem}.ds-ic{width:1.375rem;height:1.375rem;flex:none;display:block;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}"
+    },
+    {
+      "name": "Person figure",
+      "kind": "custom",
+      "refersTo": "person-figure",
+      "description": "Dema's (deetherese) head-and-shoulders figure: two stacked SVGs, the fill clipped with clip-path inset to the bed's chance. Solid ink is on now; green fill is leaving.",
+      "html": "<div class=\"ds-set\"><button type=\"button\" class=\"ds-pp ds-on\"><span class=\"ds-av\"><svg class=\"ds-base\" viewBox=\"0 0 40 42\"><circle cx=\"20\" cy=\"10.5\" r=\"8.5\"/><path d=\"M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z\"/></svg></span><span class=\"ds-prm\">12</span><span class=\"ds-pc\"></span></button><button type=\"button\" class=\"ds-pp \"><span class=\"ds-av\" style=\"--p:30%\"><svg class=\"ds-base\" viewBox=\"0 0 40 42\"><circle cx=\"20\" cy=\"10.5\" r=\"8.5\"/><path d=\"M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z\"/></svg><svg class=\"ds-fill\" viewBox=\"0 0 40 42\"><circle cx=\"20\" cy=\"10.5\" r=\"8.5\"/><path d=\"M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z\"/></svg></span><span class=\"ds-prm\">07</span><span class=\"ds-pc\">3 in 10</span></button><button type=\"button\" class=\"ds-pp \"><span class=\"ds-av\" style=\"--p:60%\"><svg class=\"ds-base\" viewBox=\"0 0 40 42\"><circle cx=\"20\" cy=\"10.5\" r=\"8.5\"/><path d=\"M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z\"/></svg><svg class=\"ds-fill\" viewBox=\"0 0 40 42\"><circle cx=\"20\" cy=\"10.5\" r=\"8.5\"/><path d=\"M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z\"/></svg></span><span class=\"ds-prm\">18</span><span class=\"ds-pc\">6 in 10</span></button><button type=\"button\" class=\"ds-pp ds-out\"><span class=\"ds-av\" style=\"--p:80%\"><svg class=\"ds-base\" viewBox=\"0 0 40 42\"><circle cx=\"20\" cy=\"10.5\" r=\"8.5\"/><path d=\"M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z\"/></svg><svg class=\"ds-fill\" viewBox=\"0 0 40 42\"><circle cx=\"20\" cy=\"10.5\" r=\"8.5\"/><path d=\"M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z\"/></svg></span><span class=\"ds-prm\">09</span><span class=\"ds-pc\">8 in 10</span></button></div>",
+      "css": ".ds-set{font:.9375rem/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}.ds-set{display:grid;grid-template-columns:repeat(auto-fill,3.25rem);justify-content:start;gap:.625rem .5rem}.ds-pp{width:3.25rem;min-height:2.75rem;display:flex;flex-direction:column;align-items:center;gap:1px;background:transparent;border:0;padding:0;cursor:pointer;color:var(--ink,#111827);font:inherit}.ds-av{position:relative;width:2.5rem;height:2.625rem;margin-bottom:.1875rem;transition:transform .15s ease-out}.ds-pp:hover .ds-av{transform:translateY(-1px)}.ds-av svg{position:absolute;inset:0;width:100%;height:100%;display:block}.ds-base{fill:var(--fig,#DDE2EA)}.ds-fill{fill:var(--blue,#1E5BB8);clip-path:inset(calc(100% - var(--p)) 0 0 0)}.ds-pp.ds-on .ds-base{fill:var(--ink,#111827)}.ds-pp.ds-out .ds-fill{fill:var(--ok,#18794E)}.ds-prm{font-size:.9375rem;font-weight:800;line-height:1.1}.ds-pc{font-size:.75rem;font-weight:600;line-height:1.15;text-align:center;color:var(--ink-2,#4A5567);white-space:nowrap}.ds-pp:focus-visible{outline:0}.ds-pp:focus-visible .ds-av{outline:3px solid var(--focus,#1E5BB8);outline-offset:3px;border-radius:.5rem}"
+    },
+    {
+      "name": "Room page level chips and 10-dot array",
+      "kind": "custom",
+      "refersTo": "level-chip",
+      "description": "One row per event on the room page: icon and name, level chip in the level tints, ten dots filled to the count, and about N in 10.",
+      "html": "<ul class=\"ds-risks\"><li><span class=\"ds-nm\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8\"/><path fill=\"currentColor\" d=\"M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z\"/><path fill=\"currentColor\" d=\"M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z\"/></svg>IMV</span><span class=\"ds-lw ds-lon\">On now</span><span class=\"ds-dots\"></span><span class=\"ds-fq\">on now</span></li><li><span class=\"ds-nm\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><g transform=\"rotate(45 12 12)\"><path d=\"M9 1.5h6M12 1.5v4M8 5.5h8M12 15.5v2.7\"/><rect x=\"9.2\" y=\"5.5\" width=\"5.6\" height=\"10\" rx=\"1\"/><path d=\"M9.2 10.2h2.3\"/></g><path d=\"M4.2 17.6c1.1 1.3 1.8 2.1 1.8 3a1.8 1.8 0 0 1-3.6 0c0-.9.7-1.7 1.8-3z\"/></svg>Vasopressor</span><span class=\"ds-lw ds-lhigh\">High</span><span class=\"ds-dots\"><i class=\"ds-don\"></i><i class=\"ds-don\"></i><i class=\"ds-don\"></i><i class=\"ds-don\"></i><i class=\"ds-don\"></i><i></i><i></i><i></i><i></i><i></i></span><span class=\"ds-fq\">about 5 in 10</span></li><li><span class=\"ds-nm\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"8\" y=\"2.5\" width=\"8\" height=\"3.4\" rx=\"1.2\"/><rect x=\"8\" y=\"18.1\" width=\"8\" height=\"3.4\" rx=\"1.2\"/><path d=\"M9.5 5.9v12.2M14.5 5.9v12.2M12 8.5v7\"/><path d=\"M9.5 16H6.5a3 3 0 0 1-3-3V9.5M1.7 11.3 3.5 9.5l1.8 1.8\"/><path d=\"M14.5 8h3a3 3 0 0 1 3 3v3.5M18.7 12.7l1.8 1.8 1.8-1.8\"/></svg>CRRT</span><span class=\"ds-lw ds-lmed\">Medium</span><span class=\"ds-dots\"><i class=\"ds-don\"></i><i class=\"ds-don\"></i><i class=\"ds-don\"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class=\"ds-fq\">about 3 in 10</span></li><li><span class=\"ds-nm\"><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2.5 9.5v10M2.5 16.5H18v3\"/><path d=\"M8.5 16.5v-3.2h6.3a3.2 3.2 0 0 1 3.2 3.2\"/><circle cx=\"5.6\" cy=\"13.6\" r=\"1.5\"/><path d=\"M12.5 6h9M18.5 3l3 3-3 3\"/></svg>Leaving the ICU</span><span class=\"ds-lw \">Low</span><span class=\"ds-dots\"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class=\"ds-fq\">fewer than 1 in 10</span></li></ul>",
+      "css": ".ds-risks{list-style:none;margin:0;padding:0;max-width:34rem;color:var(--ink,#111827);font:.9375rem/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}.ds-risks li{display:grid;grid-template-columns:minmax(0,1fr) 5.5em auto 9.5em;gap:.75rem;align-items:center;padding:.625rem 0;border-top:1px solid var(--rule,rgba(17,24,39,.10));font-size:1rem}.ds-nm{display:inline-flex;align-items:center;gap:.5rem;font-weight:600}.ds-nm .ds-ic{width:1.5rem;height:1.5rem}.ds-lw{font-size:.8125rem;font-weight:700;text-align:center;background:var(--board-2,#E8ECF2);border-radius:.3125rem;padding:.1875rem .25rem}.ds-lw.ds-lmed{background:var(--lv-medium,#D2E2F8);color:var(--on-medium,#111827)}.ds-lw.ds-lhigh{background:var(--lv-high,#1E5BB8);color:var(--on-high,#FFFFFF)}.ds-lw.ds-lon{background:var(--ink,#111827);color:var(--surface,#FFFFFF)}.ds-dots{display:inline-flex;gap:.25rem;min-width:8.5rem}.ds-dots i{width:.75rem;height:.75rem;border-radius:50%;border:1.5px solid var(--line,#7A8597)}.ds-dots i.ds-don{background:var(--blue,#1E5BB8);border-color:var(--blue,#1E5BB8)}.ds-fq{font-size:.875rem;color:var(--ink-2,#4A5567)}.ds-ic{width:1.375rem;height:1.375rem;flex:none;display:block;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}"
+    },
+    {
+      "name": "Buttons, input and question chip",
+      "kind": "button",
+      "refersTo": "toggle",
+      "description": "Header toggle, ink primary button, number input and suggested-question chip; all 2.75rem (44px) tall with the 3px focus ring.",
+      "html": "<div class=\"ds-ctl\"><button type=\"button\" class=\"ds-toggle\">Update the unit</button><button type=\"button\" class=\"ds-toggle\" aria-expanded=\"true\">Ask</button><button type=\"button\" class=\"ds-primary\">Save capacity</button><input class=\"ds-input\" type=\"number\" aria-label=\"Ventilators free\" value=\"2\"><button type=\"button\" class=\"ds-chip\">Which rooms should I worry about?</button></div>",
+      "css": ".ds-ctl{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;color:var(--ink,#111827);font:.9375rem/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}.ds-ctl button,.ds-ctl input{font:inherit;color:inherit}.ds-toggle{display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem;background:var(--surface,#FFFFFF);border:1px solid var(--line,#7A8597);border-radius:.625rem;padding:.375rem .75rem;cursor:pointer;font-weight:600}.ds-toggle:hover{background:var(--board-2,#E8ECF2)}.ds-toggle[aria-expanded=\"true\"]{background:var(--ink,#111827);color:var(--board,#F3F5F9);border-color:var(--ink,#111827)}.ds-primary{min-height:2.75rem;background:var(--ink,#111827);color:var(--board,#F3F5F9);border:0;border-radius:.625rem;padding:.375rem 1rem;font-weight:700;cursor:pointer}.ds-primary:hover{opacity:.9}.ds-input{min-height:2.75rem;width:6rem;background:var(--surface,#FFFFFF);border:1px solid var(--line,#7A8597);border-radius:.625rem;padding:.375rem .625rem;caret-color:var(--blue,#1E5BB8);accent-color:var(--blue,#1E5BB8)}.ds-chip{min-height:2.75rem;background:transparent;border:1px solid var(--line,#7A8597);border-radius:999px;padding:.375rem .875rem;cursor:pointer;font-size:.8125rem;font-weight:600;text-align:left}.ds-chip:hover{background:var(--board-2,#E8ECF2)}.ds-ctl :focus-visible{outline:3px solid var(--focus,#1E5BB8);outline-offset:2px;border-radius:.5rem}"
+    },
+    {
+      "name": "Icon family",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "One inline SVG sprite drawn for this board: 24 grid, currentColor, 1.75 stroke, round caps and joins. Solid (-on) is running now, outline is expected. No icon was copied or adapted from an external set. Sheet: docs/screenshots/icons.png.",
+      "html": "<div class=\"ds-icons\"><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8\"/><path fill=\"currentColor\" d=\"M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z\"/><path fill=\"currentColor\" d=\"M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z\"/></svg>Ventilator on now</span><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8\"/><path d=\"M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z\"/><path d=\"M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z\"/></svg>Ventilator expected</span><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><g transform=\"rotate(45 12 12)\"><path d=\"M9 1.5h6M12 1.5v4M8 5.5h8M12 15.5v2.7\"/><rect fill=\"currentColor\" x=\"9.2\" y=\"5.5\" width=\"5.6\" height=\"10\" rx=\"1\"/></g><path fill=\"currentColor\" d=\"M4.2 17.6c1.1 1.3 1.8 2.1 1.8 3a1.8 1.8 0 0 1-3.6 0c0-.9.7-1.7 1.8-3z\"/></svg>Vasopressor on now</span><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><g transform=\"rotate(45 12 12)\"><path d=\"M9 1.5h6M12 1.5v4M8 5.5h8M12 15.5v2.7\"/><rect x=\"9.2\" y=\"5.5\" width=\"5.6\" height=\"10\" rx=\"1\"/><path d=\"M9.2 10.2h2.3\"/></g><path d=\"M4.2 17.6c1.1 1.3 1.8 2.1 1.8 3a1.8 1.8 0 0 1-3.6 0c0-.9.7-1.7 1.8-3z\"/></svg>Vasopressor expected</span><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect fill=\"currentColor\" x=\"8\" y=\"2.5\" width=\"8\" height=\"3.4\" rx=\"1.2\"/><rect fill=\"currentColor\" x=\"8\" y=\"18.1\" width=\"8\" height=\"3.4\" rx=\"1.2\"/><rect fill=\"currentColor\" x=\"9.5\" y=\"5.9\" width=\"5\" height=\"12.2\"/><path d=\"M9.5 16H6.5a3 3 0 0 1-3-3V9.5M1.7 11.3 3.5 9.5l1.8 1.8\"/><path d=\"M14.5 8h3a3 3 0 0 1 3 3v3.5M18.7 12.7l1.8 1.8 1.8-1.8\"/></svg>CRRT on now</span><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"8\" y=\"2.5\" width=\"8\" height=\"3.4\" rx=\"1.2\"/><rect x=\"8\" y=\"18.1\" width=\"8\" height=\"3.4\" rx=\"1.2\"/><path d=\"M9.5 5.9v12.2M14.5 5.9v12.2M12 8.5v7\"/><path d=\"M9.5 16H6.5a3 3 0 0 1-3-3V9.5M1.7 11.3 3.5 9.5l1.8 1.8\"/><path d=\"M14.5 8h3a3 3 0 0 1 3 3v3.5M18.7 12.7l1.8 1.8 1.8-1.8\"/></svg>CRRT expected</span><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2.5 9.5v10M2.5 16.5H18v3\"/><path d=\"M8.5 16.5v-3.2h6.3a3.2 3.2 0 0 1 3.2 3.2\"/><circle cx=\"5.6\" cy=\"13.6\" r=\"1.5\"/><path d=\"M12.5 6h9M18.5 3l3 3-3 3\"/></svg>Leaving</span><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M12 4.5 21 19.5H3z\"/></svg>Worsening</span><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 6.5 19.5 19h-15z\" stroke-width=\"2.5\"/></svg>Watch</span><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 8.5h16M4 15.5h16\" stroke-width=\"3.5\"/></svg>Not improving</span><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle fill=\"currentColor\" cx=\"12\" cy=\"12\" r=\"3.5\" stroke=\"none\"/></svg>Steady</span><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"8.5\"/><path d=\"M12 8v8M8 12h8\"/></svg>Combined chance</span><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"5\" stroke-width=\"1.5\"/></svg>No support</span><span><svg class=\"ds-ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 12h12\"/></svg>Nothing new</span></div>",
+      "css": ".ds-icons{display:flex;flex-wrap:wrap;gap:.5rem 1.25rem;color:var(--ink,#111827);font-size:.8125rem;font-family: system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}.ds-icons span{display:inline-flex;align-items:center;gap:.375rem}.ds-icons .ds-ic{width:1.75rem;height:1.75rem}.ds-ic{width:1.375rem;height:1.375rem;flex:none;display:block;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}"
     }
   ],
   "narrative": {
-    "northStar": "The Unit Whiteboard",
-    "overview": "The board is the whiteboard an ICU team already reads at shift change, made to forecast. An enamel-white ground carries marker-navy ink, rooms are flat magnets with ink borders, and one blue (the magnet) means risk: magnet shading and range bars. Everything else is ink, rules, and words. It refuses the KPI-tile dashboard and the departure board: no hero numbers floating in cards, no flipping split-flap rows.\n\nDensity is operational, and the answer comes first. The first viewport holds a three-line shift brief (the verdict on top) and the six task rows in a ruled right column, and on the left the three highest-risk rooms as magnets with the full 25-room board one tap away (\"Show all 25 rooms\"), so a charge nurse and an attending can answer \"what will we be short of, when, and how sure are we\" from across a room or on a projector. Numerals are large, tabular, and heavy; prose is short, plain, and honest about what is mock, synthetic, or not yet run.\n\nA night board (charcoal ground, chalk ink) is the same grammar with lifted colours, chosen by the user, not by the OS.",
+    "northStar": "The Picture Board",
+    "overview": "The unit is read from three metres as icons, figures and numbers, with almost no sentences. A charge nurse at 07:00 sees which rooms to worry about and what the unit will be short of in the next 24 hours without reading a paragraph. The ground is a cool grey, the cards are white with soft corners, and there is one blue. Everything on the board is either ink or blue: ink means now, blue means forecast.\n\nColour outside that pair is rationed to meaning. Amber appears only for TIGHT and BUSY, red only for SHORT and VERY BUSY, green only for Leaving and for ON TRACK and USUAL. Every status is carried three ways at once, by a fill or border, a drawn shape and a word. There are two boards, day and night, and both are first-class: they swap custom properties and nothing else.\n\nCredit. The cluster cards, the person figure that fills with a bed's chance (a head-and-shoulders path, two stacked SVGs with a clip-path inset), the range bar with an ink line for free capacity, the status chip, the card radius, hairline and shadow language and the segmented view switch come from Dema's (GitHub: deetherese) design on the `alternative` branch (`origin/alternative`, `mockups/command-center.html`). The blue acuity scale comes from the earlier board at commit 65b36c6. The icon family was drawn for this board; no icon was copied or adapted from an external set.",
     "keyCharacteristics": [
-      "Two boards, one grammar: day (`data-board=\"day\"`) and night (`data-board=\"night\"`) swap only custom-property values.",
-      "Flat magnets with 1.5px ink borders and 6px corners; risk shown by mixing magnet blue into the surface.",
-      "A ruled margin column: 2px ink rules separate regions, 12-14% ink rules separate rows.",
-      "Every forecast number carries its 80% range; status words appear only where a capacity is set.",
-      "Honesty labels are part of the visual system, not footnotes."
+      "Ink is now, blue is the next 24 hours.",
+      "Pictures before words: one drawn icon family, solid for running, outline for expected.",
+      "Every bed is drawn as a change: Now, an arrow, Next 24 h.",
+      "Chances are counts out of ten, never percentages.",
+      "Two boards (day, night) with the same grammar; wall screens scale the root to 120% from 1800px.",
+      "Two tabs only: Bed board (default) and Unit strain."
     ],
     "rules": [
       {
-        "name": "The One Blue Rule",
-        "section": "colors",
-        "body": "Magnet blue is the only chromatic fill on the board. It means \"risk\" on a magnet and \"chosen\" on a control; no second accent is introduced."
+        "name": "The Ink and Blue Rule",
+        "body": "Ink means now, blue means forecast. A count, icon or figure in ink is happening at 07:00; the same thing in blue is expected in the next 24 hours. Never use blue for decoration or for a link.",
+        "section": "colors"
       },
       {
-        "name": "The Word Beside the Colour Rule",
-        "section": "colors",
-        "body": "Status is never colour alone. Every status colour appears as the ink of a word (ON TRACK, TIGHT, SHORT) with a matching outline, and the capacity line is explained in text (\"red line = what is free\")."
+        "name": "The Rationed Colour Rule",
+        "body": "Amber only for TIGHT and BUSY. Red only for SHORT and VERY BUSY. Green only for Leaving and for ON TRACK and USUAL. Red never marks a bed.",
+        "section": "colors"
       },
       {
-        "name": "The Readable Ink Rule",
-        "section": "colors",
-        "body": "Text ink must reach 4.5:1 against its own ground on both boards. Magnet ink is chosen in code from the four board inks by contrast, and the fill is nudged along the mix until the better ink reaches 4.5:1. Status inks are held to the same bar: day Tight Amber measures 3.87:1 on the board and must be darkened before it is reused; do not copy it as a passing value."
+        "name": "The Three Carriers Rule",
+        "body": "Status is never colour alone. Each status has a fill or border, a shape and a word.",
+        "section": "colors"
       },
       {
-        "name": "The Tabular Rule",
-        "section": "typography",
-        "body": "Every numeral is tabular; counts, ranges, and percentages must align in columns without per-element overrides."
+        "name": "The Count Rule",
+        "body": "A chance is \"N in 10\" on tiles and figures, \"about N in 10\" on the room page, \"fewer than 1 in 10\" below one, and \"No estimate\" when it is null. No percentage sign appears anywhere.",
+        "section": "typography"
       },
       {
-        "name": "The Weight Ladder Rule",
-        "section": "typography",
-        "body": "Hierarchy comes from weight (400, 600, 700, 800) and a short size ladder (11-28px), not from a second family."
+        "name": "The Range Rule",
+        "body": "Every forecast count carries its range in Caption weight 400 beside it (\"+3\" then \"1 to 5\").",
+        "section": "typography"
       },
       {
-        "name": "The Ruled Margin Rule",
-        "section": "layout",
-        "body": "Regions are separated by 2px ink rules; rows by 1px rules at 12% ink (14% at night). No cards, no panel backgrounds."
-      },
-      {
-        "name": "The Flat Board Rule",
-        "section": "elevation",
-        "body": "Only magnets cast a shadow. Panels, controls, the chart, and chat messages stay flat on the board."
+        "name": "The Two Shadows Rule",
+        "body": "There is a card shadow and a floating shadow. Nothing else lifts. Hover moves a tile or figure up 1px over .15s; it does not add shadow.",
+        "section": "elevation"
       }
     ],
     "dos": [
-      "**Do** shade magnets only by mixing magnet blue into the surface, and pick the magnet ink by contrast so it reaches 4.5:1.",
-      "**Do** pair every status colour with its word (ON TRACK, TIGHT, SHORT) and show the word only where a capacity is set.",
-      "**Do** give every forecast number its 80% range, as \"p10 to p90\" text and as a range bar with a median tick.",
-      "**Do** separate regions with 2px ink rules and rows with 1px Rule lines.",
-      "**Do** label mock, synthetic, and missing numbers in place: SYNTHETIC DATA, (mock), pending run, not forecast.",
-      "**Do** keep both boards on the same custom properties; a new surface sets values for `data-board=\"day\"` and `data-board=\"night\"`.",
-      "**Do** keep the 3px focus ring with 2px offset on every focusable element."
+      "Do draw now in ink and forecast in blue, on every surface.",
+      "Do write chances as \"N in 10\" on tiles and figures, \"about N in 10\" on the room page, \"fewer than 1 in 10\" below one, and \"No estimate\" for null.",
+      "Do carry every status as a fill or border, a shape and a word.",
+      "Do show the range beside every forecast count.",
+      "Do use solid icons for support running now and outline icons for support expected.",
+      "Do keep every target at least 2.75rem (44px) tall and all text at 4.5:1 or better on both boards.",
+      "Do change only custom properties between the day and night boards.",
+      "Do keep to the five predictions: IMV, vasopressor, CRRT, leaving the ICU, death.",
+      "Do credit Dema (deetherese) wherever the cluster card, person figure, range bar, status chip or segmented switch is reused."
     ],
     "donts": [
-      "**Don't** build KPI tiles or departure-board rows; counts live in ruled margin rows.",
-      "**Don't** introduce a second accent colour or fill panels with colour.",
-      "**Don't** convey status, risk, or capacity by colour alone.",
-      "**Don't** add shadows to anything but magnets.",
-      "**Don't** show a measured number that does not come from a run; use \"pending run\"."
+      "Don't show a percentage anywhere.",
+      "Don't let death colour or mark a bed. It is a plain count on Unit strain and a plain row on the room page.",
+      "Don't use red for anything but SHORT and VERY BUSY, or amber for anything but TIGHT and BUSY.",
+      "Don't signal status by colour alone.",
+      "Don't use signal-bar glyphs or letter tags (V, P, C) for supports.",
+      "Don't add pulsing or looping animation.",
+      "Don't write hedging or disclaimer copy on the board.",
+      "Don't add a sixth prediction or a forecast count without its range.",
+      "Don't bring in icons from an external set; extend the drawn family on the 24 grid."
     ]
   }
 }

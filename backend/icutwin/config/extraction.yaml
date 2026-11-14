@@ -1,0 +1,4 @@
+# icutwin-extract
+extract:
+  max_len: 4096 # prompt tokens kept (the latest max_len)
+  batch_size: 64

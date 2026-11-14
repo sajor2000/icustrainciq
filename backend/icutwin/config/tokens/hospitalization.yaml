@@ -1,0 +1,59 @@
+# hospitalization tokens; globals in ../tokens.yaml
+continuous:
+- code: HOSP//age_charted
+  table: hospitalization
+  value_column: age_at_admission
+  time_column: admission_dttm
+  unit: years
+  plausible:
+  - 0.0
+  - 120.0
+  edges:
+  - 0.0
+  - 25.0
+  - 33.0
+  - 41.0
+  - 49.0
+  - 57.0
+  - 65.0
+  - 72.0
+  - 80.0
+  - 89.0
+  - 120.0
+  reviewed: true
+categorical:
+- code: HOSP//admission_type
+  table: hospitalization
+  column: admission_type_category
+  time_column: admission_dttm
+  mapping:
+    ed: ed
+    facility: facility
+    osh: other
+    direct: direct
+    elective: elective
+    other: other
+  other: true
+- code: HOSP//discharge_category
+  table: hospitalization
+  column: discharge_category
+  time_column: discharge_dttm
+  mapping:
+    Home: home
+    Skilled Nursing Facility (SNF): snf
+    Expired: expired
+    Acute Inpatient Rehab Facility: rehab
+    Hospice: hospice
+    Long Term Care Hospital (LTACH): ltach
+    Acute Care Hospital: transfer
+    Group Home: home
+    Chemical Dependency: home
+    Against Medical Advice (AMA): home
+    Assisted Living: home
+    Still Admitted: other
+    Missing: other
+    Other: other
+    Psychiatric Hospital: home
+    Shelter: home
+    Jail: home
+  other: true

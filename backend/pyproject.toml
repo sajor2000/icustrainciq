@@ -1,0 +1,76 @@
+[project]
+name = "icutwin"
+version = "0.1.0"
+description = "ICU digital twins: CLIF tokenizer, generative event model, outcome scoring"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "clifpy>=2.1.0",
+    "duckdb<2", # clifpy dose conversion uses the 1.x relation API
+    "numpy",
+    "omegaconf",
+    "polars>=1.33.1",
+    "pyarrow",
+    "pydantic>=2",
+    "pyyaml",
+    "rich",
+    "typer",
+]
+
+[project.scripts]
+icutwin-tokenize = "icutwin.tokenizer.cli:main"
+icutwin-train = "icutwin.model.decoder:main"
+icutwin-tune = "icutwin.model.tune:main"
+icutwin-winnow = "icutwin.scoring.winnower:main"
+icutwin-extract = "icutwin.scoring.extractor:main"
+icutwin-rep-score = "icutwin.scoring.rep_based:main"
+icutwin-gen-score = "icutwin.scoring.generative:main"
+
+[project.optional-dependencies]
+dev = ["ruff", "pytest"]
+model = [ # train / tune / winnow / extract / rep-score
+    "accelerate",
+    "joblib",
+    "optuna",
+    "scikit-learn>=1.8",
+    "torch>=2.6",
+    "tqdm",
+    "transformers>=5.5", # Gemma4 (Nemotron 3.5 Bolt E4B) layers
+]
+gen = ["datasets>=2.15", "sglang[srt]>=0.5.11", "flash-attn-4>=4.0.0b9"] # icutwin-gen-score, NVIDIA only; Gemma4 serving
+flash = ["kernels>=0.17.2"] # FlashAttention training
+
+[tool.uv]
+conflicts = [[{ extra = "gen" }, { extra = "flash" }]] # sglang pins kernels<0.15
+
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools"]
+
+[tool.setuptools.packages.find]
+include = ["icutwin*"]
+
+[tool.setuptools.package-data]
+"icutwin" = ["*.html"]
+"icutwin.config" = ["*.yaml", "tokens/*.yaml"]
+
+[tool.ruff]
+extend-exclude = ["icutwin/scoring/quick_sco_re"]
+line-length = 88
+
+[tool.ruff.format]
+quote-style = "double"
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint]
+ignore = ["E731"]
+select = ["E", "F", "I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["icutwin"]
+split-on-trailing-comma = false
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib", "--strict-config", "--strict-markers"]
+pythonpath = [".", "tests"]
+testpaths = ["tests"]

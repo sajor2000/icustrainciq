@@ -1,0 +1,12 @@
+# probe overrides for t7-fit.fz job `fit` (fit once after t7-build; t7-forecast.fz only applies the saved probes) (docs/DECISIONS.md D2, D8):
+# fit only the heads behind the five predictions, all for the next 24 h (07:00 to 07:00):
+# ICU discharge (ward or step-down transfer), IMV, vasopressor start, CRRT start, death.
+#   icutwin-rep-score <tokenized_output> -m <model> -c examples/probe_tasks.yaml --save-probes <dir>
+score:
+  target_tokens:
+    - ADT//TRANSFER_IN//ward # ICU discharge (bed manager)
+    - ADT//TRANSFER_IN//stepdown
+    - RESP//device_category//imv # IMV (respiratory therapy)
+    - LABEL//pressor_init # vasopressor start (pharmacy)
+    - LABEL//crrt_init # CRRT start (ICU team)
+    - HOSP//discharge_category//expired # in-hospital death (ICU team)

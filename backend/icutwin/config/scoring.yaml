@@ -1,0 +1,47 @@
+# icutwin-rep-score / icutwin-gen-score
+score:
+  max_len: 4096 # prompt + generated tokens (= model max_position_embeddings)
+  n_samp: 100 # MC samples per input per trajectory type
+  target_tokens: # token-based outcomes of interest (fnmatch); winnow must flag them
+    - ADT//TRANSFER_IN//icu
+    - ADT//TRANSFER_IN//ward # bed manager: ICU beds freed
+    - ADT//TRANSFER_IN//stepdown
+    - RESP//device_category//imv
+    - RESP//device_category//nippv # respiratory therapy prep
+    - RESP//device_category//high_flow_nc
+    - MED_CON//angiotensin//* # pharmacy prep (vasopressors)
+    - MED_CON//dopamine//*
+    - MED_CON//epinephrine//*
+    - MED_CON//norepinephrine//*
+    - MED_CON//phenylephrine//*
+    - MED_CON//vasopressin//*
+    - HOSP//discharge_category//expired
+    - LABEL//* # winnowing.yaml labels; rep-score only (not tokens to generate)
+  end_tokens: # tokens that naturally terminate a sequence
+    - EOS
+  suppressed_tokens: [] # tokens to suppress via logit bias
+  repeat_ok: [] # outcomes scored even if they already occurred before the cut (team7)
+  horizons_hours: [] # extra MC scores within N hours, counted on CLCK tokens (team7)
+
+# generative-score only: Monte Carlo trajectory generation settings (ignored by
+# rep-based-score). Modeled on the pipeline_config.yaml of
+# github.com/lukesolo-ml/SCOPE_REACH_optimized_inference.
+generation:
+  temperature: 1.0 # sampling temperature (1.0 for proper MC estimation)
+  methods: [M1, M2] # trajectory types to run
+  end_tokens:
+    prefixes: [HOSP//discharge_category//] # in addition to score.end_tokens
+  time_stopping: # needs a TRUNC token; the token spec has none, so keep off
+    enabled: false
+    trunc_token: TRUNC # token forced once max_time_minutes is exceeded
+    max_time_minutes: null
+    time_check_interval: 100 # tokens generated between time-horizon checks
+    time_token_bounds: {} # token name -> [lo, hi] minutes, e.g. "TIME//1h-2h": [60, 120]
+
+engine:
+  mem_fraction: 0.85
+  patient_chunk_size: 64 # stays generated per SGLang batch
+
+# how to handle prompts (tokens_past) longer than score.max_len:
+# "drop" skips the stay; "truncate_left" keeps the last max_len tokens
+prompt_overflow: truncate_left

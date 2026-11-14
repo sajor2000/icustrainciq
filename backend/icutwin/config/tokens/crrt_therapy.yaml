@@ -1,0 +1,9 @@
+# crrt_therapy tokens; globals in ../tokens.yaml
+categorical:
+- code: CRRT//crrt_init
+  table: crrt_therapy
+  column: crrt_mode_category
+  time_column: recorded_dttm
+  mapping: {}
+  other: true
+  flag: true

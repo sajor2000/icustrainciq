@@ -1,0 +1,4 @@
+# one epoch instead of the shipped three, for a first smoke-quality model.
+# Everything else stays at icutwin/config/decoder.yaml.
+training_args:
+  num_train_epochs: 1

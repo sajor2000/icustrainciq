@@ -1,0 +1,11 @@
+# winnowing override for the board (docs/DECISIONS.md D2, D3, D3a):
+# - cut each stay 24 h after ICU arrival (the first ICU transfer-in token), and keep
+#   only stays still in the ICU at the cut (no other transfer-in before it);
+# - each task means "happens in the next 24 h after the cut", matching 07:00 rounds.
+#   icutwin-winnow <tokenized_output> -c examples/winnow_24h.yaml
+threshold:
+  after_first_occurrence:
+    token: ADT//TRANSFER_IN//icu
+    duration_s: 86400
+    stay_until_cut: ADT//TRANSFER_IN//*
+horizon_after_threshold_s: 86400

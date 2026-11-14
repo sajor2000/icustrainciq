@@ -1,0 +1,39 @@
+# patient_assessments tokens; globals in ../tokens.yaml
+ordinal:
+- code: PA//gcs_total
+  table: patient_assessments
+  category_column: assessment_category
+  category: gcs_total
+  value_column: numerical_value
+  time_column: recorded_dttm
+  values:
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+- code: PA//rass
+  table: patient_assessments
+  category_column: assessment_category
+  category: rass
+  value_column: numerical_value
+  time_column: recorded_dttm
+  values:
+  - -5
+  - -4
+  - -3
+  - -2
+  - -1
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4

@@ -1,0 +1,20 @@
+# adt tokens; globals in ../tokens.yaml
+categorical:
+- code: ADT//TRANSFER_IN
+  table: adt
+  column: location_category
+  time_column: in_dttm
+  mapping:
+    ed: ed
+    ward: ward
+    stepdown: stepdown
+    icu: icu
+    procedural: procedural
+    l&d: other
+    hospice: other
+    psych: other
+    rehab: other
+    radiology: other
+    dialysis: other
+    other: other
+  other: true

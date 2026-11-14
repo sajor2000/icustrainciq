@@ -1,0 +1,475 @@
+# From quick_sco_re, SCOPE and REACH optimized inference (Luke Solo et al.),
+# github.com/lukesolo-ml/SCOPE_REACH_optimized_inference @ 1b0af76, file quick_sco_re/generation.py;
+# the estimators of Solo et al. 2026, arXiv:2602.03730, as used by cotorra. See ACKNOWLEDGMENTS.md.
+# Change from upstream: sglang is imported lazily, so the module loads without it (Mac/CPU tests).
+"""
+Trajectory generation for SCOPE/REACH risk prediction.
+
+Generates M1 (target-event-allowed) and M2 (target-event-forbidden) trajectories
+using an SGLang engine.
+
+When config.tracked_ids is set, SCOPE/REACH estimates are computed inline by
+requesting token_ids_logprob during generation and accumulating the returned
+per-step probabilities. No second forward pass is needed.
+
+Time-based stopping
+-------------------
+When GenerationConfig.max_time is set (together with trunc_id and
+token_id_to_minutes), generation uses a two-layer approach:
+
+1. **Deferred logit processor** A lightweight custom logit processor that is
+   a complete no-op for the first ``time_check_interval`` tokens. After that it
+   checks elapsed simulated time every ``time_check_interval`` tokens. When it
+   detects that the horizon has been exceeded it forces trunc_id, terminating
+   generation. This avoids the throughput penalty of checking every step.
+
+2. **Post-hoc exact truncation**  Because the processor only checks
+   periodically, the trajectory may overshoot the horizon by up to
+   ``time_check_interval`` tokens. After generation, we walk the output tokens
+   to find the *exact* position where elapsed time first met or exceeded
+   max_time and trim output_ids to end just before that time token. This gives
+   exact time-horizon semantics at near-baseline throughput.
+
+Requirements when using time-based stopping:
+  - The SGLang engine must be started with:
+      disable_overlap_schedule=True
+      enable_custom_logit_processor=True
+      NOTE: THIS IS CRITICAL
+  - trunc_id must NOT be logit-suppressed; the package handles this
+    automatically even if trunc_id appears in config.suppressed_ids.
+      NOTE: THIS IS ALSO IMPORTANT
+      TODO: This isn't particularly robust since not every vocab will have such an id
+"""
+
+from __future__ import annotations
+
+import logging
+
+import numpy as np
+try:  # sglang: NVIDIA only; only the time-horizon processor needs it here
+    from sglang.srt.sampling.custom_logit_processor import CustomLogitProcessor
+except ImportError:
+    CustomLogitProcessor = object
+
+from .structures import GeneratedTrajectory, GenerationConfig, TrajectoryType
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Deferred time-horizon logit processor
+# ---------------------------------------------------------------------------
+
+
+class DeferredTimeHorizonProcessor(CustomLogitProcessor):
+    """Force trunc_id once generated timeline exceeds a simulated time limit.
+
+    Uses two optimizations to minimize overhead:
+
+    1. **Deferred checking**: The processor is a no-op until at least
+       ``check_interval`` tokens have been generated, then checks every
+       ``check_interval`` tokens. On non-check steps the only work is two
+       integer comparisons.
+
+    2. **Incremental accumulation**: Instead of re-summing the entire
+       output_ids sequence on every check, the processor maintains a running
+       elapsed-time total and a cursor in custom_params (mutated in place).
+       Each check only sums tokens generated since the last check, making
+       total work O(n) across the full sequence instead of O(n²).
+
+    custom_params (passed per request) must contain:
+        time_horizon   : float            -maximum simulated minutes
+        trunc_id       : int              -token ID to force on overflow
+        time_token_map : dict[int, float] -token_id -> elapsed minutes
+        check_interval : int              -tokens between checks (default 100)
+
+    The processor adds two keys to custom_params on first use:
+        _elapsed        : float - running total of elapsed simulated minutes
+        _cursor         : int   - index into output_ids up to which we've summed
+
+    Requires disable_overlap_schedule=True on the SGLang engine.
+    """
+
+    def __call__(self, logits, custom_param_list):
+        for i, param_dict in enumerate(custom_param_list):
+            req = param_dict.get("__req__")
+            if req is None:
+                continue
+
+            check_interval: int = param_dict.get("check_interval", 100)
+            n_generated = len(req.output_ids)
+
+            # No-op until we've generated enough tokens to bother checking.
+            # After the first eligible check, re-check every check_interval.
+            if n_generated < check_interval:
+                continue
+            if n_generated % check_interval != 0:
+                continue
+
+            time_token_map: dict = param_dict["time_token_map"]
+
+            # Incremental accumulation: only sum tokens since last check
+            cursor: int = param_dict.get("_cursor", 0)
+            elapsed: float = param_dict.get("_elapsed", 0.0)
+
+            for j in range(cursor, n_generated):
+                elapsed += time_token_map.get(int(req.output_ids[j]), 0.0)
+
+            # Store running state back into custom_params for next check
+            param_dict["_cursor"] = n_generated
+            param_dict["_elapsed"] = elapsed
+
+            if elapsed >= param_dict["time_horizon"]:
+                trunc_id: int = param_dict["trunc_id"]
+                logits[i, :] = float("-inf")
+                # Key that we are directly setting the logit since trunc_id
+                # is likely in restricted vocab
+                logits[i, trunc_id] = 0.0
+
+        return logits
+
+
+# Serialized once at module level and reused across all generate_trajectory calls.
+_LOGIT_PROCESSOR_STR: str | None = None
+
+
+def _get_logit_processor_str() -> str:
+    global _LOGIT_PROCESSOR_STR
+    if _LOGIT_PROCESSOR_STR is None:
+        _LOGIT_PROCESSOR_STR = DeferredTimeHorizonProcessor().to_str()
+    return _LOGIT_PROCESSOR_STR
+
+
+# ---------------------------------------------------------------------------
+# Post-hoc exact time truncation
+# ---------------------------------------------------------------------------
+
+
+def apply_time_truncation(
+    output_ids: list[int],
+    token_id_to_minutes: dict[int, float],
+    max_time: float,
+) -> tuple[list[int], bool, int | None]:
+    """Walk output_ids and trim to the exact time horizon.
+
+    Finds the first time token whose cumulative contribution causes elapsed
+    time to meet or exceed max_time, then truncates output_ids to end just
+    *before* that token.
+
+    Args:
+        output_ids: Raw generated token IDs.
+        token_id_to_minutes: Mapping from token ID to elapsed minutes.
+        max_time: Maximum simulated time in minutes.
+
+    Returns:
+        (trimmed_ids, was_truncated, truncation_idx)
+        - trimmed_ids: output_ids truncated at the horizon (or unchanged).
+        - was_truncated: True if truncation occurred.
+        - truncation_idx: Index of the offending time token in the original
+          output_ids, or None if no truncation.
+    """
+    elapsed = 0.0
+    for idx, tid in enumerate(output_ids):
+        minutes = token_id_to_minutes.get(tid, 0.0)
+        if minutes > 0.0:
+            elapsed += minutes
+            if elapsed >= max_time:
+                # Trim to just before this time token
+                return output_ids[:idx], True, idx
+
+    return output_ids, False, None
+
+# ---------------------------------------------------------------------------
+# Core generation function
+# ---------------------------------------------------------------------------
+
+
+async def generate_trajectory(
+    engine: sgl.Engine,
+    config: GenerationConfig,
+    prompt_tokens: list[int],
+    patient_idx: int,
+    sample_idx: int,
+    traj_type: TrajectoryType,
+    stop_at_tracked_events: bool = True,
+) -> GeneratedTrajectory:
+    """Generate a single trajectory, optionally with inline SCOPE/REACH estimates.
+
+    When config.tracked_ids is set, token_ids_logprob is used to extract
+    per-step probabilities for each tracked token during generation. SCOPE
+    (sum of probs) and REACH (1 - prod(1 - prob)) are accumulated up to and
+    including the step at which each tracked token first appears in output_ids.
+
+    When time-based stopping is active, output_ids are post-hoc trimmed to the
+    exact time horizon boundary after generation.
+
+    Args:
+        engine: SGLang inference engine.
+        config: Generation configuration.
+        prompt_tokens: Tokenized patient timeline (the prompt/prefix).
+        patient_idx: Index of the patient in the batch.
+        sample_idx: Index of the Monte Carlo sample.
+        traj_type: M1 (target event allowed) or M2 (target event forbidden).
+
+    Returns:
+        A GeneratedTrajectory with generated token IDs, metadata, and
+        (when config.tracked_ids is set) inline SCOPE/REACH estimates.
+    """
+    # SGLang's effective per-request budget is context_length - max_new_tokens - K
+    # where K ≈ 4-6 (internal KV-cache overhead). Using -1 for max_new causes the
+    # request to be rejected when the prompt is long. Reserving 8 extra slots is a
+    # uniform constant applied to every request — it reduces generation headroom
+    # by 8 tokens across the board, introducing no per-patient bias.
+    _SGLANG_OVERHEAD = 8
+    max_new = config.max_len - len(prompt_tokens) - 1 - _SGLANG_OVERHEAD
+    if max_new < 1:
+        # Prompt alone exhausts the budget. Left-truncate oldest history to free
+        # space — the removed tokens are the most distant past, uniform across patients.
+        prompt_tokens = prompt_tokens[-(config.max_len - _SGLANG_OVERHEAD - 2):]
+        max_new = 1
+        logger.warning(
+            "Prompt left-truncated to %d tokens (patient=%d sample=%d traj=%s)",
+            len(prompt_tokens), patient_idx, sample_idx, traj_type.value,
+        )
+    use_time_stopping = config.max_time is not None and config.trunc_id is not None
+    use_inline_sr = config.tracked_ids is not None
+
+    # Build logit bias from suppressed_ids.  When time-based stopping is active,
+    # auto-exclude trunc_id so the logit processor can force it.
+    logit_bias = {tid: -10000 for tid in config.suppressed_ids}
+
+    if traj_type == TrajectoryType.M1:
+        stop_token_ids = list(config.end_token_ids)
+        if config.tracked_ids:
+            if stop_at_tracked_events:
+                stop_token_ids.extend(config.tracked_ids)
+        else:
+            stop_token_ids.append(config.target_event_id)
+    else:
+        logit_bias[config.target_event_id] = -10000
+        stop_token_ids = list(config.end_token_ids)
+
+    if use_time_stopping:
+        stop_token_ids.append(config.trunc_id)
+
+    sampling_params: dict = {
+        "max_new_tokens": max_new,
+        "temperature": config.temperature,
+        "stop_token_ids": stop_token_ids,
+        "logit_bias": logit_bias,
+    }
+
+    extra_kwargs: dict = {"return_logprob": use_inline_sr}
+
+    if use_inline_sr:
+        extra_kwargs["token_ids_logprob"] = list(config.tracked_ids)
+
+    if use_time_stopping:
+        custom_params: dict = {
+            "time_horizon": config.max_time,
+            "trunc_id": config.trunc_id,
+            "time_token_map": config.token_id_to_minutes,
+            "check_interval": config.time_check_interval,
+        }
+        sampling_params["custom_params"] = custom_params
+        extra_kwargs["custom_logit_processor"] = _get_logit_processor_str()
+
+    output = await engine.async_generate(
+        input_ids=prompt_tokens,
+        sampling_params=sampling_params,
+        **extra_kwargs,
+    )
+
+    meta = output.get("meta_info", {})
+    finish_reason = meta.get("finish_reason", {})
+    if isinstance(finish_reason, dict) and finish_reason.get("type") == "stop":
+        terminal_token_id = finish_reason.get("matched")
+    else:
+        terminal_token_id = None
+    output_ids = list(meta.get("output_ids", output.get("output_ids", [])))
+
+    # --- Post-hoc exact truncation ---
+    # The deferred processor may have overshot by up to check_interval tokens,
+    # or may not have fired at all if the trajectory ended naturally but still
+    # exceeded the horizon. Either way, we walk the tokens for exact trimming.
+    was_time_truncated = False
+    truncation_idx = None
+
+    if use_time_stopping and output_ids:
+        # Strip the trunc_id if the deferred processor forced it — we'll
+        # re-derive the exact boundary below.
+        if output_ids[-1] == config.trunc_id:
+            output_ids = output_ids[:-1]
+
+        output_ids, was_time_truncated, truncation_idx = apply_time_truncation(
+            output_ids,
+            config.token_id_to_minutes,
+            config.max_time,
+        )
+
+    # --- Compute inline SCOPE/REACH from token_ids_logprob ---
+    scope_estimates = None
+    reach_estimates = None
+    occurred_flag = None
+    occurred_index = None
+    inline_tracked_ids = None
+    inline_tracked_name = None
+
+    if use_inline_sr:
+        tracked_ids = config.tracked_ids
+        K = len(tracked_ids)
+        scope = np.zeros(K, dtype=np.float64)
+        reach = np.zeros(K, dtype=np.float64)
+        occ_flag = np.zeros(K, dtype=bool)
+        occ_index = np.full(K, -1, dtype=np.int64)
+
+        # Find first occurrence of each tracked id in output_ids
+        for j, tid in enumerate(output_ids):
+            for k, tracked_id in enumerate(tracked_ids):
+                if tid == tracked_id and not occ_flag[k]:
+                    occ_flag[k] = True
+                    occ_index[k] = j
+
+        # Accumulate scope/reach from per-step logprobs.
+        # output_token_ids_logprobs[t] gives P(tracked_id | tokens_0..t-1).
+        # Include positions up to and including the occurrence step (occ_index[k]).
+        output_token_ids_logprobs = meta.get("output_token_ids_logprobs", [])
+        for t, position_entry in enumerate(output_token_ids_logprobs):
+            if position_entry is None:
+                continue
+            for k, tracked_id in enumerate(tracked_ids):
+                if occ_flag[k] and t > occ_index[k]:
+                    continue
+                for logprob, token_id, _ in position_entry:
+                    if token_id == tracked_id:
+                        p = float(np.clip(np.exp(logprob), 0.0, 1.0))
+                        scope[k] += p
+                        reach[k] = 1.0 - (1.0 - reach[k]) * (1.0 - p)
+                        break
+
+        scope_estimates = scope
+        reach_estimates = reach
+        occurred_flag = occ_flag
+        occurred_index = occ_index
+        inline_tracked_ids = list(config.tracked_ids)
+        inline_tracked_name = config.tracked_names
+
+    return GeneratedTrajectory(
+        patient_idx=patient_idx,
+        sample_idx=sample_idx,
+        traj_type=traj_type,
+        prompt_len=len(prompt_tokens),
+        output_ids=output_ids,
+        timeline_terminating_id=terminal_token_id,
+        was_time_truncated=was_time_truncated,
+        truncation_idx=truncation_idx,
+        scope_estimates=scope_estimates,
+        reach_estimates=reach_estimates,
+        occurred_flag=occurred_flag,
+        occurred_index=occurred_index,
+        inline_tracked_ids=inline_tracked_ids,
+        inline_tracked_name=inline_tracked_name,
+        n_new_tokens=len(output_ids),
+    )
+
+
+# ---------------------------------------------------------------------------
+# M2 derivation from M1 trajectories
+# ---------------------------------------------------------------------------
+
+
+async def generate_m2_from_m1_trajectory(
+    engine: sgl.Engine,
+    config: GenerationConfig,
+    m1_traj: GeneratedTrajectory,
+    prompt_tokens: list[int],
+) -> GeneratedTrajectory:
+    """Derive an M2 trajectory from a completed M1 trajectory.
+
+    For trajectories where the target event was not generated, the M1 output
+    is reused directly as an M2 trajectory (scored via score_trajectory).
+
+    For trajectories where the target event was generated, all tokens from
+    the event onwards are removed and the continuation is regenerated with
+    the target event suppressed. The resulting trajectory is then scored
+    using unbiased model probabilities (see score_trajectory in scoring.py).
+
+    Args:
+        engine: SGLang inference engine.
+        config: Generation configuration.
+        m1_traj: A completed M1 trajectory.
+        prompt_tokens: Original prompt tokens for this patient.
+
+    Returns:
+        An M2 GeneratedTrajectory derived from the M1 trajectory.
+    """
+    if config.target_event_id not in m1_traj.output_ids:
+        return GeneratedTrajectory(
+            patient_idx=m1_traj.patient_idx,
+            sample_idx=m1_traj.sample_idx,
+            traj_type=TrajectoryType.M2,
+            prompt_len=m1_traj.prompt_len,
+            output_ids=list(m1_traj.output_ids),
+            timeline_terminating_id=m1_traj.timeline_terminating_id,
+            was_time_truncated=m1_traj.was_time_truncated,
+            truncation_idx=m1_traj.truncation_idx,
+            n_new_tokens=0,
+        )
+
+    # Target event was generated: truncate before it and regenerate with suppression.
+    target_id = config.target_event_id
+    if target_id in m1_traj.output_ids:
+        cut = m1_traj.output_ids.index(target_id)
+        prefix_ids = m1_traj.output_ids[:cut]
+    else:
+        prefix_ids = list(m1_traj.output_ids)
+    continuation = await generate_trajectory(
+        engine=engine,
+        config=config,
+        prompt_tokens=prompt_tokens + prefix_ids,
+        patient_idx=m1_traj.patient_idx,
+        sample_idx=m1_traj.sample_idx,
+        traj_type=TrajectoryType.M2,
+    )
+
+    truncation_idx = (
+        None if continuation.truncation_idx is None
+        else len(prefix_ids) + continuation.truncation_idx
+    )
+
+    if logger.isEnabledFor(logging.DEBUG):
+        _W = 30  # window of tokens to show on each side of the split
+        m1_at_and_after = list(m1_traj.output_ids[cut:])
+        m2_continuation = list(continuation.output_ids)
+
+        def _fmt(ids: list[int], w: int) -> str:
+            if len(ids) <= w:
+                return str(ids)
+            return f"{ids[:w // 2]} ... {ids[-(w // 2):]} (len={len(ids)})"
+
+        logger.debug(
+            "\n"
+            "┌─ REACH regen  patient=%-4d  sample=%-4d  tracked_id=%d\n"
+            "│  shared prefix  : %d toks  %s\n"
+            "│  M1 from split  : %s\n"
+            "│  M2 continuation: %s\n"
+            "└─ end",
+            m1_traj.patient_idx,
+            m1_traj.sample_idx,
+            target_id,
+            len(prefix_ids),
+            _fmt(prefix_ids, _W),
+            _fmt(m1_at_and_after, _W),
+            _fmt(m2_continuation, _W),
+        )
+
+    return GeneratedTrajectory(
+        patient_idx=m1_traj.patient_idx,
+        sample_idx=m1_traj.sample_idx,
+        traj_type=TrajectoryType.M2,
+        prompt_len=m1_traj.prompt_len,
+        output_ids=prefix_ids + continuation.output_ids,
+        timeline_terminating_id=continuation.timeline_terminating_id,
+        was_time_truncated=continuation.was_time_truncated,
+        truncation_idx=truncation_idx,
+        n_new_tokens=len(continuation.output_ids),
+    )
