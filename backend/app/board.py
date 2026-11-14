@@ -16,7 +16,7 @@ GET  /api/runs         dispatcher status: next 07:00, running update, last per s
 GET  /api/capacity     {"life_support_patients", "vents_total", "vents_free", "crrt_total", "crrt_free",
                        "updated_at", "set_by_role"} (null = not set; free = total - on now)
 POST /api/capacity     {"role", and any of "life_support_patients", "vents_total", "crrt_total",
-                       "nurses_on_shift", "rt_on_shift": whole numbers 0..50} -> capacity.json (the file is replaced)
+                       "nurses_on_shift", "rt_on_shift": whole numbers 0..50} -> capacity.json (merged: a key left out keeps its saved value, null clears it)
 POST /api/rerun        {"role", "scope": "unit" | "room", "room"?: 1..25} -> dispatcher
 POST /api/ask          {"question","role","room?","seen_made_at?"} -> {"answer","trace"?,"made_at"}
 
@@ -195,16 +195,17 @@ def make_handler(
             "nurses_on_shift",
             "rt_on_shift",
         )
-        given = {k: req.get(k) for k in keys}
+        given = {k: req[k] for k in keys if k in req}  # absent = keep what is saved
         # each number is optional; one of them must be there
         if not all(v is None or _int_in_range(v) for v in given.values()) or all(
-            given[k] is None for k in keys
+            v is None for v in given.values()
         ):
             return 400, {
                 "ok": False,
                 "reason": f"enter whole numbers from 0 to {CAPACITY_MAX}",
             }
         cap = {
+            **{k: None for k in keys},
             **given,  # as entered: free machines are derived when the file is read
             "updated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
             "set_by_role": role,  # role only, never a name (aggregate.py shows "set by")
@@ -213,6 +214,14 @@ def make_handler(
         tmp = capacity_path.with_name(capacity_path.name + ".tmp")
         try:
             with cap_lock:
+                try:  # keys this request leaves out keep the saved value
+                    prev = json.loads(capacity_path.read_text())
+                except (OSError, ValueError):
+                    prev = {}
+                prev = prev if isinstance(prev, dict) else {}
+                for k in keys:
+                    if k not in given and _int_in_range(prev.get(k)):
+                        cap[k] = prev[k]
                 tmp.write_text(json.dumps(cap))
                 os.replace(
                     tmp, capacity_path

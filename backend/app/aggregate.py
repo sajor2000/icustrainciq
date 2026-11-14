@@ -738,7 +738,13 @@ def read_capacity(path: pathlib.Path | None) -> dict | None:
     cap = raw.get("life_support_patients") if isinstance(raw, dict) else None
     if not _count_like(cap):
         machines_only = cap is None and (
-            tot["vents_total"] is not None or tot["crrt_total"] is not None
+            tot["vents_total"] is not None
+            or tot["crrt_total"] is not None
+            or isinstance(raw, dict)
+            and (
+                capacity_mod.whole(raw.get("nurses_on_shift")) is not None
+                or capacity_mod.whole(raw.get("rt_on_shift")) is not None
+            )
         )
         if not machines_only:
             print("capacity file unreadable: using the typical yardstick")
@@ -746,7 +752,9 @@ def read_capacity(path: pathlib.Path | None) -> dict | None:
     vents = raw.get("vents_free")
     return {
         "life_support_patients": int(cap) if cap == int(cap) else cap,
-        "vents_free": vents if _count_like(vents, 0, 1e6) else None,
+        "vents_free": vents
+        if _count_like(vents, 0, 1e6) and tot["vents_total"] is None
+        else None,  # a total wins: free is derived from it
         "vents_total": tot["vents_total"],
         "crrt_total": tot["crrt_total"],
         "set_at": raw.get("set_at") if isinstance(raw.get("set_at"), str) else None,

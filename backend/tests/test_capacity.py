@@ -21,7 +21,8 @@ def test_whole_numbers_only_and_free_is_total_minus_in_use():
     assert capacity.free("imv", tot, 5) == 3 and capacity.free("imv", tot, 9) == 0
     assert capacity.free("crrt", tot, 1) is None  # no total: not known
     assert capacity.free("imv", tot, None) is None  # no "on now" count yet
-    assert capacity.free("imv", {**tot, "vents_free": 1}, 5) == 1  # entered wins
+    assert capacity.free("imv", {**tot, "vents_free": 1}, 5) == 3  # the total wins
+    assert capacity.free("imv", {"vents_free": 1}, 5) == 1  # an old file: no total
     assert capacity.free("vasopressor", tot, 1) is None
     assert capacity.totals("not a dict")["vents_total"] is None
 
@@ -78,7 +79,12 @@ def test_api_saves_and_returns_staffing_alone(stack):  # noqa: F811
     # with a machine total the staffing counts are kept too, not dropped
     c, r = jcall(base, "/api/capacity", {**body, "vents_total": 8})
     assert c == 200 and r["capacity"]["nurses_on_shift"] == 9
-    for bad in ({**body, "nurses_on_shift": 51}, {**body, "rt_on_shift": "3"}):
+    for bad in (
+        {**body, "nurses_on_shift": 51},
+        {**body, "nurses_on_shift": True},
+        {**body, "nurses_on_shift": "9"},
+        {**body, "rt_on_shift": "3"},
+    ):
         assert jcall(base, "/api/capacity", bad)[0] == 400
 
 
@@ -183,3 +189,45 @@ def test_forecast_carries_machines_with_totals_only(tmp_path, capsys):
     )
     assert pend["machines"]["imv"]["in_use"] == 1
     assert pend["machines"]["imv"]["words"] is None
+
+
+def test_staffing_only_file_is_a_valid_capacity_file(tmp_path, capsys):
+    cap = tmp_path / "capacity.json"
+    cap.write_text(json.dumps({"nurses_on_shift": 9, "rt_on_shift": 3}))
+    assert aggregate.read_capacity(cap) is None
+    assert "capacity file unreadable" not in capsys.readouterr().out
+    cap.write_text(json.dumps({"nurses_on_shift": "9"}))  # no usable number at all
+    aggregate.read_capacity(cap)
+    assert "capacity file unreadable" in capsys.readouterr().out
+
+
+def test_read_capacity_ignores_a_stale_vents_free_beside_a_total(tmp_path):
+    cap = tmp_path / "capacity.json"
+    cap.write_text(
+        json.dumps({"life_support_patients": 9, "vents_total": 8, "vents_free": 1})
+    )
+    assert aggregate.read_capacity(cap)["vents_free"] is None
+    cap.write_text(json.dumps({"life_support_patients": 9, "vents_free": 1}))
+    assert aggregate.read_capacity(cap)["vents_free"] == 1
+
+
+def test_post_merges_into_the_file_and_null_clears(stack):  # noqa: F811
+    base, tmp, fake, page = stack
+    first = {"vents_total": 8, "life_support_patients": 12, "role": "ICU nurse"}
+    assert jcall(base, "/api/capacity", first)[0] == 200
+    # another role saves staffing only: the machine total and patients stay
+    c, r = jcall(base, "/api/capacity", {"nurses_on_shift": 9, "role": "pharmacy"})
+    assert c == 200
+    cap = r["capacity"]
+    assert cap["vents_total"] == 8 and cap["life_support_patients"] == 12
+    assert cap["nurses_on_shift"] == 9 and cap["set_by_role"] == "pharmacy"
+    saved = json.loads((tmp / "capacity.json").read_text())
+    assert saved["vents_total"] == 8 and saved["nurses_on_shift"] == 9
+    # an explicit null clears one field
+    c, r = jcall(
+        base,
+        "/api/capacity",
+        {"vents_total": None, "rt_on_shift": 2, "role": "pharmacy"},
+    )
+    assert c == 200 and r["capacity"]["vents_total"] is None
+    assert r["capacity"]["nurses_on_shift"] == 9 and r["capacity"]["rt_on_shift"] == 2

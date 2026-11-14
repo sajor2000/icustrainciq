@@ -30,9 +30,14 @@ def totals(raw) -> dict:
 
 
 def free(support: str, tot: dict, in_use) -> int | None:
-    """machines free for one support: a ventilators-free number that was entered
-    wins; otherwise total - in use now (never below 0); None when neither is known"""
-    if support == "imv" and tot.get("vents_free") is not None:
+    """machines free for one support: total - in use now (never below 0); an older
+    file's ventilators-free number is used only when it has no total; None when
+    neither is known"""
+    if (
+        support == "imv"
+        and tot.get("vents_free") is not None
+        and tot.get("vents_total") is None
+    ):
         return tot["vents_free"]
     total = tot.get(MACHINES.get(support, ""))
     if total is None or whole(in_use) is None:
