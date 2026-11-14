@@ -57,10 +57,9 @@ async def shots(browser):
     first3 = "[...document.querySelectorAll('#grid > *')].slice(0, 3)"
     # 940 px is the narrowest three-across layout where no name in these tiles is cut short
 
-    # Bed board, Next 24 h: rooms 1 to 3, then the first Worry first tile
+    # Bed board, Next 24 h: rooms 1 to 3
     ctx, page = await open_board(browser, 940, "#synthetic")
     await crop(page, "beds-next", first3)
-    await crop(page, "worry-1", "[document.querySelector('#rail button')]")
     await ctx.close()
 
     # The header strain line with tonight's machines set: 6 ventilators, 3 CRRT machines, staffing covers 14

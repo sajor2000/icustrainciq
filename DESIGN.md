@@ -315,7 +315,7 @@ A cool grey ground, white cards, near-black ink and one blue; amber, red and gre
 
 ### Neutral
 - **Board Grey** (`board`): the page ground, the sticky tab bar, and the text colour on ink-filled controls.
-- **Board Grey 2** (`board-2`): the segmented switch trough, control hover, the Not improving tile ground, the asker's chat bubble, the unlevelled level chip.
+- **Board Grey 2** (`board-2`): the segmented switch trough, control hover, the Still on support tile ground, the asker's chat bubble, the unlevelled level chip.
 - **Card White** (`surface`): cards, tiles, controls, the bead on the range bar.
 - **Ink** (`ink`): text, everything that is running now, selected controls, the free-capacity line.
 - **Ink 2** (`ink-2`): secondary text, labels, ranges, the Steady word.
@@ -344,7 +344,7 @@ Night values carry the same names with a `night-` prefix. On the night board blu
 ### Hierarchy
 - **Lead numeral** (800, 2.75rem, 1.05): the two counts on the Life support lead card.
 - **Room heading** (700, 2.5rem, 1.05, -0.02em): the room number on the room page; 2rem on phone.
-- **Numeral** (800, 2rem, 1.05): counts on support cards, room numbers in the Worry first rail and on wall screens.
+- **Numeral** (800, 2rem, 1.05): counts on support cards, room numbers on wall screens.
 - **Room number** (800, 1.75rem, 1): the room number on a bed tile; 1.5rem on phone.
 - **Headline** (700, 1.375rem, 1.15): the unit name in the header.
 - **Title** (700, 1.125rem, 1.2): section and card headings, the counts in the strain summary pill.
@@ -365,7 +365,7 @@ All sizes are rem. From 1800px the root is 120%, so every size and space on a wa
 
 One centred column, max 92rem, with a 1.5rem gutter (1rem on phone). The header is a single wrapping row: unit name and run line, then the strain summary pill, Night board, role, Update the unit, Ask. Below it the tab bar is sticky at the top with the one-line key at its right.
 
-- **Bed board:** the Worry first rail, then All rooms. The room grid is five across, four below 1200px, three at 960px and below, two at 560px and below, with a .75rem gap (.5rem on phone, .625rem on wall screens). With the chat docked the grid becomes auto-fill at a 12.5rem minimum.
+- **Bed board:** the priority rail, then All rooms. The room grid is five across, four below 1200px, three at 960px and below, two at 560px and below, with a .75rem gap (.5rem on phone, .625rem on wall screens). With the chat docked the grid becomes auto-fill at a 12.5rem minimum.
 - **Unit strain:** the Life support lead card (two columns, one at 960px and below), then support cards in an auto-fill grid at an 18.5rem minimum with a 1rem gap. The card for the reader's role is ordered first.
 - **Room page:** two cards, 1.2fr and 1fr, stacking at 960px and below.
 - **Chat:** a launcher fixed 1.5rem from the bottom right (a 3.25rem circle); the page keeps 6.5rem of bottom padding so it never rests on content at the end of the page. The panel is 25rem by 37.5rem (at most 80vh) in the same corner; at 560px and below it is a bottom sheet at 85% of the height.
@@ -388,7 +388,7 @@ Nearly flat. Depth is one soft two-layer shadow under white cards on a grey grou
 
 Soft rounded rectangles on a stepped scale: cards 1rem, tiles and chat bubbles .75rem, the tab trough .8125rem around .625rem tabs, controls .625rem, status chips .3125rem, legend swatches .25rem. Pills (999px) are for the strain summary, the ward tag and suggested questions. Circles are for the ten-dot arrays and the bead on the range bar.
 
-Borders carry meaning. A 1px hairline is the default. A 2px green border is Leaving, a 3px ink border is Not improving, a 2px amber or red border is a card whose status is not ON TRACK or USUAL. A 1.5px dashed border is the "updating" tag. Thicker borders reduce padding by the same amount so tiles stay aligned.
+Borders carry meaning. A 1px hairline is the default. A 2px green border is Leaving, a 3px ink border is Still on support, a 2px amber or red border is a card whose status is not ON TRACK or USUAL. A 1.5px dashed border is the "updating" tag. Thicker borders reduce padding by the same amount so tiles stay aligned.
 
 ## Components
 
@@ -403,14 +403,16 @@ A button, min-height 5.75rem, radius .75rem, with the card shadow. Top row: room
 
 - **Worsening:** full blue fill (`level-high`), text in `on-level-high`, solid triangle.
 - **Watch:** light blue fill (`level-medium`), outline triangle.
-- **Not improving:** board-2 ground, 3px ink border, two horizontal bars.
+- **Still on support:** board-2 ground, 3px ink border, two horizontal bars.
 - **Leaving:** white, 2px green border, the bed-with-arrow icon and the word in green.
 - **Steady:** white, a small dot, the word in ink-2 at 600.
 
-**Now -> Next 24 h strip.** Two captioned columns joined by an arrow (see Strip captions). NOW: solid icons for the life support running at 07:00, or "no support". NEXT 24 H: an outline icon and its percentage for each new support at 20% or more; a plus in a ring with the combined chance when no single support reaches 20%; the bed with an arrow and its percentage when leaving is 60% or more, and from 20% for a bed on life support; "leaving <20%" on a Not improving bed; "nothing new" otherwise.
+**Now -> Next 24 h strip.** Two captioned columns joined by an arrow (see Strip captions). NOW: solid icons for the life support running at 07:00, or "no support". NEXT 24 H: an outline icon and its percentage for each new support at 20% or more; a plus in a ring with the combined chance when no single support reaches 20%; the bed with an arrow and its percentage when leaving is 60% or more, and from 20% for a bed on life support; "leaving <20%" on a Still on support bed; "nothing new" otherwise.
 
-### Worry first rail
-Not a card. A Title heading and two groups set straight on the ground, closed by a hairline: Worsening, then Not improving, each with its shape, word and count. The tiles are the same bed tiles, slightly taller (6.25rem) with a 2rem room number, in an auto-fill grid at a 12rem minimum. When no room qualifies, one ink-2 line says so.
+> **Bed status removed (2026-11-14).** The Bed board no longer has Worsening / Watch / Still on support / Leaving statuses, status colours on tiles, or the "Bed colours" settings. An event (a new ventilator, vasopressor or CRRT, death, discharge) shows on a bed's card as a circle icon with its chance when it is at or above that event's threshold in Settings. When a new life support or death is at its threshold, the person icon on the bed's tile turns red and pulses (the circle icons keep their own colours and do not pulse); discharge alone does not. The plus-in-a-ring combined chance is gone from the board. Where the text below still describes statuses or tile colours, this note wins.
+
+### Priority rail
+Removed (2026-11-14). There is no row above All rooms. Each bed tile carries Dema's person figure from Unit strain left of the bed number, as one flat tint (no level fill). In Next 24 h the figure turns red and pulses (beat and halo, 1.2s; still under reduced motion) when a new life support or death is at its threshold in Settings; the circle icons keep their own colours. In Now the figure is solid ink on a bed on life support, and a bed on two or more supports (Critical, named in the key) has a red border.
 
 ### Status chip
 Dema's status chip. Capitals at Label 800 with 0.05em tracking, radius .3125rem, 1.5px border. ON TRACK and USUAL: surface with a green border and green word. TIGHT and BUSY: amber-bg fill, amber-edge border, amber word. SHORT and VERY BUSY: red fill, on-red word. Not ready: line border, ink-2 word at 600, no tracking. The word is always shown.
@@ -438,7 +440,7 @@ One inline SVG sprite, drawn for this board on a 24 grid: `currentColor`, 1.75 s
 - **Vasopressor:** a syringe with a drop.
 - **CRRT:** a capped haemofilter with blood lines and arrows.
 - **Leaving:** a bed with an outward arrow.
-- **Trajectory shapes:** solid triangle (Worsening), outline triangle (Watch), two bars (Not improving), dot (Steady).
+- **Trajectory shapes:** solid triangle (Worsening), outline triangle (Watch), two bars (Still on support), dot (Steady).
 - **Marks:** plus in a ring (combined chance), ring (no support now), dash (nothing new).
 - **Interface:** arrow, chevron, moon, chat, bed grid and strain bars, on the same grid and stroke. The person figure is Dema's.
 
@@ -470,7 +472,7 @@ A pill-shaped two-state switch beside the tabs and on the room page, visually li
 Room, sex and age, and 1.75rem solid icons with their names. Weight is the number of supports running: none is a white tile that reads "No life support"; one sits on the tinted ground (`board-2`); two or more adds the 3px ink border and reads "2 supports". No blue appears in Now.
 
 ### Strip captions
-In Next 24 h every tile and the room page carry two captioned columns joined by the arrow: **NOW** over the solid icons (or "no support") and **NEXT 24 H** over the forecast items (or "nothing new", or "leaving <20%" on a Not improving bed). Captions are Label size, 700, capitals, in the tile's secondary ink. On a phone the two columns become two labelled rows and the arrow is dropped. In the Worry first rail and on the room page each forecast item also shows its name ("Vasopressor 43%").
+In Next 24 h every tile and the room page carry two captioned columns joined by the arrow: **NOW** over the solid icons (or "no support") and **NEXT 24 H** over the forecast items (or "nothing new", or "leaving <20%" on a Still on support bed). Captions are Label size, 700, capitals, in the tile's secondary ink. On a phone the two columns become two labelled rows and the arrow is dropped. On the room page each forecast item also shows its name ("Vasopressor 43%").
 
 ### Chat widget
 A launcher (a 3.25rem ink circle with the chat icon in board colour, floating shadow, accessible name "Ask Lookahead") and a non-modal panel (surface, line border, radius 1rem, the same floating shadow, no scrim). Header: "Ask Lookahead", a context pill button ("Unit" or "Room 12", `board-2` fill), and minimise and close as 2.75rem icon buttons. Suggested questions are stacked pills shown only while the conversation is empty. The team's messages sit right on `board-2`; answers sit left with a rule border, numbers at 800 and room numbers as blue underlined links. "Thinking…" carries an outlined Stop button. The input is a textarea that grows to four lines beside a 2.75rem send button that is `board-2` when disabled and ink when it can send. A blue dot on the launcher means the forecast changed since the chat was last open. On a phone the sheet has a short handle bar at its top edge.
