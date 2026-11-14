@@ -75,3 +75,43 @@ def test_no_demo_stay_in_the_split_raises(tmp_path):
     write_demo(tmp_path / "demo", ["zz"], ["p1"])
     with pytest.raises(DemoExcludedError):
         exclude_demo(tmp_path, tmp_path / "demo")
+
+
+def test_demo_stays_leave_the_token_files_too(tmp_path):
+    """review finding: training and the winnower read tokens_{split}.parquet, not
+    splits.parquet, so filtering the splits alone left the demo stays in training"""
+    write_splits(tmp_path)
+    write_demo(tmp_path / "demo", ["h2", "h4"], ["p1", "p1"])
+    rows = {
+        "train": ["h1", "h1", "h4", "h4", "h4"],
+        "tuning": ["h2"],
+        "held_out": ["h3"],
+    }
+    for split, ids in rows.items():
+        pl.DataFrame(
+            {"hospitalization_id": ids, "token_id": list(range(len(ids)))}
+        ).write_parquet(tmp_path / f"tokens_{split}.parquet")
+    (tmp_path / "train_for_inference.parquet").write_bytes(b"made before the exclusion")
+    n = exclude_demo(tmp_path, tmp_path / "demo")
+    assert n == {"train": 1, "tuning": 0, "held_out": 1}
+    left = {
+        s: pl.read_parquet(tmp_path / f"tokens_{s}.parquet")["hospitalization_id"]
+        for s in rows
+    }
+    assert left["train"].to_list() == ["h1", "h1"]  # order and other stays kept
+    assert left["tuning"].len() == 0 and left["held_out"].to_list() == ["h3"]
+    qc = json.loads((tmp_path / "qc_report.json").read_text())["demo_excluded"]
+    assert qc["stays"] == 2 and qc["token_rows"] == 4
+    assert qc["token_files"] == ["tokens_held_out", "tokens_train", "tokens_tuning"]
+    # files made from the old token files are stale: removed, to be made again
+    assert not (tmp_path / "train_for_inference.parquet").exists()
+    assert not list(tmp_path.glob("*.tmp"))
+    # run again (splits already clean, tokens already clean): refused as before
+    with pytest.raises(DemoExcludedError):
+        exclude_demo(tmp_path, tmp_path / "demo")
+    # a folder the older script (splits only) already ran on: the tokens are repaired
+    pl.DataFrame(
+        {"hospitalization_id": ["h1", "h4"], "token_id": [0, 1]}
+    ).write_parquet(tmp_path / "tokens_train.parquet")
+    exclude_demo(tmp_path, tmp_path / "demo")
+    assert pl.read_parquet(tmp_path / "tokens_train.parquet").height == 1
