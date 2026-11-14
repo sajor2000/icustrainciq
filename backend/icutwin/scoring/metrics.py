@@ -25,6 +25,35 @@ def pr_auc_score(y_true: np.ndarray, y_score: np.ndarray):
     return skl_mets.auc(recs, precs)
 
 
+METRICS = {
+    "roc_auc": skl_mets.roc_auc_score,
+    "pr_auc": pr_auc_score,
+    "brier": skl_mets.brier_score_loss,
+}
+
+
+def runnable(y_score: np.ndarray, metrics) -> tuple:
+    """Brier needs probabilities; SCOPE is a sum of them (an expected count) and
+    can exceed 1, so Brier is left out there while AUROC / AUPRC still run"""
+    probs = np.nanmin(y_score) >= 0 and np.nanmax(y_score) <= 1
+    return tuple(m for m in metrics if m != "brier" or probs)
+
+
+def calibration(y_true: np.ndarray, y_score: np.ndarray, n_bins: int = 10) -> list:
+    """D7: of the patients given about this risk (risk deciles), how many had the
+    event"""
+    edges = np.quantile(y_score, np.linspace(0, 1, n_bins + 1)[1:-1])
+    b = np.searchsorted(edges, y_score, side="right")
+    return [
+        {
+            "n": int((b == i).sum()),
+            "mean_score": float(y_score[b == i].mean()),
+            "event_rate": float(y_true[b == i].mean()),
+        }
+        for i in np.unique(b)
+    ]
+
+
 def bootstrap_ci(
     y_true: np.ndarray,
     y_score: np.ndarray,
@@ -47,10 +76,7 @@ def bootstrap_ci(
     (i.e. this measures variability in the test-set alone);
     """
 
-    # Brier needs probabilities; SCOPE is a sum of them (an expected count) and
-    # can exceed 1, so it is reported as nan there while AUROC / AUPRC still run
-    no_brier = "brier" in metrics and (np.nanmin(y_score) < 0 or np.nanmax(y_score) > 1)
-    run = tuple(m for m in metrics if not (m == "brier" and no_brier))
+    run = runnable(y_score, metrics)
 
     def get_scores_i(rng_i: Generator) -> dict[str, float]:
         warnings.filterwarnings("ignore")
@@ -62,15 +88,7 @@ def bootstrap_ci(
             samp_i = rng_i.permutation(np.concatenate([samp_pos, samp_neg]))
         else:
             samp_i = rng_i.choice(len(y_true), size=len(y_true), replace=True)
-        yti, ysi = y_true[samp_i], y_score[samp_i]
-        ret = dict()
-        if "roc_auc" in run:
-            ret["roc_auc"] = skl_mets.roc_auc_score(yti, ysi)
-        if "pr_auc" in run:
-            ret["pr_auc"] = pr_auc_score(yti, ysi)
-        if "brier" in run:
-            ret["brier"] = skl_mets.brier_score_loss(yti, ysi)
-        return ret
+        return {m: METRICS[m](y_true[samp_i], y_score[samp_i]) for m in run}
 
     with jl.Parallel(n_jobs=n_jobs) as par:
         scores = par(jl.delayed(get_scores_i)(rng_i) for rng_i in rng.spawn(n_samples))
@@ -86,8 +104,12 @@ def bootstrap_ci(
     }
 
 
-def summarize_preds(logger, df_res, target_tokens, n_samples: int = 10_000):
+def summarize_preds(logger, df_res, target_tokens, n_samples: int = 10_000) -> dict:
+    """logs and returns, per task and method, on the scoreable rows (event not
+    already seen before the cut): n, positives, prevalence, AUROC / AUPRC / Brier
+    with bootstrap 95% CIs, and calibration by risk decile"""
     cols = df_res.collect_schema().names()
+    out = {}
     for tt in target_tokens:
         logger.info("=" * 42)
         logger.info(f"{tt=}")
@@ -103,20 +125,33 @@ def summarize_preds(logger, df_res, target_tokens, n_samples: int = 10_000):
                     .to_numpy()
                     .T
                 )
-                if (nf := np.sum(~np.isfinite(y_score[y_qual.astype(bool)]))) > 0:
+                ok = y_qual.astype(bool)
+                if (nf := np.sum(~np.isfinite(y_score[ok].astype(float)))) > 0:
                     logger.warning(f"{nf} non-finite {method} estimates for {tt}.")
-                if (ok := y_qual.astype(bool)).sum() < 2:
+                if len(np.unique(y_true[ok])) < 2:
                     logger.warning(
-                        f"{ok.sum()} scoreable {method} rows for {tt}; skipped"
+                        f"{ok.sum()} scoreable {method} rows for {tt}, "
+                        "fewer than two classes; skipped"
                     )
                     continue
-                v_rare = y_true[ok].mean().item() < 0.001
+                y_true = y_true[ok].astype(int)
+                y_score = np.nan_to_num(y_score[ok].astype(float))
+                v_rare = y_true.mean().item() < 0.001
                 if v_rare:
                     logger.warning("using stratified sampling due to rarity")
-                for k, v in bootstrap_ci(
-                    y_true[ok],
-                    np.nan_to_num(y_score)[ok],
-                    stratified=v_rare,
-                    n_samples=n_samples,
-                ).items():
-                    logger.info("{k:<7}: {v}".format(k=k, v=v.round(3)))
+                ci = bootstrap_ci(
+                    y_true, y_score, stratified=v_rare, n_samples=n_samples
+                )
+                run = runnable(y_score, ci)
+                res = {
+                    "n": int(ok.sum()),
+                    "n_pos": int(y_true.sum()),
+                    "prevalence": float(y_true.mean()),
+                }
+                for k, v in ci.items():
+                    est = float(METRICS[k](y_true, y_score)) if k in run else np.nan
+                    res[k], res[f"{k}_ci"] = est, v.round(4).tolist()
+                    logger.info(f"{k:<7}: {est:.3f} {v.round(3)}")
+                res["calibration"] = calibration(y_true, y_score)
+                out.setdefault(tt, {})[method] = res
+    return out

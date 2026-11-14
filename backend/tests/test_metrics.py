@@ -1,5 +1,6 @@
 """summarize_preds: runs on a materialized frame and reports PR-AUC too"""
 
+import numpy as np
 import polars as pl
 
 from icutwin.scoring.metrics import summarize_preds
@@ -64,3 +65,29 @@ def test_scope_scores_above_one_do_not_crash_and_skip_only_brier():
     assert "method='scope'" in text and "method='reach'" in text
     assert text.count("roc_auc") >= 2
     assert text.count("brier") >= 2  # reach reports a real one, scope reports nan
+
+
+def test_returns_point_estimates_cis_and_calibration():
+    rng = np.random.default_rng(0)
+    y = rng.random(400) < 0.3
+    df = pl.DataFrame(
+        {
+            "X_past": [True] * 20 + [False] * 380,
+            "X_future": y,
+            "X_rep_score": np.clip(y * 0.4 + rng.random(400) * 0.6, 0, 1),
+        }
+    )
+    m = summarize_preds(Capture(), df, ["X"], n_samples=50)["X"]["rep"]
+    assert m["n"] == 380 and m["n_pos"] == int(y[20:].sum())
+    for k in ("roc_auc", "pr_auc", "brier"):
+        lo, hi = m[f"{k}_ci"]
+        assert lo <= m[k] <= hi
+    assert sum(b["n"] for b in m["calibration"]) == 380
+    assert len(m["calibration"]) == 10
+
+
+def test_one_class_is_skipped_not_crashed():
+    df = pl.DataFrame(
+        {"X_past": [False] * 4, "X_future": [False] * 4, "X_rep_score": [0.1] * 4}
+    )
+    assert summarize_preds(Capture(), df, ["X"], n_samples=10) == {}

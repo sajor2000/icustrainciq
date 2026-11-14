@@ -1,0 +1,9 @@
+# icutwin-train overrides to continue a 1-epoch checkpoint for one more epoch (2 GB10 nodes, DDP).
+# HF resume restores weights, optimizer, scheduler and RNG, skips the steps already done,
+# and trains epoch 2; the linear LR picks up at the middle of a 2-epoch schedule.
+port: !!int 0 # no live page on the cluster
+training_args:
+  num_train_epochs: !!int 2 # epoch 1 is the checkpoint
+  per_device_train_batch_size: !!int 8 # must equal the checkpoint's, or resume skips the wrong rows
+  per_device_eval_batch_size: !!int 32
+  dataloader_num_workers: !!int 4

@@ -1,6 +1,7 @@
-"""Probe save/apply: the stage ward is scored with probes fit on training stays."""
+"""Probe save/apply: the stage ward is scored with main's probe-<model>.joblib,
+fit on training stays and never refit."""
 
-import json
+import pathlib
 
 import numpy as np
 import polars as pl
@@ -44,83 +45,67 @@ def cohorts(tmp_path):
     return train, demo, xd
 
 
-def test_probes_saved_then_applied_without_refit(cohorts, tmp_path):
+CFG = {"score": {"target_tokens": ["LABEL//*"]}}
+
+
+def _fit(train, home):
+    cfg = OmegaConf.create(CFG)
+    rep_based.RepBasedScorer(train, {}, home, cfg, "logistic").save_all(n_samples=20)
+    return train / f"probe-{pathlib.Path(home).name}.joblib"
+
+
+def test_probes_saved_then_applied_without_refit(cohorts):
     train, demo, xd = cohorts
-    cfg = OmegaConf.create({"score": {"target_tokens": ["LABEL//*"]}})
-    probes = tmp_path / "probes"
-    rep_based.RepBasedScorer(
-        train, {}, MODEL, cfg, "logistic", save_probes=probes
-    ).save_all(verbose=False)
-    manifest = json.loads((probes / "manifest.json").read_text())
-    assert manifest["features"] == 6 and manifest["tokens"][RARE]["file"] is None
-    assert (probes / rep_based.probe_file(TASK)).is_file()
+    probe = _fit(train, MODEL)
+    import joblib
+
+    saved = joblib.load(probe)
+    assert TASK in saved and RARE not in saved  # one class in train: no probe
 
     keep = [f"held_out{i}" for i in range(10)]
-    out = rep_based.apply_probes(demo, MODEL, probes, stay_ids=keep)
+    out = rep_based.apply_probes(demo, MODEL, probe, stay_ids=keep)
     df = pl.read_parquet(out)
     assert df.height == 10 and set(df["hospitalization_id"]) == set(keep)
     p = df[f"{TASK}_rep_score"].to_numpy()
     assert ((p > 0) & (p < 1)).all()
-    assert np.isnan(df[f"{RARE}_rep_score"].to_numpy()).all()
     # same numbers as predicting directly with the saved probe: nothing was refit
-    import joblib
-
-    mdl = joblib.load(probes / rep_based.probe_file(TASK))
     ids = [int(i.removeprefix("held_out")) for i in df["hospitalization_id"]]
-    np.testing.assert_allclose(p, mdl.predict_proba(xd[ids])[:, 1], atol=1e-6)
+    np.testing.assert_allclose(p, saved[TASK].predict_proba(xd[ids])[:, 1], atol=1e-6)
 
 
-def test_apply_refuses_probes_from_another_model(cohorts, tmp_path):
-    train, demo, _ = cohorts
-    cfg = OmegaConf.create({"score": {"target_tokens": ["LABEL//*"]}})
-    probes = tmp_path / "probes"
-    rep_based.RepBasedScorer(
-        train, {}, MODEL, cfg, "logistic", save_probes=probes
-    ).save_all(verbose=False)
-    with pytest.raises(ValueError, match="refit"):
-        rep_based.apply_probes(demo, "mdl-other", probes)
-
-
-def _fit_with_weights(train, tmp_path, weights):
+def _home(tmp_path, weights):
     home = tmp_path / "models" / MODEL
     home.mkdir(parents=True, exist_ok=True)
     (home / "model.safetensors").write_bytes(weights)
-    cfg = OmegaConf.create({"score": {"target_tokens": ["LABEL//*"]}})
-    probes = tmp_path / "probes"
-    rep_based.RepBasedScorer(
-        train, {}, home, cfg, "logistic", save_probes=probes
-    ).save_all(verbose=False)
-    return home, probes
+    return home
 
 
 def test_probes_are_tied_to_the_weights_not_the_folder_name(cohorts, tmp_path):
     train, demo, _ = cohorts
-    home, probes = _fit_with_weights(train, tmp_path, b"weights-v1")
-    manifest = json.loads((probes / "manifest.json").read_text())
-    assert manifest["weights_sha256"] == rep_based.weights_digest(home)
-    rep_based.apply_probes(demo, home, probes)  # same weights: fine
+    home = _home(tmp_path, b"weights-v1")
+    probe = _fit(train, home)
+    rep_based.apply_probes(demo, home, probe)  # same weights: fine
     (home / "model.safetensors").write_bytes(b"weights-v2")  # same name, new weights
     with pytest.raises(ValueError, match="other weights"):
-        rep_based.apply_probes(demo, home, probes)
+        rep_based.apply_probes(demo, home, probe)
 
 
 def test_probes_without_a_recorded_checksum_are_refused(cohorts, tmp_path):
     train, demo, _ = cohorts
-    home, probes = _fit_with_weights(train, tmp_path, b"weights-v1")
-    m = json.loads((probes / "manifest.json").read_text())
-    del m["weights_sha256"]  # probes made before the checksum existed
-    (probes / "manifest.json").write_text(json.dumps(m))
-    with pytest.raises(ValueError, match="refit"):
-        rep_based.apply_probes(demo, home, probes)
+    home = _home(tmp_path, b"weights-v1")
+    probe = _fit(train, home)
+    rep_based.scores_meta_path(probe).unlink()  # a probe made before the checksum
+    with pytest.raises(ValueError, match="no probe-"):
+        rep_based.apply_probes(demo, home, probe)
 
 
 def test_scores_file_provenance(cohorts, tmp_path):
     train, demo, _ = cohorts
-    home, probes = _fit_with_weights(train, tmp_path, b"weights-v1")
-    out = rep_based.apply_probes(demo, home, probes)
+    home = _home(tmp_path, b"weights-v1")
+    out = rep_based.apply_probes(demo, home, _fit(train, home))
     rep_based.verify_scores(out, home)  # made with these weights
     rep_based.scores_meta_path(out).unlink()
-    with pytest.raises(ValueError, match="not made by"):
+    with pytest.raises(ValueError, match="not made for"):
         rep_based.verify_scores(out, home)
     rep_based.write_scores_meta(out, home)
     (home / "model.safetensors").write_bytes(b"weights-v2")

@@ -61,19 +61,21 @@ at_cut:
     within_s: 86400
 
 threshold:
-  # choose one and only one of the following (after_first_occurrence wins if set)
-  duration_s: 86400 # 24h after the stay's first token
-  # first_occurrence: ADT//TRANSFER_IN//icu
-  # after_first_occurrence: # D3: 24 h after ICU arrival (examples/winnow_24h.yaml)
-  #   token: ADT//TRANSFER_IN//icu
-  #   duration_s: 86400
-  #   offset_s: 0 # demo clock: added to duration_s (also icutwin-winnow --demo-clock-hours);
-  #   duration_s + offset_s must be > 0 (the cut stays after ICU arrival)
-  #   stay_until_cut: ADT//TRANSFER_IN//* # drop stays that left the ICU before the cut
+  # D3: cut 24 h after ICU arrival (the first ICU transfer-in token) and keep only
+  # stays still in the ICU at the cut (no other transfer-in before it).
+  # Alternatives (set one instead; after_first_occurrence wins if set):
+  #   duration_s: 86400 # 24 h after the stay's first token
+  #   first_occurrence: ADT//TRANSFER_IN//icu # right after that token
+  after_first_occurrence:
+    token: ADT//TRANSFER_IN//icu
+    duration_s: 86400
+    stay_until_cut: ADT//TRANSFER_IN//*
+    # offset_s: 0 # demo clock: added to duration_s (also icutwin-winnow --demo-clock-hours);
+    #   duration_s + offset_s must be > 0 (the cut stays after ICU arrival)
 
-# outcome window after the prediction threshold; null = the rest of the stay.
-# examples/winnow_24h.yaml sets 86400 (next 24 h). Listed here so -c accepts it.
-horizon_after_threshold_s: null
+# tasks mean "happens in the next 24 h after the cut" (07:00 to 07:00); an event
+# already seen before the cut is flagged _past and gets no label or probability
+horizon_after_threshold_s: 86400
 
 splits: # select which splits to prepare; rep-based scoring needs train and tuning
   - train

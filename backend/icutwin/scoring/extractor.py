@@ -13,10 +13,18 @@ any threshold rule matches; for older files without it, it is recomputed from
 the raw token file with the duration rule (the last token strictly before the
 cut).
 
+Several GPUs: run `--shard K/N` once per GPU (each takes every N-th stay, so the
+load is even), then `--merge N` writes the usual files in the original row order.
+
+Demo pivot: `--stay-ids <csv>` re-extracts only those stays (one room) and keeps the
+other stays' rows in the features file. Each row also stores its cut (`last_valid`,
+`cut_s`) so the scorers can refuse features cut somewhere else.
+
 Based on cotorra's extractor (github.com/bbj-lab/cotorra); see ACKNOWLEDGMENTS.md.
 """
 
 import pathlib
+import time
 from typing import Annotated, Optional
 
 import numpy as np
@@ -47,18 +55,35 @@ def cut_token_lengths(root: pathlib.Path, split: str, cut_s: float) -> pl.DataFr
     )
 
 
-def merge_features(
-    out: pathlib.Path, new: pl.DataFrame, keep_ids: list[str]
-) -> pl.DataFrame:
-    """HARDWARE/DEMO PIVOT (for Vaishvik): a `--stay-ids` run re-extracts only some
-    stays; keep the other stays' rows from the existing features file so the cohort's
-    features stay whole (rows replaced by id, order: kept rows then new rows)"""
+def stay_cut_lengths(root: pathlib.Path, split: str) -> pl.DataFrame:
+    """hospitalization_id -> n tokens before the winnower's cut (`last_valid`, so
+    any threshold rule, e.g. 24 h after ICU arrival, D3); older files lack it and
+    fall back to the duration rule"""
+    src = root / f"{split}_for_inference.parquet"
+    if "last_valid" in pl.read_parquet_schema(src):
+        cols = ["hospitalization_id", "last_valid"]
+        return pl.read_parquet(src, columns=cols).rename({"last_valid": "n"})
+    th = merge_config("winnowing.yaml", None).threshold
+    return cut_token_lengths(root, split, float(th.get("duration_s", 86400)))
+
+
+def stored_cuts(src: pathlib.Path) -> pl.DataFrame:
+    """hospitalization_id -> the winnower's cut (`last_valid`, `cut_s` when
+    present), written next to each feature row; empty for older files"""
+    have = pl.read_parquet_schema(src)
+    cols = [c for c in ("hospitalization_id", "last_valid", "cut_s") if c in have]
+    return pl.read_parquet(src, columns=cols)
+
+
+def merge_features(out: pathlib.Path, new: pl.DataFrame) -> pl.DataFrame:
+    """a `--stay-ids` run re-extracts only some stays; keep the other stays' rows
+    from the existing features file (rows replaced by id: kept rows, then new)"""
     if not out.is_file():
         return new
     old = pl.read_parquet(out).filter(
         ~pl.col("hospitalization_id").is_in(new["hospitalization_id"].to_list())
     )
-    # diagonal: rows kept from a file made before cuts were stored get null cuts,
+    # diagonal: rows from a file made before cuts were stored get null cuts,
     # which the scorers read as stale
     return pl.concat([old, new], how="diagonal_relaxed") if old.height else new
 
@@ -99,36 +124,21 @@ class Extractor:
             hidden = self.model(**collated, output_hidden_states=True).hidden_states
         return hidden[-1][t.arange(len(last)), last].half().cpu().numpy()
 
-    def extract(self, root: pathlib.Path, stay_ids: list[str] | None = None):
+    def extract(
+        self,
+        root: pathlib.Path,
+        shard: tuple[int, int] = (0, 1),
+        stay_ids: list[str] | None = None,
+    ):
         bs, width = self.cfg.extract.batch_size, self.cfg.extract.max_len
-        cut_s = float(merge_config("winnowing.yaml", None).threshold.duration_s)
+        k, n = shard
         for split in SPLITS:
             src = root / f"{split}_for_inference.parquet"
             if not src.is_file():
                 raise FileNotFoundError(f"{src} missing; run icutwin-winnow first")
             ids, _, _ = load_split(root, split)
             stays = stay_offsets(root, split)
-            # the winnower stores each stay's cut (`last_valid`, tokens before it in
-            # position order); use it so any threshold rule (e.g. 24 h after ICU
-            # arrival, D3) gives the same cut here. Older files lack it.
-            schema = pl.read_parquet_schema(src)
-            if "last_valid" in schema:
-                lengths = pl.read_parquet(
-                    src, columns=["hospitalization_id", "last_valid"]
-                ).rename({"last_valid": "n"})
-            else:
-                lengths = cut_token_lengths(root, split, cut_s)
-            # each row's cut goes into the features file (HARDWARE/DEMO PIVOT, for
-            # Vaishvik): icutwin-rep-score --apply-probes and app/rooms.py refuse
-            # rows whose stored cut is not the labels' cut (a demo-clock move, or a
-            # one-room re-extract that left other rows at the old cut)
-            stored = lengths.rename({"n": "last_valid"})
-            if "cut_s" in schema:
-                stored = stored.join(
-                    pl.read_parquet(src, columns=["hospitalization_id", "cut_s"]),
-                    on="hospitalization_id",
-                    how="left",
-                )
+            lengths = stay_cut_lengths(root, split)
             # cut offsets: the stay's start + the tokens before its cut
             cuts = (
                 lengths.join(stays, on="hospitalization_id", how="inner")
@@ -147,24 +157,37 @@ class Extractor:
                     how="inner",
                 )
                 .sort("row")
+                .filter(pl.col("row") % n == k)  # this GPU's share
             )
-            feats = np.vstack(
-                [
-                    self.extract_final(
-                        [ds[j] for j in order["ds_row"][i : i + bs].to_list()]
+            n_batches = -(-order.height // bs)
+            logger.info(f"{split}: {order.height:,} stays, {n_batches:,} batches")
+            parts, t0 = [], time.monotonic()
+            for b, i in enumerate(range(0, order.height, bs), 1):
+                rows = order["ds_row"][i : i + bs].to_list()
+                parts.append(self.extract_final([ds[j] for j in rows]))
+                if b % 25 == 0 or b == n_batches:  # progress: counts and timing only
+                    el = time.monotonic() - t0
+                    left = el / b * (n_batches - b)
+                    logger.info(
+                        f"{split}: batch {b:,}/{n_batches:,} "
+                        f"({100 * b / n_batches:.0f}%), {el / 60:.1f} min, "
+                        f"~{left / 60:.1f} min left"
                     )
-                    for i in range(0, order.height, bs)
-                ]
-                or [np.empty((0, self.model.config.hidden_size), np.float16)]
+            feats = np.vstack(
+                parts or [np.empty((0, self.model.config.hidden_size), np.float16)]
             )
-            out = root / f"features-{split}-{self.model_home.name}.parquet"
+            name = f"features-{split}-{self.model_home.name}"
+            out = root / (f"{name}.parquet" if n == 1 else f"{name}-{k}of{n}.parquet")
+            # parts keep `row` so merge_shards can restore the order
             new = (
-                order.select("hospitalization_id")
+                order.select(
+                    ["hospitalization_id"] if n == 1 else ["row", "hospitalization_id"]
+                )
                 .with_columns(features=pl.Series(list(feats)))
-                .join(stored, on="hospitalization_id", how="left")
+                .join(stored_cuts(src), on="hospitalization_id", how="left")
             )
             if stay_ids is not None:
-                new = merge_features(out, new, stay_ids)
+                new = merge_features(out, new)
             new.write_parquet(out)
             logger.info(
                 f"{split}: {order.height:,} stays, {width}-token windows, "
@@ -173,10 +196,30 @@ class Extractor:
             )
 
 
-def extract(tokenized_output, model_home, config=None, stay_ids=None):
+def merge_shards(root: pathlib.Path, model_name: str, n: int):
+    """the N `--shard` parts -> features-{split}-<model>.parquet, rows in the
+    order of {split}_for_inference.parquet (rep-based scoring relies on it)"""
+    for split in SPLITS:
+        name = f"features-{split}-{model_name}"
+        parts = [root / f"{name}-{k}of{n}.parquet" for k in range(n)]
+        df = pl.read_parquet(parts).sort("row").drop("row")
+        df.write_parquet(root / f"{name}.parquet")
+        for part in parts:
+            part.unlink()
+        logger.info(f"{split}: {n} parts, {df.height:,} stays -> {name}.parquet")
+
+
+def extract(tokenized_output, model_home, config=None, shard="0/1", stay_ids=None):
+    k, n = map(int, shard.split("/"))
+    if not 0 <= k < n:
+        raise ValueError(f"--shard {shard}: need K/N with 0 <= K < N")
+    if stay_ids is not None and n > 1:
+        raise ValueError("--stay-ids re-extracts a few stays: use it without --shard")
     cfg = merge_config("extraction.yaml", config)
     extractor = Extractor(pathlib.Path(model_home).expanduser().resolve(), cfg)
-    extractor.extract(pathlib.Path(tokenized_output).expanduser().resolve(), stay_ids)
+    extractor.extract(
+        pathlib.Path(tokenized_output).expanduser().resolve(), (k, n), stay_ids
+    )
 
 
 app = typer.Typer(add_completion=False)
@@ -194,6 +237,14 @@ def cli(
         Optional[pathlib.Path],
         typer.Option("--config", "-c", help="extraction.yaml overrides"),
     ] = None,
+    shard: Annotated[
+        str,
+        typer.Option("--shard", help="K/N: only every N-th stay from K (one GPU of N)"),
+    ] = "0/1",
+    merge: Annotated[
+        Optional[int],
+        typer.Option("--merge", help="N: join the N --shard parts; loads no model"),
+    ] = None,
     stay_ids: Annotated[
         Optional[pathlib.Path],
         typer.Option(
@@ -204,12 +255,16 @@ def cli(
     ] = None,
 ):
     """Extract last-layer features at the prediction time."""
-    keep = None
-    if stay_ids:
-        keep = pl.read_csv(
-            stay_ids, schema_overrides={"hospitalization_id": pl.String}
-        )["hospitalization_id"].to_list()
-    extract(tokenized_output, model_home, config, keep)
+    if merge:
+        root = tokenized_output.expanduser().resolve()
+        merge_shards(root, model_home.expanduser().resolve().name, merge)
+    else:
+        keep = None
+        if stay_ids:
+            keep = pl.read_csv(
+                stay_ids, schema_overrides={"hospitalization_id": pl.String}
+            )["hospitalization_id"].to_list()
+        extract(tokenized_output, model_home, config, shard, keep)
 
 
 def main():
