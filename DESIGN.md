@@ -141,7 +141,7 @@ components:
     textColor: "{colors.status-tight}"
   status-short:
     textColor: "{colors.status-short}"
-  synthetic-badge:
+  source-tag:
     backgroundColor: "transparent"
     textColor: "{colors.ink}"
     rounded: "{rounded.badge}"
@@ -203,13 +203,13 @@ A near-monochrome board of ink on enamel, one working blue, and three status ink
 - **Level fills** (`level-low` white, `level-medium` pale amber, `level-high` pale red; night counterparts): the tile, the legend swatch, the room heading chip and the yardstick word share them. The same three fills mean ON TRACK / TIGHT / SHORT or USUAL / BUSY / VERY BUSY on the strain panel. Ink is picked in code for 4.5:1 on each fill.
 
 ### Status
-- **On-Track Green** (`status-ok`), **Tight Amber** (`status-tight`), **Short Red** (`status-short`): ink for the status words ON TRACK / TIGHT / SHORT, outlined in the same colour. Each colour means its word and nothing else: red is SHORT only. The capacity line and the SYNTHETIC DATA badge are ink.
+- **On-Track Green** (`status-ok`), **Tight Amber** (`status-tight`), **Short Red** (`status-short`): ink for the status words ON TRACK / TIGHT / SHORT, outlined in the same colour. Each colour means its word and nothing else: red is SHORT only. The capacity line and the data-source tag are ink.
 
 ### Neutral
 - **Enamel Board** (`board`): page ground; also the ground of the ask input.
 - **Board Shadow** (`board-2`): hover fill for controls and the fill of the team's own chat messages.
 - **Magnet Surface** (`surface`): the unshaded magnet face that magnet blue mixes into.
-- **Marker Navy** (`ink`): text, magnet borders, 2px region rules, the median tick, the capacity line, the SYNTHETIC badge, the Ask button.
+- **Marker Navy** (`ink`): text, magnet borders, 2px region rules, the median tick, the capacity line, the data-source tag, the Ask button.
 - **Faded Marker** (`ink-2`): secondary text, subtitles, ranges, timestamps, "not forecast" rows.
 - **Rule** (`rule`): 1px row dividers, the range-bar track, quiet borders.
 - **Night counterparts** (`night-*`): charcoal ground, chalk ink, lifted blue and status inks; `night-focus` is a lighter blue than the night magnet so the focus ring separates from selected fills.
@@ -236,7 +236,7 @@ A near-monochrome board of ink on enamel, one working blue, and three status ink
 - **Room Number** (800, 26px, 1): the magnet's room number. Drops to 20px (11px level word and tags) under 560px.
 - **Body** (400, 15px, 1.45): base text; row names at 14px/600, risk table at 14px.
 - **Body small** (13px): subtitles, legend, magnet risk line (600), chips (600), event history.
-- **Label** (800, 12px, 0.05em, uppercase): status words. Related uppercase labels: SYNTHETIC DATA (700, 12px, 0.06em) and tile tags V P C E and OUT (700, 11px, 0.04em). Plain 12px in Faded Marker carries ranges, captions, and notes.
+- **Label** (800, 12px, 0.05em, uppercase): status words. Related uppercase labels: tile tags V P C and OUT (700, 11px, 0.04em). Plain 12px in Faded Marker carries ranges, captions, and notes.
 
 ### Named Rules
 **The Tabular Rule.** Every numeral is tabular; counts, ranges, and percentages must align in columns without per-element overrides.
@@ -245,7 +245,7 @@ A near-monochrome board of ink on enamel, one working blue, and three status ink
 
 ## Layout
 
-The page is a 1440px-max frame with 16px/24px/32px padding. A top strip (unit name as the big title, the line "Lookahead · The next 24 hours, in one place.", SYNTHETIC DATA badge, board toggle, role picker, "Update the unit", and the run line) closes with a 2px ink rule. Below it a two-column grid: the room board at `2fr` (sticky at 12px from the top; all 25 magnets in a 5-column grid with 12px gaps, then a tag key and one note) and the right column at `minmax(340px, 1fr)`, divided by a 2px ink rule with 24px gutters. The right column holds the strain panel (headline, breakdown lines, yardstick sentence, the folded "Set tonight's capacity" form) and the "Check first" line under it. A "How this forecast was made" footer closes the page behind a 2px rule.
+The page is a 1440px-max frame with 16px/24px/32px padding. A top strip (unit name as the big title, the line "Lookahead · The next 24 hours, in one place.", data-source tag, board toggle, role picker, "Update the unit", and the run line) closes with a 2px ink rule. Below it a two-column grid: the room board at `2fr` (sticky at 12px from the top; all 25 magnets in a 5-column grid with 12px gaps, then a tag key and one note) and the right column at `minmax(340px, 1fr)`, divided by a 2px ink rule with 24px gutters. The right column holds the strain panel (headline, breakdown lines, yardstick sentence, the folded "Set tonight's capacity" form) and the "Check first" line under it. A "How this forecast was made" footer closes the page behind a 2px rule.
 
 The breakdown lines are a two-track grid (7.5rem label, flexible text) separated by 1px rules.
 
@@ -266,7 +266,7 @@ The board is flat. Depth is carried by ink rules and borders, not by panels. The
 
 ## Shapes
 
-Corners are small and practical: 3px on magnet tags and legend swatches, 4px on status words and the synthetic badge, 6px on magnets, the close button and the focus ring, 8px on the toggle, the select, the ask input and button, and chat messages, and full pills only on suggested-question chips. Borders are 1.5px solid ink on anything interactive or board-like (magnets, toggle, select, chips, input), 1.5px currentColor on status words and tags, and 1.5px dashed ink on the SYNTHETIC badge.
+Corners are small and practical: 3px on magnet tags and legend swatches, 4px on status words and the data-source tag, 6px on magnets, the close button and the focus ring, 8px on the toggle, the select, the ask input and button, and chat messages, and full pills only on suggested-question chips. Borders are 1.5px solid ink on anything interactive or board-like (magnets, toggle, select, chips, input), 1.5px currentColor on status words and tags, and 1.5px solid Faded Marker on the data-source tag.
 
 ## Components
 
@@ -275,7 +275,7 @@ The signature piece: a flat tile with an ink border, the room number, the level 
 - **Shape:** 6px corners, 1.5px ink border (3px Short Red for High, padding reduced to keep the size), min-height 96px.
 - **Fill:** Low white, Medium pale amber, High pale red (see Level). Ink is the higher-contrast of the four board inks and must reach 4.5:1.
 - **Level word:** always shown (14px/700): Low, Medium or High. Level is the combined chance of any new life support (IMV, vasopressor, CRRT; ones already on are skipped) in the next 24 hours: High at 4 in 10 or more, Medium at 2 in 10 or more. Death never colours a tile.
-- **Tags** (bottom, 11px/700, 1.5px currentColor outline, 3px corners): V (IMV on now), P (vasopressor on now), C (CRRT on now), E (ECMO or MCS on now, not forecast), and OUT with a 2px green outline when the chance of leaving the ICU is 6 in 10 or more. The tile state comes from `rooms.json` (`on_now`, `level`, `out`), so a new state (for example a room already on two or more supports) is one more branch in `renderGrid`.
+- **Tags** (bottom, 11px/700, 1.5px currentColor outline, 3px corners): V (IMV on now), P (vasopressor on now), C (CRRT on now), and OUT with a 2px green outline when the chance of leaving the ICU is 6 in 10 or more. The tile state comes from `rooms.json` (`on_now`, `level`, `out`), so a new state (for example a room already on two or more supports) is one more branch in `renderGrid`.
 - **States:** hover lifts 1px; the accessible label spells level, supports on and OUT in words.
 - **Legend:** three swatches (Low, Medium, High) and a tag key under the grid, plus one note that says how level is worked out.
 
@@ -292,7 +292,7 @@ A folded `details` (44px summary) under the panel with two number inputs (44px t
 One 16px line under the panel: "Check first: rooms 20, 12, 7", each number a link (underlined, 44px target). "Check first: no room is High." when none is.
 
 ### Room page
-Its own view at `#room=N`: "← All 25 rooms" and previous / next links (44px targets), a unit-context line, the heading "Room 12: next 24 hours" with the level in a chip using the tile fills, the room's own timestamp line ("updated 13:05 · next 24 h to 13:05 tomorrow") and a status line for updates. Two columns behind a 2px ink rule. Left: three fixed groups, New life support (IMV, Vasopressor, CRRT, and ECMO "on now · not forecast"), Leaving the ICU (with the OUT tag), Death. Each row is a level word, a 10-dot icon array (12px dots; filled magnet, empty outlined in Faded Marker) and "about 4 in 10"; supports already running read "On now" with no dots. Right: "What the forecast read · last 12 h" (five, then "Show more"), the line "These are what the forecast read. They do not show why something happens.", and the buttons "Update this room" and "Ask about this forecast".
+Its own view at `#room=N`: "← All N rooms" and previous / next links (44px targets), a unit-context line, the heading "Room 12: next 24 hours" with the level in a chip using the tile fills, the room's own timestamp line ("updated 13:05 · next 24 h to 13:05 tomorrow") and a status line for updates. Two columns behind a 2px ink rule. Left: three fixed groups, New life support (IMV, Vasopressor, CRRT), Leaving the ICU (with the OUT tag), Death. Each row is a level word, a 10-dot icon array (12px dots; filled magnet, empty outlined in Faded Marker) and "about 4 in 10"; supports already running read "On now" with no dots. Right: "What the forecast read · last 12 h" (five, then "Show more"), the line "These are what the forecast read. They do not show why something happens.", and the buttons "Update this room" and "Ask about this forecast".
 
 ### Chat widget
 A launcher pill "Ask about this forecast" (ink fill, board text, 48px tall) fixed bottom right; the panel (surface, 1.5px ink border, 8px corners, up to 72% of the viewport) opens above it with a heading, Close, chips, the log and the ask form. Closed by default; Escape and Close return focus to the launcher; on a phone it spans the width and closes when the page changes. When the forecast changes while it is open and has messages, one quiet 12px line says "Forecast updated at 13:05. Answers below use it."
@@ -314,14 +314,12 @@ Pill chips (1.5px ink border, 13px/600, 44px tall): at most three by role, alway
 13px under the top strip: "Updated 13:05 (unit) · demo clock +6 h". With a demo clock above zero, "Demo clock: recorded patients, time advanced 6 h" follows it.
 
 ### Footer: how this forecast was made
-A plain line, then a folded "The five forecasts, and what each one means" (table of median with range and who uses it, the life-support definition, model, method, accuracy and run time, each "Not ready yet" until a run supplies it).
+A plain line, then a folded "The five forecasts, and what each one means" (table of median with range and who uses it, the life-support definition, model, method, where and when, "Excludes new admissions from the ED and OR.", and a performance row only once numbers exist), plus the intended-use line "For unit planning; the care team makes clinical decisions.".
 
 ### Honesty labels
-- **SYNTHETIC DATA:** a dashed ink badge in the top strip whenever numbers are made up (red stays reserved for the worst level).
-- **(mock):** on drafted replies (Nemotron 3 Nano).
-- **Not ready yet:** italic Faded Marker in place of any measured number that does not exist yet.
-- **not forecast:** ECMO and arrivals.
-
+- **Data-source tag:** a small outlined ink label in the top strip: "Demo data" (synthetic fallback), "MIMIC-IV Demo" or "MIMIC-IV · local". Plain, never dashed or red; it is a label, not a warning.
+- **Not ready yet:** a standalone state in Faded Marker in place of a measured number that does not exist yet (the yardstick word when `yardstick` is null); never inside a sentence.
+- **No estimate:** a room probability that is null while the support is not on.
 ### Focus
 All focusable elements: 3px solid focus colour, 2px offset, 6px corners (`:focus-visible`).
 
@@ -333,7 +331,7 @@ All focusable elements: 3px solid focus colour, 2px offset, 6px corners (`:focus
 - **Do** lead with the strain panel and the rooms to check first; the role's own line goes first.
 - **Do** give every forecast number its range as "(a to b)", and say numbers as natural frequencies ("about 4 in 10").
 - **Do** separate regions with 2px ink rules and rows with 1px Rule lines.
-- **Do** label mock, synthetic, and missing numbers in place: SYNTHETIC DATA, (mock), Not ready yet, not forecast.
+- **Do** label the data source plainly and mark missing numbers in place: Demo data, Not ready yet, No estimate. No hedges or disclaimers in the copy.
 - **Do** keep both boards on the same custom properties; a new surface sets values for `data-board="day"` and `data-board="night"`.
 - **Do** keep the 3px focus ring with 2px offset on every focusable element.
 

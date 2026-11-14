@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lookahead · ICU board (mockup, synthetic data)</title>
+<title>Lookahead · ICU board</title>
 <style>
 :root{
   --board:#F4F5F2; --board-2:#E9EBE6; --ink:#1E2A33; --ink-2:#4A5862; --rule:rgba(30,42,51,.12);
@@ -29,14 +29,15 @@ button,input,select{font:inherit;color:inherit}
 .wrap{max-width:1440px;margin:0 auto;padding:16px 24px 96px}
 .sr{position:absolute;left:-9999px}
 .label{font-size:12px;color:var(--ink-2)}
-.note{font-size:12px;color:var(--ink-2);margin:8px 0 0;max-width:80ch}
+.note{font-size:12px;color:var(--ink-2);margin:8px 0 0;max-width:62ch}
 
 /* top strip */
 .top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;padding-bottom:12px;border-bottom:2px solid var(--ink)}
 .unit h1{margin:0;font-size:24px;line-height:1.1;letter-spacing:-.01em}
 .unit p{margin:2px 0 0;color:var(--ink-2);font-size:13px}
 .unit .brand{color:var(--ink);font-weight:800}
-.synthetic{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--ink);border:1.5px dashed var(--ink);border-radius:4px;padding:2px 6px;white-space:nowrap}
+.srctag{font-size:12px;font-weight:600;color:var(--ink);border:1.5px solid var(--ink-2);border-radius:4px;padding:2px 6px;white-space:nowrap}
+.srctag[hidden]{display:none}
 .spacer{flex:1}
 .toggle{display:inline-flex;align-items:center;gap:8px;min-height:44px;background:transparent;border:1.5px solid var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600}
 .toggle:hover{background:var(--board-2)}
@@ -94,14 +95,14 @@ button,input,select{font:inherit;color:inherit}
 .capbox form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;padding:4px 0 8px}
 .capbox label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink-2)}
 .capbox input{min-height:44px;background:var(--board);border:1.5px solid var(--ink);border-radius:8px;padding:6px 10px;color:var(--ink);width:100%}
-.capbox .acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.capbox .acts{align-items:center;grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
 .capbox .msg2{grid-column:1/-1;margin:0;font-size:13px;color:var(--ink)}
 .capset{margin:0;font-size:13px;color:var(--ink-2)}
 .primary{min-height:44px;background:var(--ink);color:var(--board);border:0;border-radius:8px;padding:6px 16px;font-weight:700;cursor:pointer}
 .primary:hover{opacity:.9}
 
 /* check first */
-.check a{min-width:44px;text-align:center;color:var(--ink);font-weight:700;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;display:inline-block;padding:12px 4px;margin:-12px 0}
+.check a{min-width:44px;min-height:44px;text-align:center;color:var(--ink);font-weight:700;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;display:inline-block;padding:11px 0;margin:-11px -12px;line-height:22px;position:relative}
 
 /* board */
 .boardhead{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 16px;margin-bottom:8px}
@@ -125,7 +126,7 @@ button,input,select{font:inherit;color:inherit}
 .mag .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:auto}
 .tag{font-size:11px;font-weight:700;letter-spacing:.04em;border:1.5px solid currentColor;border-radius:3px;padding:0 4px;line-height:16px;display:inline-block}
 .tag.out{border:2px solid var(--ok);padding:0 3px}
-@media (max-width:560px){.grid{gap:6px}.mag{min-height:80px;padding:6px 5px}.mag.high,.mag.ols{padding:4.5px 3.5px}.mag .rm{font-size:20px}.mag .who{display:block;margin:2px 0 0;font-size:11px;vertical-align:0}.mag .lw{font-size:11px}.tag{font-size:11px;padding:0 2px;line-height:14px}.tag.out{padding:0 1px}.mag .tags{gap:2px}.wrap{padding:12px 16px 24px}.legend{gap:4px 10px;font-size:12px}}
+@media (max-width:560px){.grid{gap:6px}.mag{min-height:80px;padding:6px 5px}.mag.high,.mag.ols{padding:4.5px 3.5px}.mag .rm{font-size:20px}.mag .who{display:block;margin:2px 0 0;font-size:11px;vertical-align:0}.mag .lw{font-size:11px}.tag{font-size:11px;padding:0 2px;line-height:14px}.tag.out{padding:0 1px}.mag .tags{gap:2px}.wrap{padding:12px 16px 88px}.legend{gap:4px 10px;font-size:12px}}
 
 /* room page */
 .roomview{padding-top:16px}
@@ -134,7 +135,7 @@ button,input,select{font:inherit;color:inherit}
 .rv-step{display:flex;gap:16px}
 .rv-unit{margin:4px 0 0;font-size:14px;color:var(--ink-2)}
 .rv-unit b{color:var(--ink)}
-.roomview h1{margin:12px 0 2px;font-size:40px;line-height:1.05;letter-spacing:-.02em;display:flex;align-items:center;gap:8px 20px;flex-wrap:wrap}
+.roomview .rvh{margin:12px 0 2px;font-size:40px;line-height:1.05;letter-spacing:-.02em;display:flex;align-items:center;gap:8px 20px;flex-wrap:wrap}
 #rv-h:focus:not(:focus-visible){outline:none}
 .lvtag{font-size:16px;font-weight:700;letter-spacing:0;border:1.5px solid var(--ink);border-radius:6px;padding:4px 12px}
 .lvtag.lv-high{border:3px solid var(--red);padding:2.5px 10.5px}
@@ -154,10 +155,12 @@ button,input,select{font:inherit;color:inherit}
 .dots i{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--ink-2)}
 .dots i.on{background:var(--magnet);border-color:var(--magnet)}
 .risks .fq{font-size:14px;color:var(--ink-2)}
-@media (max-width:560px){.risks li{grid-template-columns:minmax(0,1fr) 5.5em;row-gap:6px}.risks .dots{grid-column:1;min-width:0}.risks .fq{grid-column:2;text-align:right;font-size:13px}.dots{gap:3px}.dots i{width:10px;height:10px}.roomview h1{font-size:30px}}
+@media (max-width:560px){.risks li{grid-template-columns:minmax(0,1fr) 5.5em;row-gap:6px}.risks .dots{grid-column:1;min-width:0}.risks .fq{grid-column:2;text-align:right;font-size:13px}.dots{gap:3px}.dots i{width:10px;height:10px}.roomview .rvh{font-size:30px}}
 .past{margin:6px 0 0;padding:0;list-style:none;font-size:13px}
 .past li{display:grid;grid-template-columns:56px 1fr;gap:8px;padding:3px 0;border-top:1px solid var(--rule)}
 .past time{color:var(--ink-2)}
+.roomnote{margin:0 0 8px;font-size:14px;font-weight:600}
+.ctx{display:inline-block;font-size:12px;font-weight:600;border:1.5px solid var(--ink-2);border-radius:999px;padding:1px 10px;color:var(--ink)}
 .linkbtn{min-height:44px;background:transparent;border:0;padding:4px 0;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
 .stopped{margin:4px 0 0;font-size:13px;color:var(--ink-2)}
 .rv-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
@@ -194,7 +197,7 @@ button,input,select{font:inherit;color:inherit}
 /* footer */
 .engine{margin-top:24px;padding-top:12px;border-top:2px solid var(--ink);font-size:14px}
 .engine h2{margin:0 0 4px;font-size:18px}
-.aboutline{margin:0 0 4px;max-width:80ch;color:var(--ink-2)}
+.aboutline{margin:0 0 4px;max-width:58ch;color:var(--ink-2)}
 details.more{border-top:1px solid var(--rule)}
 details.more summary{cursor:pointer;min-height:44px;display:flex;align-items:center;padding:0;font-size:14px;font-weight:600;color:var(--ink-2)}
 details.more summary:hover{color:var(--ink)}
@@ -217,10 +220,10 @@ details.more summary:hover{color:var(--ink)}
 <div class="wrap">
   <header class="top">
     <div class="unit">
-      <h1>Medical ICU · 25 beds</h1>
+      <h1>Medical ICU<span id="beds"></span></h1>
       <p><span class="brand">Lookahead</span> · The next 24 hours, in one place. · <b>07:00 to 07:00</b> · patients in the ICU at least 24 h</p>
     </div>
-    <span class="synthetic" id="syn" title="Every number on this page is made up for the mockup">SYNTHETIC DATA</span>
+    <span class="srctag" id="syn" hidden></span>
     <span class="spacer"></span>
     <button class="toggle" id="theme" aria-pressed="false" type="button">Night board</button>
     <div class="runbox">
@@ -242,7 +245,7 @@ details.more summary:hover{color:var(--ink)}
         <form id="capform" novalidate>
           <label for="cap-ls">Life-support patients tonight's staffing covers<input id="cap-ls" type="number" inputmode="numeric" min="0" max="50" step="1"></label>
           <label for="cap-vf">Ventilators free (optional)<input id="cap-vf" type="number" inputmode="numeric" min="0" max="50" step="1"></label>
-          <div class="acts"><button class="primary" type="submit">Save capacity</button><button class="toggle" id="capclear" type="button" hidden>Use a typical day</button></div>
+          <div class="acts"><button class="primary" type="submit">Save capacity</button><button class="toggle" id="viewtyp" type="button" hidden>View against a typical day (staffing number kept)</button></div>
           <p class="msg2" id="capmsg" role="status" aria-live="polite"></p>
         </form>
       </details>
@@ -254,14 +257,15 @@ details.more summary:hover{color:var(--ink)}
     <div class="left">
       <section aria-labelledby="board-h">
         <div class="boardhead">
-          <h2 id="board-h">All 25 rooms · next 24 hours <span class="upd" id="upd-grid" hidden>updating</span></h2>
-          <p class="legend" aria-label="Level: chance of any new life support in the next 24 hours">
+          <h2 id="board-h">Rooms · next 24 hours <span class="upd" id="upd-grid" hidden>updating</span></h2>
+          <div class="legend" role="group" aria-label="Level: chance of any new life support in the next 24 hours">
             <span><i class="sw lv-low"></i>Low</span><span><i class="sw lv-medium"></i>Medium</span><span><i class="sw lv-high"></i>High</span>
-          </p>
+          </div>
         </div>
-        <div class="grid" id="grid" role="group" aria-label="Rooms 1 to 25; choose a room to open its page"></div>
-        <p class="legend2" aria-label="Tags"><span><span class="tag">V</span> IMV running at 07:00</span><span><span class="tag">P</span> vasopressor running</span><span><span class="tag">C</span> CRRT running</span><span>ECMO: not available</span><span>Thick dark border: 2 or more running, "On life support"</span><span><span class="tag out">OUT</span> likely to leave, 6 in 10 or more</span></p>
-        <p class="note">Level is the chance of any new life support (IMV, vasopressor or CRRT) in the next 24 hours: High is 4 in 10 or more, Medium is 2 in 10 or more. Support running at the 07:00 cut is "now" and is not counted again. A room with two or more supports running reads "On life support"; its fill still shows the level for more. Death never colours a tile. Open a room for the details. Stage ward: open MIMIC-IV Demo patients.</p>
+        <p class="roomnote" id="roomnote" role="status" hidden></p>
+        <div class="grid" id="grid" role="group" aria-label="Rooms; choose a room to open its page"></div>
+        <div class="legend2" role="group" aria-label="Tags"><span><span class="tag">V</span> IMV running at 07:00</span><span><span class="tag">P</span> vasopressor running</span><span><span class="tag">C</span> CRRT running</span><span>Thick dark border: 2 or more running, "On life support"</span><span><span class="tag out">OUT</span> likely to leave, 6 in 10 or more</span></div>
+        <p class="note">Level is the chance of any new life support (IMV, vasopressor or CRRT) in the next 24 hours: High is 4 in 10 or more, Medium is 2 in 10 or more. Support running at the 07:00 cut is "now" and is not counted again. A room with two or more supports running reads "On life support"; its fill still shows the level for more. Death never colours a tile. Open a room for the details. <span class="wardnote"></span></p>
       </section>
     </div>
   </main>
@@ -269,19 +273,21 @@ details.more summary:hover{color:var(--ink)}
   <footer class="engine" aria-labelledby="about-h">
     <h2 id="about-h">How this forecast was made</h2>
     <p class="aboutline">On the hospital's own servers, a small model trained on this ICU's records read each patient's history once and estimated five events for the next 24 hours. Patient records never leave the hospital.</p>
+    <p class="aboutline">For unit planning; the care team makes clinical decisions.</p>
     <details class="more about">
       <summary>The five forecasts, and what each one means</summary>
       <table class="all">
-        <caption class="sr">The five forecasts for the next 24 hours: median and likely range across the 25 rooms</caption>
+        <caption class="sr">The five forecasts for the next 24 hours: median and likely range across the unit</caption>
         <thead><tr><th scope="col">Forecast</th><th scope="col" class="num">Median (range)</th><th scope="col">Used by</th></tr></thead>
         <tbody id="alltasks"></tbody>
       </table>
-      <p class="note">Life support means IMV (breathing tube or tracheostomy), a vasopressor infusion (not inotropes alone) or CRRT. ECMO and other mechanical support are counted only when already on, and are not forecast. Ranges cover 8 in 10 likely outcomes (p10 to p90).</p>
+      <p class="note">Life support: IMV, vasopressor infusion or CRRT. Ranges cover 8 in 10 likely outcomes (p10 to p90).</p>
       <dl class="facts">
-        <div><dt>Model</dt><dd>icutwin m, 35 million parameters, trained on site on 2 × NVIDIA GB10 · <span class="pending">Not ready yet</span></dd></div>
+        <div><dt>Model</dt><dd>icutwin m, 35 million parameters, trained on site on 2 × NVIDIA GB10</dd></div>
         <div><dt>Method</dt><dd>One read of each patient's record 24 h after ICU arrival, a calibrated score per event, then patients added up into unit counts</dd></div>
-        <div><dt>Accuracy on patients it never saw</dt><dd>calibration and AUROC per event · <span class="pending">Not ready yet</span></dd></div>
-        <div><dt>Where and when</dt><dd>Fuzzball workflow t7-forecast on 1 × NVIDIA GB10, morning run and on update · run time <span class="pending">Not ready yet</span></dd></div>
+        <div id="perf" hidden><dt>Model performance (held-out patients)</dt><dd></dd></div>
+        <div><dt>Where and when</dt><dd>Fuzzball workflow t7-forecast on 1 × NVIDIA GB10, morning run and on update</dd></div>
+        <div><dt>Not included</dt><dd>Excludes new admissions from the ED and OR.</dd></div>
       </dl>
     </details>
   </footer>
@@ -289,11 +295,11 @@ details.more summary:hover{color:var(--ink)}
 
   <main id="roomview" class="roomview" hidden aria-labelledby="rv-h">
     <nav class="rv-nav" aria-label="Rooms">
-      <a class="back" href="#board">← All 25 rooms</a>
+      <a class="back" id="back" href="#board">← All rooms</a>
       <span class="rv-step"><a id="rv-prev" href="#"></a><a id="rv-next" href="#"></a></span>
     </nav>
     <p class="rv-unit" id="rv-unit"></p>
-    <h1 id="rv-h" tabindex="-1">Room</h1>
+    <h2 class="rvh" id="rv-h" tabindex="-1">Room</h2>
     <p class="rv-sub" id="rv-sub"></p>
     <p class="rv-stamp" id="rv-stamp"></p>
     <p class="rv-run" id="rv-run" role="status" aria-live="polite"></p>
@@ -301,11 +307,9 @@ details.more summary:hover{color:var(--ink)}
       <section aria-labelledby="rv-risk-h">
         <h2 id="rv-risk-h">Out of 10 patients like this, how many have each event</h2>
         <div id="rv-risks"></div>
-        <p class="label">How far to trust these: held-out check (calibration, AUROC) <span class="pending">Not ready yet</span>.</p>
       </section>
       <section aria-labelledby="rv-past-h">
-        <h2 id="rv-past-h">What the forecast read · last 12 h</h2>
-        <p class="label">These are what the forecast read. They do not show why something happens.</p>
+        <h2 id="rv-past-h">Last 12 hours</h2>
         <ul class="past" id="past"></ul>
         <button class="linkbtn" id="pastmore" type="button"></button>
         <div class="rv-acts">
@@ -314,18 +318,17 @@ details.more summary:hover{color:var(--ink)}
         </div>
       </section>
     </div>
-    <p class="note">Decision support, not a treatment recommendation. Stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
   </main>
 </div>
 
 <button class="chatbtn" id="chatbtn" type="button" aria-expanded="false" aria-controls="chatpanel">Ask about this forecast</button>
 <section class="chatpanel" id="chatpanel" aria-labelledby="chat-h" hidden>
   <div class="cp-head"><h2 id="chat-h">Ask about this forecast</h2><button class="close" id="chatclose" type="button">Close</button></div>
-  <p class="sub" id="chat-scope"></p>
+  <p class="sub" id="chat-scope" hidden></p>
   <div class="chips" id="chips" role="group" aria-label="Suggested questions"></div>
   <div class="log" id="log" aria-live="polite"></div>
   <form class="ask" id="ask"><label class="sr" for="q">Question</label>
-    <input id="q" autocomplete="off" placeholder="Or type a question">
+    <input id="q" autocomplete="off" placeholder="Ask about rooms, life support or discharges">
     <button type="submit">Ask</button></form>
 </section>
 
@@ -333,11 +336,29 @@ details.more summary:hover{color:var(--ink)}
 (() => {
   const $ = id => document.getElementById(id);
   const z = v => String(v).padStart(2,"0");
-  const hm = t => { const d=new Date(t); return z(d.getHours())+":"+z(d.getMinutes()); };
-  const dayWord = t => new Date(t).toDateString()===new Date().toDateString() ? "today" : "tomorrow";
+  const fin = v => typeof v==="number" && isFinite(v);
+  const ESC = {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};
+  const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c=>ESC[c]);   // every server-supplied string goes through esc() or textContent
+  const hasOwn = (o,k) => Object.prototype.hasOwnProperty.call(o,k);
   const flag = f => new RegExp("(^|[#&])"+f+"(&|$)").test(location.hash);
-  const FAST = flag("fast");                       // review captures: 0.4 s polls, 1.2 s runs
-  const POLL_MS = FAST?400:30000, RUN_MS = FAST?1200:20000, GUARD_MIN = 20;
+  const FAST = flag("fast");                       // review captures: short polls and runs
+  const POLL_MS = FAST?400:30000, RUN_MS = FAST?1200:20000, GUARD_MIN = 20, IDLE_MS = FAST?1500:300000;
+  const OFFLINE_LINE = "Can't reach the board server — retrying";
+
+  /* ---------- times: the ward's zone (from cut_time), never the browser's ---------- */
+  const ISO = /^(\d{4})-(\d\d)-(\d\d)[T ](\d\d):(\d\d)(?::(\d\d)(?:\.\d+)?)?\s*(Z|[+-]\d\d(?::?\d\d)?)?$/;
+  const offMin = s => { if(typeof s!=="string") return null; const m=s.match(ISO); if(!m||!m[7]) return null; if(m[7]==="Z") return 0;
+    const g=m[7].replace(":",""); return (g[0]==="-"?-1:1)*(+g.slice(1,3)*60+(+g.slice(3,5)||0)); };
+  let ZONE = null;                                  // minutes east of UTC; null = clock times are already ward wall time
+  function wall(t){                                 // a Date whose UTC fields carry the ward clock
+    if(typeof t==="number"){ const off=ZONE!=null?ZONE:-new Date(t).getTimezoneOffset(); return new Date(t+off*6e4); }
+    if(typeof t!=="string") return null; const m=t.match(ISO); if(!m) return null;
+    const u=Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+(m[6]||0)), own=offMin(t);
+    if(own==null) return new Date(u);
+    return new Date(u-own*6e4+(ZONE!=null?ZONE:own)*6e4); }
+  const hm = t => { const d=wall(t); return d?z(d.getUTCHours())+":"+z(d.getUTCMinutes()):"--:--"; };
+  const dayKey = t => { const d=wall(t); return d?Math.floor(d.getTime()/864e5):null; };
+  const dayWord = (end,start) => { const a=dayKey(end), b=dayKey(start); return a==null||b==null?"":a>b?" tomorrow":" today"; };
 
   /* ---------- synthetic generator: emits exactly forecast.json and rooms.json (docs/FRONTEND_SPEC.md) ---------- */
   const mk = seed => { let s = seed>>>0; return () => (s = (s*1664525+1013904223)%4294967296)/4294967296; };
@@ -346,13 +367,14 @@ details.more summary:hover{color:var(--ink)}
   const BASE = {imv:.085, vasopressor:.095, crrt:.04};
   const r2 = v => Math.round(v*100)/100;
   const levelOf = p => p>=LEVELS.high?"high":p>=LEVELS.medium?"medium":"low";
-  const iso = t => { const d=new Date(t), z2=v=>String(v).padStart(2,"0"); return `${d.getFullYear()}-${z2(d.getMonth()+1)}-${z2(d.getDate())}T${z2(d.getHours())}:${z2(d.getMinutes())}:${z2(d.getSeconds())}`; };   // local clock time, like the backend's made_at
+  const iso = t => { const d=new Date(t); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`; };   // local clock time, like the backend's made_at
   const PAST_TXT = ["Lactate 3.1 (up from 2.2)","Norepinephrine 0.08 mcg/kg/min","SpO2 91% on 6 L","Chest x-ray ordered","Heart rate 118","Urine output 20 mL/h","CBC and BMP drawn","Temperature 38.4","FiO2 0.6","Mean arterial pressure 62","Creatinine 2.4 (up from 1.8)","Sedation lightened"];
   const AGE = Array.from({length:BEDS},(_,i)=>40+(i*37%45));
+  const TYPICAL = 15;
 
   function genRoom(n, rnd, cut, keepOn){
     const a = Math.pow(rnd(),1.6);
-    const on = keepOn || {imv: rnd()<.08+a*.22, vasopressor: rnd()<.06+a*.2, crrt: rnd()<.01+a*.08, ecmo: null};   // ecmo: null = not in the data
+    const on = keepOn || {imv: rnd()<.08+a*.22, vasopressor: rnd()<.06+a*.2, crrt: rnd()<.01+a*.08};
     const p = {};
     for (const k of SUP) p[k] = on[k] ? null : r2(Math.min(.9, BASE[k]*(.4+a*2.4)*Math.exp((rnd()-.5)*1.4)));
     let dep = .5*(1.25-a*1.1)*Math.exp((rnd()-.5)*1.3)*(on.imv||on.vasopressor?.55:1);
@@ -362,10 +384,10 @@ details.more summary:hover{color:var(--ink)}
     const stopped = {}; for (const k of SUP) stopped[k] = !on[k] && (n*3+SUP.indexOf(k))%11===0;     // switched off before the 07:00 cut
     const nOn = SUP.filter(k=>on[k]).length;
     const none = SUP.reduce((m,k)=>m*(p[k]==null?1:1-p[k]),1), any = r2(1-none);
-    const past = Array.from({length:8},(_,i)=>({h:-(i+1)-(i>3?i-3:0), text:PAST_TXT[Math.floor(rnd()*PAST_TXT.length)]}));
+    const past = Array.from({length:8},(_,i)=>({h:(i+1)+(i>3?i-3:0), text:PAST_TXT[Math.floor(rnd()*PAST_TXT.length)]}));   // hours before the cut, 1 = the last hour
     const sex = (n*7+3)%5<2 ? "F" : "M";
     return {room:n, age:String(AGE[n-1]), sex, updated_at:iso(cut), cut_time:iso(cut), window:{start:iso(cut),end:iso(cut+864e5)}, scope:"unit",
-      on_now:on, on_life_support:nOn>=2, stopped_before_cut:stopped, p, any_life_support:any, level:levelOf(any), out:dep>=OUT_TAG, past_12h:past};
+      on_now:{...on, ecmo:null}, on_life_support:nOn>=2, stopped_before_cut:stopped, p, any_life_support:any, level:levelOf(any), out:dep>=OUT_TAG, past_12h:past};
   }
   function simulate(rooms, rnd, draws=3000){
     const keys=["imv","vasopressor","crrt","icu_departure","death","new"], out={}; for(const k of keys) out[k]=[];
@@ -378,20 +400,20 @@ details.more summary:hover{color:var(--ink)}
   }
   const expectedOf = (rooms,k) => Math.round(rooms.reduce((s,r)=>s+(r.p[k]||0),0)*100)/100;
   const TEAM = {icu_departure:"bed manager", ventilator:"respiratory therapy", vasopressor:"pharmacy", crrt:"ICU team", death:"ICU team"};
-  const TYPICAL = 15;
-  function checkFirst(rooms){ return rooms.filter(r=>r.level==="high").sort((a,b)=>b.any_life_support-a.any_life_support).slice(0,3).map(r=>r.room); }
-  function yardstick(fc, cap){
-    const ls=fc.life_support, n=ls.now_patients, q=ls.expected_new_patients;
-    if (cap && cap.life_support_patients!=null){
-      const c=cap.life_support_patients; let lv = n+q.p50>c ? 2 : n+q.p90>=c ? 1 : 0;           // SHORT: median passes it; TIGHT: the range reaches it
-      if (cap.vents_free!=null){ const v=ls.expected_by.imv; lv = Math.max(lv, v.p50>cap.vents_free ? 2 : v.p90>=cap.vents_free ? 1 : 0); }
-      return {kind:"capacity", words:["ON TRACK","TIGHT","SHORT"][lv], level:["ok","amber","red"][lv], capacity:cap, typical:{life_support_patients:TYPICAL}};
-    }
-    const typ=(FC&&FC.yardstick&&FC.yardstick.typical&&FC.yardstick.typical.life_support_patients)||TYPICAL, lv = n+q.p50>typ ? 2 : n+q.p90>=typ ? 1 : 0;
-    return {kind:"typical", words:["USUAL","BUSY","VERY BUSY"][lv], level:["ok","amber","red"][lv],
-      capacity:{life_support_patients:null,vents_free:null,set_at:null,set_by_role:null}, typical:{life_support_patients:typ}};
-  }
+  const checkFirst = rooms => rooms.filter(r=>r.level==="high").sort((a,b)=>b.any_life_support-a.any_life_support).slice(0,3).map(r=>({room:r.room, any_life_support:r.any_life_support, level:r.level}));
   const NOCAP = {life_support_patients:null,vents_free:null,set_at:null,set_by_role:null};
+  /* the server's rules (docs/CONTRACT.md): capacity: ON TRACK p90 <= cap, TIGHT p90 > cap >= p50, SHORT p50 > cap; typical: p50/typical <= 1 USUAL, <= 1.3 BUSY, above VERY BUSY */
+  const capWords = (load,cap) => load.p50>cap ? "SHORT" : load.p90>cap ? "TIGHT" : "ON TRACK";
+  const typWords = (load,typ) => { const x=load.p50/typ; return x<=1?"USUAL":x<=1.3?"BUSY":"VERY BUSY"; };
+  const LEVEL_OF_WORD = {"ON TRACK":"ok","TIGHT":"amber","SHORT":"red","USUAL":"ok","BUSY":"amber","VERY BUSY":"red"};
+  function genYardstick(fc, cap){
+    const ls=fc.life_support, q=ls.expected_new_patients, load={p10:ls.now_patients+q.p10,p50:ls.now_patients+q.p50,p90:ls.now_patients+q.p90};
+    const typical={life_support_patients:TYPICAL, load};
+    if (cap && cap.life_support_patients!=null){ const w=capWords(load,cap.life_support_patients);
+      return {kind:"capacity", words:w, level:LEVEL_OF_WORD[w], capacity:{...cap, load}, typical}; }
+    const w=typWords(load,TYPICAL);
+    return {kind:"typical", words:w, level:LEVEL_OF_WORD[w], capacity:{...NOCAP}, typical};
+  }
   function generate(seed, cut, demoH, cap){
     const rnd = mk(seed), rooms = Array.from({length:BEDS},(_,i)=>genRoom(i+1,rnd,cut));
     const q = simulate(rooms, rnd), on = k => rooms.filter(r=>r.on_now[k]).length;
@@ -401,28 +423,77 @@ details.more summary:hover{color:var(--ink)}
       life_support:{now_patients:rooms.filter(r=>SUP.some(k=>r.on_now[k])).length, now_by:{imv:on("imv"),vasopressor:on("vasopressor"),crrt:on("crrt"),ecmo:null},
         expected_new_patients:q.new, expected_by:{imv:q.imv,vasopressor:q.vasopressor,crrt:q.crrt}},
       yardstick:null, check_first:checkFirst(rooms), levels:LEVELS, out_tag:OUT_TAG};
-    fc.yardstick = yardstick(fc, cap);
+    fc.yardstick = genYardstick(fc, cap);
     return {fc, rooms:{made_at:iso(cut), rooms}};
   }
 
-  /* ---------- state and the mock API (the real board POSTs /api/rerun, /api/capacity; GET /api/forecast, /api/rooms) ---------- */
+  /* ---------- validation: nothing from the server reaches the page unchecked ---------- */
+  const LV = ["low","medium","high"];
+  const vq = o => !!o && fin(o.p10) && fin(o.p50) && fin(o.p90);
+  const str = (s,n=120) => typeof s==="string" ? s.slice(0,n) : "";
+  function cleanRoom(r){
+    if(!r || typeof r!=="object" || !Number.isInteger(r.room) || r.room<1) return null;
+    const on0=r.on_now||{}, p0=r.p||{}, sb=r.stopped_before_cut||{}, pr=v=>fin(v)&&v>=0&&v<=1?v:null;
+    const on_now={imv:on0.imv===true, vasopressor:on0.vasopressor===true, crrt:on0.crrt===true};
+    const p={}; for(const k of [...SUP,"icu_departure","death"]) p[k]=pr(p0[k]);
+    const w=r.window||{};
+    return {room:r.room,
+      age:(typeof r.age==="string"||fin(r.age)) && /^\d{1,3}\+?$/.test(String(r.age)) ? String(r.age) : null,
+      sex:r.sex==="F"||r.sex==="M" ? r.sex : null,
+      level:LV.includes(r.level) ? r.level : null,
+      on_now, p, out:r.out===true,
+      on_life_support:typeof r.on_life_support==="boolean" ? r.on_life_support : SUP.filter(k=>on_now[k]).length>=2,
+      stopped_before_cut:{imv:sb.imv===true, vasopressor:sb.vasopressor===true, crrt:sb.crrt===true},
+      updated_at:str(r.updated_at,40), cut_time:str(r.cut_time,40), window:{start:str(w.start,40), end:str(w.end,40)},
+      past_12h:(Array.isArray(r.past_12h)?r.past_12h:[]).filter(x=>x&&typeof x.text==="string").slice(0,8).map(x=>({h:fin(x.h)&&x.h!==0?Math.abs(x.h):null, text:x.text.slice(0,200)}))};
+  }
+  const cleanRooms = list => (Array.isArray(list)?list:[]).map(cleanRoom).filter(Boolean).sort((a,b)=>a.room-b.room).filter((x,i,a)=>!i||x.room!==a[i-1].room);
+  const cfRooms = () => { const c=FC&&FC.check_first; return Array.isArray(c) ? c.map(x=>typeof x==="object"&&x?x.room:x).filter(n=>Number.isInteger(n)&&n>=1) : null; };   // objects from the backend, bare numbers from older files
+  function hasFc(){ const f=FC; if(!f||typeof f!=="object"||!f.life_support) return false;
+    const ls=f.life_support, eb=ls.expected_by||{}, nb=ls.now_by||{}, rs=f.resources||{};
+    return fin(ls.now_patients) && vq(ls.expected_new_patients) && vq(eb.imv) && vq(eb.vasopressor) && vq(eb.crrt) && fin(nb.imv) && fin(nb.vasopressor) && fin(nb.crrt) && vq(rs.icu_departure) && vq(rs.death); }
+  function normY(y){
+    if(!y || typeof y!=="object") return null;
+    const kind=y.kind==="capacity"?"capacity":y.kind==="typical"?"typical":null, words=typeof y.words==="string"&&hasOwn(LEVEL_OF_WORD,y.words)?y.words:null;
+    if(!kind||!words) return null;
+    const c=y.capacity||{}, t=y.typical||{}, ls=fin(c.life_support_patients)?c.life_support_patients:null;
+    if(kind==="capacity" && ls==null) return null;
+    return {kind, words, level:LEVEL_OF_WORD[words], ls, vf:fin(c.vents_free)?c.vents_free:null, set_at:typeof c.set_at==="string"?c.set_at:null, role:typeof c.set_by_role==="string"?c.set_by_role:null,
+      typ:fin(t.life_support_patients)&&t.life_support_patients>0?Math.round(t.life_support_patients):null};
+  }
+
+  /* ---------- state and the API ---------- */
   const ROLE_LABEL = {"ICU nurse":"ICU nurse (charge)","ICU physician":"ICU physician","pharmacy":"pharmacy","respiratory therapy":"respiratory therapy","bed manager":"bed manager"};
+  const roleLabel = s => hasOwn(ROLE_LABEL,s) ? ROLE_LABEL[s] : str(s,40);
   const role = () => $("role").value;
   let seedN = 20261114, cap = {...NOCAP};
   try { const c=JSON.parse(localStorage.getItem("lookahead-capacity")||"null"); if(c && Number.isInteger(c.life_support_patients)) cap=c; } catch(e){ /* no storage: capacity lives for this page only */ }
-  /* Two sources. Served by app/board.py (http/https) the page reads GET /api/forecast and /api/rooms and every action is a real call.
-     Opened from file://, or when an endpoint is unreachable, it falls back to the synthetic generator above and says SYNTHETIC DATA. */
-  let LIVE = false, FC = null, RM = {made_at:null, rooms:[]}, DEMO_LABEL = "", seenMadeAt = null, lastRoomRunAt = null, pollTimer = null;
-  const IDLE_MS = FAST?1500:300000;
+  /* Served by app/board.py (http/https) the page reads GET /api/forecast and /api/rooms and every action is a real call; a failed load retries and keeps the last good data.
+     Only file:// or #synthetic uses the built-in generator (badge "Demo data"). */
+  const LIVE = /^https?:$/.test(location.protocol) && !flag("synthetic");
+  let FC = null, RM = {made_at:null, rooms:[], ward:null}, DEMO_LABEL = "", seenMadeAt = null, lastRoomRunAt, pollTimer = null;
+  let run = null, offline = false, failN = 0, viewTyp = false, capLocal = null, room = null, pastOpen = false;
   const R = n => RM.rooms.find(r=>r.room===n);
-  const hasFc = () => !!(FC && FC.life_support);
+  const setZone = () => { const r0=RM.rooms[0]||{}, c=[FC&&FC.cut_time, FC&&FC.window&&FC.window.start, r0.cut_time, r0.window&&r0.window.start].map(offMin).filter(v=>v!=null); ZONE = c.length?c[0]:null; };
   const getJSON = async (url, ms=3000) => { const c=new AbortController(), t=setTimeout(()=>c.abort(),ms);
     try{ const r=await fetch(url,{signal:c.signal,cache:"no-store"}); if(!r.ok) throw new Error(r.status); return await r.json(); } finally{ clearTimeout(t); } };
+  /* every POST: same origin, Content-Type application/json and X-Lookahead: 1 (the server refuses anything else with 403 "request refused") */
   const postJSON = async (url, body, ms=8000) => { const c=new AbortController(), t=setTimeout(()=>c.abort(),ms);
-    try{ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),signal:c.signal}); return await r.json(); } finally{ clearTimeout(t); } };
-  function useSynthetic(){ const g=generate(seedN, Date.now()-3*36e5, 0, cap); FC=g.fc; RM=g.rooms; }
+    try{ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json","X-Lookahead":"1"},body:JSON.stringify(body),signal:c.signal});
+      let j=null; try{ j=await r.json(); }catch(e){ j=null; } if(!j||typeof j!=="object") j={};
+      if(!r.ok){ j.ok=false; if(!j.started) j.started=false; if(!j.reason) j.reason=r.status===403?"request refused":`The board server answered ${r.status}.`; }
+      return j; } finally{ clearTimeout(t); } };
+  function setData(f, r){
+    FC=f; RM={made_at:typeof r.made_at==="string"?r.made_at:null, rooms:cleanRooms(r.rooms), note:str(r.note,200), ward:r.ward};
+    seenMadeAt=typeof f.made_at==="string"?f.made_at:null; setZone();
+    if(capLocal && capLocal.forMadeAt===seenMadeAt) applyCapLocal();      // our recompute holds until the next forecast
+  }
+  async function loadAll(){ const [f,r]=await Promise.all([getJSON("/api/forecast"), getJSON("/api/rooms")]);
+    if(!f||typeof f!=="object"||!r||typeof r!=="object") throw new Error("shape"); setData(f,r); }
+  const sleep = ms => new Promise(res=>setTimeout(res,ms));
+  async function loadRetry(tries=3){ for(let i=0;i<tries;i++){ try{ await loadAll(); return true; }catch(e){ if(i<tries-1) await sleep((FAST?150:600)*Math.pow(3,i)); } } return false; }
+  function useSynthetic(){ const g=generate(seedN, Date.now()-3*36e5, 0, cap); FC=g.fc; RM=g.rooms; setZone(); }
 
-  let run = null;
   const api = {
     async liveRerun(body){ try{ return await postJSON("/api/rerun", body); }catch(e){ return {started:false, reason:"The board server did not answer. Try again in a moment."}; } },
     rerun(body){ return new Promise(res=>setTimeout(()=>{
@@ -434,14 +505,14 @@ details.more summary:hover{color:var(--ink)}
       const now=new Date(); run={...body, t0:Date.now()};
       res({started:true, name:`t7-forecast-${z(now.getMonth()+1)}${z(now.getDate())}-${z(now.getHours())}${z(now.getMinutes())}`}); },120)); },
     status(){ return Promise.resolve({state: run && Date.now()-run.t0>=RUN_MS ? "done" : "running"}); },
-    capacity(body){ return new Promise(res=>setTimeout(()=>res({saved:true, set_at:iso(Date.now())}),80)); }
+    capacity(body){ return new Promise(res=>setTimeout(()=>res({ok:true, capacity:{set_at:iso(Date.now())}}),80)); }
   };
 
   /* ---------- level colours: token background, then the ink with the best contrast (>= 4.5:1) ---------- */
   const hex=h=>{h=h.trim().replace('#','');return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16));};
   const lum=c=>{const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(c[0])+.7152*f(c[1])+.0722*f(c[2]);};
   const ratio=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
-  function tile(level){ const cs=getComputedStyle(document.documentElement), bg=hex(cs.getPropertyValue('--lv-'+level));
+  function tile(level){ const cs=getComputedStyle(document.documentElement), bg=hex(cs.getPropertyValue('--lv-'+(LV.includes(level)?level:"low")));
     const inks=['#1E2A33','#FFFFFF','#10161B','#E8ECE6'].map(hex), ink=inks.slice().sort((a,b)=>ratio(bg,b)-ratio(bg,a))[0];
     return [`rgb(${bg})`,`rgb(${ink})`]; }
 
@@ -449,141 +520,185 @@ details.more summary:hover{color:var(--ink)}
   const inTen = v => { const n=Math.round(v*10); return n<1?"fewer than 1 in 10":`about ${n} in 10`; };
   const wordN = n => n>=4?"High":n>=2?"Medium":"Low";
   const cap1 = s => s[0].toUpperCase()+s.slice(1);
+  const lvWord = l => LV.includes(l) ? cap1(l) : "No estimate";
   const rg = q => `<span class="rg">(${q.p10} to ${q.p90})</span>`;
   const rgT = q => `(${q.p10} to ${q.p90})`;
+  const noun = () => LIVE ? "patient" : "synthetic patient";
+
+  /* ---------- data-source label (never a warning): Demo data / MIMIC-IV Demo / MIMIC-IV · local ---------- */
+  function wardKind(){ if(!LIVE) return "synthetic"; if(!FC) return null;
+    const s=[FC.ward&&FC.ward.source, RM.ward&&RM.ward.source]; return s.includes("mimic-iv")?"mimic-iv":"open-demo"; }
+  function paintWard(){
+    const k=wardKind(), el=$("syn"), lab=[FC&&FC.ward&&FC.ward.label, RM.ward&&RM.ward.label].find(x=>typeof x==="string"&&x.trim());
+    el.hidden = !k; el.textContent = k==="synthetic"?"Demo data":k==="mimic-iv"?"MIMIC-IV · local":k==="open-demo"?"MIMIC-IV Demo":"";
+    if(lab && k && k!=="synthetic") el.title=str(lab,80); else el.removeAttribute("title");
+    const b=$("beds"); b.textContent = FC && fin(FC.beds) ? ` · ${Math.round(FC.beds)} beds` : "";
+    for(const e of document.querySelectorAll(".wardnote")) e.textContent = k==="mimic-iv" ? "Stage ward: MIMIC-IV patients." : k==="open-demo" ? "Stage ward: MIMIC-IV Demo patients." : "Demo patients.";
+    document.title = "Lookahead · ICU board";
+  }
+
+  /* ---------- the yardstick: the saved capacity, a local recompute, or a typical-day view ---------- */
+  const loadOf = () => { const ls=FC.life_support, n=ls.now_patients, q=ls.expected_new_patients; return {p10:n+q.p10,p50:n+q.p50,p90:n+q.p90}; };
+  const rawY = () => normY(FC&&FC.yardstick);
+  const typicalN = () => { const y=rawY(); return y&&y.typ!=null?y.typ:null; };
+  function Y(){ const raw=rawY();
+    if(viewTyp && hasFc() && typicalN()!=null){ const w=typWords(loadOf(),typicalN()); return {kind:"typical", words:w, level:LEVEL_OF_WORD[w], ls:null, vf:null, typ:typicalN()}; }
+    return raw; }
+  function localCapYard(c){ const old=FC.yardstick&&FC.yardstick.typical, w=capWords(loadOf(),c.life_support_patients);
+    return {kind:"capacity", words:w, level:LEVEL_OF_WORD[w], capacity:{life_support_patients:c.life_support_patients, vents_free:c.vents_free, set_at:c.set_at, set_by_role:c.set_by_role}, typical:old||null}; }
+  function applyCapLocal(){ if(hasFc() && capLocal) FC.yardstick=localCapYard(capLocal); }
+  const YNAME = y => y.kind==="capacity" ? "vs tonight's staffing" : "vs a typical day";
 
   /* ---------- strain panel ---------- */
   const FIRST = {pharmacy:"vasopressor","respiratory therapy":"imv","bed manager":"leave"};
-  const YNAME = () => FC.yardstick.kind==="capacity" ? "vs tonight's staffing" : "vs a typical day";
-  function loadOf(){ const ls=FC.life_support, n=ls.now_patients, q=ls.expected_new_patients; return {p10:n+q.p10,p50:n+q.p50,p90:n+q.p90}; }
-  function unitLine(){ const ls=FC.life_support, y=FC.yardstick; return `<b>${ls.now_patients}</b> on life support now · <b>${ls.expected_new_patients.p50}</b> more expected ${rgT(ls.expected_new_patients)} · ${y.words} ${YNAME()}`; }
+  function unitLine(){ const ls=FC.life_support, y=Y(); return `<b>${ls.now_patients}</b> on life support now · <b>${ls.expected_new_patients.p50}</b> more expected ${rgT(ls.expected_new_patients)}${y?` · ${y.words} ${YNAME(y)}`:""}`; }
   function renderStrain(){
-    if(!hasFc()){ $("strainbody").innerHTML=`<div class="strain-top"><h2 id="strain-h">Strain · next 24 hours</h2></div><p class="headline">No forecast yet</p><p class="yline">${(FC&&FC.note)?FC.note.charAt(0).toUpperCase()+FC.note.slice(1)+".":"The 07:00 run has not finished."} Use "Update the unit" to start one. <span class="pending">Not ready yet</span></p>`; $("check").textContent=""; $("capset").textContent=""; $("capclear").hidden=true; return; }
-    const ls=FC.life_support, y=FC.yardstick, q=ls.expected_new_patients, d=FC.resources.icu_departure, dd=FC.resources.death, load=loadOf();
+    const tbtn=$("viewtyp");
+    if(!hasFc()){
+      const off = offline && !FC;
+      $("strainbody").innerHTML=`<div class="strain-top"><h2 id="strain-h">Strain · next 24 hours</h2></div><p class="headline">No forecast yet</p><p class="yline">${off?"Can't reach the board server — retrying.":'Updates start at 07:00. Use "Update the unit" to start one.'}</p>`;
+      $("check").textContent=""; $("capset").textContent=""; tbtn.hidden=true; return; }
+    const raw=rawY(); if(viewTyp && !(raw&&raw.kind==="capacity"&&raw.typ!=null)) viewTyp=false;
+    const ls=FC.life_support, y=Y(), q=ls.expected_new_patients, d=FC.resources.icu_departure, dd=FC.resources.death, load=loadOf();
     const L = {
       imv:`<li><span class="ln">IMV</span><span><b>${ls.now_by.imv}</b> on now · +<b>${ls.expected_by.imv.p50}</b> expected ${rg(ls.expected_by.imv)}</span></li>`,
       vasopressor:`<li><span class="ln">Vasopressor</span><span><b>${ls.now_by.vasopressor}</b> on now · +<b>${ls.expected_by.vasopressor.p50}</b> expected ${rg(ls.expected_by.vasopressor)}</span></li>`,
       crrt:`<li><span class="ln">CRRT</span><span><b>${ls.now_by.crrt}</b> on now · +<b>${ls.expected_by.crrt.p50}</b> expected ${rg(ls.expected_by.crrt)}</span></li>`,
-      leave:`<li><span class="ln">Leaving</span><span><b>${d.p50}</b> expected to leave ${rg(d)} · arrivals not forecast</span></li>`};
+      leave:`<li><span class="ln">Leaving</span><span>expected to leave <b>${d.p50}</b> ${rg(d)}</span></li>`};
     const first = FIRST[role()], base = ["imv","vasopressor","crrt"];
     const order = first==="leave" ? ["leave",...base] : first ? [first,...base.filter(k=>k!==first),"leave"] : [...base,"leave"];
-    const ecmo = ls.now_by.ecmo==null ? `<li class="small"><span class="ln">ECMO</span><span>not available in this data · not forecast</span></li>` : `<li class="small"><span class="ln">ECMO</span><span><b>${ls.now_by.ecmo}</b> on now · not forecast</span></li>`;
     const deaths = `<li class="small"><span class="ln">Deaths</span><span>Deaths expected: <b>${dd.p50}</b> ${rgT(dd)}</span></li>`;
-    const c = y.capacity||{};
-    const yl = y.kind==="capacity"
-      ? `Now plus new: <b>${load.p50}</b> ${rgT(load)} · tonight's staffing covers <b>${c.life_support_patients}</b>${c.vents_free!=null?` · ventilators free <b>${c.vents_free}</b>, IMV starts expected ${ls.expected_by.imv.p50} ${rgT(ls.expected_by.imv)}`:""}.`
-      : `Now plus new: <b>${load.p50}</b> ${rgT(load)}${y.typical&&y.typical.life_support_patients!=null?` · a typical day is about <b>${y.typical.life_support_patients}</b>.`:" · a typical day is Not ready yet."}`;
+    let yl = "";      // the yardstick sentence appears only when there is something to compare with
+    if(y && y.kind==="capacity") yl=`Now plus new: <b>${load.p50}</b> ${rgT(load)} · tonight's staffing covers <b>${y.ls}</b>${y.vf!=null?` · ventilators free <b>${y.vf}</b>, IMV starts expected ${ls.expected_by.imv.p50} ${rgT(ls.expected_by.imv)}`:""}.`;
+    else if(y && y.typ!=null) yl=`Now plus new: <b>${load.p50}</b> ${rgT(load)} · a typical day is about <b>${y.typ}</b>.`;
     $("strainbody").innerHTML = `<div class="strain-top"><h2 id="strain-h">Strain · next 24 hours <span class="upd" id="upd-strain" ${run?"":"hidden"}>updating</span></h2>
-      <div class="yard"><span class="band lv-${y.level}" id="yword">${y.words}</span><span class="yname">${YNAME()}</span></div></div>
+      <div class="yard">${y?`<span class="band lv-${y.level}" id="yword">${y.words}</span><span class="yname">${YNAME(y)}</span>`:`<span class="band" id="yword">Not ready yet</span>`}</div></div>
       <p class="headline"><b>${ls.now_patients}</b> patients on life support now · <b>${q.p50}</b> more expected <span class="rg">${rgT(q)}</span></p>
-      <ul class="lines">${order.map(k=>L[k]).join("")}${ecmo}${deaths}</ul>
-      <p class="yline">${yl}</p>
+      <ul class="lines">${order.map(k=>L[k]).join("")}${deaths}</ul>
+      ${yl?`<p class="yline">${yl}</p>`:""}
       <p class="rgnote">Ranges cover 8 in 10 likely outcomes (p10 to p90).</p>`;
-    $("capset").textContent = y.kind==="capacity" && c.set_at ? `Capacity set ${hm(c.set_at)} by ${ROLE_LABEL[c.set_by_role]||c.set_by_role}` : "Capacity not set: compared with a typical day.";
-    $("capclear").hidden = y.kind!=="capacity";
-    const ci = $("capset"); if (y.kind==="capacity") ci.textContent = `Capacity set ${hm(c.set_at)} by ${ROLE_LABEL[c.set_by_role]||c.set_by_role}`;
-    $("check").innerHTML = FC.check_first.length ? `Check first: rooms ${FC.check_first.map(n=>`<a href="#room=${n}">${n}</a>`).join(", ")}` : "Check first: no room is High.";
+    let cs;
+    if(viewTyp) cs=`Showing a typical day on this screen only. Tonight's staffing number (${raw.ls}) stays saved.`;
+    else if(raw && raw.kind==="capacity") cs=`Capacity set ${raw.set_at?hm(raw.set_at)+" ":""}by ${roleLabel(raw.role||"")||"the team"}`;
+    else if(raw) cs="Capacity not set: compared with a typical day.";
+    else cs="Capacity not set.";
+    $("capset").textContent=cs;
+    tbtn.hidden = !(raw && raw.kind==="capacity" && raw.typ!=null);
+    tbtn.textContent = viewTyp ? "View against tonight's staffing" : "View against a typical day (staffing number kept)";
+    const cf=cfRooms();
+    $("check").innerHTML = cf===null ? "" : cf.length ? `Check first: rooms ${cf.map(n=>`<a href="#room=${n}">${n}</a>`).join(", ")}` : "Check first: no room is High.";
   }
   function renderFooter(){
-    if(!hasFc()){ $("alltasks").innerHTML=`<tr><td colspan="3"><span class="pending">Not ready yet</span></td></tr>`; return; }
+    if(!hasFc()){ $("alltasks").innerHTML=`<tr><td colspan="3">—</td></tr>`; return; }
     const T = [["IMV starts","invasive ventilation begins (tube or tracheostomy)","ventilator"],["Vasopressor starts","a vasopressor infusion starts (not inotropes alone)","vasopressor"],["CRRT starts","continuous dialysis begins","crrt"],["ICU discharges","leave the ICU for a ward or step-down unit","icu_departure"],["Death","in-hospital death","death"]];
-    $("alltasks").innerHTML = T.map(([n,def,k])=>{ const c=FC.resources[k]; return `<tr><th scope="row">${n}<span class="range">${def}</span></th><td class="num">${c.p50} <span class="range">${rgT(c)}</span></td><td>${c.team}</td></tr>`; }).join("");
+    $("alltasks").innerHTML = T.map(([n,def,k])=>{ const c=FC.resources[k]; if(!vq(c)) return `<tr><th scope="row">${n}<span class="range">${def}</span></th><td class="num">—</td><td></td></tr>`;
+      return `<tr><th scope="row">${n}<span class="range">${def}</span></th><td class="num">${c.p50} <span class="range">${rgT(c)}</span></td><td>${esc(str(c.team,40))}</td></tr>`; }).join("");
   }
 
   /* ---------- room board ---------- */
   function renderGrid(){
     const g=$("grid"); g.innerHTML="";
-    if(!RM.rooms.length){ g.innerHTML=`<p class="note">${String(RM.note||"Not ready yet").replace(/pending run/i,"Not ready yet")}: the rooms appear when the first forecast finishes.</p>`; return; }
+    const N=RM.rooms.length; $("board-h").firstChild.nodeValue = N ? `All ${N} rooms · next 24 hours ` : "Rooms · next 24 hours ";
+    $("back").textContent = N ? `← All ${N} rooms` : "← All rooms";
+    if(!N){ g.innerHTML=`<p class="note">${offline&&!FC?"Can't reach the board server — retrying.":"No rooms yet. They appear when the first forecast finishes."}</p>`; return; }
     for(const r of RM.rooms){
-      const b=document.createElement("button"); b.type="button"; b.className="mag lv-"+r.level+(r.level==="high"?" high":""); b.dataset.room=r.room; b.dataset.level=r.level;
-      const [bg,fg]=tile(r.level); b.style.background=bg; b.style.color=fg;
-      const tg=[["imv","V","IMV"],["vasopressor","P","vasopressor"],["crrt","C","CRRT"]].filter(x=>r.on_now[x[0]]), ols=r.on_life_support!=null?r.on_life_support:SUP.filter(k=>r.on_now[k]).length>=2;
-      b.dataset.state=ols?"on-life-support":r.level; if(ols) b.classList.add("ols");
-      b.setAttribute("aria-label",`Room ${r.room}${r.sex||r.age?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${ols?`On life support (${r.level} for more)`:cap1(r.level)}.${tg.length?` On ${tg.map(x=>x[2]).join(", ")}.`:""}${r.out?" Likely to leave the ICU.":""}`);
-      const who=[r.sex,r.age].filter(Boolean).join(" ");
-      b.innerHTML=`<span class="rm">${r.room}${who?`<span class="who">${who}</span>`:""}</span><span class="lw">${ols?"On life support":cap1(r.level)}</span><span class="tags" aria-hidden="true">${tg.map(x=>`<span class="tag">${x[1]}</span>`).join("")}${r.out?`<span class="tag out">OUT</span>`:""}</span>`;
+      const lv=r.level||"low", b=document.createElement("button"); b.type="button"; b.className="mag lv-"+lv+(lv==="high"?" high":""); b.dataset.room=r.room; b.dataset.level=r.level||"none";
+      const [bg,fg]=tile(lv);
+      b.style.background=bg; b.style.color=fg;
+      const tg=[["imv","V","IMV"],["vasopressor","P","vasopressor"],["crrt","C","CRRT"]].filter(x=>r.on_now[x[0]]), ols=r.on_life_support;
+      b.dataset.state=ols?"on-life-support":(r.level||"none"); if(ols) b.classList.add("ols");
+      const wd=lvWord(r.level), who=[r.sex,r.age].filter(Boolean).join(" ");
+      b.setAttribute("aria-label",`Room ${r.room}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${ols?`On life support (${wd} for more)`:wd}.${tg.length?` On ${tg.map(x=>x[2]).join(", ")}.`:""}${r.out?" Likely to leave the ICU.":""}`);
+      b.innerHTML=`<span class="rm">${r.room}${who?`<span class="who">${esc(who)}</span>`:""}</span><span class="lw">${ols?"On life support":wd}</span><span class="tags" aria-hidden="true">${tg.map(x=>`<span class="tag">${x[1]}</span>`).join("")}${r.out?`<span class="tag out">OUT</span>`:""}</span>`;
       b.onclick=()=>openRoom(r.room); g.appendChild(b); }
   }
 
   /* ---------- room page (#room=N) ---------- */
   const boardview=$("boardview"), roomview=$("roomview");
-  let room=null, pastOpen=false;
-  function openRoom(n){ if(Number.isInteger(n) && n>=1 && n<=BEDS) location.hash="room="+n; }
+  const openRoom = n => { if(R(n)) location.hash="room="+n; };
   function rrow(label, v, on, extra=""){
     if (on) return `<li><span>${label}${extra}</span><span class="lw2 on">On now</span><span class="dots" aria-hidden="true"></span><span class="fq">on now</span></li>`;
+    if (v==null) return `<li><span>${label}${extra}</span><span class="lw2">No estimate</span><span class="dots" aria-hidden="true"></span><span class="fq"></span></li>`;
     const n=Math.round(v*10);
     return `<li><span>${label}${extra}</span><span class="lw2">${wordN(n)}</span><span class="dots" role="img" aria-label="${inTen(v)}">${Array.from({length:10},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("")}</span><span class="fq">${inTen(v)}</span></li>`;
   }
   const STOPN = {imv:"Ventilator",vasopressor:"Vasopressor",crrt:"CRRT"};
-  const stoppedNote = r => SUP.filter(k=>r.stopped_before_cut&&r.stopped_before_cut[k]).map(k=>`<p class="stopped">${STOPN[k]}: off (stopped before 07:00)</p>`).join("");
+  const stoppedNote = r => SUP.filter(k=>r.stopped_before_cut[k]).map(k=>`<p class="stopped">${STOPN[k]}: off (stopped before 07:00)</p>`).join("");
   function renderRoom(){
-    const n=room, r=R(n); if(!r){ location.hash=""; return; }
-    const lvl=cap1(r.level), [bg,fg]=tile(r.level), ols=r.on_life_support!=null?r.on_life_support:SUP.filter(k=>r.on_now[k]).length>=2;
-    $("rv-h").innerHTML=`Room ${n}: next 24 hours <span class="lvtag lv-${r.level}${ols?" ols":""}" style="background:${bg};color:${fg}">${ols?"On life support":lvl}</span>`;
-    const rr=RM.rooms.find(x=>x.room===n)||{}, who=[rr.sex==="F"?"female":rr.sex==="M"?"male":"",rr.age?`age ${rr.age}`:""].filter(Boolean).join(", ");
-    $("rv-sub").textContent=`Stage ward, open demo patient${who?` · ${who}`:""} · ${lvl} chance of any new life support in the next 24 hours`;
-    $("rv-stamp").innerHTML=`updated ${hm(r.updated_at)} · next 24 h to ${hm(r.window.end)} ${dayWord(r.window.end)} <span class="upd" id="upd-room" ${run?"":"hidden"}>updating</span>`;
-    $("rv-unit").innerHTML=`Unit: ${unitLine()}`;
-    const pv=n-1||BEDS, nx=n%BEDS+1, pa=$("rv-prev"), na=$("rv-next");
-    pa.href=`#room=${pv}`; pa.textContent=`← Room ${pv}`; na.href=`#room=${nx}`; na.textContent=`Room ${nx} →`;
+    const n=room, r=R(n); if(!r){ route(false); return; }
+    const lv=r.level||"low", lvl=lvWord(r.level), [bg,fg]=tile(lv), ols=r.on_life_support;
+    $("rv-h").innerHTML=`Room ${n}: next 24 hours <span class="lvtag lv-${lv}${ols?" ols":""}" style="background:${bg};color:${fg}">${ols?"On life support":lvl}</span>`;
+    const who=[r.sex==="F"?"female":r.sex==="M"?"male":"",r.age?`age ${r.age}`:""].filter(Boolean).join(", ");
+    $("rv-sub").textContent=`Stage ward${who?` · ${who}`:""}${r.level?` · ${lvl} chance of any new life support in the next 24 hours`:""}`;
+    $("rv-stamp").innerHTML=`updated ${hm(r.updated_at)} · next 24 h to ${hm(r.window.end)}${dayWord(r.window.end, r.window.start||r.cut_time)} <span class="upd" id="upd-room" ${run?"":"hidden"}>updating</span>`;
+    $("rv-unit").innerHTML=hasFc()?`Unit: ${unitLine()}`:"";
+    const ids=RM.rooms.map(x=>x.room), i=ids.indexOf(n), pa=$("rv-prev"), na=$("rv-next");
+    if(ids.length<2){ pa.hidden=na.hidden=true; } else { const pv=ids[(i-1+ids.length)%ids.length], nx=ids[(i+1)%ids.length]; pa.hidden=na.hidden=false;
+      pa.href=`#room=${pv}`; pa.textContent=`← Room ${pv}`; na.href=`#room=${nx}`; na.textContent=`Room ${nx} →`; }
     const p=r.p, on=r.on_now;
-    $("rv-risks").innerHTML = `<h3>New life support</h3><ul class="risks">${rrow("IMV",p.imv,on.imv)}${rrow("Vasopressor",p.vasopressor,on.vasopressor)}${rrow("CRRT",p.crrt,on.crrt)}</ul>${stoppedNote(r)}<p class="stopped">ECMO or MCS: not available in this data, not forecast.</p>
+    $("rv-risks").innerHTML = `<h3>New life support</h3><ul class="risks">${rrow("IMV",p.imv,on.imv)}${rrow("Vasopressor",p.vasopressor,on.vasopressor)}${rrow("CRRT",p.crrt,on.crrt)}</ul>${stoppedNote(r)}
       <h3>Leaving the ICU</h3><ul class="risks">${rrow("ICU discharge",p.icu_departure,false,r.out?` <span class="tag out">OUT</span>`:"")}</ul>
       <h3>Death</h3><ul class="risks">${rrow("Death",p.death,false)}</ul>`;
-    const ph=r.past_12h||[], items=pastOpen?ph:ph.slice(0,5);
-    $("past").innerHTML=items.map(x=>`<li><time>${x.h} h</time><span>${x.text}</span></li>`).join("");
+    const ph=r.past_12h, items=pastOpen?ph:ph.slice(0,5);
+    $("past").innerHTML=items.map(x=>`<li>${x.h!=null?`<time datetime="PT${x.h}H">${x.h} h</time>`:`<time>–</time>`}<span>${esc(x.text)}</span></li>`).join("");
     const pm=$("pastmore"); pm.textContent=pastOpen?"Show fewer":`Show ${ph.length-5} more`; pm.hidden=ph.length<=5;
-    $("chat-scope").textContent=`Asking about room ${n} (open demo patient) and the unit. Answers come from this forecast only.${LIVE?"":" Mock replies in this file."}`;
+    paintScope();
   }
+  function paintScope(){ const el=$("chat-scope"); el.hidden = room===null; el.innerHTML = room===null ? "" : `<span class="ctx">Room ${room}</span>`; }
   function showRoom(n){
-    const first = room!==n; room=n; if(first){ log.innerHTML=""; pastOpen=false; }
+    const first = room!==n; room=n; if(first){ log.innerHTML=""; pastOpen=false; hold.room=false; put("rv-run",""); }
+    $("roomnote").hidden=true;
     boardview.hidden=true; roomview.hidden=false;
     renderRoom(); renderChips();
     if(first){ window.scrollTo(0,0); $("rv-h").focus({preventScroll:true}); }
   }
-  function showBoard(){
+  function showBoard(missing){
     const was=room; room=null; pastOpen=false; if(was!==null) log.innerHTML="";
     roomview.hidden=true; boardview.hidden=false;
-    $("chat-scope").textContent=`Answers come from this forecast only, on the local Nemotron 3 Nano.${LIVE?"":" Mock replies in this file."}`;
-    renderGrid(); renderChips();
+    const note=$("roomnote"); if(missing!=null){ note.hidden=false; note.textContent=`Room ${missing} is not in this forecast.`; } else note.hidden=true;
+    paintScope(); renderGrid(); renderChips();
     if(was!==null){ const t=document.querySelector(`#grid .mag[data-room="${was}"]`); if(t){ t.focus({preventScroll:true}); t.scrollIntoView({block:"center"}); } }
   }
-  function route(){
-    if(window.innerWidth<560 && !chatpanel.hidden){ chatpanel.hidden=true; chatbtn.setAttribute("aria-expanded","false"); }
+  function route(fromHash){
+    if(fromHash && window.innerWidth<560 && !chatpanel.hidden){ chatpanel.hidden=true; chatbtn.setAttribute("aria-expanded","false"); }
     let h=location.hash; try{ h=decodeURIComponent(h); }catch(e){ /* malformed hash: treat as the board */ }
-    const m=h.match(/room=(\d+)/), n=m?+m[1]:0;
-    if(n>=1 && n<=BEDS && R(n)) showRoom(n); else showBoard();
+    const m=h.match(/room=(\d+)/), n=m?+m[1]:null;
+    if(n!==null && R(n)) showRoom(n);
+    else showBoard(n!==null && (RM.rooms.length||FC) ? n : null);
   }
-  window.addEventListener("hashchange", route);
+  window.addEventListener("hashchange", ()=>route(true));
   $("pastmore").onclick=()=>{ pastOpen=!pastOpen; renderRoom(); $("pastmore").focus(); };
   $("rv-ask").onclick=()=>openChat();
 
-  /* ---------- updates: unit and room ---------- */
-  const demoOn = () => LIVE ? !!DEMO_LABEL : FC.demo_clock_hours>0;
-  function runLine(scope,n){ if(!hasFc()) return "Not ready yet: no forecast has finished"; return `Updated ${hm(scope==="room"?R(n).updated_at:FC.made_at)} (${scope==="room"?"room "+n:"unit"})${demoOn()?` · ${LIVE?DEMO_LABEL:"demo clock +"+FC.demo_clock_hours+" h"}`:""}`; }
-  function say2(scope, html){ if(scope==="room") $("rv-run").innerHTML=html; else $("runstate").innerHTML=html; }
-  function paintDemo(){
-    const el=$("demo"); if(el) el.remove();
-    if(!LIVE && FC.demo_clock_hours>0){ const s=document.createElement("span"); s.id="demo"; s.className="demo"; s.textContent=` · Demo clock: recorded patients, time advanced ${FC.demo_clock_hours} h`; $("runstate").append(s); }
-  }
+  /* ---------- the status lines: written only when the text changes; a refusal stays until the next real change ---------- */
+  const hold = {unit:false, room:false}, lastHTML = {};
+  function put(id, html){ if(lastHTML[id]!==html){ $(id).innerHTML=html; lastHTML[id]=html; } }
+  const demoOn = () => LIVE ? !!DEMO_LABEL : FC && FC.demo_clock_hours>0;
+  function runLine(scope,n){ if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
+    const t = scope==="room"&&R(n) ? R(n).updated_at : FC.made_at;
+    return `Updated ${hm(t)} (${scope==="room"?"room "+n:"unit"})${demoOn()?` · ${LIVE?esc(DEMO_LABEL):"Demo clock: recorded patients, time advanced "+FC.demo_clock_hours+" h"}`:""}`; }
+  function say2(scope, text, refusal){ if(refusal) hold[scope]=true; put(scope==="room"?"rv-run":"runstate", esc(text)); }
+  function idleLine(){ if(run) return; if(offline){ hold.unit=false; put("runstate", OFFLINE_LINE+(FC?". Showing the last forecast.":"")); return; } if(hold.unit) return; put("runstate", `<b>${runLine("unit")}</b>`); }
   function refreshAll(){
-    renderStrain(); renderFooter(); renderGrid();
-    if(room!==null) renderRoom();
-    $("runstate").innerHTML=`<b>${runLine("unit")}</b>`; paintDemo();
+    paintWard(); renderStrain(); renderFooter(); route(false);
+    if(!run){ hold.unit=false; idleLine(); }
   }
   function markRunning(on){
     for(const id of ["upd-strain","upd-grid","upd-room"]){ const e=$(id); if(e) e.hidden=!on; }
     for(const id of ["rerun","rv-update"]){ const b=$(id); b.setAttribute("aria-disabled",String(on)); b.textContent = on?"Updating…": id==="rerun"?"Update the unit":"Update this room"; }
   }
+  const sigOf = () => [FC&&FC.made_at, RM.made_at].concat(RM.rooms.map(r=>r.room+":"+r.updated_at+":"+r.level)).join("|");
   async function startUpdate(scope, n, who){
+    if(scope==="room" && !R(n)) return `Room ${n} is not in this forecast.`;
     const body={scope, role:who||role()}; if(scope==="room") body.room=n;
     const res=LIVE ? await api.liveRerun(body) : await api.rerun(body);
-    if(!res.started){ say2(scope, res.reason); return res.reason; }
-    markRunning(true);
-    if(LIVE){ run={live:true,scope,n}; if(res.demo_clock_label) DEMO_LABEL=res.demo_clock_label;
-      say2(scope, `Updating ${scope==="room"?"room "+n:"the unit"} for ${ROLE_LABEL[body.role]}. The last forecast stays on screen.`); schedulePoll(POLL_MS);
-      return `Started ${res.name||"the update"} (${scope==="room"?"room "+n:"unit"}). The numbers refresh in place when it finishes.`; }
-    say2(scope, `Updating ${scope==="room"?"room "+n:"the unit"}${who==="schedule"?" (morning run)":" for "+ROLE_LABEL[body.role]}. The last forecast stays on screen.`);
+    if(!res.started){ const why=str(res.reason,200)||"The update did not start."; say2(scope, why, true); return why; }
+    hold.unit=hold.room=false; markRunning(true);
+    const what = scope==="room"?"room "+n:"the unit";
+    if(LIVE){ run={live:true,scope,n,before:sigOf(),idle:0}; if(typeof res.demo_clock_label==="string") DEMO_LABEL=res.demo_clock_label;
+      say2(scope, `Updating ${what} for ${roleLabel(body.role)}. The last forecast stays on screen.`); schedulePoll(POLL_MS);
+      return `Started ${str(res.name,60)||"the update"} (${scope==="room"?"room "+n:"unit"}). The numbers refresh in place when it finishes.`; }
+    say2(scope, `Updating ${what}${who==="schedule"?" (morning run)":" for "+roleLabel(body.role)}. The last forecast stays on screen.`);
     const tm = setInterval(async()=>{ const s=await api.status(); if(s.state!=="done") return; clearInterval(tm); finishRun(scope,n); }, POLL_MS);
     return `Started ${res.name} (${scope==="room"?"room "+n:"unit"}). The numbers refresh in place when it finishes.`;
   }
@@ -591,30 +706,40 @@ details.more summary:hover{color:var(--ink)}
     const now=Date.now(); seedN+=7; run=null;
     const demo=FC.demo_clock_hours+6;
     if(scope==="unit"){ const g=generate(seedN, now, demo, cap); FC=g.fc; RM=g.rooms; }
-    else { const old=R(n), nr=genRoom(n, mk(seedN), now, old.on_now); nr.scope="room"; RM.rooms[n-1]=nr; FC.demo_clock_hours=demo; FC.check_first=checkFirst(RM.rooms); }
-    markRunning(false); refreshAll();
-    if(scope==="room") $("rv-run").innerHTML=`<b>${runLine("room",n)}</b>`;
+    else { const old=R(n), nr=genRoom(n, mk(seedN), now, old.on_now); nr.scope="room"; const i=RM.rooms.findIndex(x=>x.room===n); RM.rooms[i]=cleanRoom(nr); FC.demo_clock_hours=demo; FC.check_first=checkFirst(RM.rooms); }
+    markRunning(false); hold.unit=hold.room=false; refreshAll();
+    if(scope==="room") put("rv-run",`<b>${runLine("room",n)}</b>`);
     noteChange();
   }
   $("rerun").onclick=()=>{ if($("rerun").getAttribute("aria-disabled")==="true") return; startUpdate("unit"); };
   $("rv-update").onclick=()=>{ if($("rv-update").getAttribute("aria-disabled")==="true") return; startUpdate("room", room); };
 
-  /* ---------- live polling: /api/runs every 30 s while running, every 5 min otherwise ---------- */
-  async function loadAll(){ const [f,r]=await Promise.all([getJSON("/api/forecast"), getJSON("/api/rooms")]);
-    FC=f; RM={made_at:r.made_at||null, rooms:r.rooms||[], note:r.note}; if(f.made_at) seenMadeAt=f.made_at; }
+  /* ---------- live polling: 30 s while a run is going, 5 min otherwise, backoff when the server is unreachable ---------- */
   function schedulePoll(ms){ clearTimeout(pollTimer); pollTimer=setTimeout(pollRuns,ms); }
   async function pollRuns(){
-    let rn=null; try{ rn=await getJSON("/api/runs"); }catch(e){ /* server busy: try again on the next tick */ }
-    const busy = !!(rn && rn.available!==false && (rn.running||rn.updating));
-    if(rn && rn.available!==false){ DEMO_LABEL = rn.demo_clock_hours>0 ? (rn.demo_clock_label||`Demo clock +${rn.demo_clock_hours} h`) : ""; }
+    let rn=null; try{ rn=await getJSON("/api/runs"); }catch(e){ /* the dispatcher may be down: the board still works */ }
+    let f=null; try{ f=await getJSON("/api/forecast"); }catch(e){ f=null; }
+    if(!f || typeof f!=="object"){ offline=true; failN++; idleLine(); if(!FC){ renderStrain(); renderGrid(); }
+      schedulePoll(Math.min(30000,(FAST?300:2000)*Math.pow(2,Math.min(failN,4)))); return; }
+    const wasOff=offline; offline=false; failN=0;
+    const avail=!!(rn && rn.available!==false), busy=!!(avail && (rn.running||rn.updating));
+    if(avail) DEMO_LABEL = rn.demo_clock_hours>0 ? str(rn.demo_clock_label,80)||`Demo clock +${Number(rn.demo_clock_hours)||0} h` : "";
+    const ra=rn&&rn.last&&rn.last.room&&rn.last.room.at;
+    let need = wasOff || !FC || (f.made_at||null)!==(FC&&FC.made_at||null) || !!run;
+    if(lastRoomRunAt===undefined) lastRoomRunAt=ra||null; else if(ra && ra!==lastRoomRunAt){ lastRoomRunAt=ra; need=true; }
     let changed=false;
-    try{ const f=await getJSON("/api/forecast"); const ra=rn&&rn.last&&rn.last.room&&rn.last.room.at;
-      if((f.made_at||null)!==(FC&&FC.made_at||null) || (ra && ra!==lastRoomRunAt)){ if(ra) lastRoomRunAt=ra; await loadAll(); changed=true; } }catch(e){ /* keep the last forecast on screen */ }
-    if(!busy && run){ run=null; markRunning(false); changed=true; }
-    if(busy && !run){ run={live:true}; markRunning(true); }
-    if(changed){ refreshAll(); if(room!==null && !R(room)) location.hash=""; }
-    else if(rn && !run) { $("runstate").innerHTML=`<b>${runLine("unit")}</b>`; }
-    schedulePoll(busy?POLL_MS:IDLE_MS);
+    if(need){ try{ await loadAll(); changed=true; }catch(e){ /* keep the last data on screen */ } }
+    if(run && !busy){
+      const moved = changed && sigOf()!==run.before;
+      if(moved || run.idle>=2){       // grace of two quiet polls: the dispatcher can report idle just before the files land
+        const sc=run.scope; run=null; markRunning(false); hold.unit=hold.room=false; lastHTML.runstate=null; refreshAll();
+        if(room!==null) put("rv-run", `<b>${runLine("room",room)}</b>`);
+        if(!moved){ put("runstate","Update finished. The numbers have not changed yet."); }
+      } else run.idle++;
+    } else if(busy && !run){ run={live:true,scope:"unit",before:sigOf(),idle:0}; markRunning(true); }
+    else if(busy && run) run.idle=0;
+    if(!run){ if(changed) refreshAll(); else idleLine(); }
+    schedulePoll(run?POLL_MS:IDLE_MS);
   }
 
   /* ---------- capacity ---------- */
@@ -622,22 +747,24 @@ details.more summary:hover{color:var(--ink)}
     const ls=$("cap-ls").value.trim(), vf=$("cap-vf").value.trim(), ok=v=>/^\d{1,2}$/.test(v) && +v<=50;
     if(!ok(ls)){ $("capmsg").textContent="Enter the number of life-support patients tonight's staffing covers, a whole number from 0 to 50."; $("cap-ls").focus(); return; }
     if(vf!=="" && !ok(vf)){ $("capmsg").textContent="Ventilators free must be a whole number from 0 to 50, or left empty."; $("cap-vf").focus(); return; }
-    const body={life_support_patients:+ls, vents_free:vf===""?null:+vf, role:role()};   // POST /api/capacity
-    if(LIVE){ const lb={life_support_patients:body.life_support_patients, role:body.role}; if(body.vents_free!=null) lb.vents_free=body.vents_free;
-      let rs; try{ rs=await postJSON("/api/capacity", lb); }catch(err){ rs={ok:false,reason:"The board server did not answer. Try again in a moment."}; }
-      if(!rs.ok){ $("capmsg").textContent=rs.reason||"Capacity was not saved."; return; }
-      cap=rs.capacity||cap; try{ await loadAll(); }catch(err){ /* keep the last forecast */ }
-      if(hasFc() && FC.yardstick.kind!=="capacity") FC.yardstick=yardstick(FC,{life_support_patients:cap.life_support_patients,vents_free:cap.vents_free!=null?cap.vents_free:null,set_at:cap.updated_at||iso(Date.now()),set_by_role:body.role});
-      refreshAll(); $("capmsg").textContent=`Saved. ${$("capset").textContent}.`; return; }
-    const res=await api.capacity(body);
-    cap={life_support_patients:body.life_support_patients, vents_free:body.vents_free, set_at:res.set_at, set_by_role:body.role};
-    try{ localStorage.setItem("lookahead-capacity",JSON.stringify(cap)); }catch(err){ /* storage blocked: capacity lives for this page only */ }
-    FC.yardstick=yardstick(FC,cap); renderStrain(); if(room!==null) renderRoom();
-    $("capmsg").textContent=`Saved: set ${hm(cap.set_at)} by ${ROLE_LABEL[cap.set_by_role]}.`; noteChange(); };
-  $("capclear").onclick=()=>{ cap={...NOCAP}; try{ localStorage.removeItem("lookahead-capacity"); }catch(err){ /* ignore */ }
-    if(!hasFc()) return; FC.yardstick=yardstick(FC,cap); renderStrain(); if(room!==null) renderRoom(); $("capmsg").textContent="Back to a typical day."; $("cap-ls").value=""; $("cap-vf").value=""; };
+    const body={life_support_patients:+ls, role:role()}; if(vf!=="") body.vents_free=+vf;   // POST /api/capacity
+    let rs;
+    if(LIVE){ try{ rs=await postJSON("/api/capacity", body); }catch(err){ rs={ok:false,reason:"The board server did not answer. Try again in a moment."}; } }
+    else rs=await api.capacity(body);
+    if(!rs.ok){ $("capmsg").textContent=str(rs.reason,200)||"Capacity was not saved."; return; }
+    const sv=rs.capacity||{}, setAt=typeof sv.set_at==="string"?sv.set_at:typeof sv.updated_at==="string"?sv.updated_at:iso(Date.now());
+    viewTyp=false;
+    if(LIVE){ try{ await loadAll(); }catch(err){ /* keep the last forecast */ }
+      capLocal={life_support_patients:+ls, vents_free:vf===""?null:+vf, set_at:setAt, set_by_role:body.role, forMadeAt:seenMadeAt}; applyCapLocal(); }
+    else { cap={life_support_patients:+ls, vents_free:vf===""?null:+vf, set_at:setAt, set_by_role:body.role};
+      try{ localStorage.setItem("lookahead-capacity",JSON.stringify(cap)); }catch(err){ /* storage blocked: capacity lives for this page only */ }
+      FC.yardstick=genYardstick(FC,cap); }
+    renderStrain(); if(room!==null) renderRoom(); noteChange();
+    $("capmsg").textContent="Saved."; };
+  $("viewtyp").onclick=()=>{ viewTyp=!viewTyp; renderStrain(); if(room!==null) renderRoom();
+    $("capmsg").textContent = viewTyp ? "Showing a typical day on this screen only." : "Back to tonight's staffing."; };
 
-  /* ---------- chat (mock) ---------- */
+  /* ---------- chat ---------- */
   const log=$("log"), chatbtn=$("chatbtn"), chatpanel=$("chatpanel");
   const CHIPS = {"ICU nurse":["Summarise the shift","What will we be short of tonight?","Which rooms should we check first?"],
     "ICU physician":["Summarise the shift","Which rooms should we check first?","How many CRRT starts?"],
@@ -649,47 +776,50 @@ details.more summary:hover{color:var(--ink)}
     const el=$("chips"); el.innerHTML="";
     for(const q of qs){ const b=document.createElement("button"); b.type="button"; b.className="chip"; b.textContent=q; b.onclick=()=>ask(q); el.appendChild(b); }
   }
-  function say(who,text,cls){ const d=document.createElement("div"); d.className="msg "+cls; if(who) d.innerHTML=`<span class="who">${who}</span>`; d.append(document.createTextNode(text)); log.appendChild(d); log.scrollTop=log.scrollHeight; }
+  function say(who,text,cls){ const d=document.createElement("div"); d.className="msg "+cls; if(who){ const s=document.createElement("span"); s.className="who"; s.textContent=who; d.appendChild(s); } d.append(document.createTextNode(text)); log.appendChild(d); log.scrollTop=log.scrollHeight; }
   function noteChange(){ if(LIVE || chatpanel.hidden || !log.querySelector(".msg:not(.n)")) return; const o=log.querySelector(".msg.n"); if(o) o.remove(); say("",`Forecast updated at ${hm(FC.made_at)}. Answers below use it.`,"n"); }
   const cnt = q => `median ${q.p50} in the next 24 hours (range ${q.p10} to ${q.p90})`;
-  const plain = s => s.replace(/<[^>]+>/g,"");
-  function summary(){ const ls=FC.life_support, y=FC.yardstick, d=FC.resources.icu_departure;
-    return `${ls.now_patients} patients are on life support now and ${ls.expected_new_patients.p50} more are expected (${ls.expected_new_patients.p10} to ${ls.expected_new_patients.p90}). IMV +${ls.expected_by.imv.p50}, vasopressor +${ls.expected_by.vasopressor.p50}, CRRT +${ls.expected_by.crrt.p50}. ${d.p50} expected to leave the ICU (${d.p10} to ${d.p90}); arrivals are not forecast. ${y.words} ${YNAME()}. ${FC.check_first.length?`Check first: rooms ${FC.check_first.join(", ")}.`:"No room is High."}`; }
+  function summary(){ if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
+    const ls=FC.life_support, y=Y(), d=FC.resources.icu_departure, cf=cfRooms()||[];
+    return `${ls.now_patients} patients are on life support now and ${ls.expected_new_patients.p50} more are expected (${ls.expected_new_patients.p10} to ${ls.expected_new_patients.p90}). IMV +${ls.expected_by.imv.p50}, vasopressor +${ls.expected_by.vasopressor.p50}, CRRT +${ls.expected_by.crrt.p50}. ${d.p50} expected to leave the ICU (${d.p10} to ${d.p90}). ${y?`${y.words} ${YNAME(y)}. `:""}${cf.length?`Check first: rooms ${cf.join(", ")}.`:"No room is High."}`; }
   function answer(q){
     const t=q.toLowerCase();
-    if(/(should (we|i)|recommend|dose|dosing|treat|prescrib|order (a|an|the)|wean)/.test(t)) return "I can't advise on treatment. The forecast shows what the unit is likely to need in the next 24 hours; the team decides what to do.";
+    if(/(should (we|i)|recommend|dose|dosing|treat|prescrib|order (a|an|the)|wean)/.test(t)) return "That's outside this forecast. I can tell you what the unit is likely to need in the next 24 hours.";
     const mr=t.match(/\b(update|re-?run|refresh)\b.{0,24}\broom\s*(\d+)/);
-    if(mr){ const n=+mr[2]; if(n<1||n>BEDS) return `There is no room ${n}; rooms are 1 to ${BEDS}.`; return startUpdate("room",n); }
+    if(mr){ const n=+mr[2]; if(!R(n)) return `Room ${n} is not in this forecast.`; return startUpdate("room",n); }
     if(/\b(update|re-?run|refresh)\b.{0,24}\b(unit|forecast|board)\b/.test(t)) return startUpdate("unit");
+    if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
     if(/summari[sz]e/.test(t)) return summary();
-    const rr=t.match(/room (\d+): what is most likely/);
-    if(rr||(room&&/most likely/.test(t))){ const r=R(rr?+rr[1]:room), items=[["IMV",r.p.imv],["vasopressor",r.p.vasopressor],["CRRT",r.p.crrt],["ICU discharge",r.p.icu_departure],["death",r.p.death]].filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,2);
+    const rr=t.match(/room (\d+): what is most likely/), rn0=rr?+rr[1]:room, r0=rn0?R(rn0):null;
+    if((rr||(room&&/most likely/.test(t)))){ if(!r0) return `Room ${rn0} is not in this forecast.`;
+      const r=r0, items=[["IMV",r.p.imv],["vasopressor",r.p.vasopressor],["CRRT",r.p.crrt],["ICU discharge",r.p.icu_departure],["death",r.p.death]].filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,2);
       const on=[["IMV","imv"],["vasopressor","vasopressor"],["CRRT","crrt"]].filter(x=>r.on_now[x[1]]).map(x=>x[0]);
-      return `Room ${r.room}, next 24 hours (${r.level} for new life support): ${items.map(x=>`${x[0]} (${inTen(x[1])})`).join(", then ")}.${on.length?` On now: ${on.join(", ")}.`:""} These are what the forecast read. They do not show why something happens.`; }
-    if(room && /(intubat|vent)/.test(t)){ const v=R(room).p.imv; return v==null?`Room ${room} is already on IMV, so the forecast does not count it as new.`:`Room ${room}: ${inTen(v)} patients like this start IMV in the next 24 hours. The held-out check is Not ready yet. The team decides.`; }
-    if(/short/.test(t)){ const ls=FC.life_support, y=FC.yardstick, load=loadOf();
-      return y.kind==="capacity" ? `${y.words} vs tonight's staffing: now plus new life support ${cnt(load)}; staffing covers ${y.capacity.life_support_patients}${y.capacity.vents_free!=null?`; ${y.capacity.vents_free} ventilators free, IMV starts ${cnt(ls.expected_by.imv)}`:""}.`
-        : `${y.words} vs a typical day: now plus new life support ${cnt(load)}; a typical day is about ${y.typical.life_support_patients}. No capacity is set for tonight.`; }
-    if(/(check first|highest|which rooms|rooms)/.test(t)) return FC.check_first.length?`Check first: rooms ${FC.check_first.join(", ")} (High, ordered by the chance of any new life support).`:"No room is High right now.";
-    if(/vent|imv/.test(t)) return `IMV starts: ${cnt(FC.resources.ventilator)}.`;
-    if(/(pressor|norepi|pharm)/.test(t)) return `Vasopressor starts: ${cnt(FC.resources.vasopressor)}.`;
-    if(/crrt|dialys/.test(t)) return `CRRT starts: ${cnt(FC.resources.crrt)}.`;
+      return `Room ${r.room}, next 24 hours${r.level?` (${r.level} for new life support)`:""}: ${items.map(x=>`${x[0]} (${inTen(x[1])})`).join(", then ")}.${on.length?` On now: ${on.join(", ")}.`:""}`; }
+    if(room && R(room) && /(intubat|vent)/.test(t)){ const r=R(room), v=r.p.imv; return v==null?(r.on_now.imv?`Room ${room} is already on IMV, so it is not counted as a new start.`:`Room ${room}: no estimate for IMV.`):`Room ${room}: ${inTen(v)} patients like this start IMV in the next 24 hours.`; }
+    if(/short/.test(t)){ const ls=FC.life_support, y=Y(), load=loadOf();
+      if(!y) return `Now plus new life support: ${cnt(load)}.`;
+      return y.kind==="capacity" ? `${y.words} vs tonight's staffing: now plus new life support ${cnt(load)}; staffing covers ${y.ls}${y.vf!=null?`; ${y.vf} ventilators free, IMV starts ${cnt(ls.expected_by.imv)}`:""}.`
+        : `${y.words} vs a typical day: now plus new life support ${cnt(load)}${y.typ!=null?`; a typical day is about ${y.typ}`:""}. No capacity is set for tonight.`; }
+    if(/(check first|highest|which rooms|rooms)/.test(t)){ const cf=cfRooms()||[]; return cf.length?`Check first: rooms ${cf.join(", ")} (High, ordered by the chance of any new life support).`:"No room is High right now."; }
+    if(/vent|imv/.test(t)) return vq(FC.resources.ventilator)?`IMV starts: ${cnt(FC.resources.ventilator)}.`:"No estimate for IMV starts yet.";
+    if(/(pressor|norepi|pharm)/.test(t)) return vq(FC.resources.vasopressor)?`Vasopressor starts: ${cnt(FC.resources.vasopressor)}.`:"No estimate for vasopressor starts yet.";
+    if(/crrt|dialys/.test(t)) return vq(FC.resources.crrt)?`CRRT starts: ${cnt(FC.resources.crrt)}.`:"No estimate for CRRT starts yet.";
     if(/death|die/.test(t)) return `Deaths: ${cnt(FC.resources.death)}.`;
-    if(/(leave|bed|out|transfer|discharg)/.test(t)) return `ICU discharges (to ward or step-down): ${cnt(FC.resources.icu_departure)}. Arrivals from the ED or OR are not forecast.`;
+    if(/(leave|bed|out|transfer|discharg)/.test(t)) return `ICU discharges (to ward or step-down): ${cnt(FC.resources.icu_departure)}.`;
     return "I can answer from this forecast: life support, IMV, vasopressor and CRRT starts, discharges, deaths, which rooms to check first, or one stage-ward room. Say \"update room 12\" or \"update the unit\" to start an update.";
   }
-  async function ask(q){ openChat(false); say(ROLE_LABEL[role()],q,"q");
+  async function ask(q){ openChat(false); say(roleLabel(role()),q,"q");
     if(LIVE){ let a; try{ const body={question:q, role:role(), seen_made_at:seenMadeAt}; if(room) body.room=room; const rs=await postJSON("/api/ask", body, 60000);
-        a=rs.answer||rs.reason||"Nemotron is not answering yet; the rest of the board works."; if(rs.made_at) seenMadeAt=rs.made_at; }catch(e){ a="Nemotron is not answering yet; the rest of the board works."; }
-      say("Nemotron 3 Nano",a,"a"); schedulePoll(FAST?300:3000); return; }
-    const a=await Promise.resolve(answer(q)); say("Nemotron 3 Nano (mock)",a,"a"); }
+        a=str(rs.answer,4000)||str(rs.reason,200)||"Lookahead is not answering yet. The rest of the board works."; if(typeof rs.made_at==="string") seenMadeAt=rs.made_at; }catch(e){ a="Lookahead is not answering yet. The rest of the board works."; }
+      say("Lookahead",a,"a"); schedulePoll(FAST?300:3000); return; }
+    const a=await Promise.resolve(answer(q)); say("Lookahead",a,"a"); }
   function openChat(focusInput=true){ if(chatpanel.hidden){ chatpanel.hidden=false; chatbtn.setAttribute("aria-expanded","true"); } if(focusInput) $("q").focus(); }
   function closeChat(){ chatpanel.hidden=true; chatbtn.setAttribute("aria-expanded","false"); chatbtn.focus(); }
   chatbtn.onclick=()=>openChat();
   $("chatclose").onclick=closeChat;
   chatpanel.addEventListener("keydown",e=>{ if(e.key==="Escape") closeChat(); });
   $("ask").onsubmit=e=>{ e.preventDefault(); const q=$("q"), v=q.value.trim(); if(!v) return; ask(v); q.value=""; };
-  $("role").onchange=()=>{ log.innerHTML=""; renderStrain(); renderChips(); }; // a new role starts a fresh chat
+  $("role").onchange=()=>{ log.innerHTML=""; if(hasFc()) renderStrain(); renderChips(); }; // a new role starts a fresh chat
 
   /* ---------- theme ---------- */
   let theme="day"; const tb=$("theme");
@@ -697,24 +827,19 @@ details.more summary:hover{color:var(--ink)}
 
   /* ---------- start ---------- */
   function start(){
-    if(!LIVE){ if(!FC) useSynthetic(); } else $("syn").hidden=true;
-    renderStrain(); renderFooter(); renderGrid(); renderChips();
-    $("runstate").innerHTML=`<b>${runLine("unit")}</b>`;
+    paintWard(); renderStrain(); renderFooter(); renderGrid(); renderChips(); idleLine();
     // deep links for review captures: #room=7, #night, #role=pharmacy, #fast (quick runs), #morning (the scheduled run in progress), #synthetic (never read the API)
     let h=location.hash; try{ h=decodeURIComponent(h); }catch(e){ /* malformed hash: use it raw */ }
     if(flag("night")) tb.click();
-    const rm=h.match(/role=([a-z ]+)/i); if(rm && Object.prototype.hasOwnProperty.call(ROLE_LABEL, rm[1])){ $("role").value=rm[1]; renderStrain(); renderChips(); }
+    const rm=h.match(/role=([a-z ]+)/i); if(rm && hasOwn(ROLE_LABEL, rm[1])){ $("role").value=rm[1]; if(hasFc()) renderStrain(); renderChips(); }
     if(!LIVE && flag("morning")) startUpdate("unit",null,"schedule");
-    route();
-    if(LIVE) schedulePoll(IDLE_MS);
-    window.__lookahead = {gen:generate, get live(){return LIVE;}, get fc(){return FC;}, get rooms(){return RM;}};   // read-only handle for QA
+    route(false);
+    if(LIVE) schedulePoll(offline?(FAST?300:2000):IDLE_MS);
+    window.__lookahead = {gen:generate, get live(){return LIVE;}, get fc(){return FC;}, get rooms(){return RM;}, get offline(){return offline;}};   // read-only handle for QA
   }
   (async()=>{
-    if(/^https?:$/.test(location.protocol) && !flag("synthetic")){
-      try{ const [f,r]=await Promise.all([getJSON("/api/forecast"), getJSON("/api/rooms")]);
-        if(f && typeof f==="object" && r && typeof r==="object"){ LIVE=true; FC=f; RM={made_at:r.made_at||null, rooms:r.rooms||[], note:r.note}; seenMadeAt=f.made_at||null; } }catch(e){ LIVE=false; }
-    }
-    if(!LIVE) useSynthetic();
+    if(LIVE){ if(!(await loadRetry())){ offline=true; failN=1; } }
+    else useSynthetic();
     start();
   })();
 })();

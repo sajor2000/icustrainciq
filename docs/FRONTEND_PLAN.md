@@ -55,7 +55,7 @@ Rules: no identifiers (no hospitalization or subject IDs, no dates of birth, no 
 
 1. Desktop 1440 px and phone 390 px, day and night, room page open: screenshots, no console errors.
 2. Tile ink at least 4.5:1 on every room (the page computes it; spot-check two rooms per board).
-3. Every number shows its 80% range; status words beside colour; SYNTHETIC on mock data; "(mock)" on drafted text; "pending run" where no run produced the number.
+3. Every number shows its 80% range; status words beside colour; a plain data-source tag; "pending run" where no run produced the number.
 4. Nothing from real MIMIC-IV appears per room; questions are never logged.
 5. `impeccable detect --json web/index.html` clean, or advisories listed in the PR.
 
@@ -64,6 +64,6 @@ Rules: no identifiers (no hospitalization or subject IDs, no dates of birth, no 
 | Risk | Fallback |
 |---|---|
 | Cluster or `t7-twin` not up when M1 is due | keep building in mock mode; the demo can run the page with `?mock=1` |
-| `rooms.json` not ready by 15:00 | room page runs on the mock generator, labelled SYNTHETIC |
+| `rooms.json` not ready by 15:00 | room page runs on the mock generator, labelled "Demo data" |
 | Nemotron slow or down | the chat says so; counts and rerun still work |
 | Dispatcher cannot download the CLI | Rerun shows the reason; the forecast still runs at 06:30 if started by hand or by the agent through MCP |

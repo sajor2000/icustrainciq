@@ -9,7 +9,7 @@ Everything a user sees is a count with a likely range, or one stage-ward room's 
 1. **06:45, before rounds.** Opens the board on the unit workstation. The header gives the run time ("Updated 06:58 (unit)").
 2. **Reads the strain panel.** "10 patients on life support now, 6 more expected (4 to 9)", and one word beside it: TIGHT vs tonight's staffing. That is the answer; the lines below are the evidence.
 3. **Sets tonight's capacity if it is not set.** Opens "Set tonight's capacity", types how many life-support patients tonight's staffing covers (and ventilators free if she knows), saves. The word is now ON TRACK, TIGHT or SHORT against that number, and the panel says "Capacity set 07:12 by ICU nurse (charge)".
-4. **Reads "Check first: rooms 20, 12, 7".** The three High rooms by combined chance of new life support. She notes them for rounds; the board shows all 25 rooms with their level word, tags (V, P, C) and OUT where a discharge is likely.
+4. **Reads "Check first: rooms 20, 12, 7" (each room a link).** The three High rooms by combined chance of new life support. She notes them for rounds; the board shows all 25 rooms with their level word, tags (V, P, C) and OUT where a discharge is likely.
 5. **Taps "Summarise the shift"** if she wants it in words; Nemotron answers from the counts.
 6. **Decides**: asks for a second respiratory therapist for the night, tells the bed manager.
 
@@ -34,7 +34,7 @@ Picks "respiratory therapy": the IMV line comes first, and the capacity form tak
 
 ## Bed manager (07:30 and through the day)
 
-Picks "bed manager": the "expected to leave" line comes first ("10 expected to leave (7 to 12) · arrivals not forecast"). Rooms with the OUT tag are the likely discharges. Plans ED boarding, step-down transfers and elective surgery holds.
+Picks "bed manager": the "expected to leave" line comes first ("expected to leave 10 (7 to 13)"). Rooms with the OUT tag are the likely discharges. Plans ED boarding, step-down transfers and elective surgery holds.
 
 ## Midday: something changed (any role)
 

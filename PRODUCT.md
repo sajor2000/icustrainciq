@@ -28,7 +28,7 @@ Local compute for a busy ICU. Right-sized models (tens of millions of parameters
 ## Operating Context
 
 - Built and demonstrated at the CIQ x NVIDIA Local AI Hackathon (Chicago, 2026-11-14/15) by team7: five people, two Lenovo ThinkStation PGX (NVIDIA GB10) nodes, Fuzzball 4.3 orchestration, five-minute demo.
-- Data: MIMIC-IV-Ext-CLIF (credentialed), moved once into the team7 persistent volume `mimic_clif`. Per-patient views in the demo use open MIMIC-IV demo or synthetic patients.
+- Data: MIMIC-IV-Ext-CLIF (credentialed), moved once into the team7 persistent volume `mimic_clif`. Per-patient views use the open MIMIC-IV demo, synthetic patients, or (approved, local only) real MIMIC-IV room views, marked "MIMIC-IV · local" in the top strip.
 - Real-world use is a daily forecast for 07:00 morning rounds (started at 06:30 so it is ready at 07:00, and on request) on local hardware from a live CLIF feed.
 
 ## Capabilities and Constraints
@@ -43,7 +43,7 @@ Local compute for a busy ICU. Right-sized models (tens of millions of parameters
 ## Evidence on Hand
 
 - ICU strain and staffing evidence with PubMed citations in the team playbook (Bravata 2021, Wilde 2021, Anesi 2018/2026, Kiekkas 2022, Needleman 2011, Murray 2023, Palmer 2024).
-- No real forecast numbers, backtest results or scaling results exist yet. Never fabricate them in UI or copy; show "Not ready yet" until `results/bench.jsonl` and `forecast.json` exist.
+- No real forecast numbers, backtest results or scaling results exist yet. Never fabricate them in UI or copy; show "Not ready yet" as a standalone state until `results/bench.jsonl` and `forecast.json` exist.
 
 ## The five predictions (decided 2026-11-14, J.C.)
 
@@ -59,11 +59,11 @@ Removed from the board: hypotension and ICU readmission. A task already under wa
 
 ## Life support, the strain panel and updates (decided 2026-11-14, J.C.)
 
-**Life support** means IMV (breathing tube or tracheostomy), a vasopressor infusion (inotropes alone do not count) or CRRT. **Now** means running at the 07:00 cut. ECMO and other mechanical support are not in the data: never shown as a tag, labelled "not available in this data, not forecast".
+**Life support** means IMV (breathing tube or tracheostomy), a vasopressor infusion (inotropes alone do not count) or CRRT. **Now** means running at the 07:00 cut. ECMO and other mechanical support are not in the data and are not shown on the board.
 
 **Room level** is the combined chance of any new life support in the next 24 hours, skipping supports already running: High at 4 in 10 or more, Medium at 2 in 10 or more, else Low. Death never colours a tile. A room with two or more supports running reads "On life support". A room with a 6 in 10 or better chance of leaving the ICU carries an OUT tag.
 
-**Strain panel** (top of the right column, first on a phone): "N patients on life support now · M more expected (range)", then IMV, vasopressor and CRRT lines ("now · +expected (range)", the role's line first), "K expected to leave (range) · arrivals not forecast", and "Deaths expected". A one-word yardstick says how that compares: with a capacity set ("Set tonight's capacity": life-support patients tonight's staffing covers, optionally ventilators free) ON TRACK, TIGHT (the range reaches it) or SHORT (the median passes it), named "vs tonight's staffing"; otherwise USUAL, BUSY or VERY BUSY "vs a typical day". Under it one line, "Check first: rooms 20, 12, 7". There is no shift brief.
+**Strain panel** (top of the right column, first on a phone): "N patients on life support now · M more expected (range)", then IMV, vasopressor and CRRT lines ("now · +expected (range)", the role's line first), "expected to leave K (range)", and "Deaths expected". A one-word yardstick says how that compares: with a capacity set ("Set tonight's capacity": life-support patients tonight's staffing covers, optionally ventilators free) ON TRACK (p90 at or under it), TIGHT (p90 over it) or SHORT (the median over it), named "vs tonight's staffing"; otherwise USUAL, BUSY or VERY BUSY "vs a typical day". Under it one line, "Check first: rooms 20, 12, 7". There is no shift brief.
 
 **Updates**: "Update the unit" (header) and "Update this room" (room page) start a forecast for the unit or one room, for the role chosen (never a name), at most once every 20 minutes. The last forecast stays on screen and is marked "updating"; the numbers refresh in place; a refusal reads "Updated 12 minutes ago. You can update again at 13:17." The 07:00 morning run is the scheduled update. The chat can start an update only when asked ("update room 12", "update the unit"). In the demo the replay clock is advanced and labelled ("Demo clock: recorded patients, time advanced N h").
 

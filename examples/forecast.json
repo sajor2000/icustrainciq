@@ -88,16 +88,33 @@
       "set_by_role": null
     },
     "typical": {
-      "life_support_patients": 15
+      "life_support_patients": 12,
+      "load": {
+        "p10": 13,
+        "p50": 15,
+        "p90": 18
+      }
     }
   },
   "check_first": [
-    20,
-    6
+    {
+      "room": 20,
+      "any_life_support": 0.71,
+      "level": "high"
+    },
+    {
+      "room": 6,
+      "any_life_support": 0.47,
+      "level": "high"
+    }
   ],
   "levels": {
     "medium": 0.2,
     "high": 0.4
   },
-  "out_tag": 0.6
+  "out_tag": 0.6,
+  "ward": {
+    "source": "open-demo",
+    "label": "MIMIC-IV Demo"
+  }
 }
