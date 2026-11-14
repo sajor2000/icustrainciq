@@ -10,11 +10,11 @@ age and sex -> rooms.json and forecast.json in --out (default data/local/out),
 working files in --work (default data/local/work). Both are under backend/data/,
 which git ignores: a real ward never leaves the machine.
 
-No model yet (no --model / --probes, or the folders lack weights or a probe
-manifest): "forecast_state": "pending-model". The Now side is real (on now, age,
+No model yet (no --model / --probes, or the folders lack weights or no probe
+file): "forecast_state": "pending-model". The Now side is real (on now, age,
 sex, last 12 h); every prediction and expected count is null (docs/CONTRACT.md).
-With --model <mdl dir> --probes <probes dir> the same run extracts features and
-applies the saved probes (icutwin-extract, rep_based.apply_probes).
+With --model <mdl dir> --probes <probe-<model>.joblib> the same run extracts
+features and applies the saved probes (icutwin-extract, rep_based.apply_probes).
 
 The cut (docs/CONTRACT.md "Shared demo day"): each stay is cut on its own clock,
 first ICU arrival + --cut-after-arrival-hours (24, D3) + --demo-clock-hours. The
@@ -46,7 +46,6 @@ if str(BACKEND) not in sys.path:  # run as a script from any folder
 from app import aggregate, clif_now, fake_names, rooms, stage_ward, ward_check  # noqa: E402
 
 HOSP = "hospitalization_id"
-WINNOW_CFG = BACKEND / "examples" / "winnow_24h.yaml"
 BASE_HOURS = 24  # D3: the cut is 24 h after ICU arrival
 SOURCE_YEAR = re.compile(r"(?<!\d)2[1-9]\d{2}(?!\d)")  # MIMIC's shifted years
 
@@ -178,7 +177,7 @@ def state_at(
     from icutwin.scoring import winnower
 
     logger.setLevel("WARNING")  # the per-split outcome rates are small cells here
-    winnower.winnow(root, WINNOW_CFG, offset_hours or None)
+    winnower.winnow(root, None, offset_hours or None)
     ids = list(room_of)
     df = aggregate.pending_scores(root, ids)
     kept = df[HOSP].to_list()
@@ -231,8 +230,8 @@ def score(root, df, model, probes, ids):
 
         if rep_based.weights_digest(model) is None:
             why = "no model weights in --model"
-        elif not (pathlib.Path(probes) / rep_based.MANIFEST).is_file():
-            why = "no probe manifest in --probes"
+        elif not pathlib.Path(probes).is_file():
+            why = "no probe file at --probes"
     if why:
         print(f"forecast pending: {why}")
         return df, aggregate.PENDING, "pending"
@@ -285,7 +284,9 @@ def main(argv=None) -> None:
     ap.add_argument("--out", type=pathlib.Path, default=BACKEND / "data/local/out")
     ap.add_argument("--work", type=pathlib.Path, default=BACKEND / "data/local/work")
     ap.add_argument("--model", type=pathlib.Path, help="mdl-<run>/ (else pending)")
-    ap.add_argument("--probes", type=pathlib.Path, help="saved probes (else pending)")
+    ap.add_argument(
+        "--probes", type=pathlib.Path, help="probe-<model>.joblib (else pending)"
+    )
     ap.add_argument(
         "--cut-after-arrival-hours",
         type=float,

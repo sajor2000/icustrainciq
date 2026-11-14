@@ -1,4 +1,8 @@
 version: v4
+# SUPERSEDED by workflows/job_4_probe (in github.com/vaishvikc/ICU-Twin), which fits the same probe beside the model it
+# belongs to (/data/model_output/final/probe.joblib + probe_src/). t7-forecast reads that
+# one, so this workflow is a fallback: run it only if job 4 has not produced a probe.
+
 # t7-fit: the ONE-TIME step between t7-code and the first forecast (docs/LIVE_DEMO.md G2, G3). Run it once
 # after t7-code has published the code and training has packaged a model, and again only when the model
 # changes. A forecast update never refits.
@@ -19,7 +23,7 @@ version: v4
 # Storage (docs/FUZZBALL_VALIDATION.md): mimic_clif is training's volume and is only READ here: the model
 # (/data/model_output/final), the training tokens (/data/tokenized_output) and the cohort (/data/dashboard_data).
 # Everything this workflow writes goes to twin-store: /store/train (links to the training token files, plus the
-# winnowed files, features and scores made here), /store/stage (the ward), /store/probes.
+# winnowed files, features and scores made here), /store/stage (the ward).
 volumes:
   data:
     name: mimic_clif            # persistent, training's volume: READ ONLY here by rule (4.3 has no read-only mount)
@@ -62,7 +66,7 @@ jobs:
       cp "$SRC/vocab.yaml" /store/train/vocab.yaml.new && mv /store/train/vocab.yaml.new /store/train/vocab.yaml
       echo "training token files linked: $n"
       # cut every training stay 24 h after ICU arrival: writes /store/train/{split}_for_inference.parquet
-      python -c "from icutwin.scoring.winnower import main; main()" /store/train -c /store/code/examples/winnow_24h.yaml
+      python -c "from icutwin.scoring.winnower import main; main()" /store/train
       ls /store/train/*_for_inference.parquet | wc -l
 
   stage:
@@ -78,7 +82,7 @@ jobs:
       python /store/code/app/stage_ward.py $CLIF --out /store/stage/stage_ward.csv @WARD_IDS@   # seed 20261114, 25 rooms; prints counts only
       printf 'clif_path: %s\ntimezone: US/Eastern\nfiletype: parquet\n' "$CLIF" > site.yaml
       python -c "from icutwin.tokenizer.cli import main; main()" pipeline site.yaml                   # -> /store/stage/tokenized_output
-      python -c "from icutwin.scoring.winnower import main; main()" tokenized_output -c /store/code/examples/winnow_24h.yaml
+      python -c "from icutwin.scoring.winnower import main; main()" tokenized_output
       # the stage vocabulary must equal the training one, or the token ids would not match the model
       cmp /store/stage/tokenized_output/vocab.yaml /data/tokenized_output/vocab.yaml && echo "vocab: identical"
       echo "stage rooms: $(($(wc -l < /store/stage/stage_ward.csv) - 1))"
@@ -104,9 +108,7 @@ jobs:
     script: |
       #!/bin/bash
       set -euo pipefail
-      mkdir -p /store/probes
-      # fits one probe per task on the train features, scores held_out, saves the probes and manifest.json
+      # fits one probe per task on the train features, scores held_out; writes /store/train/probe-final.joblib (+ .meta.json: weights checksum)
       python -c "from icutwin.scoring.rep_based import main; main()" /store/train -m /data/model_output/final \
-        -c /store/code/examples/probe_tasks.yaml --save-probes /store/probes/mdl-icutwin
-      ls /store/probes/mdl-icutwin | wc -l
-      python -c "import json; m=json.load(open('/store/probes/mdl-icutwin/manifest.json')); print('probes saved:', len(m.get('tasks', m)))"
+        -c /store/code/examples/probe_tasks.yaml
+      python -c "import joblib; print('probes saved:', len(joblib.load('/store/train/probe-final.joblib')))"

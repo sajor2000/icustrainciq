@@ -61,7 +61,7 @@ jobs:
       python /store/code/app/stage_ward.py "$CLIF" --out "$NEW/stage_ward.csv" @WARD_IDS@   # seed 20261114; prints counts only
       printf 'clif_path: %s\ntimezone: US/Eastern\nfiletype: parquet\n' "$CLIF" > site.yaml
       python -c "from icutwin.tokenizer.cli import main; main()" pipeline site.yaml                   # -> $NEW/tokenized_output
-      python -c "from icutwin.scoring.winnower import main; main()" tokenized_output -c /store/code/examples/winnow_24h.yaml
+      python -c "from icutwin.scoring.winnower import main; main()" tokenized_output
       # the ward's vocabulary must equal the training one, or the token ids would not match the model
       cmp "$NEW/tokenized_output/vocab.yaml" /data/tokenized_output/vocab.yaml && echo "vocab: identical"
       # swap: the old stage (tokens, features, per-stay scores of the previous ward) goes away whole

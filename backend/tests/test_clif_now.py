@@ -218,3 +218,44 @@ def test_forecast_counts_follow_clif(tmp_path):
     assert fc["on_now_source"] == "clif"
     assert fc["life_support"]["now_by"]["imv"] == 1
     assert aggregate.build_forecast(df, "m", beds=4)["on_now_source"] == "tokens"
+
+
+def test_vitals_before_cut_hourly_median_relative_hours(tmp_path):
+    d = _clif(tmp_path, ids=("s1", "s2"))
+    rows = [
+        ("s1", h(0.5), "heart_rate", 100.0),
+        ("s1", h(0.25), "heart_rate", 110.0),  # same hour: the median, 105
+        ("s1", h(1.5), "heart_rate", 90.0),  # hour 2
+        ("s1", h(11.5), "spo2", 95.0),  # hour 12
+        (
+            "s1",
+            h(12),
+            "spo2",
+            80.0,
+        ),  # 12 h or older: left out (the window is open there)
+        ("s1", h(-1), "map", 70.0),  # after the cut: left out
+        ("s1", h(3), "temp_c", 37.0),  # not one of the four
+        ("s1", h(4), "map", None),  # no value
+    ]
+    pl.DataFrame(
+        rows,
+        schema={
+            "hospitalization_id": pl.String,
+            "recorded_dttm": pl.Datetime("us", "UTC"),
+            "vital_category": pl.String,
+            "vital_value": pl.Float64,
+        },
+        orient="row",
+    ).write_parquet(d / "clif_vitals.parquet")
+    got = clif_now.vitals_before_cut(d, {"s1": CUT, "s2": CUT})
+    assert got == {
+        "s1": {
+            "heart_rate": [{"h": 1, "v": 105.0}, {"h": 2, "v": 90.0}],
+            "spo2": [{"h": 12, "v": 95.0}],
+        }
+    }  # s2 has no reading: not in the result
+    assert clif_now.vitals_for_stays(d, ["s1"]) == {"s1": got["s1"]}
+
+
+def test_vitals_before_cut_without_a_vitals_table(tmp_path):
+    assert clif_now.vitals_before_cut(_clif(tmp_path), {"s1": CUT}) == {}

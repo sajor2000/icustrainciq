@@ -10,7 +10,7 @@ can be reproduced inside the cluster from the open data in the repo.
 
 Rule (docs/LIVE_DEMO.md section 1, docs/DECISIONS.md D6, D10):
  1. a stay is eligible when it reaches ICU and is still in the ICU, and still in
-    hospital, 24 h after the first ICU arrival (the cut of examples/winnow_24h.yaml);
+    hospital, 24 h after the first ICU arrival (icutwin/config/winnowing.yaml);
  2. each eligible stay gets a sickness score 0 to 8 over the first 24 h in the ICU,
     one point each for: any vasopressor dose, invasive ventilation, CRRT,
     MAP < 65, lactate > 2, creatinine > 2, platelets < 100, and

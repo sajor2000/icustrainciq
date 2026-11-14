@@ -120,7 +120,7 @@ Run it **before** `t7-twin` is up: its `stage` and `extract` jobs together ask f
 | Start | `fuzzball workflow start /tmp/t7-fit.fz --name t7-fit` |
 | Jobs | `stage` (CPU) and `extract` (one GPU) side by side, then `fit` (CPU) |
 | Success | all Finished. `stage` log: counts, "vocab: identical", "stage rooms: 25". `extract` log: a count of `features-*.parquet`. `fit` log: "probes saved: N" |
-| On the volumes | `/store/probes/mdl-icutwin/manifest.json`; `/store/stage/stage_ward.csv`; `/store/stage/tokenized_output/` |
+| On the volumes | `/store/train/probe-final.joblib`; `/store/stage/stage_ward.csv`; `/store/stage/tokenized_output/` |
 | If `cmp` fails in `stage` | the stage vocabulary differs from the training one: the code on `/store/code` is not the code that tokenized the training data. Stop |
 
 ### Step 3: `t7-ward` (the final cohort; skip to keep the open demo ward)
@@ -142,7 +142,7 @@ fuzzball workflow validate fuzzball/ready/t7-ward.fz && fuzzball workflow start 
 
 ### Step 4: `t7-twin`
 
-For the cohort use `fuzzball/ready/t7-twin.fz`: its dispatcher line already ends with `--real-ward --clif-dir /data/dashboard_data --names /data/dashboard_data/name.parquet`. No hand edit.
+For the cohort use `fuzzball/ready/t7-twin.fz`: its dispatcher line already ends with `--real-ward --clif-dir /data/dashboard_data --names fake` (generated names keyed by room number, so every staged room has one; `name.parquet` is no longer read). No hand edit.
 
 ```bash
 fuzzball workflow validate fuzzball/t7-twin.fz
@@ -203,7 +203,7 @@ Open a room, press "Update this room" (needs the unit run first). A new `t7-fore
 | Back to the open demo ward | render `t7-ward.fz` with no options, start it, remove `--real-ward --clif-dir ... --names ...` from the dispatcher line, restart `t7-twin`, update the unit |
 | Take the cohort off the cluster | delete `/data/dashboard_data/`, `/store/stage/tokenized_output/`, `/store/stage/stage_ward.csv`, then `/store/rooms.json` and `/store/forecast.json` (they hold the cohort's room entries), from a one-line CPU job or `fuzzball workflow exec` in a running job that mounts both volumes. Then restage the open demo ward |
 | Rendered copies | `/store/rendered/` keeps the last 30; `/tmp/*.fz` on the laptop can go |
-| Old probes | `t7-fit` overwrites `/store/probes/mdl-icutwin`; probes are tied to the weights by checksum, so a new model needs a new `t7-fit` |
+| Old probes | `t7-fit` overwrites `/store/train/probe-final.joblib`; probes are tied to the weights by checksum, so a new model needs a new `t7-fit` |
 | Never | `fuzzball workflow stop` on `t7-build` while it trains; start a forecast by hand while `t7-twin` is up (only the dispatcher starts them) |
 
 ## 6. Never run on the cluster yet

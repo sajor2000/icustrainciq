@@ -83,7 +83,7 @@ jobs:
       mkdir -p /work/smoke && cd /work/smoke
       printf 'clif_path: /work/code/clif_demo\ntimezone: US/Eastern\nfiletype: parquet\n' > site.yaml
       python -c "from icutwin.tokenizer.cli import main; main()" pipeline site.yaml
-      python -c "from icutwin.scoring.winnower import main; main()" tokenized_output -c /work/code/examples/winnow_24h.yaml  # cut 24 h after ICU arrival (D3)
+      python -c "from icutwin.scoring.winnower import main; main()" tokenized_output  # cut 24 h after ICU arrival (D3)
       python -m icutwin.model.decoder tokenized_output -o model_output --size s -c /work/code/examples/smoke_decoder.yaml
       ls model_output/mdl-icutwin
 

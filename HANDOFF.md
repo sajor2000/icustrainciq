@@ -84,7 +84,7 @@ Storage in one line: `mimic_clif` is only read (cohort, model, training tokens);
 ## Rules that must hold
 
 - **Patient data never enters git.** The 25 demo patients are real MIMIC-IV records. They live in `backend/data/local/` (git-ignored) and on the Fuzzball volume `mimic_clif` (`dashboard_data/`). The repo is public. Logs and reports carry counts only.
-- Names on the board are invented (`name.parquet`, `fake_names.py`), on the cluster too.
+- Names on the board are invented, on the cluster too: `fake_names.py` generates one per room number (`--names fake`); the older `name.parquet` is no longer read.
 - Every POST to the board needs `Content-Type: application/json` and `X-Lookahead: 1`.
 - Only the dispatcher starts forecast runs. One GPU job at a time beside the chat model.
 - Wording: "trained and run on local hardware", never "trained on this hospital's patients".

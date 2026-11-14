@@ -462,7 +462,10 @@ def test_with_model_and_probes_the_predictions_are_filled(demo_run, monkeypatch)
     )
     assert f["life_support"]["expected_new_patients"]["p50"] is not None
     free = [x for x in r["rooms"] if not x["on_now"]["vasopressor"]]
-    assert free and all(0 <= x["p"]["vasopressor"] <= 1 for x in free)
+    # main's task rule: a pressor started (and stopped) before the cut gets no p
+    ps = [x["p"]["vasopressor"] for x in free]
+    assert any(v is not None for v in ps)
+    assert all(v is None or 0 <= v <= 1 for v in ps)
     assert all(x["level"] in ("low", "medium", "high") for x in r["rooms"])
     assert all(x["p"]["imv"] is None for x in r["rooms"] if x["on_now"]["imv"])
     assert run_cohort.source_years(r) == run_cohort.source_years(f) == 0
