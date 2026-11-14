@@ -49,7 +49,7 @@ Rules: no identifiers (no hospitalization or subject IDs, no dates of birth, no 
 
 - [ ] **Lane 4:** M0 to M4 above; vendor PRs to the backend at M1, M2 and freeze.
 - [ ] **Lane 4:** `app/board.py` (backend) serves `app/static/index.html` at `/` and `GET /api/rooms` from `/store/rooms.json`; keep the existing API.
-- [ ] **Lane 3:** write `rooms.json` for the stage ward in `t7-forecast.fz`; add `examples/rooms.json` here (synthetic) for mock mode.
+- [ ] **Lane 3 with Vaishvik:** add the stage-ward pass to `t7-forecast.fz` (tokenize `clif_demo`, sample with the same model, keep the futures for these rooms, summarize) and write `rooms.json` (details in [`INTEGRATION.md`](INTEGRATION.md)); today nothing scores the stage ward and the scorer keeps only means; add `examples/rooms.json` here (synthetic) for mock mode.
 - [ ] **Lane 2:** confirm the cluster web UI address for the dispatcher (`FB_UI_URL` in `t7-twin.fz`) so Rerun works; tell lane 4 the board's endpoint URL (`fuzzball workflow endpoints list`).
 - [ ] **Lane 5:** take the 07:00 journeys into the demo script (charge nurse scan, room 7 drill-down, rerun from chat).
 

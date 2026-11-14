@@ -14,7 +14,7 @@ The frontend is the ICU team's board for 07:00 morning rounds. The backend (fore
 |---|---|---|
 | `GET /api/forecast` | `forecast.json` (counts only); example: [`../examples/forecast.json`](../examples/forecast.json) | `app/aggregate.py` after each `t7-forecast` run |
 | `GET /api/runs` (via the board) | dispatcher status: next scheduled run, recent runs (time, role, workflow id) | `app/dispatcher.py` |
-| per-room file (to build) | stage-ward rooms only: risk per horizon per event, a sample of futures as event lists, preceding-event counts, last 12 h of events | lane 3, open MIMIC-IV Demo patients only (D6) |
+| `GET /api/rooms`: `rooms.json` (to build; contract in `FRONTEND_PLAN.md`) | stage-ward rooms only: risk per horizon per event, a sample of futures as event lists, preceding-event counts, last 12 h of events | lane 3, open MIMIC-IV Demo patients only (D6) |
 
 `forecast.json` keys: `made_at`, `beds`, `range` ("80% (p10-p90)"), `default_horizon` ("24h"), `horizon` (label), `model`, `shards`, `resources` (default horizon), `horizons` (`24h`, `48h`, `72h`, `stay`, each with `label` and `resources`), `per_day` (`Day 1` to `Day 3`), `already_started` (`vasopressor`, `ventilator` counts). Each resource: `team`, `p10`, `p50`, `p90`, `expected`. Resource names: `vasopressor`, `ventilator`, `nippv`, `high_flow_nc`, `icu_admission`, `death`, `icu_departure`, `icu_beds_net`.
 
@@ -22,7 +22,7 @@ The frontend is the ICU team's board for 07:00 morning rounds. The backend (fore
 
 | Action | Request | Response |
 |---|---|---|
-| Ask the chat | `POST /api/ask {"question": "...", "role": "ICU nurse"}` | `{"answer": "..."}` (Nemotron 3 Nano, counts and stage-ward room only) |
+| Ask the chat | `POST /api/ask {"question": "...", "role": "ICU nurse", "room": 7}` (`room` optional, stage ward only) | `{"answer": "..."}` (Nemotron 3 Nano, counts and stage-ward room only) |
 | Rerun the forecast (button) | `POST /api/rerun {"role": "ICU nurse"}` | `{"started": true, "name": "t7-forecast-1114-1302", "workflow": "..."}` or `{"started": false, "reason": "..."}` |
 | Rerun from the chat | a question matching "rerun / run / start / refresh / update ... forecast" | same as above, as an answer sentence |
 
