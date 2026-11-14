@@ -3,3 +3,7 @@
 .impeccable/config.local.json
 .impeccable/hook.cache.json
 node_modules/
+.venv/
+__pycache__/
+.pytest_cache/
+*.egg-info/

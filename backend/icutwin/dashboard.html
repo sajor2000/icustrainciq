@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ICU Twin training</title>
+<style>
+:root { --bg: #fff; --fg: #1d1d1f; --mut: #6e6e73; --grid: #d9d9de; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #121214; --fg: #ececf0; --mut: #9a9aa2; --grid: #333338; }
+}
+body { background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif;
+  margin: 0 auto; padding: 16px; max-width: 960px; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 15px; margin: 20px 0 6px; }
+#status { color: var(--mut); margin: 0; }
+svg { width: 100%; height: auto; border: 1px solid var(--grid); border-radius: 6px; }
+svg text { fill: var(--mut); font-size: 11px; }
+.leg span { margin-right: 14px; white-space: nowrap; }
+.leg i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }
+table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+td { padding: 2px 12px 2px 0; border-bottom: 1px solid var(--grid); }
+</style>
+</head>
+<body>
+<h1>ICU Twin training</h1>
+<p id="status">waiting for metrics.jsonl…</p>
+<h2>Loss</h2><svg id="loss"></svg><div class="leg" id="loss-leg"></div>
+<h2>Learning rate</h2><svg id="lr"></svg>
+<h2>Last log</h2><table id="last"></table>
+<script>
+const COLOR = { loss: "#4269d0", token_loss: "#3ca951", tnt_loss: "#ff725c",
+  eval_loss: "#efb118", learning_rate: "#a463f2",
+  reward: "#3ca951", eval_reward: "#efb118" };
+
+function plot(id, rows, keys) {
+  const W = 900, H = 260, P = 40, svg = document.getElementById(id);
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const lines = keys.map(k => rows.filter(r => Number.isFinite(r[k])).map(r => [r.step, r[k]]));
+  const pts = lines.flat();
+  if (!pts.length) { svg.innerHTML = ""; return; }
+  const [x0, x1] = [Math.min(...pts.map(p => p[0])), Math.max(...pts.map(p => p[0]))];
+  const [y0, y1] = [Math.min(...pts.map(p => p[1])), Math.max(...pts.map(p => p[1]))];
+  const sx = x => P + (x - x0) / (x1 - x0 || 1) * (W - 2 * P);
+  const sy = y => H - P + 10 - (y - y0) / (y1 - y0 || 1) * (H - 2 * P);
+  svg.innerHTML =
+    `<text x="4" y="${sy(y1) + 4}">${y1.toPrecision(3)}</text>` +
+    `<text x="4" y="${sy(y0) + 4}">${y0.toPrecision(3)}</text>` +
+    `<text x="${P}" y="${H - 6}">step ${x0}</text>` +
+    `<text x="${W - P}" y="${H - 6}" text-anchor="end">step ${x1}</text>` +
+    lines.map((l, i) => `<polyline fill="none" stroke="${COLOR[keys[i]]}" stroke-width="2"
+      points="${l.map(([x, y]) => `${sx(x)},${sy(y)}`).join(" ")}"/>`).join("");
+}
+
+async function tick() {
+  try {
+    const txt = await (await fetch("metrics.jsonl", { cache: "no-store" })).text();
+    const rows = txt.trim().split("\n").filter(Boolean).map(l => JSON.parse(l));
+    if (!rows.length) return;
+    const keys = ["loss", "token_loss", "tnt_loss", "eval_loss", "reward", "eval_reward"].filter(k => rows.some(r => k in r));
+    plot("loss", rows, keys);
+    plot("lr", rows, ["learning_rate"]);
+    document.getElementById("loss-leg").innerHTML =
+      keys.map(k => `<span><i style="background:${COLOR[k]}"></i>${k}</span>`).join("");
+    const last = rows[rows.length - 1];
+    document.getElementById("status").textContent =
+      `step ${last.step} · epoch ${(last.epoch ?? 0).toFixed(3)} · updated ${new Date(last.time * 1000).toLocaleTimeString()}`;
+    const merged = Object.assign({}, ...rows.slice(-20));
+    document.getElementById("last").innerHTML = Object.entries(merged)
+      .filter(([k]) => k !== "time")
+      .map(([k, v]) => `<tr><td>${k}</td><td>${typeof v === "number" ? +v.toPrecision(5) : v}</td></tr>`).join("");
+  } catch (e) {
+    document.getElementById("status").textContent = `no data yet (${e.message})`;
+  }
+}
+tick();
+setInterval(tick, 5000);
+</script>
+</body>
+</html>

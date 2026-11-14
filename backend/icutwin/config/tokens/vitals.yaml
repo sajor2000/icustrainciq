@@ -1,0 +1,209 @@
+# vitals tokens; globals in ../tokens.yaml
+continuous:
+- code: VITAL//dbp
+  table: vitals
+  category_column: vital_category
+  value_column: vital_value
+  time_column: recorded_dttm
+  category: dbp
+  unit: mmHg
+  plausible:
+  - 0.0
+  - 200.0
+  edges:
+  - 0.0
+  - 41.0
+  - 49.0
+  - 57.0
+  - 65.0
+  - 72.0
+  - 80.0
+  - 88.0
+  - 96.0
+  - 104.0
+  - 200.0
+  reviewed: true
+- code: VITAL//heart_rate
+  table: vitals
+  category_column: vital_category
+  value_column: vital_value
+  time_column: recorded_dttm
+  category: heart_rate
+  unit: bpm
+  plausible:
+  - 0.0
+  - 300.0
+  edges:
+  - 0.0
+  - 55.0
+  - 65.0
+  - 74.0
+  - 83.0
+  - 92.0
+  - 101.0
+  - 110.0
+  - 120.0
+  - 129.0
+  - 300.0
+  reviewed: true
+- code: VITAL//height_cm
+  table: vitals
+  category_column: vital_category
+  value_column: vital_value
+  time_column: recorded_dttm
+  category: height_cm
+  unit: cm
+  plausible:
+  - 70.0
+  - 255.0
+  edges:
+  - 70.0
+  - 149.86
+  - 154.94
+  - 160.02
+  - 165.1
+  - 170.18
+  - 175.26
+  - 180.34
+  - 185.42
+  - 190.5
+  - 255.0
+  reviewed: true
+- code: VITAL//map
+  table: vitals
+  category_column: vital_category
+  value_column: vital_value
+  time_column: recorded_dttm
+  category: map
+  unit: mmHg
+  plausible:
+  - 0.0
+  - 250.0
+  edges:
+  - 0.0
+  - 56.666667
+  - 65.0
+  - 73.0
+  - 81.0
+  - 89.0
+  - 97.0
+  - 105.0
+  - 113.0
+  - 121.666667
+  - 250.0
+  reviewed: true
+- code: VITAL//respiratory_rate
+  table: vitals
+  category_column: vital_category
+  value_column: vital_value
+  time_column: recorded_dttm
+  category: respiratory_rate
+  unit: breaths/min
+  plausible:
+  - 0.0
+  - 60.0
+  edges:
+  - 0.0
+  - 12.0
+  - 14.0
+  - 17.0
+  - 19.0
+  - 22.0
+  - 24.0
+  - 26.0
+  - 28.0
+  - 32.0
+  - 60.0
+  reviewed: true
+- code: VITAL//sbp
+  table: vitals
+  category_column: vital_category
+  value_column: vital_value
+  time_column: recorded_dttm
+  category: sbp
+  unit: mmHg
+  plausible:
+  - 0.0
+  - 300.0
+  edges:
+  - 0.0
+  - 82.0
+  - 94.0
+  - 106.0
+  - 117.0
+  - 129.0
+  - 141.0
+  - 153.0
+  - 165.0
+  - 177.0
+  - 300.0
+  reviewed: true
+- code: VITAL//spo2
+  table: vitals
+  category_column: vital_category
+  value_column: vital_value
+  time_column: recorded_dttm
+  category: spo2
+  unit: '%'
+  plausible:
+  - 50.0
+  - 100.0
+  edges:
+  - 50.0
+  - 90.0
+  - 91.0
+  - 92.0
+  - 94.0
+  - 95.0
+  - 96.0
+  - 97.0
+  - 98.0
+  - 99.0
+  - 100.0
+  reviewed: true
+- code: VITAL//temp_c
+  table: vitals
+  category_column: vital_category
+  value_column: vital_value
+  time_column: recorded_dttm
+  category: temp_c
+  unit: C
+  plausible:
+  - 25.0
+  - 44.0
+  edges:
+  - 25.0
+  - 35.611
+  - 35.9444
+  - 36.2777
+  - 36.556
+  - 36.889
+  - 37.2
+  - 37.5
+  - 37.833
+  - 38.222
+  - 44.0
+  reviewed: true
+- code: VITAL//weight_kg
+  table: vitals
+  category_column: vital_category
+  value_column: vital_value
+  time_column: recorded_dttm
+  category: weight_kg
+  unit: kg
+  plausible:
+  - 30.0
+  - 1100.0
+  edges:
+  - 30.0
+  - 49.2
+  - 61.23
+  - 73.1
+  - 85.2
+  - 97.34
+  - 109.316
+  - 121.563
+  - 133.81
+  - 149.198
+  - 1100.0
+  reviewed: true

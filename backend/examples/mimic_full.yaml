@@ -1,0 +1,6 @@
+# tokenizer input for `icutwin-tokenize pipeline examples/mimic_full.yaml`
+# every MIMIC-IV hospitalization, whole stay (admission_dttm -> discharge_dttm);
+# output goes to ./tokenized_output/ under the folder you run from
+clif_path: ${oc.env:HOME}/CLIF_MIMIC # your CLIF folder; was an absolute home path
+timezone: US/Eastern
+filetype: parquet

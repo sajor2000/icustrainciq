@@ -1,0 +1,15 @@
+# scoring overrides for the team7 unit-strain forecast (t7-forecast.fz, t7-forecast-burst.fz)
+#   icutwin-gen-score <tokenized_output> -m <model> -c examples/forecast_scoring.yaml
+# app/aggregate.py reads only the MC score, which comes from the shared M1 futures,
+# so skip M2 (REACH): it regenerates once per outcome token, and the unit-strain
+# outcomes match 64 tokens (every vasopressor dose bin).
+generation:
+  methods: [M1]
+score:
+  # Day 1 (board default), Days 2-3 and rest of stay from the same futures:
+  # writes <token>_mc24h_score, _mc48h_score, _mc72h_score beside _mc_score (rest of stay)
+  horizons_hours: [24, 48, 72]
+  # a patient who came from the ward can still leave the ICU for it: count it
+  repeat_ok:
+    - ADT//TRANSFER_IN//ward
+    - ADT//TRANSFER_IN//stepdown

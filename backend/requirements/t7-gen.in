@@ -1,0 +1,7 @@
+# SGLang smoke job extras (--no-deps install into /tooling/py-gen); the image provides the rest.
+clifpy>=2.1.0
+omegaconf
+polars>=1.33.1
+typer
+rich
+datasets

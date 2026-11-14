@@ -1,0 +1,15 @@
+# tokenizer run options and defaults. Your config file is merged over this one
+# (`icutwin-tokenize pipeline examples/mimic.yaml`); keys you omit keep these defaults.
+# Nothing here can change the vocabulary (that lives in tokens.yaml).
+
+clif_path: null # required: folder holding clif_<table>.parquet (MIMIC-IV in CLIF)
+timezone: US/Eastern # IANA timezone of the data; clifpy uses it to read times
+filetype: parquet # parquet | csv; tables are read by clifpy as clif_<table>.<filetype>
+time_unit: us # ms | us | ns
+drop_duplicate_events: true
+max_events_per_batch: 10000000 # bounds tokenizer memory; output is identical
+min_tokens: 100 # stays with fewer tokens (BOS..EOS) are removed
+split: # random, per hospitalization
+  seed: 42
+  train_frac: 0.7 # 70% train
+  tuning_frac: 0.1 # 10% tuning; the other 20% held_out

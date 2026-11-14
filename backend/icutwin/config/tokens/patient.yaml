@@ -1,0 +1,34 @@
+# patient tokens; globals in ../tokens.yaml
+categorical:
+- code: PATIENT//sex
+  table: patient
+  column: sex_category
+  time_column: admission_dttm
+  mapping:
+    Male: male
+    Female: female
+  other: false  # any other sex drops the patient's stays
+- code: PATIENT//race
+  table: patient
+  column: race_category
+  time_column: admission_dttm
+  mapping:
+    White: white
+    Black or African American: black
+    Asian: asian
+    American Indian or Alaska Native: other_ukn
+    Native Hawaiian or Other Pacific Islander: other_ukn
+    Other: other_ukn
+    Unknown: other_ukn
+  other: false
+  fallback: other_ukn
+- code: PATIENT//ethnicity
+  table: patient
+  column: ethnicity_category
+  time_column: admission_dttm
+  mapping:
+    Hispanic: hispanic
+    Non-Hispanic: other_ukn
+    Unknown: other_ukn
+  other: false
+  fallback: other_ukn

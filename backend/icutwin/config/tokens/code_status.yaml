@@ -1,0 +1,18 @@
+# code_status tokens; globals in ../tokens.yaml
+categorical:
+- code: CODE_STATUS
+  table: code_status
+  column: code_status_category
+  time_column: start_dttm
+  mapping:
+    Full: full
+    Presume Full: full
+    DNR: dnr
+    DNAR: dnr
+    UDNR: dnr
+    DNR/DNI: dni
+    DNAR/DNI: dni
+    DNI_only: dni
+    AND: other
+    Other: other
+  other: true

@@ -1,0 +1,17 @@
+# Python deps for the t7 workflows (installed into /tooling/py on top of the NGC PyTorch image, which
+# provides torch). Source for t7-model.txt; regenerate with the command in that file's header.
+transformers>=5.5
+accelerate
+optuna
+scikit-learn>=1.8
+joblib
+tqdm
+clifpy>=2.1.0
+duckdb<2
+omegaconf
+polars>=1.33.1
+pyarrow
+pydantic>=2
+pyyaml
+rich
+typer

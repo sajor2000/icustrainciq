@@ -1,0 +1,5 @@
+# input for `icutwin-tokenize pipeline examples/mimic.yaml`
+# output goes to ./tokenized_output/ under the folder you run the command from
+clif_path: /path/to/mimic/clif # folder holding clif_<table>.parquet
+timezone: US/Eastern
+filetype: parquet
