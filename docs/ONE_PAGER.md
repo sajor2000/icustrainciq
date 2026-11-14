@@ -2,6 +2,8 @@
 
 *CIQ x NVIDIA Local AI Hackathon, team7. For judges from NVIDIA, CIQ and VAST. Decision support only; research prototype on retrospective data.*
 
+**Category and angle.** Research category: healthcare data science, novel methods (GEM, a small event-sequence model trained from scratch on patient timelines), run locally. The angle is privacy and low investment: a small ICU or a smaller hospital can run it on two desk-size machines it owns, with patient data staying on site, and no large cloud or data-science investment.
+
 **What it does.** For 07:00 morning rounds, every patient who has been in the ICU at least 24 hours gets five predictions for the next 24 hours: leaves the ICU, starts a ventilator (IMV), starts a vasopressor, starts CRRT, dies in hospital. The board adds patients up into unit counts with a likely range (8 in 10 outcomes) and shows chances as natural frequencies, for example "3 in 10".
 
 **The model: native, not fine-tuned.** The team calls it GEM (the repo says Gemma4 and Nemotron). We trained it from scratch, from random weights, on MIMIC-IV-Ext-CLIF patient timelines written as sequences of events (a lab bin, a drug start, a transfer, a clock tick) over our own vocabulary of about 1,200 tokens. It uses no pretrained weights from Google or NVIDIA and is not fine-tuned. We copied only the layer layout of NVIDIA Nemotron 3.5 Bolt E4B (Gemma4 text): five sliding-window layers, then one full-attention layer; grouped-query attention; shared key/value layers; per-layer input embeddings; logit softcapping. Sizes in the config: s (12.3M parameters at a vocabulary of 1,200), m (about 35M), l (about 70M). Training uses m.
