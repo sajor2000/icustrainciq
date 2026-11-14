@@ -16,6 +16,12 @@ Everything the Lookahead board needs at run time, copied from the ICU-Twin repo
 | `clif_demo/` | Open MIMIC-IV Demo in CLIF format (the default stage ward) |
 | `docs/` | `CONTRACT.md` (JSON shapes), `LIVE_DEMO.md` (runbook), `CHAT_AGENT.md` |
 
+## Architecture
+
+What runs where, the API map and how the board starts a Fuzzball job: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
+
+![Technical architecture](../docs/diagrams/architecture.png)
+
 ## Run locally
 
 ```

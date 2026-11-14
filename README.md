@@ -24,15 +24,15 @@ Synthetic data in the mockup ([`mockups/command-center.html`](mockups/command-ce
 
 ## How it runs
 
-![Where ICU-Twin runs](docs/diagrams/hosting.png)
+Nothing is hosted in the cloud. The real app runs on two local Lenovo PGX machines under Fuzzball; a laptop can run a demo copy with synthetic data. The team's guide, with every figure, the endpoint table and the run commands: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-![How the pieces connect](docs/diagrams/connection.png)
+![What runs where](docs/diagrams/hosting.png)
 
-![From data to the 07:00 board](docs/diagrams/lifecycle.png)
+![Technical architecture](docs/diagrams/architecture.png)
 
-![An update request, end to end](docs/diagrams/sequence.png)
+![Update the unit, end to end](docs/diagrams/trigger.png)
 
-Fuzzball runs the real forecast on the team's two GB10 nodes and serves the live board; this laptop runs an offline demo; Vercel can host a public preview with synthetic numbers. Patient rows stay in the team7 volumes. Steps for the team ("In real life, step by step"), the data boundary and the hosting plan: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Editable diagram sources: [`lifecycle.html`](docs/diagrams/lifecycle.html), [`sequence.html`](docs/diagrams/sequence.html), [`connection.html`](docs/diagrams/connection.html).
+More figures: [API map](docs/diagrams/api.png), [the 07:00 run](docs/diagrams/sequence.png), [setup and run states](docs/diagrams/lifecycle.png), [how the pieces connect](docs/diagrams/connection.png), [demo ward from CLIF-MIMIC](docs/diagrams/ward.png).
 
 ## The charge nurse's day
 
@@ -52,7 +52,7 @@ python3 -m http.server 8000   # from this repo, then open:
 | Read | For |
 |---|---|
 | [`docs/NAMING_AND_WORDING.md`](docs/NAMING_AND_WORDING.md) | product name candidates and the words to use on the board (plain language, human factors) |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | architecture, data boundary, how the team runs it on Fuzzball, hosting plan (local demo, Fuzzball, Vercel), diagrams |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | the team's guide: what runs where, tech stack, architecture and API figures, how the board starts a Fuzzball job, how to run it locally and on the cluster |
 | [`docs/USER_JOURNEY.md`](docs/USER_JOURNEY.md) | the 07:00 morning: charge nurse, physician, pharmacy, respiratory therapy, bed manager, midday rerun, night shift, judges |
 | [`docs/INTEGRATION.md`](docs/INTEGRATION.md) | how the board talks to the cluster: the five-operation interface, model output end to end, the chat path, request rules, what the Fuzzball team must provide |
 | [`docs/FRONTEND_PLAN.md`](docs/FRONTEND_PLAN.md) | the build plan: decisions, milestones M0 to freeze, `rooms.json` contract, tasks by lane, checks, risks |

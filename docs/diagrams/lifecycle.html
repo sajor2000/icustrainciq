@@ -21,16 +21,18 @@
     <p class="eyebrow">Lookahead · From data to the 07:00 board</p>
     <h1>Set up once, run at 07:00 every day, update on request: the same workflow fills the board each time</h1>
     <div class="diagram-container">
-    <svg viewBox="0 0 1280 792" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="lifecycle-title lifecycle-desc">
+    <svg viewBox="0 0 1280 812" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="lifecycle-title lifecycle-desc">
       <title id="lifecycle-title">From data to the 07:00 board</title>
-      <desc id="lifecycle-desc">One-time setup creates the volumes and loads the data, trains the model with t7-build on both GB10 GPUs, stages the ward and saves the probes with t7-fit, and starts t7-twin, where Nemotron holds one GPU; every day at 07:00 the dispatcher starts t7-forecast on the free GPU and the board is ready for rounds; on request, a unit or room update passes the guards and the demo clock and runs the same workflow.</desc>
+      <desc id="lifecycle-desc">On the two local Lenovo PGX machines under Fuzzball, one-time setup creates the volumes and runs the t7-smoke check, trains the model with t7-build on both GPUs, stages the ward and saves the probes with t7-fit, and starts t7-twin, where Nemotron holds one GPU; every day at 07:00 the dispatcher starts t7-forecast on the free GPU, retrying for 10 minutes, and the board is ready for rounds; on request the same workflow runs after the guards and the demo clock; the strip below lists the four states of the 07:00 run that the run status reports: pending, ok, failed and missed.</desc>
       <defs>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
         <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
         <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
       </defs>
       <rect width="100%" height="100%" fill="#f5f5f5"/>
-      <rect x="24" y="56" width="1232" height="504" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8"/>
+      <rect x="24" y="56" width="1232" height="504" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.55)" stroke-width="1.2" stroke-dasharray="4,4"/>
+      <rect x="36" y="48" width="524" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="40" y="60" fill="#2d3142" font-weight="600" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.12em">LOCAL LENOVO PGX (FUZZBALL) · 2 × GB10 · EVERY WORKFLOW RUNS HERE</text>
       <line x1="152" y1="56" x2="152" y2="560" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
       <text x="36" y="132" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist Mono', monospace" letter-spacing="0.08em">ONE-TIME SETUP</text>
       <text x="36" y="152" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">before the demo</text>
@@ -54,15 +56,15 @@
       <rect x="168" y="80" width="240" height="104" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
       <rect x="176" y="88" width="64" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
       <text x="208" y="100" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">STORAGE</text>
-      <text x="288" y="126" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Volumes and data in</text>
-      <text x="288" y="145" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">S3 → mimic_clif (CLIF rows)</text>
-      <text x="288" y="162" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">+ clif_work · twin-store</text>
+      <text x="288" y="126" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Volumes and stack check</text>
+      <text x="288" y="145" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">5 Fuzzball volumes · rows in</text>
+      <text x="288" y="162" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">t7-smoke · check, prefetch</text>
       <rect x="444" y="80" width="240" height="104" rx="6" fill="#f5f5f5"/>
       <rect x="444" y="80" width="240" height="104" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
       <rect x="452" y="88" width="64" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
       <text x="484" y="100" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GPU × 2</text>
       <text x="564" y="126" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Train the model</text>
-      <text x="564" y="145" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">t7-build · both GB10s · hours</text>
+      <text x="564" y="145" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">t7-build · both GPUs · hours</text>
       <text x="564" y="162" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">tokenize → train → publish</text>
       <rect x="720" y="80" width="240" height="104" rx="6" fill="#f5f5f5"/>
       <rect x="720" y="80" width="240" height="104" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
@@ -84,25 +86,25 @@
       <text x="470" y="268" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CPU</text>
       <text x="564" y="294" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">07:00 clock fires</text>
       <text x="564" y="313" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">dispatcher · unit scope</text>
-      <text x="564" y="330" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">retries 10 min if busy</text>
+      <text x="564" y="330" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">retry 10 min · catch-up</text>
       <rect x="720" y="248" width="240" height="104" rx="6" fill="#f5f5f5"/>
       <rect x="720" y="248" width="240" height="104" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
       <rect x="728" y="256" width="72" height="16" rx="2" fill="transparent" stroke="#bf4520" stroke-opacity="0.5" stroke-width="0.8"/>
       <text x="764" y="268" fill="#bf4520" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FREE GPU</text>
       <text x="840" y="294" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">One update runs</text>
       <text x="840" y="313" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">t7-forecast · rendered copy</text>
-      <text x="840" y="330" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">extract (GPU) → score (CPU)</text>
+      <text x="840" y="330" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">precheck → extract → score</text>
       <rect x="996" y="248" width="240" height="104" rx="6" fill="#f5f5f5"/>
       <rect x="996" y="248" width="240" height="104" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
-      <rect x="1004" y="256" width="44" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="1026" y="268" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PAGE</text>
+      <rect x="1004" y="256" width="68" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="1038" y="268" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">BROWSER</text>
       <text x="1116" y="294" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Board ready for rounds</text>
       <text x="1116" y="313" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">forecast.json written last</text>
       <text x="1116" y="330" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">5 predictions · 07:00–07:00</text>
       <rect x="168" y="416" width="240" height="104" rx="6" fill="#f5f5f5"/>
       <rect x="168" y="416" width="240" height="104" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
-      <rect x="176" y="424" width="36" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="194" y="436" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ASK</text>
+      <rect x="176" y="424" width="68" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="210" y="436" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">BROWSER</text>
       <text x="288" y="462" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Someone asks</text>
       <text x="288" y="481" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">Update the unit · this room</text>
       <text x="288" y="498" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">or an explicit chat ask</text>
@@ -113,24 +115,25 @@
       <text x="564" y="462" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Guards, then demo clock</text>
       <text x="564" y="481" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">1 run · 20 min per scope</text>
       <text x="564" y="498" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">cut = 07:00 + hours since</text>
-      <text x="36" y="596" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.16em">WHO HOLDS THE TWO GB10s</text>
-      <text x="452" y="596" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.08em">DURING T7-BUILD</text>
-      <text x="728" y="596" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.08em">DURING T7-FIT</text>
-      <text x="1004" y="596" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.08em">WHILE T7-TWIN IS UP</text>
-      <text x="36" y="624" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">One GB10</text>
-      <rect x="444" y="608" width="240" height="24" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
-      <text x="452" y="624" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">train · rank 0</text>
-      <rect x="720" y="608" width="240" height="24" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
-      <text x="728" y="624" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">extract for the probes</text>
-      <rect x="996" y="608" width="240" height="24" rx="4" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="0.8"/>
-      <text x="1004" y="624" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">t7-forecast extract · minutes</text>
-      <text x="36" y="656" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">The other GB10</text>
-      <rect x="444" y="640" width="240" height="24" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
-      <text x="452" y="656" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">train · rank 1</text>
-      <rect x="720" y="640" width="240" height="24" rx="4" fill="none" stroke="rgba(45,49,66,0.30)" stroke-width="0.8" stroke-dasharray="4,4"/>
-      <text x="728" y="656" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace">free</text>
-      <rect x="996" y="640" width="240" height="24" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
-      <text x="1004" y="656" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">Nemotron · held all day</text>
+      <text x="36" y="596" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.16em">THE 07:00 RUN, AS /API/RUNS REPORTS IT</text>
+      <text x="36" y="624" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">scheduled.state</text>
+      <text x="36" y="652" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">check it after 07:15</text>
+      <text x="452" y="596" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.08em">INSIDE THE 10 MIN WINDOW</text>
+      <rect x="444" y="608" width="184" height="24" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
+      <text x="452" y="624" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">pending</text>
+      <text x="452" y="652" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">still trying, each minute</text>
+      <text x="656" y="596" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.08em">A RUN STARTED</text>
+      <rect x="648" y="608" width="184" height="24" rx="4" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="0.8"/>
+      <text x="656" y="624" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">ok</text>
+      <text x="656" y="652" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">the forecast lands in minutes</text>
+      <text x="860" y="596" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.08em">RETRIES RAN OUT</text>
+      <rect x="852" y="608" width="184" height="24" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
+      <text x="860" y="624" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">failed</text>
+      <text x="860" y="652" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">the reason is in detail</text>
+      <text x="1064" y="596" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.08em">NO RUN SINCE THE CUT</text>
+      <rect x="1056" y="608" width="184" height="24" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
+      <text x="1064" y="624" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">missed</text>
+      <text x="1064" y="652" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">a restart catches up once</text>
       <line x1="40" y1="688" x2="1240" y2="688" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
       <text x="40" y="712" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.16em">LEGEND</text>
       <rect x="40" y="726" width="16" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
@@ -141,7 +144,10 @@
       <text x="567" y="737" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Volumes</text>
       <line x1="648" y1="732" x2="674" y2="732" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
       <text x="682" y="737" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Forecast lands</text>
-      <text x="40" y="764" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Fuzzball places the jobs, so which GB10 is which can differ; Nemotron keeps its GPU while t7-twin is up, and every update lands on the other one.</text>
+      <rect x="800" y="724" width="28" height="16" rx="2" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.55)" stroke-width="1.2" stroke-dasharray="4,4"/>
+      <text x="838" y="737" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Local Lenovo PGX (Fuzzball)</text>
+      <text x="40" y="764" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Where it runs: every workflow is on the two local Lenovo PGX machines under Fuzzball; the two BROWSER boxes are the clinician's browser. Nothing is hosted in the cloud.</text>
+      <text x="40" y="782" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Catch-up: a dispatcher that starts after 07:00 with no scheduled run since the cut runs it once. Nemotron keeps one GPU; every update lands on the other.</text>
     </svg>
     </div>
   </div>
