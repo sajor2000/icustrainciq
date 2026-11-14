@@ -1,6 +1,8 @@
 version: v4
+# NOT ON THE RUN PATH (2026-11-14): the code is published by t7-code and the model is training's packaged one on
+# mimic_clif, so nothing reads what this writes. It writes only under /store/smoke and is not in fuzzball/ready/.
 # t7-smoke: the 9:30 check on one GB10 node, open data only (MIMIC-IV Demo in CLIF, tracked in the repo).
-# Proves training and SGLang sampling run on GB10, then seeds twin-store and clif_work with a tiny
+# Proves training and SGLang sampling run on GB10, then keeps under /store/smoke a tiny
 # demo-trained model so t7-forecast and t7-twin can run before t7-build finishes. Never overwrites a
 # real model: if /store/model/mdl-icutwin exists, the seed step skips. Also downloads the Nemotron
 # weights (pinned revision) into hfcache on CPU. @CODE_REF@ and @CODE_SHA256@ are filled in by sed first
@@ -12,12 +14,6 @@ version: v4
 volumes:
   store:
     name: twin-store
-    use: team7
-  rows:
-    name: clif_work
-    use: team7
-  tooling:
-    name: tooling
     use: team7
   hf:
     name: hfcache               # Nemotron weights for t7-twin, downloaded here on CPU
@@ -34,7 +30,7 @@ volumes:
 
 defaults:
   job:
-    mounts: {/store: store, /rows: rows, /tooling: tooling, /work: work}
+    mounts: {/store: store, /work: work}
     env: [HOME=/work/home, TMPDIR=/work/tmp, HF_HOME=/work/cache/hf]
 
 jobs:
@@ -72,13 +68,13 @@ jobs:
       echo "$CODE_SHA256  /work/code.tar.gz" | sha256sum -c - || { echo "code tarball does not match CODE_SHA256: refusing to run it"; exit 1; }
       mkdir -p /work/code /work/home /work/tmp && tar -xzf /work/code.tar.gz -C /work/code --strip-components=1
       test -f /work/code/icutwin/model/decoder.py || { echo 'code ref has no icutwin/'; exit 1; }
-      pip install -q --target /tooling/py --upgrade --no-deps --require-hashes -r /work/code/requirements/t7-model.txt
+      pip install -q --target /store/smoke/py --upgrade --no-deps --require-hashes -r /work/code/requirements/t7-model.txt
 
   train-demo:
     # tokenize the demo cohort and train a tiny model for 30 steps on one GPU
     image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
     depends-on: [{name: setup, status: FINISHED}]
-    env: [HOME=/work/home, TMPDIR=/work/tmp, HF_HOME=/work/cache/hf, PYTHONPATH=/tooling/py:/work/code]
+    env: [HOME=/work/home, TMPDIR=/work/tmp, HF_HOME=/work/cache/hf, PYTHONPATH=/store/smoke/py:/work/code]
     resource: {cpu: {cores: 16}, memory: {size: 64GB}, devices: {nvidia.com/gpu: 1}}
     policy: {timeout: {execute: 45m}}
     script: |
@@ -95,20 +91,20 @@ jobs:
     # Vaishvik's SGLang checks on the demo-trained model: engine up, futures sampled, SGLang matches HF
     image: {uri: "docker://lmsysorg/sglang:v0.5.21"}
     depends-on: [{name: train-demo, status: FINISHED}]
-    env: [HOME=/work/home, TMPDIR=/work/tmp, HF_HOME=/work/cache/hf, PYTHONPATH=/tooling/py-gen:/work/code]
+    env: [HOME=/work/home, TMPDIR=/work/tmp, HF_HOME=/work/cache/hf, PYTHONPATH=/store/smoke/py-gen:/work/code]
     resource: {cpu: {cores: 16}, memory: {size: 64GB}, devices: {nvidia.com/gpu: 1}}
     policy: {timeout: {execute: 45m}}
     script: |
       #!/bin/bash
       set -euo pipefail
-      pip install -q --target /tooling/py-gen --no-deps --require-hashes -r /work/code/requirements/t7-gen.txt
+      pip install -q --target /store/smoke/py-gen --no-deps --require-hashes -r /work/code/requirements/t7-gen.txt
       python -c "import transformers, sglang, torch; print('transformers', transformers.__version__, 'sglang', sglang.__version__, 'cuda', torch.version.cuda)"
       cd /work/smoke && ln -sfn /work/code/examples examples
       python /work/code/scripts/sglang_smoke.py
       python /work/code/scripts/sglang_parity.py
 
   seed:
-    # give t7-forecast and t7-twin something to run on before t7-build publishes the real model
+    # keep the smoke model and tokens (open data) under /store/smoke; nothing else reads them
     image: {uri: "docker://python:3.12-slim"}
     depends-on: [{name: sglang, status: FINISHED}]
     resource: {cpu: {cores: 2}, memory: {size: 8GB}}
@@ -116,9 +112,7 @@ jobs:
     script: |
       #!/bin/bash
       set -euo pipefail
-      if [ -e /store/model/mdl-icutwin ]; then echo "a model is already published; not seeding"; exit 0; fi
-      mkdir -p /store/model
-      rm -rf /store/code && cp -r /work/code /store/code
-      cp -r /work/smoke/model_output/mdl-icutwin /store/model/
-      rm -rf /rows/tokenized_output && cp -r /work/smoke/tokenized_output /rows/
-      echo "seeded twin-store and clif_work with the demo-trained smoke model (open data)"
+      rm -rf /store/smoke/model /store/smoke/tokenized_output && mkdir -p /store/smoke/model
+      cp -r /work/smoke/model_output/mdl-icutwin /store/smoke/model/
+      cp -r /work/smoke/tokenized_output /store/smoke/
+      echo "kept the demo-trained smoke model and its tokens under /store/smoke (open data)"
