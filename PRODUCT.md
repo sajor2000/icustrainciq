@@ -13,30 +13,30 @@ delegated: static HTML + vanilla JS (no build step), written at the event with a
 ## Users
 
 - **Primary: the ICU team, the charge nurse and the attending physician together,** at the start of a shift (for example 07:00 or 19:00), reviewing every count, deciding whether to call in or float a nurse and which beds to free.
-- **Also: the physician on a single room**, opening a stage-ward room's sampled futures and asking the chat about it; and pharmacy and respiratory therapy, reading their own rows.
-- **Secondary: bed manager / house supervisor**, deciding how many ICU beds to hold for ED and OR admissions in the next 24 hours and the days after.
+- **Also: the physician on a single room**, opening a stage-ward room's six probabilities and the last events the model read, and asking the chat about it; and pharmacy and respiratory therapy, reading their own rows.
+- **Secondary: bed manager / house supervisor**, deciding how many ICU beds to hold for ED and OR admissions in the next 24 hours.
 - **Evaluators: hackathon judges** (CIQ x NVIDIA, SC26 track). They need to see what was built and what the second node unlocked.
 
 ## Product Purpose
 
-ICU-Twin forecasts a whole unit for the next 24 hours by default, then Day 2, Day 3 and the rest of each stay: vasopressor starts, ventilator, NIPPV and high-flow starts, ICU arrivals, deaths, and net ICU beds, each with an 80% range. It samples 100 possible futures for each current patient with a small generative event model and sums them. Success: the ICU team of nurses and physicians, pharmacy, respiratory therapy and the bed manager can act on the next day's staffing and beds before the unit is short, and a judge can see the scaling result in one glance.
+ICU-Twin forecasts a whole unit for the next 24 hours (07:00 to 07:00): mechanical ventilation, vasopressor starts, CRRT starts, hypotension (MAP < 65), in-hospital deaths and ICU departures to ward or step-down, each with an 80% range. For each current patient it does one forward pass of a small generative event model and reads its last hidden state with a logistic probe per task, then adds the patients up. Success: the ICU team of nurses and physicians, pharmacy, respiratory therapy and the bed manager can act on the next day's staffing and beds before the unit is short, and a judge can see the scaling result in one glance.
 
 ## Positioning
 
-Local compute for a busy ICU. Right-sized models (tens of millions of parameters) trained on open, credentialed CLIF-format data run on hardware the hospital owns, so patient data never leaves the site. Contrast: Epic Curiosity is cloud-hosted inside Cosmos and predicts per patient; ICU-Twin forecasts unit-level device and bed demand per day for 07:00 rounds, locally. Tagline in use: "Compute buys certainty." Promise: "A hundred futures per patient, one forecast per unit, on hardware you own."
+Local compute for a busy ICU. Right-sized models (tens of millions of parameters) trained on open, credentialed CLIF-format data run on hardware the hospital owns, so patient data never leaves the site. Contrast: Epic Curiosity is cloud-hosted inside Cosmos and predicts per patient; ICU-Twin forecasts unit-level demand for the next 24 hours, locally. Tagline in use: "Compute buys certainty." Promise: "One forecast per unit, on hardware you own."
 
 ## Operating Context
 
 - Built and demonstrated at the CIQ x NVIDIA Local AI Hackathon (Chicago, 2026-11-14/15) by team7: five people, two Lenovo ThinkStation PGX (NVIDIA GB10) nodes, Fuzzball 4.3 orchestration, five-minute demo.
 - Data: MIMIC-IV-Ext-CLIF (credentialed), moved once into the team7 persistent volume `mimic_clif`. Per-patient views in the demo use open MIMIC-IV demo or synthetic patients.
-- Real-world use would be an daily forecast before 07:00 rounds (and on request) on local hardware from a live CLIF feed.
+- Real-world use would be a daily re-forecast before morning rounds (06:30, and on request) on local hardware from a live CLIF feed.
 
 ## Capabilities and Constraints
 
-- 25 beds (50-bed stretch only if fast); 100 futures per stay (`n_samp` in `icutwin/config/scoring.yaml`), swept 10–200; horizons: next 24 h (default), 48 h, 72 h, per day and rest of stay (`horizons_hours` in `examples/forecast_scoring.yaml`).
-- Outputs: unit strain by team with p10/p50/p90: pharmacy (vasopressor starts), respiratory therapy (ventilator, NIPPV, high-flow starts), ICU team of nurses and physicians (reviews every row; owns ICU transfers in and deaths), bed manager (net ICU beds); backtest against what happened after time T and against persistence; scaling numbers 1 vs 2 nodes.
+- 25 beds (50-bed stretch only if fast); one horizon, the next 24 h (07:00 to 07:00), set by `examples/winnow_24h.yaml` (`horizon_after_threshold_s` 86400); six tasks.
+- Outputs: unit strain by team with p10/p50/p90: pharmacy (vasopressor starts), respiratory therapy (mechanical ventilation), ICU team of nurses and physicians (reviews every row; owns CRRT starts, hypotension and deaths), bed manager (leaves the ICU to ward or step-down); backtest against what happened after time T and against persistence; training speed 1 vs 2 nodes.
 - ICU-only cohort; each forecast starts 24 h after ICU arrival (`docs/DECISIONS.md` D3). Current ICU patients only: new arrivals need a separate model (open).
-- Screens: unit strain by team (command center), per-room drill-down and room chat for the open stage ward only, each risk with the events that most often preceded it (D4 to D7).
+- Screens: unit strain by team (command center), per-room drill-down and room chat for the open stage ward only, each room's six probabilities with the last events the model read (D4 to D7).
 - Research prototype on retrospective data; makes no treatment recommendations.
 - Open: placeholder capacities (20 ventilators) until the clinical lead sets them.
 

@@ -14,9 +14,9 @@ The frontend is the ICU team's board for 07:00 morning rounds. The backend (fore
 |---|---|---|
 | `GET /api/forecast` | `forecast.json` (counts only); example: [`../examples/forecast.json`](../examples/forecast.json) | `app/aggregate.py` after each `t7-forecast` run |
 | `GET /api/runs` (via the board) | dispatcher status: next scheduled run, recent runs (time, role, workflow id) | `app/dispatcher.py` |
-| `GET /api/rooms`: `rooms.json` (to build; contract in `FRONTEND_PLAN.md`) | stage-ward rooms only: risk per horizon per event, a sample of futures as event lists, preceding-event counts, last 12 h of events | lane 3, open MIMIC-IV Demo patients only (D6) |
+| `GET /api/rooms`: `rooms.json` (to build; contract in `FRONTEND_PLAN.md`) | stage-ward rooms only: the six probabilities for the next 24 h, events already on, last 12 h of events | lane 3, open MIMIC-IV Demo patients only (D6) |
 
-`forecast.json` keys: `made_at`, `beds`, `range` ("80% (p10-p90)"), `default_horizon` ("24h"), `horizon` (label), `model`, `shards`, `resources` (default horizon), `horizons` (`24h`, `48h`, `72h`, `stay`, each with `label` and `resources`), `per_day` (`Day 1` to `Day 3`), `already_started` (`vasopressor`, `ventilator` counts). Each resource: `team`, `p10`, `p50`, `p90`, `expected`. Resource names: `vasopressor`, `ventilator`, `nippv`, `high_flow_nc`, `icu_admission`, `death`, `icu_departure`, `icu_beds_net`.
+`forecast.json` keys: `made_at`, `beds`, `range` ("80% (p10-p90)"), `method` (probe scoring, one forward pass per patient), `default_horizon` ("24h"), `horizon` ("Next 24 h (to 07:00 tomorrow)"), `model`, `resources`, `horizons` (only `24h`), `per_day` (empty), `already_started` (counts of patients already on a task before the cut). Each resource: `team`, `p10`, `p50`, `p90`, `expected`. The six resources (`docs/DECISIONS.md` D8): `ventilator` (respiratory therapy), `vasopressor` (pharmacy), `crrt`, `hypotension`, `death` (ICU team), `icu_departure` (bed manager). There is one horizon: the next 24 h, 07:00 to 07:00.
 
 ## Actions the board sends
 
@@ -30,13 +30,14 @@ Roles accepted: `ICU nurse`, `ICU physician`, `pharmacy`, `respiratory therapy`,
 
 ## Screens and what each must do
 
-1. **Top strip**: unit name, "For 07:00 morning rounds · patients in the ICU at least 24 h", when it ran; horizon tabs (Next 24 h default, Day 2, Day 3, Rest of stay); Day/Night board switch; role picker and **Rerun forecast** with the last-run line.
-2. **Room board**: 25 room magnets, number large, highest-risk event and percent, shaded by risk; VENT/PRESS tags for already on a ventilator or vasopressor. Click opens the room drawer.
+1. **Top strip**: unit name, "For 07:00 morning rounds · patients in the ICU at least 24 h", when it ran; the fixed horizon "Next 24 h (07:00 to 07:00)" (no tabs); Day/Night board switch; role picker and **Rerun forecast** with the last-run line.
+2. **Room board**: 25 room magnets, number large, highest of the six probabilities and its percent, shaded by risk; VENT/PRESS tags for already on a ventilator or vasopressor. Click opens the room drawer.
 3. **Margin (unit strain)**: rows by team with median, 80% range bar, red capacity line and status word where a capacity exists (ON TRACK / TIGHT / SHORT, always as a word).
-4. **Room drawer** (stage ward only): risks per horizon, the 100-futures chart for a chosen event, "what most often came before it, in those futures", what the model read in the last 12 h, and the "evidence, not a cause; not a treatment recommendation" note.
-5. **Shift brief**: AI-drafted from the counts, labelled.
-6. **Ask the board**: chat for unit and room questions and for "rerun the forecast".
-7. **Run strip**: model, workflows, GPU timings or "pending run".
+4. **Room drawer** (stage ward only): the six probabilities for the next 24 h as bars with percent, each with its held-out check (calibration, AUROC) when a run supplies it, "on now" for tasks already started, what the model read in the last 12 h, and the "model evidence, not a cause; not a treatment recommendation" note.
+5. **Suggested questions (PRN)**: one-tap chips above the chat, by role: "What will we be short of tonight?", "How many vasopressor starts?", "Which rooms are highest risk?", "Room 7: likely to need a ventilator?", "Rerun the forecast".
+6. **Shift brief**: AI-drafted from the counts, labelled.
+7. **Ask the board**: chat for unit and room questions and for "rerun the forecast".
+8. **Run strip**: model, workflows, GPU timings or "pending run".
 
 ## States the frontend must handle
 
@@ -47,7 +48,7 @@ Roles accepted: `ICU nurse`, `ICU physician`, `pharmacy`, `respiratory therapy`,
 | Run in progress | "Running t7-forecast-... for ICU nurse" and keep the last forecast visible |
 | Rerun refused | the dispatcher's reason, verbatim |
 | Nemotron not up | "Nemotron is not answering yet"; the rest of the board works |
-| Horizon missing from the file | hide that tab |
+| A task missing from the file | hide that row; say "not in this run" |
 | Room with an event already started | "on now" instead of a percent |
 
 ## Rules
