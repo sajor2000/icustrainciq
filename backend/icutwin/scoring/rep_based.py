@@ -152,6 +152,8 @@ class RepBasedScorer:
     ):
         self.root, self.cfg = root, cfg
         # fitted probe per task; loaded from `probe` (inference only) or fit on train
+        if probe:  # as apply_probes: never a probe made with other weights
+            verify_scores(pathlib.Path(probe), model_home)
         self.probes = joblib.load(probe) if probe else {}
         self.fit_info = {}  # training side of each fit, for the metrics file
         self.fit = probe is None

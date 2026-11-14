@@ -63,3 +63,30 @@ def test_cv_probe_records_c_and_cv_auroc(tmp_path):
     RepBasedScorer(tmp_path, {T: 1}, "mdl-x", cfg, "logistic-CV-z").save_all(10)
     m = json.loads((tmp_path / "metrics-rep-based-mdl-x.json").read_text())["tasks"][T]
     assert m["C"] > 0 and 0.6 < m["cv_roc_auc"] <= 1
+
+
+def test_probe_path_refuses_a_probe_made_with_other_weights(tmp_path):
+    """--probe reuses a saved probe: like apply_probes it must refuse one whose
+    sidecar is missing or names other weights (same feature size, wrong model)"""
+    import pytest
+
+    rng = np.random.default_rng(0)
+    x = rng.normal(size=(120, 4)).astype(np.float16)
+    y = x[:, 0] > 0
+    write_split(tmp_path, "train", x, [False] * 120, y.tolist())
+    write_split(tmp_path, "held_out", x[:40], [False] * 40, y[:40].tolist())
+    cfg = OmegaConf.create({"score": {"target_tokens": [T]}})
+    home = tmp_path / "mdl-x"
+    home.mkdir()
+    (home / "model.safetensors").write_bytes(b"w1")
+    RepBasedScorer(tmp_path, {T: 1}, home, cfg, "logistic").save_all(n_samples=20)
+    probe = tmp_path / "probe-mdl-x.joblib"
+    RepBasedScorer(tmp_path, {T: 1}, home, cfg, "logistic", probe)  # same weights
+
+    (home / "model.safetensors").write_bytes(b"w2")
+    with pytest.raises(ValueError, match="other weights"):
+        RepBasedScorer(tmp_path, {T: 1}, home, cfg, "logistic", probe)
+    (home / "model.safetensors").write_bytes(b"w1")
+    (tmp_path / "probe-mdl-x.meta.json").unlink()
+    with pytest.raises(ValueError, match="not made for"):
+        RepBasedScorer(tmp_path, {T: 1}, home, cfg, "logistic", probe)
