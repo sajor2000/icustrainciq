@@ -478,6 +478,12 @@ A launcher (a 3.25rem ink circle with the chat icon in board colour, floating sh
 ### Figure legend (tooltip)
 One element for the whole page: ink fill, board text, .8125rem / 600, radius .5rem, at most 19rem wide, floating shadow, `pointer-events: none`. It appears 150ms after hover, at once on keyboard focus, and on touch by tap or long-press; it leaves at once. It sits above its target, or below when there is no room, and is clamped to the viewport. Text only, two short lines at most, the same wording as the key and "How this forecast was made" (one `DEF` map in the page builds all three). It adds to the visible labels and never replaces them.
 
+### Staffing card and the 1:1 tag
+The Staffing card leads the Unit strain row: the nurse icon, "Staffing", the ratio rule as its subtitle, then two blocks side by side (Nurses, Respiratory therapists), each a small heading with its drawn icon, the number needed now in ink, the next 24 h number in blue with its range, the number on shift when entered, and one split line ("1:1 × 3 · 1:2 × 22"). SHORT and AT LIMIT use the same chips as capacity. On a bed, 1:1 is a quiet outlined tag (Label size, 700, radius .3125rem, the tile's own ink) in the top row; a 1:2 bed carries nothing. The nurse (cap with a cross) and respiratory therapist (figure with lungs) icons belong to the same family: 24 grid, 1.75 stroke.
+
+### Stale forecast
+A forecast a day old or more turns the run line into an amber chip ("Forecast from yesterday 07:00 · update the unit") and adds an amber "From yesterday" chip to the header strain line. Amber here means "not today's", the one use outside TIGHT / BUSY / AT LIMIT.
+
 ### Forecast not ready
 When the forecast is not ready (`pending-model`) the board is all ink: Now content only, no blue, no statuses. One sentence, "Forecast not ready yet: the model is still being prepared.", leads the sub-heading in bold; the flag control drops to 55% opacity and is disabled. No placeholder numbers are drawn.
 

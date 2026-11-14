@@ -4,15 +4,6 @@
     "ignoreFiles": [],
     "ignoreValues": [
       {
-        "rule": "cramped-padding",
-        "value": "*",
-        "files": [
-          "mockups/command-center.html"
-        ],
-        "createdAt": "2026-11-14T17:01:29.719Z",
-        "reason": "Claude triage: .brief has a 2px left rule with 24px padding-left on desktop; under 960px both are 0 (no rule). Verified in browser at 1440 and 390 px; nothing sits flush against a visible edge."
-      },
-      {
         "rule": "design-system-font",
         "value": "*",
         "files": [

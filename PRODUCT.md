@@ -69,6 +69,8 @@ Removed from the board: hypotension and ICU readmission. A task already under wa
 
 **Unit strain** (its own tab; one line of it sits in the header): "N patients on now · +M expected (range)" and a one-word yardstick. With a capacity set ("Set tonight's capacity": life-support patients tonight's staffing covers, optionally ventilators free) the word is ON TRACK (p90 at or under it), TIGHT (p90 over it) or SHORT (the median over it), named "vs tonight's staffing"; otherwise USUAL, BUSY or VERY BUSY "vs a typical day". Then a card for IMV, vasopressor, CRRT and leaving the ICU (the role's card first): on now, expected with its range, and the beds behind the count. "Deaths expected" is one small line. There is no shift brief.
 
+**Staffing** (D23): a nurse is 1:1 for a patient on CRRT or on two or more vasoactive infusions and 1:2 for everyone else; one respiratory therapist covers six ventilated patients. Unit strain shows nurses and RTs needed now and in the next 24 hours, against the number on shift when entered.
+
 **Updates**: "Update the unit" (header) and "Update this room" (room page) start a forecast for the unit or one room, for the role chosen (never a name), at most once every 20 minutes. The last forecast stays on screen and is marked "updating"; the numbers refresh in place; a refusal reads "Updated 12 minutes ago. You can update again at 13:17." The 07:00 morning run is the scheduled update. The chat can start an update only when asked ("update room 12", "update the unit"). In the demo the replay clock is advanced and labelled ("Demo clock: recorded patients, time advanced N h").
 
 ## Product Principles
