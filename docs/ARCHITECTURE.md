@@ -40,6 +40,19 @@ The demo has one user at a time. There is no login and no user id. `role` is a l
 | Packaging | `uv`; hash-locked requirements for the cluster | `backend/uv.lock`, `backend/requirements/t7-*.txt` | the same versions on every run |
 | Tests | `pytest`, `ruff` | `dev` extra in `backend/pyproject.toml` | guards and JSON shapes are tested without a cluster |
 
+## Two models, two jobs
+
+| | Patient model | Chat model |
+|---|---|---|
+| What it is | `icutwin`, a small decoder with Gemma 4 text layers | NVIDIA Nemotron 3 Nano |
+| Who trained it | **We did**, on the two Lenovo machines, across both GPUs under Fuzzball | **NVIDIA.** We use it as it is; we did not train or fine-tune it |
+| What it reads | each patient's chart as a sequence of events, the way a language model reads words | the forecast files, through tools |
+| What it does | one pass per patient, then a small classifier per question gives the five predictions | answers questions in plain words; can ask the dispatcher for a new run when a user asks |
+| What it never does | talk to users | predict anything about a patient |
+| Where it runs | forecast job, GPU 2 | always-on service on vLLM, GPU 1 |
+
+The trained model knows ICU data. The NVIDIA model knows language. Both run on the two local machines.
+
 ## 1. Technical architecture
 
 ![Technical architecture](diagrams/architecture.png)
