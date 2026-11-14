@@ -172,15 +172,14 @@ details.allrooms[open] summary{margin-bottom:8px}
 .cl h3 .status{display:inline-block;margin-left:6px;vertical-align:1px}
 .cl h3 .own{margin-left:8px;font-weight:600;color:var(--ink-2)}
 .cl .set{display:grid;grid-template-columns:repeat(auto-fill,52px);justify-content:start;gap:12px 8px}
-/* bed marker: a patient figure (head and shoulders) that fills from the bottom with the chance of the event; bed number and percent beneath */
+/* bed marker: a plain patient figure (head and shoulders); bed number and percent beneath. No level fill: a figure filling from the bottom
+   read as "how much water they drank". The three highest-risk beds are tinted red and pulse. */
 .pp{width:52px;display:flex;flex-direction:column;align-items:center;gap:1px;background:transparent;border:0;padding:0;cursor:pointer;color:var(--ink)}
 .pp .av{position:relative;width:40px;height:42px;margin-bottom:3px;border-radius:10px;transition:transform .15s ease-out}
 .pp:not(.w):hover .av{transform:translateY(-1px)}
 .pp .av svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 .pp .av .base{fill:color-mix(in srgb,var(--ink) 11%,var(--surface))}
 [data-board="night"] .pp .av .base{fill:color-mix(in srgb,var(--ink) 24%,var(--surface))}
-.pp .av .fill{fill:var(--magnet);clip-path:inset(calc(100% - var(--p)) 0 0 0)}
-.pp.neutral .av .fill{fill:var(--ink-2)}
 .pp .rm{font-size:14px;font-weight:700;line-height:1.1}
 .pp .pc{font-size:12px;font-weight:600;line-height:1.15;text-align:center;color:var(--ink-2)}
 .pp[aria-pressed="true"] .av{outline:2.5px solid var(--ink);outline-offset:3px}
@@ -193,7 +192,6 @@ details.allrooms[open] summary{margin-bottom:8px}
 @keyframes beat{0%,100%{transform:scale(1)}45%{transform:scale(1.12)}}
 @keyframes ring{0%{opacity:.95;transform:scale(.7)}100%{opacity:0;transform:scale(1.55)}}
 .pp.w .av .base{fill:color-mix(in srgb,var(--short) 38%,var(--surface))}
-.pp.w .av .fill{fill:var(--short)}
 .pp.w .pc{color:var(--short);font-weight:800}
 @keyframes watchp{0%,100%{opacity:.2;transform:scale(.8)}45%{opacity:1;transform:scale(1.15)}}
 /* a group pulses red when its unit forecast is TIGHT or SHORT against what is free: a red edge, a soft glow, and two
@@ -503,7 +501,7 @@ details.more summary:hover{color:var(--ink)}
           
         </div>
         <div id="clusters"></div>
-        <p class="note">* Predicted counts every bed at or above the event's threshold as a start; each is a chance, not a certainty. Set each threshold in Settings (remembered on this device); a bed can appear under more than one event. Already on before 07:00 is not counted as new. The three highest-risk beds pulse red, and a card pulses red when its predicted beds are more than what is free; at exactly the limit it turns amber without pulsing. Leaving the ICU is not a risk, so those figures fill grey. Beds are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
+        <p class="note">* Predicted counts every bed at or above the event's threshold as a start; each is a chance, not a certainty. Set each threshold in Settings (remembered on this device); a bed can appear under more than one event. Already on before 07:00 is not counted as new. The three highest-risk beds pulse red, and a card pulses red when its predicted beds are more than what is free; at exactly the limit it turns amber without pulsing. Beds are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
       </section>
     </div>
 
@@ -724,8 +722,8 @@ details.more summary:hover{color:var(--ink)}
   document.getElementById("capbox").addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.type==="number"){ e.preventDefault(); e.target.blur(); } });
   function setLines(fn){ for(const k of KEYS) thrBy[k]=fn(k); saveLines(); renderClusters(); }
   const FIG=`<circle cx="20" cy="10.5" r="8.5"/><path d="M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z"/>`;
-  const chip=(r,e,v,label,w3)=>`<button type="button" class="pp${e.k==="out"?" neutral":""}${e.k!=="out"&&w3.includes(r.n)&&top(r)[0].k===e.k?" w":""}" data-room="${r.n}" aria-pressed="${room===r.n}" aria-label="Bed ${r.n}: ${e.name} ${pct(v)}${e.k==="out"&&devs(r).length?`, on ${devs(r).map(x=>x.name.toLowerCase()).join(" and ")} now`:""}" title="Bed ${r.n}: ${e.name} ${pct(v)}">
-      <span class="av" style="--p:${Math.round(v*100)}%" aria-hidden="true"><svg class="base" viewBox="0 0 40 42">${FIG}</svg><svg class="fill" viewBox="0 0 40 42">${FIG}</svg></span><span class="rm">${r.n}</span><span class="pc">${label}</span>${e.k==="out"&&devs(r).length?`<span class="dv" aria-hidden="true">${devs(r).map(x=>`<i title="${x.name}">${DICON[x.k]}</i>`).join("")}</span>`:""}</button>`;
+  const chip=(r,e,v,label,w3)=>`<button type="button" class="pp${e.k!=="out"&&w3.includes(r.n)&&top(r)[0].k===e.k?" w":""}" data-room="${r.n}" aria-pressed="${room===r.n}" aria-label="Bed ${r.n}: ${e.name} ${pct(v)}${e.k==="out"&&devs(r).length?`, on ${devs(r).map(x=>x.name.toLowerCase()).join(" and ")} now`:""}" title="Bed ${r.n}: ${e.name} ${pct(v)}">
+      <span class="av" aria-hidden="true"><svg class="base" viewBox="0 0 40 42">${FIG}</svg></span><span class="rm">${r.n}</span><span class="pc">${label}</span>${e.k==="out"&&devs(r).length?`<span class="dv" aria-hidden="true">${devs(r).map(x=>`<i title="${x.name}">${DICON[x.k]}</i>`).join("")}</span>`:""}</button>`;
   // devices a bed is on now, and how many of a device the likely leavers (beds on the Leave card) would hand back
   const devs=r=>EV.filter(x=>RES.includes(x.k)&&r.on[x.k]);
   const DICON={vent:`<svg class="d-vent" viewBox="0 0 28 24"><path d="M11 7C6 7 2 13 2 19c0 3 3 3 6 2s4-3 4-6V8c0-.6-.4-1-1-1ZM17 7c5 0 9 6 9 12 0 3-3 3-6 2s-4-3-4-6V8c0-.6.4-1 1-1Z"/><path class="ln" d="M14 1v8.5"/></svg>`,
