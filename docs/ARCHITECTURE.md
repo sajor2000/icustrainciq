@@ -83,31 +83,21 @@ Room variant: `{scope: "room", room: 12}` rewrites that one room in `rooms.json`
 
 The dispatcher is the clock. At 07:00 (America/Chicago) it starts a unit run by itself. If a GPU workflow is running, or the start fails, it tries again each minute for 10 minutes. A dispatcher that starts after 07:00 with no run since the cut runs it once. Source: [`diagrams/sequence.html`](diagrams/sequence.html).
 
-## 5. Setup, daily run and run states
+`GET /api/runs` reports the 07:00 run in `scheduled.state`: `pending`, `ok`, `failed` or `missed`. Check it after 07:15.
 
-![From data to the 07:00 board](diagrams/lifecycle.png)
-
-`GET /api/runs` reports the 07:00 run in `scheduled.state`: `pending`, `ok`, `failed` or `missed`. Check it after 07:15. Source: [`diagrams/lifecycle.html`](diagrams/lifecycle.html).
-
-## 6. How the pieces connect
-
-![Board, backend and Fuzzball](diagrams/connection.png)
-
-The same parts as figure 1, with the seven calls and the three files written out. Source: [`diagrams/connection.html`](diagrams/connection.html).
-
-## 7. Frontend: what the page shows
+## 5. Frontend: what the page shows
 
 ![What the page shows and which call feeds it](diagrams/frontend.png)
 
 The page is one file. Its title is "Lookahead · ICU forecast, next 24 hours". It has two tabs, **Bed board** and **Unit strain**, and a **Now | Next 24 h** switch. Now shows life support running at 07:00. Next 24 h shows the forecast: one status per room (Worsening, Watch, Not improving, Leaving, Steady), a "Worry first" row, and chances as percentages. Icons stand for ventilator, vasopressor, CRRT and leaving. A room opens its own page. "Ask Lookahead" is a chat widget at the bottom right, with Unit or Room context. Source: [`diagrams/frontend.html`](diagrams/frontend.html).
 
-## 8. Backend: modules and files
+## 6. Backend: modules and files
 
 ![Backend modules and files](diagrams/backend.png)
 
 Three services run all day in `t7-twin`. Two workflows do the scoring. They hand off through four files in `twin-store`: `rooms.json`, `forecast.json`, `capacity.json` and `runs.jsonl`. `clif_now.py` supplies the Now side from raw CLIF tables. Source: [`diagrams/backend.html`](diagrams/backend.html).
 
-## 9. Proposed Fuzzball workflow for the 25 demo patients
+## 7. Proposed Fuzzball workflow for the 25 demo patients
 
 ![Proposed Fuzzball workflow](diagrams/workflow.png)
 
@@ -181,11 +171,9 @@ fuzzball workflow connect --name board --endpoint web <workflow-id>
 
 Forecasts start from the board or at 07:00. You do not start `t7-forecast` by hand. If the dispatcher is broken, see section 9.5 of the runbook.
 
-## The charge nurse's day
+## Who uses it
 
-![Charge nurse journey](diagrams/journey.png)
-
-Every role's journey: [`USER_JOURNEY.md`](USER_JOURNEY.md).
+Every role's morning, step by step: [`USER_JOURNEY.md`](USER_JOURNEY.md).
 
 ## Why it is built this way
 
