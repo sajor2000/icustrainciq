@@ -14,29 +14,29 @@
 
 Synthetic data in the mockup ([`mockups/command-center.html`](mockups/command-center.html)); the same page reads the live API when `app/board.py` serves it. Two tabs. **Bed board**: every bed reads now, then the next 24 hours (solid icons for the ventilator, vasopressor or CRRT running at 07:00, an arrow, outline icons for what may start with its chance, "3 in 10"), with one status per bed (Worsening, Watch, Not improving, Leaving, Steady) and a "Worry first" rail on top. **Unit strain**: patients on life support now, how many more are expected, one word against tonight's staffing or a typical day, and a card per support with the beds behind each count. A room opens its own page; "Update the unit" and "Update this room" start a forecast; "Ask" opens a chat panel beside the board. The cluster cards, bed figures and range bars come from Dema's (deetherese) design on the `alternative` branch.
 
-| Bed board, Next 24 h | Bed board, Now |
-|---|---|
-| ![Bed board, forecast](docs/screenshots/beds-next.png) | ![Bed board, now](docs/screenshots/beds-now.png) |
+![Bed board, Next 24 h: each bed reads now, then the forecast](docs/screenshots/beds-next.png)
 
-| Unit strain, Next 24 h | Unit strain, Now |
+| Bed board, Now: current sickness only | Unit strain, Next 24 h |
 |---|---|
-| ![Unit strain, forecast](docs/screenshots/strain-next.png) | ![Unit strain, now](docs/screenshots/strain-now.png) |
+| ![Bed board, now](docs/screenshots/beds-now.png) | ![Unit strain, forecast](docs/screenshots/strain-next.png) |
 
-| Night board | Wall screen, 1920 px |
+| Unit strain, Now | Capacity set: flagged beds outnumber free ventilators |
 |---|---|
-| ![Night board](docs/screenshots/night.png) | ![Wall screen](docs/screenshots/wall-1920.png) |
+| ![Unit strain, now](docs/screenshots/strain-now.png) | ![Unit strain, SHORT](docs/screenshots/strain-short.png) |
 
-| Room page | Chat widget |
+| Room page | Ask Lookahead (chat widget) |
 |---|---|
 | ![Room page](docs/screenshots/room-page.png) | ![Chat widget](docs/screenshots/chat-widget.png) |
 
-| Chat on a room page | Figure legend on hover | Icons |
+| "Flag beds at" and Thresholds | A legend on hover | Forecast not ready yet |
 |---|---|---|
-| ![Chat, room](docs/screenshots/chat-room.png) | ![Tooltip](docs/screenshots/tooltip.png) | ![Icon family](docs/screenshots/icons.png) |
+| ![Thresholds](docs/screenshots/thresholds.png) | ![Tooltip](docs/screenshots/tooltip.png) | ![Pending](docs/screenshots/pending.png) |
 
-| Phone, forecast | Phone, now | Phone, unit strain | Phone, chat |
+| Phone, bed board | Phone, unit strain | Night board | Wall screen, 1920 px |
 |---|---|---|---|
-| ![Phone, forecast](docs/screenshots/beds-next-phone.png) | ![Phone, now](docs/screenshots/beds-now-phone.png) | ![Phone, unit strain](docs/screenshots/strain-phone.png) | ![Phone, chat](docs/screenshots/chat-phone.png) |
+| ![Phone, bed board](docs/screenshots/beds-next-phone.png) | ![Phone, unit strain](docs/screenshots/strain-phone.png) | ![Night board](docs/screenshots/night.png) | ![Wall screen](docs/screenshots/wall-1920.png) |
+
+Icon family: ![Icons](docs/screenshots/icons.png)
 
 ## How it runs
 
@@ -67,11 +67,9 @@ python3 -m http.server 8000   # from this repo, then open:
 
 | Read | For |
 |---|---|
-| [`docs/NAMING_AND_WORDING.md`](docs/NAMING_AND_WORDING.md) | product name candidates and the words to use on the board (plain language, human factors) |
+| [`HANDOFF.md`](HANDOFF.md) | where things stand, who owns what, how to run it, what to do next on the cluster |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | the team's guide: what runs where, tech stack, architecture and API figures, how the board starts a Fuzzball job, how to run it locally and on the cluster |
 | [`docs/USER_JOURNEY.md`](docs/USER_JOURNEY.md) | the 07:00 morning: charge nurse, physician, pharmacy, respiratory therapy, bed manager, midday rerun, night shift, judges |
-| [`docs/INTEGRATION.md`](docs/INTEGRATION.md) | how the board talks to the cluster: the five-operation interface, model output end to end, the chat path, request rules, what the Fuzzball team must provide |
-| [`docs/FRONTEND_PLAN.md`](docs/FRONTEND_PLAN.md) | the build plan: decisions, milestones M0 to freeze, `rooms.json` contract, tasks by lane, checks, risks |
 | [`docs/FRONTEND_SPEC.md`](docs/FRONTEND_SPEC.md) | screens, data contract (`forecast.json`, `rooms.json`, `/api/runs`, `/api/rerun`, `/api/capacity`, `/api/ask`), states, rules |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | team decisions (ICU-only cohort, 07:00 rounds, probe scoring, five predictions, per-room views on the stage ward only, auditability, the two triggers) |
 | [`mockups/command-center.html`](mockups/command-center.html) | the reviewed mockup: open it in a browser (synthetic data, works offline; `#night`, `#room=20` and `#role=pharmacy` deep links) |
