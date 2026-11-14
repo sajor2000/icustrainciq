@@ -23,6 +23,8 @@ Lookahead ("The next 24 hours, in one place."; working name ICU-Twin in the back
 
 ## Positioning
 
+Built for the small or rural ICU: one unit, scarce ventilators and CRRT machines, transfers that take hours, no data-science team and no cloud contract. Two desk-size local machines run the whole product, and patient data never leaves the building. Trained and run on local hardware (MIMIC-IV in CLIF format); a hospital with CLIF-format data can run the same pipeline on its own records.
+
 Local compute for a busy ICU. Right-sized models (tens of millions of parameters) trained on open, credentialed CLIF-format data run on hardware the hospital owns, so patient data never leaves the site. Contrast: Epic Curiosity is cloud-hosted inside Cosmos and predicts per patient; ICU-Twin forecasts unit-level demand for the next 24 hours, locally. Tagline in use: "Compute buys certainty." Promise: "One forecast per unit, on hardware you own."
 
 ## Operating Context

@@ -4,6 +4,8 @@ How Lookahead is built, where each part runs, and how to start it. Every figure 
 
 **Nothing is hosted in the cloud.** The real app runs on two local Lenovo PGX machines, on site, and Fuzzball starts every part of it. A developer laptop can run a demo copy with synthetic data. GitHub holds code only.
 
+This is the rural-ICU case: a hospital with one unit and no cloud contract can run the whole product on two desk-size machines it owns.
+
 ## What runs where
 
 ![What runs where](diagrams/hosting.png)
