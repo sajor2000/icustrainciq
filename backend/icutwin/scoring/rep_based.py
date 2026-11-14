@@ -47,6 +47,16 @@ AT_CUT = {
     "LABEL//crrt_init": "LABEL//crrt_at_cut",
 }
 MANIFEST = "manifest.json"
+# Events that can happen again: an earlier one does not take the stay out of the task.
+# A patient who came to the ICU from a ward has `ADT//TRANSFER_IN//ward_past` true and
+# can still leave for a ward or step-down unit (the winnower already drops stays that
+# left the ICU between arrival and the cut), so `_past` is ignored for these.
+REPEATABLE = ("ADT//TRANSFER_IN//*",)
+WEIGHTS_COL = "weights_sha256"  # in every features row: the weights it came from
+
+
+def repeatable(token: str) -> bool:
+    return any(fnmatch.fnmatch(token, p) for p in REPEATABLE)
 
 
 CUT_COLS = ("last_valid", "cut_s")  # a stay's cut, stored by the winnower and extractor
@@ -109,16 +119,21 @@ class StaleFeatures(ValueError):
     """the features were extracted at another cut than the labels now have"""
 
 
-def check_features_current(root, model_name: str, stay_ids=None) -> None:
-    """refuse features whose stored cut differs from the winnowed labels' cut.
+def check_features_current(
+    root, model_name: str, stay_ids=None, model_home=None, splits=SPLITS
+) -> None:
+    """refuse features whose stored cut differs from the winnowed labels' cut, and,
+    with `model_home`, features made with other weights than that folder holds now
+    (a model retrained under the same name; each row carries `weights_sha256`).
 
     icutwin-extract stores each row's cut (`last_valid`, and `cut_s` when the winnower
     wrote it); a demo-clock move or a new threshold changes the labels' cut, and a
     one-room re-extract leaves the other rows at the old cut. Only `stay_ids` are
     checked when given. Label files without a cut column (old) are not checked."""
     root = pathlib.Path(root)
-    bad = 0
-    for s in SPLITS:
+    bad = other = 0
+    digest = weights_digest(model_home) if model_home is not None else None
+    for s in splits:
         f, lab = (
             root / f"features-{s}-{model_name}.parquet",
             root / f"{s}_for_inference.parquet",
@@ -127,9 +142,26 @@ def check_features_current(root, model_name: str, stay_ids=None) -> None:
             continue
         have = pl.read_parquet_schema(lab)
         want = [c for c in CUT_COLS if c in have]
+        fcols = pl.read_parquet_schema(f)
+        if digest:  # no weights found at model_home: nothing to compare with
+            w = pl.read_parquet(
+                f,
+                columns=[
+                    "hospitalization_id",
+                    *([WEIGHTS_COL] * (WEIGHTS_COL in fcols)),
+                ],
+            )
+            if stay_ids is not None:
+                w = w.filter(pl.col("hospitalization_id").is_in(list(stay_ids)))
+            other += (
+                w.filter(
+                    pl.col(WEIGHTS_COL).is_null() | (pl.col(WEIGHTS_COL) != digest)
+                ).height
+                if WEIGHTS_COL in fcols
+                else w.height
+            )
         if not want:
             continue
-        fcols = pl.read_parquet_schema(f)
         cur = pl.read_parquet(lab, columns=["hospitalization_id", *want])
         got = pl.read_parquet(
             f, columns=["hospitalization_id", *[c for c in want if c in fcols]]
@@ -146,6 +178,12 @@ def check_features_current(root, model_name: str, stay_ids=None) -> None:
             diff = (f_ - l_).abs() > 1e-6 if c == "cut_s" else f_ != l_
             mism = mism | f_.is_null() | diff
         bad += both.filter(mism).height
+    if other:
+        raise StaleFeatures(
+            f"{other} stays have features extracted with other weights than "
+            f"{pathlib.Path(model_home).name} holds now (or none recorded): run "
+            "icutwin-extract again"
+        )
     if bad:
         raise StaleFeatures(
             f"{bad} stays have features extracted at another cut than their labels "
@@ -176,26 +214,41 @@ class RepBasedScorer:
         self.model_home = pathlib.Path(model_home)
         self.model_name = self.model_home.name
         self.estimator_type = estimator_type
-        try:
-            self.features = {
-                s: np.vstack(
-                    pl.read_parquet(
-                        root / f"features-{s}-{self.model_name}.parquet",
-                        columns=["features"],
-                    )
-                    .to_series()
-                    .to_list()
+        self.features, self.labels = {}, {}
+        for s in ("train", "held_out"):
+            f = root / f"features-{s}-{self.model_name}.parquet"
+            if not f.is_file():
+                raise FileNotFoundError(
+                    "Features not found. Please run `icutwin-extract` first."
                 )
-                for s in ("train", "held_out")
-            }
-        except FileNotFoundError as e:
-            raise FileNotFoundError(
-                "Features not found. Please run `icutwin-extract` first."
-            ) from e
-        self.labels = {
-            s: pl.scan_parquet(root / f"{s}_for_inference.parquet")
-            for s in ("train", "held_out")
-        }
+            lab = root / f"{s}_for_inference.parquet"
+            feats = pl.read_parquet(f, columns=["hospitalization_id", "features"])
+            # each stay gets its own vector: joined by id, in the labels' order (a
+            # partial extraction appends re-extracted stays at the end of the file)
+            order = (
+                pl.read_parquet(lab, columns=["hospitalization_id"])
+                .with_row_index("_lab")
+                .join(
+                    feats.select("hospitalization_id").with_row_index("_x"),
+                    on="hospitalization_id",
+                    how="left",
+                )
+                .sort("_lab")
+            )
+            missing = order["_x"].null_count()
+            if missing or order.height != order["_lab"].n_unique():
+                raise ValueError(
+                    f"{missing} {s} stays have no features (or a stay has two rows): "
+                    "run icutwin-extract again"
+                )
+            x = feats["features"].to_list()
+            self.features[s] = (
+                np.vstack(x)[order["_x"].to_numpy()] if x else np.empty((0, 0))
+            )
+            self.labels[s] = pl.scan_parquet(lab)
+        check_features_current(
+            root, self.model_name, None, self.model_home, ("train", "held_out")
+        )
         # vocab tokens, plus winnower-derived labels (flag columns, not tokens)
         cols = self.labels["held_out"].collect_schema().names()
         derived = [c[:-5] for c in cols if c.endswith("_past") and c[:-5] not in lookup]
@@ -253,6 +306,8 @@ class RepBasedScorer:
             self.labels["train"].select(*cols).collect().to_numpy().T
         )
         train_valid = train_valid.astype(bool)
+        if repeatable(target_token):  # an earlier one does not take the stay out
+            train_valid = np.ones_like(train_valid)
         n_held_out = self.labels["held_out"].select(pl.len()).collect().item()
         if len(set(train_label[train_valid].astype(int))) < 2:  # rare outcome
             logger.warning(f"{target_token}: one class in train, scores left NaN")
@@ -289,6 +344,8 @@ class RepBasedScorer:
             .ravel()
             .astype(bool)
         )
+        if running not in ho_cols and repeatable(target_token):
+            held_out_valid = np.ones_like(held_out_valid)
         scores = np.nan * np.ones(len(held_out_valid))
         if held_out_valid.any():
             scores[held_out_valid] = mdl.predict_proba(
@@ -372,7 +429,7 @@ def apply_probes(
             f"probes were fit on other weights than {model_home} (checksum differs "
             "or none was recorded); refit them with icutwin-rep-score --save-probes"
         )
-    check_features_current(root, model_name, stay_ids)
+    check_features_current(root, model_name, stay_ids, model_home)
     parts = []
     for s in SPLITS:
         f, lab = (
@@ -409,6 +466,8 @@ def apply_probes(
             running = AT_CUT.get(token)
             if running in labels.columns:  # off at the cut = forecastable again
                 valid = ~labels[running].to_numpy().astype(bool)
+            elif repeatable(token):  # e.g. came from a ward: can still leave
+                valid = np.ones(labels.height, bool)
             else:
                 valid = ~labels[past].to_numpy().astype(bool)
             if valid.any():

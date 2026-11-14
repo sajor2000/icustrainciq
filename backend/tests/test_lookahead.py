@@ -285,6 +285,21 @@ LOOKUP = {
 }
 
 
+def _digest(weights=b"w1") -> str:
+    """rep_based.weights_digest of a `_model_dir` folder: every features row carries
+    the checksum of the weights that made it"""
+    import hashlib
+
+    h = hashlib.sha256()
+    for name, data in (("model.safetensors", weights), ("config.json", b"{}")):
+        h.update(name.encode())
+        h.update(data)
+    return h.hexdigest()
+
+
+W1 = _digest()
+
+
 def _model_dir(tmp_path, weights=b"w1"):
     home = tmp_path / MODEL
     home.mkdir(exist_ok=True)
@@ -428,9 +443,9 @@ def test_rooms_apply_probes_for_one_room_keeps_the_ward_scores(tmp_path, monkeyp
     for split, n in (("train", 120), ("held_out", 30)):
         x = rng.normal(size=(n, 4)).astype(np.float32)
         ids = [f"{split}{i}" for i in range(n)]
-        pl.DataFrame({"hospitalization_id": ids, "features": list(x)}).write_parquet(
-            train / f"features-{split}-{MODEL}.parquet"
-        )
+        pl.DataFrame(
+            {"hospitalization_id": ids, "features": list(x), "weights_sha256": W1}
+        ).write_parquet(train / f"features-{split}-{MODEL}.parquet")
         lab = {"hospitalization_id": ids}
         for t in (IMV, VASO, CRRT, WARD, STEP, DEATH):
             lab[f"{t}_past"] = np.zeros(n, bool)
@@ -763,9 +778,9 @@ def test_apply_probes_scores_a_stopped_support(tmp_path):
     for split, n in (("train", 120), ("held_out", 10)):
         x = rng.normal(size=(n, 4)).astype(np.float32)
         ids = [f"{split}{i}" for i in range(n)]
-        pl.DataFrame({"hospitalization_id": ids, "features": list(x)}).write_parquet(
-            train / f"features-{split}-{MODEL}.parquet"
-        )
+        pl.DataFrame(
+            {"hospitalization_id": ids, "features": list(x), "weights_sha256": W1}
+        ).write_parquet(train / f"features-{split}-{MODEL}.parquet")
         lab = {"hospitalization_id": ids, f"{IMV}_past": np.zeros(n, bool)}
         lab[f"{IMV}_future"] = x[:, 0] + rng.normal(size=n) > 0
         pl.DataFrame(lab).write_parquet(train / f"{split}_for_inference.parquet")
@@ -820,10 +835,11 @@ def test_skipped_probe_is_not_already_happened():
     df = scores(n, p={WARD: nan, STEP: np.full(n, 0.3)})  # ward probe skipped
     probs = aggregate.unit_probs(df, "_rep_score", aggregate.RESOURCES_REP)
     np.testing.assert_allclose(probs["icu_departure"], 0.3)
-    # a stay that really had a ward transfer before the cut is still "already"
+    # a ward stay before the ICU is not "already left": the patient can still leave
+    # (tests/test_review_fixes.py); the winnower drops stays that left before the cut
     df = df.with_columns(pl.Series(f"{WARD}_past", [True] + [False] * (n - 1)))
     got = aggregate.unit_probs(df, "_rep_score", aggregate.RESOURCES_REP)
-    assert got["icu_departure"].tolist() == [0.0] + [0.3] * (n - 1)
+    assert got["icu_departure"].tolist() == [0.3] * n
 
 
 def test_skipped_single_token_probe_is_no_data_not_zero(tmp_path):
@@ -1080,9 +1096,9 @@ def _fit_probes(tmp_path, home):
     for split, n in (("train", 120), ("held_out", 30)):
         x = rng.normal(size=(n, 4)).astype(np.float32)
         ids = [f"{split}{i}" for i in range(n)]
-        pl.DataFrame({"hospitalization_id": ids, "features": list(x)}).write_parquet(
-            train / f"features-{split}-{MODEL}.parquet"
-        )
+        pl.DataFrame(
+            {"hospitalization_id": ids, "features": list(x), "weights_sha256": W1}
+        ).write_parquet(train / f"features-{split}-{MODEL}.parquet")
         lab = {"hospitalization_id": ids}
         for t in (IMV, VASO, CRRT, WARD, STEP, DEATH):
             lab[f"{t}_past"] = np.zeros(n, bool)

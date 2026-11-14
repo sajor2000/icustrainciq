@@ -433,9 +433,9 @@ def test_with_model_and_probes_the_predictions_are_filled(demo_run, monkeypatch)
             lab = pl.read_parquet(f, columns=[HOSP, "last_valid", "cut_s"])
             x = rng.normal(size=(lab.height, 4)).astype(np.float32)
             split = f.name.removesuffix("_for_inference.parquet")
-            lab.with_columns(features=pl.Series(list(x))).write_parquet(
-                pathlib.Path(root) / f"features-{split}-{tl.MODEL}.parquet"
-            )
+            lab.with_columns(
+                features=pl.Series(list(x)), weights_sha256=pl.lit(tl.W1)
+            ).write_parquet(pathlib.Path(root) / f"features-{split}-{tl.MODEL}.parquet")
 
     from icutwin.scoring import extractor
 

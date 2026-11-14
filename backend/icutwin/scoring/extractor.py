@@ -28,6 +28,7 @@ from transformers import AutoModelForCausalLM
 
 from icutwin.common import logger, merge_config
 from icutwin.model.decoder import ExactPrefix, load_split, stay_offsets
+from icutwin.scoring.rep_based import weights_digest
 
 SPLITS = ("train", "tuning", "held_out")
 
@@ -158,9 +159,14 @@ class Extractor:
                 or [np.empty((0, self.model.config.hidden_size), np.float16)]
             )
             out = root / f"features-{split}-{self.model_home.name}.parquet"
+            # each row says which weights made it (rep_based.check_features_current
+            # refuses rows of other weights: a model retrained under the same name)
             new = (
                 order.select("hospitalization_id")
-                .with_columns(features=pl.Series(list(feats)))
+                .with_columns(
+                    features=pl.Series(list(feats)),
+                    weights_sha256=pl.lit(weights_digest(self.model_home), pl.String),
+                )
                 .join(stored, on="hospitalization_id", how="left")
             )
             if stay_ids is not None:

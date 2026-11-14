@@ -1,5 +1,6 @@
 """Probe save/apply: the stage ward is scored with probes fit on training stays."""
 
+import hashlib
 import json
 
 import numpy as np
@@ -12,14 +13,17 @@ from icutwin.scoring import rep_based
 TASK = "LABEL//pressor_init"
 RARE = "LABEL//crrt_init"
 MODEL = "mdl-test"
+# every features row carries the checksum of the weights that made it: here the
+# folder `_fit_with_weights` writes (model.safetensors = b"weights-v1")
+V1 = hashlib.sha256(b"model.safetensors" + b"weights-v1").hexdigest()
 
 
 def _split(root, split, n, rng, with_labels):
     x = rng.normal(size=(n, 6)).astype(np.float32)
     ids = [f"{split}{i}" for i in range(n)]
-    pl.DataFrame({"hospitalization_id": ids, "features": list(x)}).write_parquet(
-        root / f"features-{split}-{MODEL}.parquet"
-    )
+    pl.DataFrame(
+        {"hospitalization_id": ids, "features": list(x), "weights_sha256": V1}
+    ).write_parquet(root / f"features-{split}-{MODEL}.parquet")
     y = (x[:, 0] + 0.3 * rng.normal(size=n) > 0) if with_labels else np.zeros(n, bool)
     pl.DataFrame(
         {

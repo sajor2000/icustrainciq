@@ -172,6 +172,9 @@ LABELS = {
 
 
 EXCLUSIVE = {"icu_departure"}  # tokens that cannot both happen: probabilities add
+# can happen again: a ward stay before the ICU (`ward_past`) is not "already left", so
+# `_past` never removes the leaving forecast (icutwin/scoring/rep_based.py REPEATABLE)
+REPEATABLE = {"icu_departure"}
 
 
 def _combine(name: str, x: np.ndarray) -> np.ndarray:
@@ -211,7 +214,7 @@ def unit_probs(
         if AT_CUT_COL.get(key) in unit.columns:
             # running at the cut; a support stopped before it is forecastable
             mask[:] = unit[AT_CUT_COL[key]].to_numpy().astype(bool)[:, None]
-        elif all(c in unit.columns for c in past):
+        elif name not in REPEATABLE and all(c in unit.columns for c in past):
             mask = unit.select(past).to_numpy().astype(bool)
         if nan_is_past:
             mask |= np.isnan(x)
@@ -453,7 +456,7 @@ def patient_table(
             pr = np.fmax.reduce(x, axis=1)  # largest token probability, NaN ignored
         flag = (
             unit.select(pasts).to_numpy().astype(bool).any(axis=1)
-            if pasts
+            if pasts and name not in REPEATABLE
             else np.zeros(n, bool)
         )
         key = next((s for s, r in SUPPORT_RESOURCE.items() if r == name), None)
