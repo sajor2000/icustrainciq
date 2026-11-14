@@ -38,7 +38,7 @@ Nothing is hosted in the cloud. The real app runs on two local Lenovo PGX machin
 
 ![Update the unit, end to end](docs/diagrams/trigger.png)
 
-More figures: [API map](docs/diagrams/api.png), [the 07:00 run](docs/diagrams/sequence.png), [setup and run states](docs/diagrams/lifecycle.png), [how the pieces connect](docs/diagrams/connection.png), [demo ward from CLIF-MIMIC](docs/diagrams/ward.png).
+More figures: [frontend](docs/diagrams/frontend.png), [backend](docs/diagrams/backend.png), [proposed workflow for the 25 demo patients](docs/diagrams/workflow.png), [API map](docs/diagrams/api.png), [the 07:00 run](docs/diagrams/sequence.png), [setup and run states](docs/diagrams/lifecycle.png), [how the pieces connect](docs/diagrams/connection.png).
 
 ## The charge nurse's day
 

@@ -22,6 +22,7 @@ This is the rural-ICU case: a hospital with one unit and no cloud contract can r
 | One-time workflows | Local Lenovo PGX, one or both GPUs | Fuzzball workflows `t7-smoke`, `t7-build` (ICU-Twin repo), `t7-fit` | none | training rows and tokens |
 | Volumes `twin-store`, `clif_work`, `mimic_clif`, `hfcache`, `tooling` | Fuzzball storage for team7 | Fuzzball volumes | mounted into jobs and services | patient rows live only in `mimic_clif` and `clif_work` |
 | Local demo | Developer laptop | `uv run python app/board.py` | `http://localhost:8080` | synthetic `examples/` files |
+| 25 demo patients | Developer laptop now; a Fuzzball volume for the live run (proposed) | a file copy, then `t7-ward` (proposed) | `backend/data/local/unit25/`, git-ignored | real MIMIC-IV rows; never in git |
 | Code | GitHub | `sajor2000/icustrainciq` (page, `backend/`, docs); ICU-Twin (training) | github.com | code only; never data, weights or probes |
 
 The demo has one user at a time. There is no login and no user id. `role` is a label on the log and the answer.
@@ -72,7 +73,7 @@ Every POST needs `Content-Type: application/json` and `X-Lookahead: 1`. If the b
 4. Fuzzball 4.3 has no workflow parameters. The dispatcher fills `@SCOPE@`, `@ROOM@`, `@HOURS@` and `@WARD_FLAG@` in `t7-forecast.fz` and runs `fuzzball workflow start` on the copy.
 5. Three jobs run: `precheck` (CPU), `extract` (GPU: winnow at the cut, one forward pass), `score` (CPU: probes, `rooms.py`, `aggregate.py`, `clif_now.py`).
 6. `score` writes `rooms.json`, then `forecast.json`. Each file is written whole.
-7. The page polls `/api/runs` every 30 seconds during a run. When `made_at` changes it reloads and redraws.
+7. The page polls `/api/runs` every 30 seconds during a run, and every 5 minutes otherwise. When `made_at` changes it reloads and redraws.
 
 Room variant: `{scope: "room", room: 12}` rewrites that one room in `rooms.json`. It is refused until a whole-unit run exists. Source: [`diagrams/trigger.html`](diagrams/trigger.html).
 
@@ -94,18 +95,49 @@ The dispatcher is the clock. At 07:00 (America/Chicago) it starts a unit run by 
 
 The same parts as figure 1, with the seven calls and the three files written out. Source: [`diagrams/connection.html`](diagrams/connection.html).
 
-## 7. Demo ward from CLIF-MIMIC (design)
+## 7. Frontend: what the page shows
 
-![Demo ward from CLIF-MIMIC](diagrams/ward.png)
+![What the page shows and which call feeds it](diagrams/frontend.png)
 
-The team picks 25 hospitalization ids for the demo. This is how the backend will pull those stays from CLIF-MIMIC inside Fuzzball.
+The page is one file. Its title is "Lookahead · ICU forecast, next 24 hours". It has two tabs, **Bed board** and **Unit strain**, and a **Now | Next 24 h** switch. Now shows life support running at 07:00. Next 24 h shows the forecast: one status per room (Worsening, Watch, Not improving, Leaving, Steady), a "Worry first" row, and chances as percentages. Icons stand for ventilator, vasopressor, CRRT and leaving. A room opens its own page. "Ask Lookahead" is a chat widget at the bottom right, with Unit or Room context. Source: [`diagrams/frontend.html`](diagrams/frontend.html).
 
-1. Write the 25 ids to `selected_ids.csv` on the `clif_work` volume. Do this on the cluster. The list never goes into git, chat or the browser.
-2. Start `t7-ward` once (planned workflow). Job `subset` copies only those stays out of `mimic_clif` into `clif_work/stage/clif_selected/`. Jobs `tokenize` and `winnow` prepare them like the open demo ward. Room numbers 1 to 25 follow the list order.
-3. Start the dispatcher with `--real-ward`. Every forecast, at 07:00 or on request, then scores those 25 stays.
-4. The board shows rooms 1 to 25 with the label "Real MIMIC-IV · local only". No reply carries an id.
+## 8. Backend: modules and files
 
-Built today: `--real-ward` in the dispatcher, `rooms.py` and `aggregate.py`; the ward label; refusal of non-demo ids without the flag; `clif_now.py` reads any CLIF folder. Planned: the `t7-ward` workflow, and one more template token so `t7-forecast` reads `clif_selected/` instead of the open demo folder. Until then the board runs the open MIMIC-IV Demo ward. Pick stays the model did not train on, each at least 24 hours in the ICU. Source: [`diagrams/ward.html`](diagrams/ward.html).
+![Backend modules and files](diagrams/backend.png)
+
+Three services run all day in `t7-twin`. Two workflows do the scoring. They hand off through four files in `twin-store`: `rooms.json`, `forecast.json`, `capacity.json` and `runs.jsonl`. `clif_now.py` supplies the Now side from raw CLIF tables. Source: [`diagrams/backend.html`](diagrams/backend.html).
+
+## 9. Proposed Fuzzball workflow for the 25 demo patients
+
+![Proposed Fuzzball workflow](diagrams/workflow.png)
+
+Solid boxes exist today. Dashed boxes are proposed.
+
+1. **Training finishes.** `t7-build` is running on both GPUs. Start nothing until it ends.
+2. **Fit the probes.** `t7-fit`, once per model. It uses one GPU.
+3. **Load the 25 patients (proposed).** `t7-ward` copies the CLIF extract onto a volume and tokenizes it.
+4. **Forecast.** `t7-forecast` winnows at the cut, extracts on the second GPU with the trained model, and scores with the saved probes.
+5. **Files.** It writes `rooms.json`, then `forecast.json`.
+6. **Serve.** `t7-twin` serves the board and the chat. Nemotron holds one GPU. Only one GPU job runs beside it.
+
+Also proposed: one more template token, so `t7-forecast` reads the unit25 folder and its id file. Today it reads the open demo folder. Source: [`diagrams/workflow.html`](diagrams/workflow.html).
+
+## Demo patients
+
+- **What:** a CLIF-format extract of 25 real MIMIC-IV hospitalizations. 19 CLIF tables and a one-column id file, `dashboard_patients_unit25.parquet`.
+- **Where:** `backend/data/local/unit25/` on the laptop. The folder is git-ignored.
+- **Rules:** real patient data. Local only. Never in git; this repo is public. Logs print counts only.
+- **To the cluster (proposed):** copy the folder once onto a Fuzzball volume with `t7-ward`, then run with `--real-ward`. The board then shows "Real MIMIC-IV · local only".
+- **Until then:** the board runs the open MIMIC-IV Demo ward.
+
+## Before the live demo
+
+1. Training has finished (`t7-build`).
+2. `t7-fit` has saved the probes.
+3. The 25 patients are on the volume (proposed step).
+4. `t7-twin` is up: Nemotron, board server, dispatcher.
+5. The first unit forecast has landed. Press "Update the unit", or wait for 07:00.
+6. Open the board. Check both tabs, Now and Next 24 h, one room page and the chat.
 
 ## What the board predicts
 

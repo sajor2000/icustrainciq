@@ -304,36 +304,108 @@
         "rule": "design-system-font",
         "value": "*",
         "files": [
-          "docs/diagrams/ward.html"
+          "docs/diagrams/frontend.html"
         ],
-        "createdAt": "2026-11-14T19:46:54.469Z",
+        "createdAt": "2026-11-14T20:09:00.237Z",
         "reason": "Claude triage: team diagram in the shared diagram-design skin (same as hosting/connection/lifecycle/sequence); not board UI, DESIGN.md does not govern it."
       },
       {
         "rule": "design-system-color",
         "value": "*",
         "files": [
-          "docs/diagrams/ward.html"
+          "docs/diagrams/frontend.html"
         ],
-        "createdAt": "2026-11-14T19:46:54.469Z",
+        "createdAt": "2026-11-14T20:09:00.237Z",
         "reason": "Claude triage: team diagram in the shared diagram-design skin (same as hosting/connection/lifecycle/sequence); not board UI, DESIGN.md does not govern it."
       },
       {
         "rule": "design-system-font-size",
         "value": "*",
         "files": [
-          "docs/diagrams/ward.html"
+          "docs/diagrams/frontend.html"
         ],
-        "createdAt": "2026-11-14T19:46:54.469Z",
+        "createdAt": "2026-11-14T20:09:00.237Z",
         "reason": "Claude triage: team diagram in the shared diagram-design skin (same as hosting/connection/lifecycle/sequence); not board UI, DESIGN.md does not govern it."
       },
       {
         "rule": "overused-font",
         "value": "*",
         "files": [
-          "docs/diagrams/ward.html"
+          "docs/diagrams/frontend.html"
         ],
-        "createdAt": "2026-11-14T19:46:54.469Z",
+        "createdAt": "2026-11-14T20:09:00.237Z",
+        "reason": "Claude triage: team diagram in the shared diagram-design skin (same as hosting/connection/lifecycle/sequence); not board UI, DESIGN.md does not govern it."
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          "docs/diagrams/backend.html"
+        ],
+        "createdAt": "2026-11-14T20:09:00.237Z",
+        "reason": "Claude triage: team diagram in the shared diagram-design skin (same as hosting/connection/lifecycle/sequence); not board UI, DESIGN.md does not govern it."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "docs/diagrams/backend.html"
+        ],
+        "createdAt": "2026-11-14T20:09:00.237Z",
+        "reason": "Claude triage: team diagram in the shared diagram-design skin (same as hosting/connection/lifecycle/sequence); not board UI, DESIGN.md does not govern it."
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "docs/diagrams/backend.html"
+        ],
+        "createdAt": "2026-11-14T20:09:00.237Z",
+        "reason": "Claude triage: team diagram in the shared diagram-design skin (same as hosting/connection/lifecycle/sequence); not board UI, DESIGN.md does not govern it."
+      },
+      {
+        "rule": "overused-font",
+        "value": "*",
+        "files": [
+          "docs/diagrams/backend.html"
+        ],
+        "createdAt": "2026-11-14T20:09:00.237Z",
+        "reason": "Claude triage: team diagram in the shared diagram-design skin (same as hosting/connection/lifecycle/sequence); not board UI, DESIGN.md does not govern it."
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          "docs/diagrams/workflow.html"
+        ],
+        "createdAt": "2026-11-14T20:09:00.237Z",
+        "reason": "Claude triage: team diagram in the shared diagram-design skin (same as hosting/connection/lifecycle/sequence); not board UI, DESIGN.md does not govern it."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "docs/diagrams/workflow.html"
+        ],
+        "createdAt": "2026-11-14T20:09:00.237Z",
+        "reason": "Claude triage: team diagram in the shared diagram-design skin (same as hosting/connection/lifecycle/sequence); not board UI, DESIGN.md does not govern it."
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "docs/diagrams/workflow.html"
+        ],
+        "createdAt": "2026-11-14T20:09:00.237Z",
+        "reason": "Claude triage: team diagram in the shared diagram-design skin (same as hosting/connection/lifecycle/sequence); not board UI, DESIGN.md does not govern it."
+      },
+      {
+        "rule": "overused-font",
+        "value": "*",
+        "files": [
+          "docs/diagrams/workflow.html"
+        ],
+        "createdAt": "2026-11-14T20:09:00.237Z",
         "reason": "Claude triage: team diagram in the shared diagram-design skin (same as hosting/connection/lifecycle/sequence); not board UI, DESIGN.md does not govern it."
       }
     ]
