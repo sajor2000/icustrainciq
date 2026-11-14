@@ -62,7 +62,7 @@ button{font:inherit;color:inherit}
 .brief li{padding:6px 0;border-top:1px solid var(--rule);font-size:15px}
 .brief li:first-child{border-top:0;font-size:18px;font-weight:700}
 .brief li .w{font-size:12px;font-weight:800;letter-spacing:.05em;border:1.5px solid currentColor;border-radius:4px;padding:1px 4px;vertical-align:2px}
-.brief .roomlink{background:transparent;border:0;border-bottom:1.5px solid currentColor;padding:0;cursor:pointer;font-weight:700}
+.brief .roomlink{background:transparent;border:0;border-bottom:1.5px solid currentColor;padding:6px 4px;margin:-6px -4px;cursor:pointer;font-weight:700;background-clip:content-box}
 .brief{padding-bottom:12px}
 
 /* board */
@@ -147,8 +147,20 @@ details.more summary:hover{color:var(--ink)}
 .sr{position:absolute;left:-9999px}
 
 /* run strip */
-.engine{margin-top:24px;padding-top:12px;border-top:2px solid var(--ink);display:flex;flex-wrap:wrap;gap:8px 32px;font-size:14px}
-.engine b{font-weight:700}
+.engine{margin-top:24px;padding-top:12px;border-top:2px solid var(--ink);font-size:14px}
+.engine h2{margin:0 0 4px;font-size:18px}
+.aboutline{margin:0 0 4px;max-width:80ch;color:var(--ink-2)}
+.all{width:100%;max-width:960px;border-collapse:collapse;margin:4px 0 12px;font-size:14px}
+.all th,.all td{text-align:left;padding:8px 12px 8px 0;border-top:1px solid var(--rule);vertical-align:top}
+.all thead th{font-size:12px;font-weight:600;color:var(--ink-2);border-top:0}
+.all .num{text-align:right;white-space:nowrap;font-weight:700}
+.all th[scope=row]{font-weight:600}
+.all th[scope=row] .range{display:block;font-weight:400;margin-top:2px}
+.all .num .range{font-weight:400}
+.all tr.group th{padding-top:16px;font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--ink-2)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 24px;margin:0 0 8px;max-width:960px}
+.facts dt{font-size:12px;font-weight:600;color:var(--ink-2)}
+.facts dd{margin:2px 0 0;font-size:14px}
 .pending{color:var(--ink-2);font-style:italic}
 
 ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--rule);border-radius:6px}
@@ -231,10 +243,23 @@ details.more summary:hover{color:var(--ink)}
     </div>
   </div>
 
-  <footer class="engine" aria-label="Run details">
-    <span>Model <b>icutwin m</b> · 35M parameters, trained on site: <span class="pending">pending run</span></span>
-    <span>Forecast · one forward pass per patient on 1 × NVIDIA GB10: <span class="pending">pending run</span></span>
-    <span>Workflows <b>t7-forecast</b> (06:30 daily and on request) · <b>t7-twin</b> on Fuzzball · data stays on site</span>
+  <footer class="engine" aria-labelledby="about-h">
+    <h2 id="about-h">How this forecast was made</h2>
+    <p class="aboutline">At 06:30, on the hospital's own servers, a small model trained on this ICU's records read each patient's history once and estimated 14 events for the next 24 h. The board shows the six that teams staff for. Patient records never leave the hospital.</p>
+    <details class="more about">
+      <summary>All 14 forecasts, and what each one means</summary>
+      <table class="all">
+        <caption class="sr">All 14 forecasts for the next 24 h: median and 80% range across the 25 rooms</caption>
+        <thead><tr><th scope="col">Forecast</th><th scope="col" class="num">Median (80% range)</th><th scope="col">Used by</th></tr></thead>
+        <tbody id="alltasks"></tbody>
+      </table>
+      <dl class="facts">
+        <div><dt>Model</dt><dd>icutwin m, 35 million parameters, trained on site on 2 × NVIDIA GB10 · <span class="pending">pending run</span></dd></div>
+        <div><dt>Method</dt><dd>One read of each patient's record 24 h after ICU arrival, a calibrated score per event, then patients added up into unit counts</dd></div>
+        <div><dt>Accuracy on patients it never saw</dt><dd>calibration and AUROC per event · <span class="pending">pending run</span></dd></div>
+        <div><dt>Where and when</dt><dd>Fuzzball workflow t7-forecast on 1 × NVIDIA GB10, 06:30 daily and on Rerun · run time <span class="pending">pending run</span></dd></div>
+      </dl>
+    </details>
   </footer>
 </div>
 
@@ -285,6 +310,27 @@ details.more summary:hover{color:var(--ink)}
   const ranked = () => rooms.slice().sort((a,b)=>top(b)[1]-top(a)[1]);
   const pct = v => Math.round(v*100)+"%";
   const C = {}; for (const e of EV) C[e.k] = counts(rooms.map(r=>pv(r,e.k)));
+  // the other eight probe heads (forecast.json other_tasks): research only, never staffing rows
+  const RX = [
+    {k:"icu_in", row:"Transfer into an ICU", def:"to another ICU, or back after leaving", base:.03},
+    {k:"hyperk", row:"High potassium", def:"6.5 mmol/L or higher", base:.03},
+    {k:"hypok",  row:"Low potassium", def:"below 2.5 mmol/L", base:.02},
+    {k:"anemia", row:"Anaemia", def:"haemoglobin below 7 g/dL", base:.12},
+    {k:"hypona", row:"Low sodium", def:"below 120 mmol/L", base:.02},
+    {k:"hyperna",row:"High sodium", def:"160 mmol/L or higher", base:.03},
+    {k:"tachy",  row:"Tachycardia", def:"heart rate 130 or higher", base:.15},
+    {k:"htn",    row:"Hypertension", def:"systolic 180+ or diastolic 120+", base:.08}];
+  for (const x of RX) C[x.k] = counts(rooms.map(()=>Math.min(.9, x.base*Math.exp((rnd()-.5)*1.6))));
+  const DEF = {vent:"invasive ventilation begins", press:"any vasopressor started", crrt:"continuous dialysis begins", hypo:"MAP below 65 or systolic below 90", death:"in-hospital death", out:"transfer to a ward or step-down unit"};
+  function renderAll(){
+    const mr = c => `${c.p50} <span class="range">(${c.p10} to ${c.p90})</span>`;
+    const row = (name, def, c, who) => `<tr><th scope="row">${name}<span class="range">${def}</span></th><td class="num">${mr(c)}</td><td>${who}</td></tr>`;
+    document.getElementById("alltasks").innerHTML =
+      `<tr class="group"><th colspan="3" scope="colgroup">ON THE BOARD · FOR STAFFING</th></tr>`
+      + EV.map(e=>row(e.row.replace(/ \(.*\)/,""), DEF[e.k], C[e.k], e.team)).join("")
+      + `<tr class="group"><th colspan="3" scope="colgroup">RESEARCH ONLY · NOT FOR STAFFING</th></tr>`
+      + RX.map(x=>row(x.row, x.def, C[x.k], "research")).join("");
+  }
 
   const RANK = {short:0, tight:1, ok:2, none:3};
   function status(k){ const c=C[k], free=cap[k]; if(free==null) return ["none","no capacity set"]; if(c.p50>free) return ["short","SHORT"]; if(c.p90>free) return ["tight","TIGHT"]; return ["ok","ON TRACK"]; }
@@ -407,7 +453,7 @@ details.more summary:hover{color:var(--ink)}
   // theme
   const tb=document.getElementById("theme"); tb.onclick=()=>{ theme=theme==="day"?"night":"day"; document.documentElement.dataset.board=theme; tb.setAttribute("aria-pressed",String(theme==="night")); tb.textContent=theme==="day"?"Night board":"Day board"; renderGrid(); };
 
-  renderBrief(); renderGrid(); renderRows(); renderChips();
+  renderBrief(); renderGrid(); renderRows(); renderChips(); renderAll();
   // deep links for review captures: #room=7 opens a room, #night switches the board, #role=pharmacy picks a role
   let h=location.hash; try{ h=decodeURIComponent(h); }catch(e){ /* malformed hash: use it raw */ }
   if(/(^|[#&])night(&|$)/.test(h)) tb.click();

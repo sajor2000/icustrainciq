@@ -36,7 +36,7 @@ Roles accepted: `ICU nurse`, `ICU physician`, `pharmacy`, `respiratory therapy`,
 4. **Unit rows**: one row per D8 task: name and team (or "your row"), median as the big number, 80% range bar with the range in words, an ink line at the free count, and the status word (ON TRACK / TIGHT / SHORT) where a capacity is set, "no capacity set" where none is. Order and folding follow the role (see Cognitive load).
 5. **Room drawer** (stage ward only), opens under the unit rows so the verdict stays in view: the room's live tasks as bars sorted by risk, with percent; "On now, not forecast as new" tags for tasks already started; one line on how far to trust them (held-out calibration and AUROC, "pending run" until a run supplies them); what the model read in the last 12 h, five items and "Show more"; the "model evidence, not a cause; not a treatment recommendation" note.
 6. **Ask the board**: suggested-question chips (at most three by role, plus "Rerun the forecast"; with a room open, the first chip is "Room N: what is most likely in the next 24 h?"), then the answers, then a text box ("Or type a question"). The chat starts empty: no seeded exchange.
-7. **Run strip**: model, workflows, GPU timings or "pending run".
+7. **How this forecast was made** (foot of the page): one plain-language line (when and where it ran, that patient records stay in the hospital), then a folded "All 14 forecasts, and what each one means" table: the six board tasks (for staffing) and the eight `other_tasks` (research only, never staffing rows), each with its definition, median and 80% range, and who uses it; then the model, method, held-out accuracy and run time, each "pending run" until a run supplies it.
 
 ## Cognitive load
 
@@ -53,6 +53,7 @@ The board is read at 07:00 by a tired team standing at a workstation or a projec
 | Suggested questions | At most three chips by role plus "Rerun the forecast" (44 px targets); a room chip when a room is open; the chat starts empty and clears when the role or the room changes. | Tapping beats composing a question at rounds; an empty chat never looks like an answer. |
 | Shift brief | Three lines at most; never repeats a full row. | It is something to read aloud at rounds, not a report. |
 | One horizon | Next 24 h, 07:00 to 07:00. No tabs, no time slider. | Nothing to choose before reading. |
+| Everything else folded | The other eight forecasts and the model details sit in one closed section at the foot ("All 14 forecasts"), in plain words, never in the staffing rows. | Judges and the curious can see everything the model makes; the 07:00 reader never has to. |
 | Consistent colour | Blue means risk (magnet shading, range bars). Red means SHORT only, amber TIGHT only, green ON TRACK only, always with the word. The capacity line and the SYNTHETIC badge are ink. | A colour never needs decoding twice. |
 | Day and night boards | Same layout and words; the user picks the board, not the OS. | Nothing moves when the lights go down. |
 

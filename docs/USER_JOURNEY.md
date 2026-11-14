@@ -56,4 +56,4 @@ Switches to the **Night board** (charcoal ground, chalk ink) for a dim unit. Sam
 
 ## Judges (five-minute demo)
 
-See the board at 07:00 framing, open a room, ask the chat, watch the agent or a nurse start a forecast, and read the run strip: which Fuzzball workflow ran and on how many GPUs (shown as "pending run" until a real run supplies numbers).
+See the board at 07:00 framing, open a room, ask the chat, watch the agent or a nurse start a forecast, then open **All 14 forecasts** at the foot of the page: every event the model estimates (six for staffing, eight research only), each with its definition and range, and how the forecast was made (model, method, where it ran; "pending run" until a real run supplies numbers).
