@@ -1317,10 +1317,13 @@ details.more summary:hover{color:var(--ink)}
     /* POST /api/capacity: only the fields the user filled in; an empty field is left out, never sent as null */
     const body={role:role()}; if(ls!=="") body.life_support_patients=+ls; if(vt!=="") body.vents_total=+vt; if(ct!=="") body.crrt_total=+ct; if(ns!=="") body.nurses_on_shift=+ns; if(rs0!=="") body.rt_on_shift=+rs0;
     if(!LIVE && ls===""){ renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device."; return; }
-    let rs;
-    if(LIVE){ try{ rs=await postJSON("/api/capacity", body); }catch(err){ rs={ok:false,reason:"The board server did not answer. Try again in a moment."}; } }
+    let rs, down=false;
+    if(LIVE){ try{ rs=await postJSON("/api/capacity", body); }catch(err){ down=true; rs={ok:false,reason:"The board server did not answer. Try again in a moment."}; } }
     else rs=await api.capacity(body);
-    if(!rs.ok){ if(LIVE && ls===""){ renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device. The server needs the staffing number to save capacity."; return; }
+    if(!rs.ok){ if(LIVE && ls===""){
+        /* a field the server already returns is shown from the server, so a device-only copy would change nothing on screen */
+        if(Object.entries({imv:vt,crrt:ct,nurses:ns,rt:rs0}).some(([k,v])=>v!=="" && srvTotal(k)!==undefined)){ paintCapForm(); msg.textContent="Not saved. "+(down?"The board server did not answer; the numbers shown are the server's. Try again in a moment.":(str(rs.reason,200)||"The server did not accept it.")); return; }
+        renderStrain(); if(room!==null) renderRoom(); msg.textContent=down?"Saved on this device only. The board server did not answer.":"Saved on this device. The server needs the staffing number to save capacity."; return; }
       msg.textContent=str(rs.reason,200)||"Capacity was not saved."; return; }
     const sv=rs.capacity && typeof rs.capacity==="object" ? rs.capacity : {}, setAt=typeof sv.set_at==="string"?sv.set_at:typeof sv.updated_at==="string"?sv.updated_at:iso(Date.now());
     viewTyp=false;
