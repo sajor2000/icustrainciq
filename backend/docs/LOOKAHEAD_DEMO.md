@@ -85,7 +85,6 @@ before deployment. The Fuzzfiles reference volumes; they do not create them.
 | `/context` | `team7/demo-context` | **Restricted:** private `cohort_ids.csv`, approved selected-25 CLIF extract `clif/`, generated `stage_ward.csv`/`roster.csv`, selected-25 `tokenized_output/`, room projections, `context.json`, metadata run log and rendered workflow files. Board routes read the approved context and metadata, never source tables; this is a shared restricted volume, not a per-directory filesystem isolation boundary. |
 | `/rows` | `team7/clif_work` | **Restricted:** existing prepared token/features/scores source, if used by an authorized operator to prepare the selected cache. Never mounted in the new runtime definitions. |
 | `/clif` | `team7/mimic_clif` | **Restricted:** persistent source CLIF, historically `/clif/clif`. An authorized operator prepares the approved selected-25 extract under `/context/clif`; the new runtime definitions do not mount the full source volume. |
-| `/tooling` | `team7/tooling` | Prepared Python dependencies at `/tooling/py`, including the model extras and timezone database required by `America/Chicago`. No runtime pip installation. |
 
 The persistent local Nemotron snapshot was verified previously at
 `/models/nemotron-3-nano-fp8/9bee19446c0dfd01f356e10979d225b2a6621944`
@@ -143,7 +142,8 @@ The archive includes the current cohort helper `scripts/run_cohort.py`,
 `requirements/t7-model.in` / `t7-model.txt` model dependency pins, copied unchanged
 from the current source's `backend/requirements/`. No new
 dependency versions are invented and no SGLang/Monte Carlo requirement set is
-needed. Dependencies must already be installed on the approved tooling volume;
+needed. Dependencies must already be installed at `/store/py` on `twin-store`
+(`t7-code.fz` puts them there; the separate `tooling` volume is no longer used);
 the workflows do not install packages at startup.
 
 The [workflow alignment record](CLAUDE_WORKFLOW_ALIGNMENT.md) records the current
@@ -164,7 +164,7 @@ source-data timezone separately from the board's presentation timezone.
 
 ```bash
 umask 077
-export PYTHONPATH=/tooling/py:/store/code
+export PYTHONPATH=/store/py:/store/code
 REPLAY_CUT=2026-11-14T07:00:00-06:00
 
 python /store/code/scripts/run_cohort.py /context/clif \

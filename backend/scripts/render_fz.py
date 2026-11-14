@@ -10,10 +10,11 @@ It only writes text: it starts nothing and talks to no cluster.
   python scripts/render_fz.py fuzzball/t7-forecast.fz --scope unit -o /tmp/t7-forecast.fz
   python scripts/render_fz.py fuzzball/t7-forecast.fz --scope room --room 12 --hours 4.5 -o /tmp/f.fz
   python scripts/render_fz.py fuzzball/t7-fit.fz -o /tmp/t7-fit.fz              # open demo ward
-  python scripts/render_fz.py fuzzball/t7-ward.fz --real-ward --clif-dir /rows/stage/unit25 \\
-      --ward-ids /rows/stage/unit25/dashboard_patients_unit25.parquet \\
-      --names /rows/stage/unit25/name.parquet -o /tmp/t7-ward.fz               # the final cohort
-  python scripts/render_fz.py fuzzball/t7-smoke.fz --code-ref <40 hex> --code-sha256 <64 hex> -o /tmp/t7-smoke.fz
+  python scripts/render_fz.py fuzzball/t7-ward.fz --cohort -o /tmp/t7-ward.fz   # the final cohort, where it
+      # is on the cluster: --real-ward --clif-dir /data/dashboard_data --ward-ids .../dashboard_patients_unit25.parquet
+      # --names .../name.parquet (each can still be given on its own)
+  python scripts/render_fz.py fuzzball/t7-code.fz --code-ref <40 hex> --code-sha256 <64 hex> -o /tmp/t7-code.fz
+  scripts/make_ready.sh [commit]                        # all of the above for the final cohort -> fuzzball/ready/
   python scripts/render_fz.py --check fuzzball/*.fz    # which tokens each template has
 
 Exit 1, and nothing written, when a token would be left unfilled (the message names
@@ -40,6 +41,9 @@ def main(argv=None) -> int:
     ap.add_argument("--scope", choices=dispatcher.SCOPES, default="unit")
     ap.add_argument("--room", type=int, default=0)
     ap.add_argument("--hours", type=float, default=0, help="demo-clock hours")
+    ap.add_argument(
+        "--cohort", action="store_true", help="the final cohort on mimic_clif"
+    )
     ap.add_argument("--real-ward", action="store_true")
     ap.add_argument("--clif-dir", default=dispatcher.DEFAULT_CLIF_DIR)
     ap.add_argument("--ward-ids", default="")
@@ -47,6 +51,12 @@ def main(argv=None) -> int:
     ap.add_argument("--code-ref", default="")
     ap.add_argument("--code-sha256", default="")
     a = ap.parse_args(argv)
+    if a.cohort:
+        a.real_ward = True
+        if a.clif_dir == dispatcher.DEFAULT_CLIF_DIR:
+            a.clif_dir = dispatcher.COHORT_CLIF_DIR
+        a.ward_ids = a.ward_ids or dispatcher.COHORT_WARD_IDS
+        a.names = a.names or dispatcher.COHORT_NAMES
     if a.check:
         for f in a.template:
             print(f"{f.name}: {' '.join(dispatcher.unfilled(f.read_text())) or '-'}")

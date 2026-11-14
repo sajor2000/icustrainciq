@@ -7,13 +7,12 @@ version: v4
 volumes:
   store: {name: twin-store, use: team7}
   context: {name: demo-context, use: team7}
-  tooling: {name: tooling, use: team7}
 
 jobs:
   prepare-context:
     image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
-    mounts: {/store: store, /context: context, /tooling: tooling}
-    env: [CLIF_DIR=/context/clif, "PYTHONPATH=/tooling/py:/store/code", TMPDIR=/tmp, TZ=America/Chicago, PYTHONDONTWRITEBYTECODE=1]
+    mounts: {/store: store, /context: context}
+    env: [CLIF_DIR=/context/clif, "PYTHONPATH=/store/py:/store/code", TMPDIR=/tmp, TZ=America/Chicago, PYTHONDONTWRITEBYTECODE=1]
     resource: {cpu: {cores: 4}, memory: {size: 16GB}}
     policy: {timeout: {execute: 30m}}
     script: |

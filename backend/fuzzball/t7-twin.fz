@@ -3,14 +3,15 @@ version: v4
 # the bed board serves app/static/index.html and the forecast files from t7-forecast (CPU). The other GPU
 # stays free for `t7-forecast` updates (07:00 daily, and the unit or one room on request from the board or the chat).
 # The MCP server is read-only: nothing outside this workflow's dispatcher starts a forecast.
-#   fuzzball workflow start fuzzball/t7-twin.fz
+#   python scripts/render_fz.py fuzzball/t7-twin.fz [--cohort] -o /tmp/t7-twin.fz   (or fuzzball/ready/t7-twin.fz)
+#   fuzzball workflow validate /tmp/t7-twin.fz && fuzzball workflow start /tmp/t7-twin.fz --name t7-twin
 #   fuzzball workflow connect --name board --endpoint web <workflow-id>
 volumes:
   store:
-    name: twin-store
+    name: twin-store            # persistent: code, packages, rooms.json, forecast.json, capacity.json, runs.jsonl
     use: team7
   hf:
-    name: hfcache               # persistent model cache for Nemotron weights
+    name: hfcache               # persistent: the Nemotron weights (nemotron-3-nano-fp8/<revision>)
     use: team7
 
 services:
@@ -28,9 +29,18 @@ services:
     # off per request (chat_template_kwargs enable_thinking=false), so no --reasoning-parser is needed.
     script: |
       #!/bin/bash
-      # pinned to the commit t7-smoke prefetched into hfcache (weights and remote code)
+      # Pinned revision. The weights are an ordinary folder on hfcache, nemotron-3-nano-fp8/<revision> (written
+      # by the workflow t7-fb-nemotron-persistent, 2026-11-14): serve that folder, no download. If it is not
+      # there, fall back to the Hugging Face name at the same revision (downloads into /cache/hf first).
       REV=9bee19446c0dfd01f356e10979d225b2a6621944
-      exec vllm serve nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8 --revision $REV --code-revision $REV --served-model-name nemotron --trust-remote-code \
+      LOCAL=/cache/nemotron-3-nano-fp8/$REV
+      if [ -f "$LOCAL/config.json" ]; then
+        echo "serving the local copy $LOCAL"; MODEL="$LOCAL"; PIN=""
+      else
+        echo "no local copy at $LOCAL: downloading nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8 at $REV"
+        MODEL=nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8; PIN="--revision $REV --code-revision $REV"
+      fi
+      exec vllm serve "$MODEL" $PIN --served-model-name nemotron --trust-remote-code \
         --max-model-len 16384 --max-num-seqs 4 --gpu-memory-utilization 0.85 --kv-cache-dtype fp8 \
         --enable-prefix-caching \
         --enable-auto-tool-choice --tool-call-parser qwen3_coder --host 0.0.0.0 --port 8000
@@ -123,10 +133,12 @@ services:
         echo "WARNING: FB_CLI_SHA256 is not set; the downloaded CLI is unverified. Its sha256 is $GOT: pin it in env above."
       fi
       chmod 500 "$CLI"
-      # real MIMIC-IV room views are opt-in (lane 2 only): append --real-ward to the line below. Default: open demo ward.
-      # The final cohort (after t7-ward staged it): append --real-ward --clif-dir /rows/stage/unit25 --names /rows/stage/unit25/name.parquet (docs/LIVE_DEMO.md, Final cohort).
+      # The ward: the open demo by default (nothing after --port 9000). TEMPLATE token, filled by scripts/render_fz.py:
+      # for the final cohort (render_fz.py --cohort; fuzzball/ready/t7-twin.fz) it is
+      # "--real-ward --clif-dir /data/dashboard_data --names /data/dashboard_data/name.parquet". These are only
+      # written into each t7-forecast copy: this service does not mount mimic_clif and cannot read a patient file.
       while true; do
         python /store/code/app/dispatcher.py --fuzzfile /store/code/fuzzball/t7-forecast.fz \
-          --log /store/runs.jsonl --rooms /store/rooms.json --at 07:00 --tz America/Chicago --min-gap 20 --cli "$CLI" --port 9000 || true
+          --log /store/runs.jsonl --rooms /store/rooms.json --at 07:00 --tz America/Chicago --min-gap 20 --cli "$CLI" --port 9000 @DISPATCH_WARD@ || true
         echo "DISPATCHER EXITED: restarting in 5 s (the run log and the gaps are read back from /store/runs.jsonl)"; sleep 5
       done

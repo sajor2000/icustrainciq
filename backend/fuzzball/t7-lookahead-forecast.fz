@@ -6,14 +6,13 @@ version: v4
 # This is ONLY the selected25 pipeline: winnow -> one forward pass -> saved logistic probes
 # -> exact Poisson-binomial counts and one atomic context.json. No refitting or MC generation.
 volumes:
-  store: {name: twin-store, use: team7}       # code, model and saved probes only
+  store: {name: twin-store, use: team7}       # code, packages (/store/py), model and saved probes
   context: {name: demo-context, use: team7}  # RESTRICTED selected25 token/features/scores/context
-  tooling: {name: tooling, use: team7}
 
 defaults:
   job:
-    mounts: {/store: store, /context: context, /tooling: tooling}
-    env: [TMPDIR=/tmp, "PYTHONPATH=/tooling/py:/store/code", TZ=America/Chicago, PYTHONDONTWRITEBYTECODE=1]
+    mounts: {/store: store, /context: context}
+    env: [TMPDIR=/tmp, "PYTHONPATH=/store/py:/store/code", TZ=America/Chicago, PYTHONDONTWRITEBYTECODE=1]
 
 jobs:
   extract:
@@ -39,11 +38,11 @@ jobs:
   publish:
     depends-on: [{name: extract, status: FINISHED}]
     image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
-    mounts: {/store: store, /context: context, /tooling: tooling}
+    mounts: {/store: store, /context: context}
     resource: {cpu: {cores: 4}, memory: {size: 16GB}}
     policy: {timeout: {execute: 20m}}
     # Use the same approved selected25 CLIF extract and private ID list as initial preparation.
-    env: ["CLIF_DIR=@CLIF_DIR@", "PYTHONPATH=/tooling/py:/store/code", TMPDIR=/tmp, TZ=America/Chicago, PYTHONDONTWRITEBYTECODE=1]
+    env: ["CLIF_DIR=@CLIF_DIR@", "PYTHONPATH=/store/py:/store/code", TMPDIR=/tmp, TZ=America/Chicago, PYTHONDONTWRITEBYTECODE=1]
     script: |
       #!/bin/bash
       set -euo pipefail

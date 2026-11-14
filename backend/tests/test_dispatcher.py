@@ -614,12 +614,34 @@ PINNED = {  # docs/CLUSTER_FACTS.md "Images we pin", plus the CPU image
     "docker://lmsysorg/sglang:v0.5.21",
     "docker://python:3.12-slim",
 }
-COHORT = dict(
-    real_ward=True,
-    clif_dir="/rows/stage/unit25",
-    ward_ids="/rows/stage/unit25/dashboard_patients_unit25.parquet",
+COHORT = (
+    dict(  # the final cohort where it is on the cluster: mimic_clif at /data, read only
+        real_ward=True, clif_dir=d.COHORT_CLIF_DIR, ward_ids=d.COHORT_WARD_IDS
+    )
 )
+# the chat-grounding workflows read an approved 25-patient extract on their own restricted
+# volume and never mount the full source volume (docs/LOOKAHEAD_DEMO.md)
+LOOKAHEAD_WARD = dict(
+    real_ward=True,
+    clif_dir="/context/clif",
+    ward_ids="/context/cohort_ids.csv",
+    names="fake",
+)
+VOLUMES = {  # docs/FUZZBALL_VALIDATION.md: one volume we write, one we only read, the HF cache
+    "t7-code": {"twin-store", None},  # None: the ephemeral work volume
+    "t7-smoke": {"twin-store", "hfcache", None},
+    "t7-fit": {"mimic_clif", "twin-store"},
+    "t7-ward": {"mimic_clif", "twin-store"},
+    "t7-forecast": {"mimic_clif", "twin-store"},
+    "t7-twin": {"twin-store", "hfcache"},
+    # the chat-grounding workflows: twin-store is only read; the restricted context volume
+    # holds the private roster and the context; packages come from /store/py like the rest
+    "t7-lookahead-prepare": {"twin-store", "demo-context"},
+    "t7-lookahead-chat": {"twin-store", "hfcache", "demo-context"},
+    "t7-lookahead-forecast": {"twin-store", "demo-context"},
+}
 ORDER = {  # job -> the jobs it waits for (docs/diagrams/workflow.html, backend.html)
+    "t7-code": {"publish": [], "deps": [], "check": ["publish", "deps"]},
     "t7-smoke": {
         "prefetch": [],
         "setup": [],
@@ -627,7 +649,12 @@ ORDER = {  # job -> the jobs it waits for (docs/diagrams/workflow.html, backend.
         "sglang": ["train-demo"],
         "seed": ["sglang"],
     },
-    "t7-fit": {"stage": [], "extract": [], "fit": ["extract", "stage"]},
+    "t7-fit": {
+        "tokens": [],
+        "stage": [],
+        "extract": ["tokens"],
+        "fit": ["extract", "stage"],
+    },
     "t7-ward": {"load": [], "tokenize": ["load"]},
     "t7-forecast": {"precheck": [], "extract": ["precheck"], "score": ["extract"]},
     "t7-twin": {},  # services only
@@ -655,7 +682,7 @@ def test_every_fuzzfile_renders_to_yaml_with_pinned_images_and_no_token_left():
     import yaml
 
     for name in ORDER:
-        for ward in ({}, COHORT):
+        for ward in ({}, LOOKAHEAD_WARD if "lookahead" in name else COHORT):
             text = render_any(name, **ward)
             assert not re.search(r"@[A-Z0-9_]+@", text), name
             doc = yaml.safe_load(text)
@@ -674,6 +701,24 @@ def test_every_fuzzfile_renders_to_yaml_with_pinned_images_and_no_token_left():
                     assert spec["policy"]["timeout"]["execute"], (name, job)
             for vol in doc["volumes"].values():
                 assert vol["use"] == "team7", name  # team volumes only
+            assert {v.get("name") for v in doc["volumes"].values()} == VOLUMES[name]
+            # training's volume is only read: nothing is written under /data
+            assert not re.search(
+                r"(>|mv [^\n]* |cp [^\n]* |--out |mkdir -p |rm -rf )/data/", text
+            ), name
+            for unit, spec in units.items():  # every path a script uses is mounted
+                mounts = set(spec.get("mounts") or doc["defaults"]["job"]["mounts"])
+                for root in ("/data", "/store", "/work", "/cache"):
+                    # t7-twin's dispatcher only passes /data paths on to t7-forecast: no mount
+                    if (name, root) != ("t7-twin", "/data") and re.search(
+                        rf"(?<![\w.]){root}/", spec["script"]
+                    ):
+                        assert root in mounts, (name, unit, root)
+                env = " ".join(
+                    spec.get("env")
+                    or doc.get("defaults", {}).get("job", {}).get("env", [])
+                )
+                assert "/tooling" not in env + spec["script"], (name, unit)
 
 
 def test_job_order_matches_the_workflow_diagram():
@@ -705,7 +750,7 @@ def test_ward_tokens_default_to_the_open_demo_and_point_at_the_cohort_on_request
     fit = yaml.safe_load(render_any("t7-fit"))["jobs"]["stage"]["script"]
     assert "CLIF=/store/code/clif_demo" in fit
     assert (
-        "--out /rows/stage/stage_ward.csv    #" in fit
+        "--out /store/stage/stage_ward.csv    #" in fit
     )  # no --ward-ids: the selection
     assert "--ward-ids" not in fit.replace("# ", "")
     for name, job in (
@@ -714,22 +759,38 @@ def test_ward_tokens_default_to_the_open_demo_and_point_at_the_cohort_on_request
         ("t7-ward", "load"),
     ):
         s = yaml.safe_load(render_any(name, **COHORT))["jobs"][job]["script"]
-        assert "CLIF=/rows/stage/unit25" in s
+        assert "CLIF=/data/dashboard_data" in s
         assert (
-            "--ward-ids /rows/stage/unit25/dashboard_patients_unit25.parquet --real-ward"
+            "--ward-ids /data/dashboard_data/dashboard_patients_unit25.parquet --real-ward"
             in s
         )
     fc = yaml.safe_load(render_any("t7-forecast", **COHORT))["jobs"]
-    assert "CLIF=/rows/stage/unit25" in fc["score"]["script"]
+    assert "CLIF=/data/dashboard_data" in fc["score"]["script"]
     assert 'WARD="--real-ward"' in fc["score"]["script"]
-    assert "/rows/stage/unit25/clif_hospitalization.parquet" in fc["precheck"]["script"]
+    assert (
+        "/data/dashboard_data/clif_hospitalization.parquet" in fc["precheck"]["script"]
+    )
     ward = yaml.safe_load(render_any("t7-ward", **COHORT))["jobs"]
     assert "ward_check.py" in ward["load"]["script"]
     assert "--expect-ids 25" in ward["load"]["script"]
     t = ward["tokenize"]["script"]
-    assert "cmp " in t and "/rows/tokenized_output/vocab.yaml" in t  # training vocab
-    assert 'mv "$NEW/tokenized_output" /rows/stage/tokenized_output' in t
-    assert 'mv "$NEW/stage_ward.csv" /rows/stage/stage_ward.csv' in t
+    assert "cmp " in t and "/data/tokenized_output/vocab.yaml" in t  # training vocab
+    assert 'mv "$NEW/tokenized_output" /store/stage/tokenized_output' in t
+    assert 'mv "$NEW/stage_ward.csv" /store/stage/stage_ward.csv' in t
+    # the model and training tokens are read where training left them; features go to twin-store
+    fitjobs = yaml.safe_load(render_any("t7-fit", **COHORT))["jobs"]
+    assert "/store/train -m /data/model_output/final" in fitjobs["extract"]["script"]
+    assert 'ln -s "$f" "/store/train/' in fitjobs["tokens"]["script"]
+    assert "--model /data/model_output/final" in fc["score"]["script"]
+    # t7-twin's dispatcher forecasts the ward that was staged; the open demo by default
+    line = lambda **w: next(  # noqa: E731
+        x for x in render_any("t7-twin", **w).splitlines() if "--min-gap 20" in x
+    )
+    assert line().rstrip().endswith("--port 9000  || true")
+    assert (
+        "--port 9000 --real-ward --clif-dir /data/dashboard_data "
+        "--names /data/dashboard_data/name.parquet || true"
+    ) in line(**COHORT, names=d.COHORT_NAMES)
     # the folder never points into the repo's code tree for a real ward
     assert "/store/code/clif_demo" not in t
 
@@ -995,11 +1056,14 @@ def test_render_fz_script_fills_every_template_or_exits_1(tmp_path, capsys):
     assert rf.main(["--check", *(str(f) for f in sorted(FUZZ.glob("*.fz")))]) == 0
     listing = capsys.readouterr().out
     assert (
-        "t7-twin.fz: -" in listing
+        "t7-twin.fz: @DISPATCH_WARD@" in listing
         and "t7-smoke.fz: @CODE_REF@ @CODE_SHA256@" in listing
+        and "t7-code.fz: @CODE_REF@ @CODE_SHA256@" in listing
     )
     for name in ("t7-fit", "t7-ward", "t7-twin"):
         assert rf.main([str(FUZZ / f"{name}.fz"), "-o", str(tmp_path / "x.fz")]) == 0
+    assert rf.main([str(FUZZ / "t7-ward.fz"), "--cohort", "-o", str(out)]) == 0
+    assert out.read_text() == render_any("t7-ward", **COHORT, names=d.COHORT_NAMES)
 
 
 def test_smoke_has_no_exclusive_and_every_job_has_a_timeout():

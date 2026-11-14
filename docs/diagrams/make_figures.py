@@ -1,0 +1,389 @@
+"""Write the Lookahead figures (HTML with inline SVG) in the board's design system.
+
+    python3 docs/diagrams/make_figures.py            # writes docs/diagrams/*.html
+    python3 docs/diagrams/make_figures.py --night <dir>   # night-board copies, for the project page's dark theme
+
+Design source: DESIGN.md (section "Diagrams"). Colours, type sizes, radii and the
+icon family below are the board's tokens; do not add a colour or a font here.
+After writing, check and export each figure with the diagram-design skill:
+verify_geometry.py, self_check.py --offline, export_png.py.
+"""
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+
+# ---- tokens (DESIGN.md front matter; the same values as mockups/command-center.html :root)
+BOARD, BOARD2, SURFACE = "#F3F5F9", "#E8ECF2", "#FFFFFF"
+INK, INK2, LINE = "#111827", "#4A5567", "#7A8597"
+BLUE, LV_MEDIUM, ON_HIGH = "#1E5BB8", "#D2E2F8", "#FFFFFF"
+OK, AMBER, AMBER_BG, AMBER_EDGE = "#18794E", "#8A4B08", "#FCE8C3", "#C27A14"
+FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+FONT_ATTR = FONT.replace('"', "'")
+
+# ---- icon family, copied from the sprite in mockups/command-center.html (24 grid, 1.75 stroke)
+ICONS = {
+    "vent": '<path d="M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8"/><path d="M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z"/><path d="M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z"/>',
+    "pump": '<g transform="rotate(45 12 12)"><path d="M9 1.5h6M12 1.5v4M8 5.5h8M12 15.5v2.7"/><rect x="9.2" y="5.5" width="5.6" height="10" rx="1"/><path d="M9.2 10.2h2.3"/></g><path d="M4.2 17.6c1.1 1.3 1.8 2.1 1.8 3a1.8 1.8 0 0 1-3.6 0c0-.9.7-1.7 1.8-3z"/>',
+    "crrt": '<rect x="8" y="2.5" width="8" height="3.4" rx="1.2"/><rect x="8" y="18.1" width="8" height="3.4" rx="1.2"/><path d="M9.5 5.9v12.2M14.5 5.9v12.2M12 8.5v7"/><path d="M9.5 16H6.5a3 3 0 0 1-3-3V9.5M1.7 11.3 3.5 9.5l1.8 1.8"/><path d="M14.5 8h3a3 3 0 0 1 3 3v3.5M18.7 12.7l1.8 1.8 1.8-1.8"/>',
+    "leave": '<path d="M2.5 9.5v10M2.5 16.5H18v3"/><path d="M8.5 16.5v-3.2h6.3a3.2 3.2 0 0 1 3.2 3.2"/><circle cx="5.6" cy="13.6" r="1.5"/><path d="M12.5 6h9M18.5 3l3 3-3 3"/>',
+    "person": '<circle cx="12" cy="7.2" r="3.9"/><path d="M4.5 21v-1.4c0-3.5 3.2-5.9 7.5-5.9s7.5 2.4 7.5 5.9V21z"/>',
+    "chat": '<path d="M4 5.5h16v10.5H10.5L6 19.8V16H4Z"/><path d="M8 9.5h8M8 12.5h5"/>',
+    "beds": '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
+}
+
+# ---- node kinds: fill, border, title colour, secondary colour (DESIGN.md "Diagrams")
+def kinds():
+    return {
+        "card":     (SURFACE,   LINE, INK,     INK2),     # structure: service, page, step
+        "store":    (BOARD2,    LINE, INK,     INK2),     # data store: Fuzzball volume
+        "model":    (BLUE,      BLUE, ON_HIGH, ON_HIGH),  # our patient model (one per figure)
+        "forecast": (LV_MEDIUM, BLUE, INK,     INK),      # what our model produces
+        "nvidia":   (INK,       INK,  BOARD,   BOARD),    # NVIDIA model, used as is
+    }
+
+
+# the night board's values for the same tokens (DESIGN.md, night- prefix)
+NIGHT = dict(BOARD="#0E131B", BOARD2="#1C2533", SURFACE="#151C28", INK="#E6E9EF", INK2="#A3ADBD", LINE="#667286",
+             BLUE="#8DBBFF", LV_MEDIUM="#1B2E50", ON_HIGH="#0B1220", OK="#6CC59B", AMBER="#F0B466",
+             AMBER_BG="#3B2D12", AMBER_EDGE="#C58A2F")
+OUT = HERE
+
+
+def esc(s):
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def caps_w(s, size=12):
+    """Width of a tracked 700 label, generous."""
+    return int(len(s) * size * 0.72) + 4
+
+
+class Fig:
+    def __init__(self, slug, w, h, title, desc, eyebrow, heading, big=False):
+        self.slug, self.w, self.h = slug, w, h
+        self.title, self.desc, self.eyebrow, self.heading = title, desc, eyebrow, heading
+        self.t_title, self.t_sub = (18, 14) if big else (16, 13)
+        self.zones, self.lines, self.labels, self.nodes, self.foot = [], [], [], [], []
+
+    # -- text
+    def text(self, x, y, s, size, weight=400, fill=None, anchor="start", caps=False):
+        fill = fill or INK
+        ls = ' letter-spacing="0.05em"' if caps else ""
+        s = s.upper() if caps else s
+        return (f'<text x="{x}" y="{y}" fill="{fill}" font-size="{size}" font-weight="{weight}" '
+                f'font-family="{FONT_ATTR}" text-anchor="{anchor}"{ls}>{esc(s)}</text>')
+
+    # -- containers
+    def zone(self, x, y, w, h, label):
+        lw = int(len(label) * 12 * 0.61) + 20
+        self.zones.append(
+            f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="16" fill="none" stroke="{INK}" '
+            f'stroke-width="1.5" stroke-dasharray="6 5"/>'
+            f'<rect x="{x + 20}" y="{y - 8}" width="{lw}" height="16" fill="{BOARD}"/>'
+            + self.text(x + 28, y + 4, label, 12, 700, INK, caps=True))
+
+    # -- connectors: orthogonal, corners rounded at r=8
+    def arrow(self, pts, color=None, dashed=False, label=None, at=None, side="above"):
+        color = color or INK
+        d = f"M {pts[0][0]},{pts[0][1]}"
+        r = 8
+        for i in range(1, len(pts)):
+            x, y = pts[i]
+            px, py = pts[i - 1]
+            if i < len(pts) - 1:
+                nx, ny = pts[i + 1]
+                ux, uy = (x > px) - (x < px), (y > py) - (y < py)
+                vx, vy = (nx > x) - (nx < x), (ny > y) - (ny < y)
+                d += f" L {x - ux * r},{y - uy * r} Q {x},{y} {x + vx * r},{y + vy * r}"
+            else:
+                d += f" L {x},{y}"
+        mk = {INK: "ink", BLUE: "blue", INK2: "ink2"}[color]
+        dash = ' stroke-dasharray="6 5"' if dashed else ""
+        self.lines.append(f'<path d="{d}" fill="none" stroke="{color}" stroke-width="1.5"{dash} '
+                          f'marker-end="url(#{self.slug}-arrow-{mk})"/>')
+        if label:
+            cx, cy = at
+            w = caps_w(label) + 8
+            if side == "above":
+                bx, by = cx - w // 2, cy - 8 - 16
+            elif side == "below":
+                bx, by = cx - w // 2, cy + 8
+            elif side == "right":
+                bx, by = cx + 8, cy - 8
+            else:
+                bx, by = cx - 8 - w, cy - 8
+            self.labels.append(
+                f'<rect x="{bx}" y="{by}" width="{w}" height="16" rx="2" fill="{BOARD}"/>'
+                + self.text(bx + w / 2, by + 12, label, 12, 700, BLUE if color == BLUE else INK2, "middle", caps=True))
+
+    # -- nodes
+    def icon(self, name, x, y, color, size=22):
+        s = size / 24
+        return (f'<g transform="translate({x} {y}) scale({s:.4f})" fill="none" stroke="{color}" stroke-width="1.75" '
+                f'stroke-linecap="round" stroke-linejoin="round">{ICONS[name]}</g>')
+
+    def chip(self, x, y, word, state):
+        """The board's status chip: border, fill and a word."""
+        fill, edge, ink = {"done": (SURFACE, OK, OK), "todo": (AMBER_BG, AMBER_EDGE, AMBER),
+                           "ready": (SURFACE, LINE, INK2)}[state]
+        w = caps_w(word) + 12
+        return (f'<rect x="{x}" y="{y}" width="{w}" height="22" rx="5" fill="{fill}" stroke="{edge}" stroke-width="1.5"/>'
+                + self.text(x + w / 2, y + 15, word, 12, 800, ink, "middle", caps=True))
+
+    def node(self, x, y, w, h, kind, tag, title, subs=(), icon=None, icons=None, chip=None, rows=None):
+        fill, edge, c1, c2 = kinds()[kind]
+        o = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="12" fill="{fill}" stroke="{edge}" stroke-width="1"/>']
+        ty = y + 28
+        if chip:
+            o.append(self.chip(x + 16, y + 12, tag, chip))
+            ty = y + 30
+        elif icons:
+            for i, n in enumerate(icons):
+                o.append(self.icon(n, x + 16 + i * 30, y + 11, c1 if kind != "forecast" else BLUE))
+        elif tag:
+            o.append(self.text(x + 16, ty, tag, 12, 700, c2, caps=True))
+        if icon:
+            o.append(self.icon(icon, x + w - 38, y + 12, c1))
+        ty += self.t_title + 8
+        o.append(self.text(x + 16, ty, title, self.t_title, 700, c1))
+        for s in subs:
+            ty += self.t_sub + 7
+            o.append(self.text(x + 16, ty, s, self.t_sub, 400, c2))
+        if rows:
+            ry = y + 68
+            for left, right, strong in rows:
+                o.append(f'<rect x="{x + 12}" y="{ry}" width="{w - 24}" height="32" rx="8" fill="{BOARD if not strong else BOARD2}" '
+                         f'stroke="{LINE if not strong else INK}" stroke-width="{1.5 if strong else 0.5}"/>')
+                o.append(self.text(x + 24, ry + 21, left, 13, 700, INK))
+                o.append(self.text(x + w - 24, ry + 21, right, 13, 400, INK2, "end"))
+                ry += 36
+        self.nodes.append("".join(o))
+
+    def caption(self, s, y=None):
+        self.foot.append(self.text(16, y or self.h - 20, s, 14, 400, INK2))
+
+    def raw(self, layer, s):
+        getattr(self, layer).append(s)
+
+    # -- output
+    def html(self):
+        s = self.slug
+        markers = "".join(
+            f'<marker id="{s}-arrow-{n}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">'
+            f'<polygon points="0 0, 8 3, 0 6" fill="{c}"/></marker>'
+            for n, c in (("ink", INK), ("blue", BLUE), ("ink2", INK2)))
+        body = "\n      ".join(self.zones + self.lines + self.labels + self.nodes + self.foot)
+        return f"""<!DOCTYPE html>
+<!-- Design source: DESIGN.md (section "Diagrams"). Written by docs/diagrams/make_figures.py; edit there, then export the PNG. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lookahead · {esc(self.title)}</title>
+  <style>
+    *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    body {{ font-family: {FONT}; background: {BOARD}; color: {INK}; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 1.5rem; }}
+    .frame {{ max-width: {self.w + 40}px; width: 100%; min-width: 0; }}
+    .eyebrow {{ font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: {INK2}; margin-bottom: 0.5rem; }}
+    h1 {{ font-size: 1.375rem; font-weight: 700; line-height: 1.15; margin-bottom: 1.5rem; }}
+    .diagram-container {{ width: 100%; overflow-x: auto; }}
+    svg {{ width: 100%; min-width: {self.w}px; display: block; }}
+    @media print {{ .diagram-container {{ overflow: visible; }} svg {{ min-width: 0; }} }}
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">{esc(self.eyebrow)}</p>
+    <h1>{esc(self.heading)}</h1>
+    <div class="diagram-container">
+    <svg viewBox="0 0 {self.w} {self.h}" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="{s}-title {s}-desc">
+      <title id="{s}-title">{esc(self.title)}</title>
+      <desc id="{s}-desc">{esc(self.desc)}</desc>
+      <defs>{markers}</defs>
+      <rect width="100%" height="100%" fill="{BOARD}"/>
+      {body}
+    </svg>
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+    def write(self):
+        (OUT / f"{self.slug}.html").write_text(self.html(), encoding="utf-8")
+
+
+# =============================================================== hero 1: the stack
+def stack():
+    f = Fig("stack", 1200, 576, "How we used the hackathon stack",
+            "A clinician's browser reaches two Lenovo ThinkStation PGX machines run by CIQ Fuzzball. One GPU serves NVIDIA Nemotron 3 Nano on vLLM for the chat; the other runs the patient model the team trained. Fuzzball services serve the board and start jobs; Fuzzball volumes hold the patient data, the model and the results.",
+            "Lookahead · the hackathon stack", "Two Lenovo machines, CIQ Fuzzball, one NVIDIA model and one of our own", big=True)
+    f.zone(264, 48, 920, 456, "2 × Lenovo ThinkStation PGX · NVIDIA GB10 · run by CIQ Fuzzball 4.3")
+    f.node(16, 112, 208, 104, "card", "Clinician", "Browser", ["the board page"], icon="person")
+    f.node(304, 112, 376, 104, "card", "Fuzzball services", "Board server + dispatcher",
+           ["serve the board, start forecast jobs"])
+    f.node(768, 112, 376, 104, "nvidia", "GPU 1 · NVIDIA model, used as is", "Nemotron 3 Nano on vLLM",
+           ["answers the chat"], icon="chat")
+    f.node(304, 312, 376, 104, "store", "Fuzzball volumes", "Patient data · model · results",
+           ["mimic_clif · twin-store · hfcache"])
+    f.node(768, 312, 376, 104, "model", "GPU 2 · trained by us", "Our patient model",
+           ["the forecast job, minutes per run"])
+    f.arrow([(224, 164), (304, 164)])
+    f.arrow([(680, 164), (768, 164)], label="Chat", at=(724, 164))
+    f.arrow([(584, 216), (584, 264), (956, 264), (956, 312)], label="Starts a job", at=(770, 264))
+    f.arrow([(768, 364), (680, 364)], BLUE, label="Forecast", at=(724, 364))
+    f.arrow([(400, 312), (400, 216)], BLUE, label="Reads", at=(400, 264), side="left")
+    f.raw("foot", f.text(304, 468, "Patient data never leaves these two machines.", 18, 700, INK))
+    f.caption("Ink is what runs now. Blue is our model and the forecast it writes.", 548)
+    f.write()
+
+
+# =============================================================== hero 2: the 07:00 flow
+def flow():
+    f = Fig("flow", 1200, 304, "What happens at 07:00",
+            "Chart data up to 07:00 goes to the team's patient model, which reads each patient once and keeps its last layer; five small classifiers turn that into five chances; the board shows them; the chat answers from the board. Update the unit starts the same run as a Fuzzball job.",
+            "Lookahead · the 07:00 run", "From the chart to the board, once each morning", big=True)
+    xs = [12, 252, 492, 732, 972]
+    f.node(xs[0], 40, 216, 128, "card", "Each patient", "Chart data",
+           ["labs · vitals · drugs", "machines, up to 07:00"], icon="person")
+    f.node(xs[1], 40, 216, 128, "model", "Trained by us", "Our patient model",
+           ["reads each chart once,", "keeps the last layer"])
+    f.node(xs[2], 40, 216, 128, "forecast", None, "Five classifiers",
+           ["ventilator, vasopressor", "CRRT, leaving, death"], icons=["vent", "pump", "crrt", "leave"])
+    f.node(xs[3], 40, 216, 128, "card", "The board", "Now → Next 24 h",
+           ["Worry first", "Unit strain"], icon="beds")
+    f.node(xs[4], 40, 216, 128, "nvidia", "NVIDIA, used as is", "Chat",
+           ["Nemotron 3 Nano answers", "from the board"], icon="chat")
+    f.arrow([(228, 112), (252, 112)])
+    f.arrow([(468, 112), (492, 112)], BLUE)
+    f.arrow([(708, 112), (732, 112)], BLUE)
+    f.arrow([(948, 112), (972, 112)])
+    f.arrow([(840, 168), (840, 216), (360, 216), (360, 168)], INK2, dashed=True,
+            label="Update the unit", at=(600, 216), side="below")
+    f.caption("Fuzzball runs this as one job at 07:00, and again when someone presses Update the unit.", 280)
+    f.write()
+
+
+# =============================================================== detail: architecture
+def architecture():
+    f = Fig("architecture", 1280, 600, "Technical architecture",
+            "The board page talks to one service, the board server. The board server asks Nemotron for chat answers and asks the dispatcher to start or report runs. The dispatcher starts the t7-forecast job, which reads the read-only volumes and writes forecast files to twin-store, where the board server reads them.",
+            "Lookahead · architecture", "One door into the two machines; everything else stays inside")
+    f.zone(288, 32, 976, 496, "2 × Lenovo PGX (GB10) · CIQ Fuzzball 4.3 · patient rows stay inside")
+    f.node(24, 232, 216, 96, "card", "Clinician's browser", "Board page", ["one HTML file, over HTTPS"], icon="person")
+    f.node(328, 72, 240, 96, "nvidia", "GPU 1 · service", "Nemotron 3 Nano", ["NVIDIA, on vLLM, used as is"])
+    f.node(328, 232, 240, 96, "card", "CPU · service", "Board server", ["page, API and chat agent"])
+    f.node(328, 392, 240, 96, "card", "CPU · service", "Dispatcher", ["07:00 clock, one run at once"])
+    f.node(656, 72, 240, 96, "card", "Run once, in order", "Setup workflows", ["t7-code → t7-fit → t7-ward"])
+    f.node(656, 392, 240, 96, "model", "GPU 2 · job", "t7-forecast", ["runs our patient model"])
+    f.node(992, 232, 240, 96, "store", "Volume · to create", "twin-store", ["everything Lookahead writes"])
+    f.node(992, 392, 240, 96, "store", "Volumes · read only", "mimic_clif · hfcache", ["patients, model, weights"])
+    f.arrow([(240, 280), (328, 280)])
+    f.arrow([(448, 232), (448, 168)], label="Asks", at=(448, 200), side="right")
+    f.arrow([(448, 328), (448, 392)], label="Run · status", at=(448, 360), side="right")
+    f.arrow([(568, 440), (656, 440)], label="Starts", at=(612, 440))
+    f.arrow([(992, 280), (568, 280)], BLUE, label="Forecast files", at=(780, 280))
+    f.arrow([(896, 420), (944, 420), (944, 304), (992, 304)], BLUE, label="Writes", at=(944, 362), side="left")
+    f.arrow([(992, 460), (896, 460)], label="Reads", at=(944, 460), side="below")
+    f.arrow([(896, 120), (1112, 120), (1112, 232)], label="Code · probes", at=(1004, 120))
+    f.caption("The board server is the only door into the two machines. Ink is a call; blue is the forecast.", 572)
+    f.write()
+
+
+# =============================================================== detail: how to run it on the cluster
+def workflow():
+    f = Fig("workflow", 1280, 420, "How to run it on the cluster",
+            "Seven steps in order: create the twin-store volume, then run t7-code, t7-fit, t7-ward and t7-twin, open the board, and start the first forecast from it. The demo patients and the trained model are already on the cluster.",
+            "Lookahead · run order", "One volume to create, then five workflows in order")
+    xs = [24, 344, 664, 984]
+    y1, y2, h = 40, 208, 112
+    f.node(xs[0], y1, 272, h, "card", "1 · To do first", "Create twin-store",
+           ["fuzzball volume create team7", "twin-store --size 50GiB"], chip="todo")
+    f.node(xs[1], y1, 272, h, "card", "2 · Ready", "t7-code", ["publishes the code", "and the Python packages"], chip="ready")
+    f.node(xs[2], y1, 272, h, "card", "3 · Ready · one GPU", "t7-fit", ["fits the five classifiers,", "once per model"], chip="ready")
+    f.node(xs[3], y1, 272, h, "card", "4 · Ready", "t7-ward", ["checks the cohort,", "stages the 25 rooms"], chip="ready")
+    f.node(xs[3], y2, 272, h, "card", "5 · Ready · GPU 1", "t7-twin", ["board server, dispatcher,", "Nemotron 3 Nano"], chip="ready")
+    f.node(xs[2], y2, 272, h, "card", "6 · Ready", "Open the board", ["fuzzball workflow connect", "--name board --endpoint web"], chip="ready")
+    f.node(xs[1], y2, 272, h, "forecast", "7 · Last · GPU 2", "First forecast", ["press Update the unit on the board,", "or wait for 07:00"], chip="ready")
+    f.node(xs[0], y2, 272, h, "store", "0 · Done", "Already on the cluster", ["25 demo patients, trained model,", "on mimic_clif (read only)"], chip="done")
+    yc1, yc2 = y1 + h // 2, y2 + h // 2
+    f.arrow([(296, yc1), (344, yc1)])
+    f.arrow([(616, yc1), (664, yc1)])
+    f.arrow([(936, yc1), (984, yc1)])
+    f.arrow([(1120, y1 + h), (1120, y2)])
+    f.arrow([(984, yc2), (936, yc2)])
+    f.arrow([(664, yc2), (616, yc2)])
+    f.caption("Nothing has run end to end yet. Steps 2 to 5 are files in backend/fuzzball/ready/; each waits for the one before it.", 392)
+    f.write()
+
+
+# =============================================================== detail: API map
+def api():
+    f = Fig("api", 1280, 620, "API map",
+            "The board page makes four GET calls and three POST calls to the board server. Reads come from files on twin-store and from the dispatcher's status; writes go to the dispatcher to start a run, to Nemotron for a chat answer, and to twin-store for tonight's capacity.",
+            "Lookahead · API", "Four reads, three writes, one rule for every POST")
+    f.node(24, 120, 184, 352, "card", "Browser", "Board page", ["same origin only"], icon="person")
+    f.node(304, 56, 528, 224, "card", "4 GETs · no headers needed", "Read", rows=[
+        ("GET /api/forecast", "unit counts with ranges", False),
+        ("GET /api/rooms", "one entry per room", False),
+        ("GET /api/capacity", "ventilators and staffing set tonight", False),
+        ("GET /api/runs", "next 07:00, running update, last runs", False)])
+    f.node(304, 320, 528, 224, "card", "3 POSTs · JSON body", "Write", rows=[
+        ("Every POST", "JSON, X-Lookahead: 1, same origin; else 403", True),
+        ("POST /api/rerun", "starts one forecast, unit or room", False),
+        ("POST /api/ask", "a chat answer", False),
+        ("POST /api/capacity", "saves tonight's capacity", False)])
+    f.node(1000, 56, 256, 88, "store", "Volume", "twin-store", ["forecast, rooms, capacity"])
+    f.node(1000, 248, 256, 88, "card", "Inside only · :9000", "Dispatcher", ["starts and reports runs"])
+    f.node(1000, 456, 256, 88, "nvidia", "Inside only · GPU 1", "Nemotron 3 Nano", ["through the chat agent"])
+    f.arrow([(208, 168), (304, 168)], label="GET", at=(256, 168))
+    f.arrow([(208, 432), (304, 432)], label="POST", at=(256, 432))
+    f.arrow([(832, 100), (1000, 100)], label="Reads files", at=(916, 100))
+    f.arrow([(832, 236), (916, 236), (916, 276), (1000, 276)], label="Status", at=(874, 236))
+    f.arrow([(832, 356), (916, 356), (916, 308), (1000, 308)], label="Run", at=(874, 356), side="below")
+    f.arrow([(832, 500), (1000, 500)], label="Chat", at=(916, 500))
+    f.caption("GET / is the page. The dispatcher and Nemotron answer only the board server, never the browser.", 592)
+    f.write()
+
+
+# =============================================================== detail: Update the unit (sequence)
+def trigger():
+    f = Fig("trigger", 1280, 624, "Update the unit, from click to refreshed board",
+            "The board page posts a rerun to the board server, which passes it to the dispatcher. The dispatcher starts the forecast job through Fuzzball. The job writes rooms.json and forecast.json to twin-store. The page polls the run state, then asks for the forecast and the rooms; the board server reads both files, and the board is redrawn.",
+            "Lookahead · Update the unit", "One button, one POST, one Fuzzball job")
+    xs = [136, 388, 640, 892, 1144]
+    f.zone(272, 16, 988, 116, "2 × Lenovo PGX (GB10) · CIQ Fuzzball")
+    heads = [("card", "Browser", "Board page", "Update the unit"),
+             ("card", "CPU · service", "Board server", "checks the POST rule"),
+             ("card", "CPU · service", "Dispatcher", "one run, 20 minutes apart"),
+             ("model", "GPU 2 · job", "Forecast job", "our patient model"),
+             ("store", "Volume", "twin-store", "rooms.json, forecast.json")]
+    for x, (k, tag, t, s) in zip(xs, heads):
+        f.raw("zones", f'<line x1="{x}" y1="120" x2="{x}" y2="560" stroke="{LINE}" stroke-width="1" stroke-dasharray="3 4"/>')
+        f.node(x - 104, 32, 208, 88, k, tag, t, [s])
+    msgs = [(0, 1, 176, "POST /api/rerun", INK), (1, 2, 224, "POST /run", INK),
+            (2, 3, 272, "fuzzball workflow start", INK), (3, 4, 320, "writes both files", BLUE),
+            (0, 1, 384, "GET /api/runs, every 30 s", INK),
+            (0, 1, 432, "GET /api/forecast, GET /api/rooms", INK), (4, 1, 480, "reads both files", BLUE),
+            (1, 0, 528, "board redrawn", BLUE)]
+    for a, b, y, label, c in msgs:
+        x1, x2 = xs[a], xs[b]
+        f.lines.append(f'<path d="M {x1},{y} L {x2},{y}" fill="none" stroke="{c}" stroke-width="1.5" '
+                       f'marker-end="url(#trigger-arrow-{"blue" if c == BLUE else "ink"})"/>')
+        lx = min(x1, x2) + 126
+        w = int(len(label) * 7.8) + 16
+        f.labels.append(f'<rect x="{lx - w // 2}" y="{y - 26}" width="{w}" height="18" rx="2" fill="{BOARD}"/>'
+                        + f.text(lx, y - 12, label, 13, 700, BLUE if c == BLUE else INK2, "middle"))
+    f.caption("The dispatcher fills a copy of t7-forecast.fz and starts it, because Fuzzball 4.3 workflows take no parameters.", 548)
+    f.write()
+
+
+if __name__ == "__main__":
+    if "--night" in sys.argv:
+        OUT = Path(sys.argv[sys.argv.index("--night") + 1])
+        OUT.mkdir(parents=True, exist_ok=True)
+        globals().update(NIGHT)
+    for fn in (stack, flow, architecture, workflow, api, trigger):
+        fn()
+    print("wrote", ", ".join(sorted(p.name for p in OUT.glob("*.html"))), "in", OUT)

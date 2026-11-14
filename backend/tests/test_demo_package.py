@@ -176,7 +176,7 @@ def test_workflow_board_cli_enables_https_proxy_and_publish_env_is_self_containe
         )
     )
     env = dict(item.split("=", 1) for item in forecast["jobs"]["publish"]["env"])
-    assert env["PYTHONPATH"] == "/tooling/py:/store/code"
+    assert env["PYTHONPATH"] == "/store/py:/store/code"
     assert env["TMPDIR"] == "/tmp"
     assert env["TZ"] == "America/Chicago"
     assert env["CLIF_DIR"] == "/context/clif"

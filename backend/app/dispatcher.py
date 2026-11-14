@@ -72,8 +72,8 @@ log = logging.getLogger("dispatcher")
 
 # t7-forecast also matches the burst, the per-run names and the t7-<lane>-build style names;
 # t7-smoke and t7-fit hold a GPU too; t7-ward holds none but rewrites the stage tokens an update
-# reads. t7-twin (the services) does not.
-GPU_WORKFLOW = re.compile(r"^t7-(\w+-)?(build|forecast|smoke|fit|ward)")
+# reads; t7-code swaps the code and packages they import. t7-twin (the services) does not.
+GPU_WORKFLOW = re.compile(r"^t7-(\w+-)?(build|forecast|smoke|fit|ward|code)")
 ROLES = {
     "ICU team",
     "ICU nurse",
@@ -208,6 +208,11 @@ def _at_text(t: dt.datetime) -> str:
 
 
 DEFAULT_CLIF_DIR = "/store/code/clif_demo"  # the open demo, in the code tree
+# The final 25-patient cohort, as it is on the cluster: volume mimic_clif, mounted at /data and
+# only read. 19 CLIF tables, the id file and the made-up names (docs/FUZZBALL_VALIDATION.md).
+COHORT_CLIF_DIR = "/data/dashboard_data"
+COHORT_WARD_IDS = f"{COHORT_CLIF_DIR}/dashboard_patients_unit25.parquet"
+COHORT_NAMES = f"{COHORT_CLIF_DIR}/name.parquet"
 
 
 def workflow_id(out: str) -> str:
@@ -278,14 +283,24 @@ def render_ward(
     names: str = "",
 ) -> str:
     """the ward tokens of a template (t7-forecast.fz, t7-fit.fz, t7-ward.fz): @WARD_FLAG@,
-    @CLIF_DIR@, @WARD_IDS@. The defaults are the open demo ward, as before."""
+    @CLIF_DIR@, @WARD_IDS@, @NAMES@; and @DISPATCH_WARD@ (t7-twin.fz: the same ward as
+    arguments of this dispatcher, so its updates forecast the ward that was staged).
+    The defaults are the open demo ward, as before."""
     ids = _path_token(ward_ids)
     ids_arg = f"--ward-ids {ids}" + (" --real-ward" if real_ward else "") if ids else ""
+    clif = _path_token(clif_dir) or DEFAULT_CLIF_DIR
+    names_arg = f"--names {_path_token(names)}" if names else ""
+    own = [
+        "--real-ward" if real_ward else "",
+        f"--clif-dir {clif}" if clif != DEFAULT_CLIF_DIR else "",
+        names_arg,
+    ]
     return (
         text.replace("@WARD_FLAG@", "--real-ward" if real_ward else "")
-        .replace("@CLIF_DIR@", _path_token(clif_dir) or DEFAULT_CLIF_DIR)
+        .replace("@CLIF_DIR@", clif)
         .replace("@WARD_IDS@", ids_arg)
-        .replace("@NAMES@", f"--names {_path_token(names)}" if names else "")
+        .replace("@NAMES@", names_arg)
+        .replace("@DISPATCH_WARD@", " ".join(x for x in own if x))
     )
 
 

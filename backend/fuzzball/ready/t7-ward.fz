@@ -1,0 +1,73 @@
+version: v4
+# t7-ward: put a ward on the stage. Run it after t7-fit and before t7-twin's first unit forecast, and again
+# whenever the ward changes (docs/LIVE_DEMO.md "Final cohort", docs/FUZZBALL_TEST_PLAN.md). CPU only: it can
+# run beside Nemotron, but not while a forecast update or t7-fit runs (the dispatcher refuses updates while a
+# t7-ward runs; start it only when no t7-forecast is active).
+# TEMPLATE (Fuzzball 4.3 has no workflow parameters): two ward tokens are replaced before the start,
+#   /data/dashboard_data   the ward's CLIF folder. Default /store/code/clif_demo (the open demo: this re-stages the demo
+#                ward). The final cohort: /data/dashboard_data on mimic_clif, where it already is (only read
+#                here, never written). Never the repo.
+#   --ward-ids /data/dashboard_data/dashboard_patients_unit25.parquet --real-ward   empty by default (stage_ward.py selects 25 open-demo stays). The final cohort:
+#                "--ward-ids /data/dashboard_data/dashboard_patients_unit25.parquet --real-ward"
+#   --names /data/dashboard_data/name.parquet      empty by default. "--names /data/dashboard_data/name.parquet": job load also checks the made-up
+#                names file (fictional, clean characters, how many rooms it names). Same rule: never in git.
+#   python scripts/render_fz.py fuzzball/t7-ward.fz --cohort -o /tmp/t7-ward.fz   # = fuzzball/ready/t7-ward.fz
+#   fuzzball workflow validate /tmp/t7-ward.fz && fuzzball workflow start /tmp/t7-ward.fz --name t7-ward
+# Jobs: load (CPU: the folder is on the volume, its tables and the id file check out) -> tokenize (CPU: room
+# map, tokens with the training vocabulary, winnow at 24 h; swapped into /store/stage only when all of it worked).
+# Code and Python packages come from twin-store, as in t7-fit (published by t7-code, which checks the code
+# tarball's sha256); nothing is downloaded here. Writes only under /store/stage. Prints counts only; no patient rows.
+volumes:
+  data:
+    name: mimic_clif            # persistent, training's volume: READ ONLY here by rule (model, training tokens, cohort)
+    use: team7
+  store:
+    name: twin-store            # persistent: code, packages, and everything written here
+    use: team7
+
+defaults:
+  job:
+    mounts: {/data: data, /store: store}
+    env: [HOME=/tmp, TMPDIR=/tmp, "PYTHONPATH=/store/py:/store/code"]
+
+jobs:
+  load:
+    # CPU: fail in seconds if the ward's folder is not on the volume or is not the ward we expect
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    resource: {cpu: {cores: 2}, memory: {size: 8GB}}
+    policy: {timeout: {execute: 10m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      CLIF=/data/dashboard_data
+      test -d "$CLIF" || { echo "no ward CLIF folder at $CLIF: is the cohort on mimic_clif (docs/FUZZBALL_VALIDATION.md)?"; exit 1; }
+      test -f /data/tokenized_output/vocab.yaml || { echo "no training tokens at /data/tokenized_output"; exit 1; }
+      # table names, stay counts, the id file (25 stays, all in clif_hospitalization); one JSON line of counts
+      python /store/code/app/ward_check.py "$CLIF" --ward-ids /data/dashboard_data/dashboard_patients_unit25.parquet --real-ward --names /data/dashboard_data/name.parquet --expect-ids 25
+      echo "parquet files: $(ls "$CLIF"/*.parquet | wc -l)"
+
+  tokenize:
+    # CPU: the room map and the ward's tokens, built beside the stage and swapped in at the end
+    depends-on: [{name: load, status: FINISHED}]
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    resource: {cpu: {cores: 8}, memory: {size: 32GB}}
+    policy: {timeout: {execute: 30m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      CLIF=/data/dashboard_data
+      NEW=/store/stage/ward-new
+      rm -rf "$NEW" && mkdir -p "$NEW" && cd "$NEW"
+      python /store/code/app/stage_ward.py "$CLIF" --out "$NEW/stage_ward.csv" --ward-ids /data/dashboard_data/dashboard_patients_unit25.parquet --real-ward   # seed 20261114; prints counts only
+      printf 'clif_path: %s\ntimezone: US/Eastern\nfiletype: parquet\n' "$CLIF" > site.yaml
+      python -c "from icutwin.tokenizer.cli import main; main()" pipeline site.yaml                   # -> $NEW/tokenized_output
+      python -c "from icutwin.scoring.winnower import main; main()" tokenized_output -c /store/code/examples/winnow_24h.yaml
+      # the ward's vocabulary must equal the training one, or the token ids would not match the model
+      cmp "$NEW/tokenized_output/vocab.yaml" /data/tokenized_output/vocab.yaml && echo "vocab: identical"
+      # swap: the old stage (tokens, features, per-stay scores of the previous ward) goes away whole
+      rm -rf /store/stage/tokenized_output
+      mv "$NEW/tokenized_output" /store/stage/tokenized_output
+      mv "$NEW/stage_ward.csv" /store/stage/stage_ward.csv
+      rm -rf "$NEW"
+      echo "stage rooms: $(($(wc -l < /store/stage/stage_ward.csv) - 1))"
+      echo "next: one unit update (t7-forecast, scope unit) writes rooms.json and forecast.json for this ward"

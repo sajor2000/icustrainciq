@@ -3,10 +3,9 @@ version: v4
 # Existing persistent volumes, staged code/dependencies/CLI and a valid context are prerequisites.
 # One GPU serves Nemotron; the other is available for t7-lookahead-forecast.
 volumes:
-  store: {name: twin-store, use: team7}       # code, forecaster model and saved probes only
+  store: {name: twin-store, use: team7}       # code, packages (/store/py), forecaster model and saved probes
   models: {name: hfcache, use: team7}        # persistent Nemotron weights
   context: {name: demo-context, use: team7}  # RESTRICTED: private roster, selected cache, context
-  tooling: {name: tooling, use: team7}      # previously prepared Python dependencies
 
 services:
   nemotron:
@@ -37,8 +36,8 @@ services:
 
   board:
     image: {uri: "docker://python:3.12-slim"}
-    mounts: {/store: store, /context: context, /tooling: tooling}
-    env: [TZ=America/Chicago, "PYTHONPATH=/tooling/py:/store/code", PYTHONDONTWRITEBYTECODE=1]
+    mounts: {/store: store, /context: context}
+    env: [TZ=America/Chicago, "PYTHONPATH=/store/py:/store/code", PYTHONDONTWRITEBYTECODE=1]
     resource: {cpu: {cores: 2}, memory: {size: 4GB}}
     persist: true
     network:
@@ -59,8 +58,8 @@ services:
 
   dispatcher:
     image: {uri: "docker://python:3.12-slim"}
-    mounts: {/store: store, /context: context, /tooling: tooling}
-    env: [TZ=America/Chicago, "PYTHONPATH=/tooling/py:/store/code", PYTHONDONTWRITEBYTECODE=1]
+    mounts: {/store: store, /context: context}
+    env: [TZ=America/Chicago, "PYTHONPATH=/store/py:/store/code", PYTHONDONTWRITEBYTECODE=1]
     resource: {cpu: {cores: 1}, memory: {size: 2GB}}
     persist: true
     network:

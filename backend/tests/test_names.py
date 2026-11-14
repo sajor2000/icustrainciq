@@ -250,18 +250,18 @@ def test_names_token_renders_off_by_default_and_never_reaches_the_run_log(tmp_pa
         assert "--names" not in "".join(
             j["script"] for j in yaml.safe_load(tc_render(name))["jobs"].values()
         )
-    on = dict(names="/rows/stage/unit25/name.parquet")
+    on = dict(names="/data/dashboard_data/name.parquet")
     s = yaml.safe_load(tc_render("t7-forecast", **on))["jobs"]["score"]["script"]
-    assert "$WARD --names /rows/stage/unit25/name.parquet" in s
+    assert "$WARD --names /data/dashboard_data/name.parquet" in s
     w = yaml.safe_load(tc_render("t7-ward", **on))["jobs"]["load"]["script"]
-    assert "--names /rows/stage/unit25/name.parquet --expect-ids 25" in w
+    assert "--names /data/dashboard_data/name.parquet --expect-ids 25" in w
     assert d.render_ward("[@NAMES@]", names="fake") == "[--names fake]"
     with pytest.raises(ValueError):
         d.render_ward("@NAMES@", names="/x; cat /etc/passwd")
     from test_dispatcher import FakeCli
 
     f = FakeCli(tmp_path)
-    f.names = "/rows/stage/unit25/name.parquet"
+    f.names = "/data/dashboard_data/name.parquet"
     f.start("ICU nurse", "room", 3)
     log_text = (tmp_path / "runs.jsonl").read_text()
     row = json.loads(log_text.splitlines()[-1])

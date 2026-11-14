@@ -1,16 +1,14 @@
 # Architecture: the team's guide
 
-How Lookahead is built, where each part runs, and how to start it. Every figure has an editable HTML source next to its PNG in [`diagrams/`](diagrams/). JSON shapes: [`../backend/docs/CONTRACT.md`](../backend/docs/CONTRACT.md). Runbook: [`../backend/docs/LIVE_DEMO.md`](../backend/docs/LIVE_DEMO.md).
+How Lookahead is built, where each part runs, and how to start it. The short version is in the [README](../README.md); the project page is https://sajor2000.github.io/icustrainciq/. Figures follow [`DESIGN.md`](../DESIGN.md) (section "Diagrams") and are written by [`diagrams/make_figures.py`](diagrams/make_figures.py). JSON shapes: [`../backend/docs/CONTRACT.md`](../backend/docs/CONTRACT.md). Runbook: [`../backend/docs/LIVE_DEMO.md`](../backend/docs/LIVE_DEMO.md).
 
 **Nothing is hosted in the cloud.** The real app runs on two local Lenovo PGX machines, on site, and Fuzzball starts every part of it. A developer laptop can run a demo copy with synthetic data. GitHub holds code only.
 
-This is the rural-ICU case: a hospital with one unit and no cloud contract can run the whole product on two desk-size machines it owns.
-
 ## What runs where
 
-![What runs where](diagrams/hosting.png)
+![How we used the hackathon stack](diagrams/stack.png)
 
-"Local Lenovo PGX (Fuzzball)" means the two on-site GB10 machines. "Developer laptop" is a separate place. Fuzzball places CPU work on either machine; each machine has one GPU.
+Fuzzball places CPU work on either machine; each machine has one GPU. The demo has one user at a time: there is no login, and `role` is a label on the log and the answer.
 
 | Component | Machine | Run by | Port / URL | Data it can see |
 |---|---|---|---|---|
@@ -18,11 +16,13 @@ This is the rural-ICU case: a hospital with one unit and no cloud contract can r
 | Board server (`app/board.py`), with the chat agent | Local Lenovo PGX, CPU | Fuzzball workflow `t7-twin`, service `board` | 8080; team-scoped HTTPS endpoint `web` | `forecast.json`, `rooms.json`, `capacity.json` |
 | Dispatcher (`app/dispatcher.py`) | Local Lenovo PGX, CPU | `t7-twin`, service `dispatcher` | 9000, inside the workflow only | run log, workflow list; no patient data |
 | Nemotron 3 Nano (vLLM) | Local Lenovo PGX, GPU 1 of 2, held | `t7-twin`, service `nemotron` | 8000, inside the workflow only | what the chat tools return: counts and room entries |
-| Forecast run | Local Lenovo PGX, CPU then GPU 2 of 2 then CPU | Fuzzball workflow `t7-forecast`, jobs `precheck`, `extract`, `score` | none | stage-ward tokens, CLIF rows, model, probes |
-| One-time workflows | Local Lenovo PGX, one or both GPUs | Fuzzball workflows `t7-smoke`, `t7-build` (ICU-Twin repo), `t7-fit` | none | training rows and tokens |
-| Volumes `twin-store`, `clif_work`, `mimic_clif`, `hfcache`, `tooling` | Fuzzball storage for team7 | Fuzzball volumes | mounted into jobs and services | patient rows live only in `mimic_clif` and `clif_work` |
+| Forecast run, with the patient model | Local Lenovo PGX, CPU then GPU 2 of 2 then CPU | Fuzzball workflow `t7-forecast`, jobs `precheck`, `extract`, `score` | none | the 25 demo patients, staged tokens, model, probes |
+| Setup workflows | Local Lenovo PGX; `t7-fit` uses one GPU, the others CPU | Fuzzball workflows `t7-code`, `t7-fit`, `t7-ward`, in this order | none | code, training tokens, the 25 demo patients |
+| Volume `mimic_clif` (exists, read only) | Fuzzball storage for team7 | Fuzzball volume | mounted at `/data` | the 25 demo patients and `name.parquet` in `dashboard_data/`, the trained patient model in `model_output/final/`, training tokens |
+| Volume `twin-store` (to create) | Fuzzball storage for team7 | Fuzzball volume | mounted at `/store` | everything Lookahead writes: code, packages, probes, staged tokens, `rooms.json`, `forecast.json`, `capacity.json`, `runs.jsonl` |
+| Volume `hfcache` (exists) | Fuzzball storage for team7 | Fuzzball volume | mounted at `/cache` | Nemotron weights |
 | Local demo | Developer laptop | `uv run python app/board.py` | `http://localhost:8080` | synthetic `examples/` files |
-| 25 demo patients | Developer laptop now; a Fuzzball volume for the live run (proposed) | a file copy, then `t7-ward` (proposed) | `backend/data/local/unit25/`, git-ignored | real MIMIC-IV rows; never in git |
+| 25 demo patients | Already on the cluster, on `mimic_clif`; a local copy on the laptop | read by `t7-fit`, `t7-ward`, `t7-forecast` | `mimic_clif:/dashboard_data/`; `backend/data/local/unit25/`, git-ignored | real MIMIC-IV rows with fictional names; never in git |
 | Code | GitHub | `sajor2000/icustrainciq` (page, `backend/`, docs); ICU-Twin (training) | github.com | code only; never data, weights or probes |
 
 The demo has one user at a time. There is no login and no user id. `role` is a label on the log and the answer.
@@ -40,13 +40,39 @@ The demo has one user at a time. There is no login and no user id. `role` is a l
 | Packaging | `uv`; hash-locked requirements for the cluster | `backend/uv.lock`, `backend/requirements/t7-*.txt` | the same versions on every run |
 | Tests | `pytest`, `ruff` | `dev` extra in `backend/pyproject.toml` | guards and JSON shapes are tested without a cluster |
 
-## 1. Technical architecture
+## Two models, two jobs
+
+| | Patient model | Chat model |
+|---|---|---|
+| What it is | `icutwin`, a small decoder with Gemma 4 text layers | NVIDIA Nemotron 3 Nano |
+| Who trained it | **We did**, on the two Lenovo machines, across both GPUs under Fuzzball | **NVIDIA.** We use it as it is; we did not train or fine-tune it |
+| What it reads | each patient's chart as a sequence of events, the way a language model reads words | the forecast files, through tools |
+| What it does | one pass per patient, then a small classifier per question gives the five predictions | answers questions in plain words; can ask the dispatcher for a new run when a user asks |
+| What it never does | talk to users | predict anything about a patient |
+| Where it runs | forecast job, GPU 2 | always-on service on vLLM, GPU 1 |
+
+The trained model knows ICU data. The NVIDIA model knows language. Both run on the two local machines.
+
+### How the patient model makes a prediction
+
+1. **It learns the language of the ICU.** We trained it to read a patient's chart as a sequence of events (labs, vital signs, drugs, machines) and predict the next event, the way a language model predicts the next word.
+2. **We take its last layer.** At 07:00 the model runs once over each patient's chart so far. We keep the output of its last layer: one vector that summarises the patient's state.
+3. **Five small classifiers read that vector.** One for each event that matters to clinicians in the next 24 hours: starting a ventilator, starting a vasopressor, starting CRRT, leaving the ICU, and death. Each gives a percentage. The classifiers are fitted on past patients whose outcomes are known.
+4. **The patients are added up** into what the unit will need, with a likely range.
+
+Held-out results for each classifier (AUROC, AUPRC, Brier): [`RESULTS.md`](RESULTS.md).
+
+Why this way: one pass per patient takes minutes on one GPU, with no need to generate thousands of possible futures. The five questions were chosen because they drive beds, machines and staff.
+
+## Architecture
 
 ![Technical architecture](diagrams/architecture.png)
 
-The browser talks to one service, the board server. The board server reads three files from `twin-store`, asks Nemotron through the chat agent, and asks the dispatcher to start or report runs. The dispatcher starts `t7-forecast`. Patient rows stay inside the dashed zone. Source: [`diagrams/architecture.html`](diagrams/architecture.html).
+The browser talks to one service, the board server. The board server reads the forecast files from `twin-store`, asks Nemotron through the chat agent, and asks the dispatcher to start or report runs. The dispatcher starts `t7-forecast`, which runs our patient model on the second GPU and writes `rooms.json`, then `forecast.json`. Storage is one volume to write, `twin-store` (to create), and two that are only read: `mimic_clif` (demo patients, patient model) and `hfcache` (Nemotron weights). Because `twin-store` also holds staged tokens and per-stay scores, treat it as restricted; the board serves only the JSON files.
 
-## 2. API map
+The page is one HTML file with two tabs, **Bed board** and **Unit strain**, and a **Now | Next 24 h** switch; screens and states are in [`FRONTEND_SPEC.md`](FRONTEND_SPEC.md).
+
+## Endpoints
 
 ![API map](diagrams/api.png)
 
@@ -61,94 +87,59 @@ The browser talks to one service, the board server. The board server reads three
 | `POST /api/capacity` | `{life_support_patients, vents_free?, role}` | saves `capacity.json`; whole numbers 0 to 50 |
 | `POST /api/ask` | `{question, role, room?, seen_made_at?}` | `{answer, made_at, trace?}` |
 
-Every POST needs `Content-Type: application/json` and `X-Lookahead: 1`. If the browser sends an `Origin` header, it must match `Host`. Anything else gets 403. The dispatcher has two internal endpoints, `GET /status` and `POST /run`; only the board server and its chat agent call them. Source: [`diagrams/api.html`](diagrams/api.html).
+Every POST needs `Content-Type: application/json` and `X-Lookahead: 1`. If the browser sends an `Origin` header, it must match `Host`. Anything else gets 403. The dispatcher has two internal endpoints, `GET /status` and `POST /run`; only the board server and its chat agent call them.
 
-## 3. How the board starts a Fuzzball job
+## How the board starts a Fuzzball job
 
-![Update the unit, end to end](diagrams/trigger.png)
+![Update the unit, from click to refreshed board](diagrams/trigger.png)
 
-1. The user presses "Update the unit". The page sends `POST /api/rerun`.
-2. The board server checks the POST rule and passes the request to the dispatcher (`POST /run`).
-3. The dispatcher checks its guards: one forecast at a time, 20 minutes between updates of the same scope.
-4. Fuzzball 4.3 has no workflow parameters. The dispatcher fills `@SCOPE@`, `@ROOM@`, `@HOURS@` and `@WARD_FLAG@` in `t7-forecast.fz` and runs `fuzzball workflow start` on the copy.
-5. Three jobs run: `precheck` (CPU), `extract` (GPU: winnow at the cut, one forward pass), `score` (CPU: probes, `rooms.py`, `aggregate.py`, `clif_now.py`).
-6. `score` writes `rooms.json`, then `forecast.json`. Each file is written whole.
-7. The page polls `/api/runs` every 30 seconds during a run, and every 5 minutes otherwise. When `made_at` changes it reloads and redraws.
+1. The user presses "Update the unit". The page sends `POST /api/rerun`; the board server passes it to the dispatcher (`POST /run`).
+2. The dispatcher checks its guards: one forecast at a time, 20 minutes between updates of the same scope.
+3. Fuzzball 4.3 has no workflow parameters, so the dispatcher fills six tokens (`@SCOPE@`, `@ROOM@`, `@HOURS@`, `@WARD_FLAG@`, `@CLIF_DIR@`, `@NAMES@`) in a copy of `t7-forecast.fz` and runs `fuzzball workflow start` on it.
+4. Three jobs run: `precheck` (CPU), `extract` (GPU: one forward pass at the cut), `score` (CPU: the classifiers, called probes in the code, then `rooms.py`, `aggregate.py`, `clif_now.py`). Each file is written whole.
+5. The page polls `/api/runs` every 30 seconds during a run and every 5 minutes otherwise. When `made_at` changes it reloads and redraws.
 
-Room variant: `{scope: "room", room: 12}` rewrites that one room in `rooms.json`. It is refused until a whole-unit run exists. Source: [`diagrams/trigger.html`](diagrams/trigger.html).
+A room update (`{scope: "room", room: 12}`) rewrites that one room; it is refused until a whole-unit run exists.
 
-## 4. The 07:00 run
+**The 07:00 run.** The dispatcher is the clock. At 07:00 (America/Chicago) it starts a unit run by itself; if a GPU workflow is running or the start fails, it tries again each minute for 10 minutes, and a dispatcher that starts after 07:00 with no run since the cut runs it once. `GET /api/runs` reports it in `scheduled.state`: `pending`, `ok`, `failed` or `missed`.
 
-![The 07:00 run, end to end](diagrams/sequence.png)
+## Run it on the cluster
 
-The dispatcher is the clock. At 07:00 (America/Chicago) it starts a unit run by itself. If a GPU workflow is running, or the start fails, it tries again each minute for 10 minutes. A dispatcher that starts after 07:00 with no run since the cut runs it once. Source: [`diagrams/sequence.html`](diagrams/sequence.html).
+![How to run it on the cluster](diagrams/workflow.png)
 
-## 5. Setup, daily run and run states
+Nothing has run end to end yet. The files are in `backend/fuzzball/ready/`, rendered for the 25 demo patients; they pass validation on the live server once `twin-store` exists. Ask the team before starting anything. The live list with blockers is in [`../HANDOFF.md`](../HANDOFF.md).
 
-![From data to the 07:00 board](diagrams/lifecycle.png)
+```bash
+fuzzball volume create team7 twin-store --size 50GiB        # once
+cd backend
+# in this order: t7-code, t7-fit, t7-ward (wait for each to finish), then t7-twin.
+# t7-twin keeps running: wait for its services to be ready, not for it to finish. Then open the board and press Update the unit.
+fuzzball workflow validate fuzzball/ready/t7-code.fz && fuzzball workflow start fuzzball/ready/t7-code.fz --name t7-code
+fuzzball workflow connect --name board --endpoint web <t7-twin id>
+```
 
-`GET /api/runs` reports the 07:00 run in `scheduled.state`: `pending`, `ok`, `failed` or `missed`. Check it after 07:15. Source: [`diagrams/lifecycle.html`](diagrams/lifecycle.html).
+| # | Step | GPU |
+|---|---|---|
+| 0 | Done: the 25 demo patients, their fictional names and the trained model are on `mimic_clif` | |
+| 1 | Create `twin-store` | |
+| 2 | `t7-code`: publishes `backend/` at a pinned commit and the Python packages. Again after every code change | none |
+| 3 | `t7-fit`: fits the five classifiers. Once per model | one GPU job |
+| 4 | `t7-ward`: checks the cohort and the names, stages the 25 rooms. Again when the ward changes | none |
+| 5 | `t7-twin`: board server, dispatcher, Nemotron. Stays up | GPU 1, held |
+| 6 | First forecast: press "Update the unit" or wait for 07:00; by hand, `ready/t7-forecast-unit.fz` as `--name t7-forecast-manual` | GPU 2, minutes |
+| 7 | Open the board; check both tabs, Now and Next 24 h, one room page and the chat | |
 
-## 6. How the pieces connect
+Only one GPU job runs beside Nemotron. Until step 6 the board shows the Now side and "forecast not ready". Training (`t7-build`) lives in the ICU-Twin repo and is finished.
 
-![Board, backend and Fuzzball](diagrams/connection.png)
+## Demo patients and the data boundary
 
-The same parts as figure 1, with the seven calls and the three files written out. Source: [`diagrams/connection.html`](diagrams/connection.html).
-
-## 7. Frontend: what the page shows
-
-![What the page shows and which call feeds it](diagrams/frontend.png)
-
-The page is one file. Its title is "Lookahead · ICU forecast, next 24 hours". It has two tabs, **Bed board** and **Unit strain**, and a **Now | Next 24 h** switch. Now shows life support running at 07:00. Next 24 h shows the forecast: one status per room (Worsening, Watch, Not improving, Leaving, Steady), a "Worry first" row, and chances as percentages. Icons stand for ventilator, vasopressor, CRRT and leaving. A room opens its own page. "Ask Lookahead" is a chat widget at the bottom right, with Unit or Room context. Source: [`diagrams/frontend.html`](diagrams/frontend.html).
-
-## 8. Backend: modules and files
-
-![Backend modules and files](diagrams/backend.png)
-
-Three services run all day in `t7-twin`. Two workflows do the scoring. They hand off through four files in `twin-store`: `rooms.json`, `forecast.json`, `capacity.json` and `runs.jsonl`. `clif_now.py` supplies the Now side from raw CLIF tables. Source: [`diagrams/backend.html`](diagrams/backend.html).
-
-## 9. Proposed Fuzzball workflow for the 25 demo patients
-
-![Proposed Fuzzball workflow](diagrams/workflow.png)
-
-Solid boxes exist today. Dashed boxes are proposed.
-
-1. **Training finishes.** `t7-build` is running on both GPUs. Start nothing until it ends.
-2. **Fit the probes.** `t7-fit`, once per model. It uses one GPU.
-3. **Load the 25 patients (proposed).** `t7-ward` copies the CLIF extract onto a volume and tokenizes it.
-4. **Forecast.** `t7-forecast` winnows at the cut, extracts on the second GPU with the trained model, and scores with the saved probes.
-5. **Files.** It writes `rooms.json`, then `forecast.json`.
-6. **Serve.** `t7-twin` serves the board and the chat. Nemotron holds one GPU. Only one GPU job runs beside it.
-
-Also proposed: one more template token, so `t7-forecast` reads the unit25 folder and its id file. Today it reads the open demo folder. Source: [`diagrams/workflow.html`](diagrams/workflow.html).
-
-## Demo patients
-
-- **What:** a CLIF-format extract of 25 real MIMIC-IV hospitalizations. 19 CLIF tables and a one-column id file, `dashboard_patients_unit25.parquet`.
-- **Where:** `backend/data/local/unit25/` on the laptop. The folder is git-ignored.
-- **Rules:** real patient data. Local only. Never in git; this repo is public. Logs print counts only.
-- **To the cluster (proposed):** copy the folder once onto a Fuzzball volume with `t7-ward`, then run with `--real-ward`. The board then shows "Real MIMIC-IV · local only".
-- **Until then:** the board runs the open MIMIC-IV Demo ward.
-
-## Before the live demo
-
-1. Training has finished (`t7-build`).
-2. `t7-fit` has saved the probes.
-3. The 25 patients are on the volume (proposed step).
-4. `t7-twin` is up: Nemotron, board server, dispatcher.
-5. The first unit forecast has landed. Press "Update the unit", or wait for 07:00.
-6. Open the board. Check both tabs, Now and Next 24 h, one room page and the chat.
-
-## What the board predicts
-
-Five predictions for the next 24 hours, 07:00 to 07:00: invasive ventilation (IMV), vasopressor, CRRT, leaving the ICU, death. Life support that is on now comes from raw CLIF tables (`backend/app/clif_now.py`).
-
-## Data boundary
+The demo unit is a CLIF-format extract of 25 real MIMIC-IV hospitalizations (19 CLIF tables, an id file and `name.parquet`), already on the cluster in `mimic_clif:/dashboard_data/`. The names on the board are invented. This is real patient data: local only, never in git (this repo is public), and logs print counts only.
 
 | Where | Holds | Never holds |
 |---|---|---|
-| `mimic_clif`, `clif_work` | patient rows, tokens, per-stay scores | |
-| `twin-store`, board server, Nemotron, browser | unit counts with ranges; room entries by room number | patient rows, stay ids, names |
+| `mimic_clif` (only read) | the 25 demo patients, training tokens, the trained patient model | anything Lookahead writes |
+| `twin-store`, folders `stage/` and `train/` | tokens, features, per-stay scores; treat as restricted | |
+| `rooms.json`, `forecast.json`, board server, Nemotron, browser | unit counts with ranges; room entries by room number, with invented names | patient rows, stay ids, real names |
 | Laptop, GitHub | code, synthetic `examples/`, the open MIMIC-IV Demo in `backend/clif_demo` | anything from the cluster volumes |
 
 The default ward is the open MIMIC-IV Demo. Real MIMIC-IV rooms need `--real-ward` and stay on the local machines.
@@ -164,29 +155,6 @@ uv run python app/board.py --forecast ../examples/forecast.json --static ../mock
 
 Open http://localhost:8080. Without Nemotron and the dispatcher, the chat and the update buttons say they are not available. The rest of the board works.
 
-## Run it on the cluster
+## More
 
-Lane 2 starts and stops the shared `t7-*` workflows. Ask before starting anything.
-
-1. `t7-smoke`: checks the stack and downloads the Nemotron weights.
-2. `t7-build`: trains the model on both GPUs. It lives in the ICU-Twin repo.
-3. `t7-fit`: fits the probes and stages the ward. Run it once per model.
-4. `t7-twin`: starts Nemotron, the board server and the dispatcher. It stays up.
-
-```bash
-fuzzball workflow validate fuzzball/t7-fit.fz && fuzzball workflow start fuzzball/t7-fit.fz --name t7-fit
-fuzzball workflow start fuzzball/t7-twin.fz
-fuzzball workflow connect --name board --endpoint web <workflow-id>
-```
-
-Forecasts start from the board or at 07:00. You do not start `t7-forecast` by hand. If the dispatcher is broken, see section 9.5 of the runbook.
-
-## The charge nurse's day
-
-![Charge nurse journey](diagrams/journey.png)
-
-Every role's journey: [`USER_JOURNEY.md`](USER_JOURNEY.md).
-
-## Why it is built this way
-
-See [`DECISIONS.md`](DECISIONS.md).
+Every role's morning: [`USER_JOURNEY.md`](USER_JOURNEY.md). Why it is built this way: [`DECISIONS.md`](DECISIONS.md).
