@@ -266,6 +266,10 @@ details.allrooms[open] summary{margin-bottom:8px}
 .setmenu .views button{display:block;min-height:36px;border:0;border-left:1px solid var(--line);border-radius:0;padding:6px 14px}
 .setmenu .views button:first-child{border-left:0}
 #thr-l{margin-top:8px}
+.custom{display:flex;align-items:center;gap:8px;margin-top:4px}
+.custom[hidden]{display:none}
+.custom input{width:92px;min-height:44px;font:inherit;font-weight:700;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+.custom input::placeholder{font-weight:400;color:var(--ink-2)}
 @media (max-width:560px){.setmenu .lrow .step{width:44px;height:44px}.lrow{grid-template-columns:minmax(0,1fr) 44px 44px 44px 52px}}
 
 /* Alternative: vitals in the bed detail, as small multiples (one chart per vital) */
@@ -389,7 +393,9 @@ details.more summary:hover{color:var(--ink)}
         <p class="range seti">A bed joins a cluster when its chance of that event is at or above the cluster's line. Remembered on this device.</p>
         <div id="linesbox"></div>
         <span class="label" id="thr-l">Set every line to</span>
-        <div class="views" id="thr" role="group" aria-labelledby="thr-l"><button type="button" data-v="50">50%</button><button type="button" data-v="25">25%</button><button type="button" data-v="10">10%</button></div>
+        <div class="views" id="thr" role="group" aria-labelledby="thr-l"><button type="button" data-v="50">50%</button><button type="button" data-v="25">25%</button><button type="button" data-v="10">10%</button><button type="button" data-v="custom" aria-controls="customrow" aria-expanded="false">Custom</button></div>
+        <div class="custom" id="customrow" hidden><label for="customv" class="sr">Custom line for every cluster, percent</label>
+          <input id="customv" type="number" min="1" max="99" step="1" inputmode="numeric" placeholder="1 to 99"><span aria-hidden="true">%</span><button type="button" id="customgo">Apply to all</button></div>
       </div>
     </div>
     <div class="runbox">
@@ -625,9 +631,9 @@ details.more summary:hover{color:var(--ink)}
   // Alternative view: patient clusters. For each event, the rooms at or above the line, highest first; rooms in no risk group come last.
   // each cluster has its own line (the chance at or above which a bed joins it). The user sets it on the card with a slider
   // (or the − / + buttons, or the arrow keys); it is remembered on this device. Marks above the slider show where this event's beds sit.
-  const KEYS=["death","vent","press","crrt","hypo","out"], LO=5, HI=75, STEPS=Array.from({length:(HI-LO)/5+1},(_,i)=>LO+i*5), thrBy={}; let hideRest=false;
+  const KEYS=["death","vent","press","crrt","hypo","out"], LO=1, HI=99, okLine=v=>Number.isInteger(v)&&v>=LO&&v<=HI, thrBy={}; let hideRest=false;
   for(const k of KEYS) thrBy[k]=.25;
-  try{ const saved=JSON.parse(localStorage.getItem("icu-alt-lines")||"{}"); for(const k of KEYS) if(STEPS.includes(saved[k])) thrBy[k]=saved[k]/100; }catch(e){ /* no storage: lines last for this visit */ }
+  try{ const saved=JSON.parse(localStorage.getItem("icu-alt-lines")||"{}"); for(const k of KEYS) if(okLine(saved[k])) thrBy[k]=saved[k]/100; }catch(e){ /* no storage: lines last for this visit */ }
   const saveLines=()=>{ try{ localStorage.setItem("icu-alt-lines",JSON.stringify(Object.fromEntries(KEYS.map(k=>[k,Math.round(thrBy[k]*100)])))); }catch(e){} };
   function setLines(fn){ for(const k of KEYS) thrBy[k]=fn(k); saveLines(); renderClusters(); }
   const FIG=`<circle cx="20" cy="10.5" r="8.5"/><path d="M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z"/>`;
@@ -651,7 +657,8 @@ details.more summary:hover{color:var(--ink)}
     rt.setAttribute("aria-pressed",String(hideRest)); rt.textContent = hideRest ? `Show no-risk beds (${rest.length})` : "Hide no-risk beds"; rt.hidden=!rest.length;
     card.hidden = hideRest || !rest.length; card.querySelector(".lc").textContent=`every risk under its line · ${nbeds(rest.length)}`;
     card.querySelector(".set").innerHTML=rest.map(r=>{const [e,v]=top(r); return chip(r,e,v,`${e.short}<br>${pct(v)}`,w3);}).join("");
-    document.querySelectorAll("#thr button").forEach(b=>b.setAttribute("aria-pressed",String(KEYS.every(k=>Math.round(thrBy[k]*100)===+b.dataset.v))));
+    const cur=KEYS.map(k=>Math.round(thrBy[k]*100)), same=cur.every(v=>v===cur[0]), preset=same&&[50,25,10].includes(cur[0]);
+    document.querySelectorAll("#thr button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v==="custom" ? !preset : same&&cur[0]===+b.dataset.v)));
   }
   function renderClusters(){
     const mine=OWN[role()]||[], order=KEYS.slice().sort((a,b)=>(mine.includes(a)?0:1)-(mine.includes(b)?0:1)); let html="";
@@ -672,7 +679,12 @@ details.more summary:hover{color:var(--ink)}
     const c=e.target.closest(".chg"); if(c){ e.stopPropagation(); setMenu(true); const r=document.querySelector(`#linesbox [data-k="${c.dataset.k}"]`); r.scrollIntoView({block:"nearest"}); (r.querySelector(".step:not(:disabled)")||r).focus(); } });
   document.getElementById("linesbox").addEventListener("click",e=>{ const st=e.target.closest(".step"); if(!st) return; const k=st.closest(".lrow").dataset.k;
     thrBy[k]=Math.max(LO,Math.min(HI,Math.round(thrBy[k]*100)+ +st.dataset.d))/100; updateCard(k); updateRest(); saveLines(); if(st.disabled) st.parentNode.querySelector(".step:not(:disabled)").focus(); });
-  document.querySelectorAll("#thr button").forEach(b=>b.onclick=()=>setLines(()=>+b.dataset.v/100));
+  // "Set every line to": three presets, or Custom, which opens a box for any whole percent from 1 to 99
+  { const row=document.getElementById("customrow"), inp=document.getElementById("customv"), cb=document.querySelector('#thr [data-v="custom"]'), show=o=>{ row.hidden=!o; cb.setAttribute("aria-expanded",String(o)); };
+    document.querySelectorAll("#thr button").forEach(b=>b.onclick=()=>{ if(b.dataset.v!=="custom"){ show(false); return setLines(()=>+b.dataset.v/100); }
+      const cur=KEYS.map(k=>Math.round(thrBy[k]*100)); show(true); inp.value=cur.every(v=>v===cur[0])?cur[0]:""; inp.focus(); inp.select(); });
+    const go=()=>{ const v=Math.round(+inp.value); if(inp.value===""||!okLine(v)){ inp.focus(); return; } inp.value=v; setLines(()=>v/100); };
+    document.getElementById("customgo").onclick=go; inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } }); }
   document.getElementById("resttoggle").onclick=()=>{ hideRest=!hideRest; renderClusters(); document.getElementById("resttoggle").focus(); };
   // Alternative view: floating chat. The button opens the panel and moves focus to the question box; Minimize or Escape closes it.
   const fab=document.getElementById("chatfab"), isAlt=()=>document.documentElement.dataset.view==="alt";
@@ -684,6 +696,8 @@ details.more summary:hover{color:var(--ink)}
   function setView(v){ document.documentElement.dataset.view=v; document.querySelectorAll("#views button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v)));
     // Alternative: the role picker lives in the settings menu, which frees the top strip; Board keeps it beside Rerun
     const rb=document.getElementById("rolebox"); if(v==="alt") document.querySelector("#setmenu .sethead").after(rb); else document.querySelector(".runbox").prepend(rb); setGearLabel();
+    // Alternative: the settings button sits to the right of Rerun forecast
+    { const st=document.getElementById("settings"), box=document.querySelector(".runbox"); if(v==="alt") box.after(st); else box.before(st); }
     // re-word the shared parts for this view
     document.getElementById("unit-sub").textContent=tw("New starts across all 25 rooms. Big number = median; blue bar = 80% range; ink line = what is free.");
     document.getElementById("close").textContent=tw("Close room");
@@ -822,7 +836,7 @@ details.more summary:hover{color:var(--ink)}
   if(/(^|[#&])hiderest(&|$)/.test(h)){ hideRest=true; renderClusters(); }
   const tm=h.match(/thr=(50|25|10)\b/); if(tm) for(const k of KEYS) thrBy[k]=+tm[1]/100;
   // #lines=vent:10,death:5 sets single lines for review captures (not saved)
-  const lm=h.match(/lines=([a-z0-9:,]+)/); if(lm) for(const part of lm[1].split(",")){ const [k,v]=part.split(":"); if(KEYS.includes(k)&&STEPS.includes(+v)) thrBy[k]=+v/100; }
+  const lm=h.match(/lines=([a-z0-9:,]+)/); if(lm) for(const part of lm[1].split(",")){ const [k,v]=part.split(":"); if(KEYS.includes(k)&&okLine(+v)) thrBy[k]=+v/100; }
   if(tm||lm) renderClusters();
   if(/(^|[#&])settings(&|$)/.test(h)) setMenu(true);
   if(/(^|[#&])night(&|$)/.test(h)) setTheme("night");
