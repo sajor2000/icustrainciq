@@ -744,7 +744,7 @@ details.more summary:hover{color:var(--ink)}
       <line x1="6" x2="294" y1="25" y2="25" stroke="${over?"color-mix(in srgb,var(--short) 30%,var(--surface))":"var(--rule)"}" stroke-width="10" stroke-linecap="round"/>
       ${sum?`<line x1="6" x2="${x(sum)}" y1="25" y2="25" stroke="${col}" stroke-opacity=".4" stroke-width="10" stroke-linecap="round"/>`:""}
       ${base?`<line x1="6" x2="${x(base)}" y1="25" y2="25" stroke="${col}" stroke-width="10" stroke-linecap="round"/>`:""}
-      <line x1="${x(base)}" x2="${x(base)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3"/><text x="${x(base)}" y="11" text-anchor="${near&&pred?"end":"middle"}" font-size="15" font-weight="700" fill="var(--ink)">${base}</text>
+      <line x1="${x(base)}" x2="${x(base)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3"/><text x="${near&&pred&&x(sum)>280 ? x(sum)-14-String(sum).length*9 : x(base)}" y="11" text-anchor="${near&&pred?"end":"middle"}" font-size="15" font-weight="700" fill="var(--ink)">${base}</text>
       ${pred?`<line x1="${x(sum)}" x2="${x(sum)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3" stroke-dasharray="3 2"/><text x="${x(sum)}" y="11" text-anchor="${x(sum)>280?"end":near?"start":"middle"}" font-size="15" font-weight="700" fill="${over?"var(--short)":"var(--ink)"}">${near?"\u00a0":""}${sum}*</text>`:""}
       ${tot!=null?`<text x="294" y="46" text-anchor="end" font-size="14" fill="${over?"var(--short)":"var(--ink-2)"}">${tot} total</text>`:""}</svg>`; }
   // refresh one card for its line: value, count, slider fill, marks, beds
@@ -767,7 +767,7 @@ details.more summary:hover{color:var(--ink)}
     // so say that and show the three beds with the highest chance
     const [scls,sword]=altStatus(k), hot=scls==="short", badge=card.querySelector("h3 .status");
     card.classList.toggle("hot",hot); card.classList.toggle("short",scls==="short"); card.classList.toggle("limit",scls==="tight");
-    badge.hidden=scls==="none"; badge.className=`status ${scls}`; badge.textContent=sword;
+    badge.hidden=scls==="none"||scls==="ok"; /* no badge when on track: only SHORT and AT LIMIT are labelled */ badge.className=`status ${scls}`; badge.textContent=sword;
     const shown=rs.length||!hot ? rs : live(k).slice().sort((a,b)=>b.p[k]-a.p[k]).slice(0,3), why=card.querySelector(".why");
     why.hidden=!!rs.length||!hot; if(!why.hidden) why.textContent=`No bed reaches ${t}%. Highest chances:`;
     card.querySelector(".set").innerHTML=shown.map(r=>chip(r,e,r.p[k],pct(r.p[k]),w3)).join(""); card.classList.toggle("empty",!shown.length);
@@ -977,7 +977,9 @@ details.more summary:hover{color:var(--ink)}
   const tm=h.match(/thr=(50|25|10)\b/); if(tm) for(const k of KEYS) thrBy[k]=+tm[1]/100;
   // #lines=vent:10,death:5 sets single lines for review captures (not saved)
   const lm=h.match(/lines=([a-z0-9:,]+)/); if(lm) for(const part of lm[1].split(",")){ const [k,v]=part.split(":"); if(KEYS.includes(k)&&okLine(+v)) thrBy[k]=+v/100; }
-  if(tm||lm) renderClusters();
+  // #cap=crrt:2,vent:10 sets totals for review captures (not saved)
+  const cm=h.match(/cap=([a-z0-9:,]+)/); if(cm){ for(const part of cm[1].split(",")){ const [k,v]=part.split(":"); if(RES.includes(k)&&Number.isInteger(+v)&&+v>=0&&+v<=99){ total[k]=+v; userCap[k]=true; } } applyCap(); renderRows(); renderCap(); }
+  if(tm||lm||cm) renderClusters();
   if(/(^|[#&])settings(&|$)/.test(h)) setMenu(true);
   if(/(^|[#&])custom(&|$)/.test(h)) document.querySelector('#thr [data-v="custom"]').click();
   if(/(^|[#&])night(&|$)/.test(h)) setTheme("night");
