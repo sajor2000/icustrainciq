@@ -21,9 +21,9 @@
     <p class="eyebrow">Lookahead · Technical architecture</p>
     <h1>One page, one board server, one dispatcher, and Fuzzball workflows on two GB10 nodes; patient rows stay inside the cluster</h1>
     <div class="diagram-container">
-    <svg viewBox="0 0 1280 868" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="architecture-title architecture-desc">
+    <svg viewBox="0 0 1280 886" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="architecture-title architecture-desc">
       <title id="architecture-title">Lookahead technical architecture</title>
-      <desc id="architecture-desc">The board page in the browser talks over HTTPS to the board server, the only door into the cluster; the board server holds the chat agent, which calls Nemotron 3 Nano with tools, and asks the dispatcher to run or report; the dispatcher starts a rendered copy of the t7-forecast workflow, whose precheck, extract and score jobs read tokens from the restricted volumes and write forecast.json and rooms.json to the twin-store volume that the board server reads; one-time workflows t7-smoke, t7-build and t7-fit publish the model and probes; patient rows stay inside the cluster.</desc>
+      <desc id="architecture-desc">The board page in the browser talks over HTTPS to the board server, the only door into the cluster; the board server holds the chat agent, which calls Nemotron 3 Nano with tools, and asks the dispatcher to run or report; the dispatcher starts a rendered copy of the t7-forecast workflow, whose precheck, extract and score jobs read the cohort and the patient model from mimic_clif and write forecast.json and rooms.json to the twin-store volume that the board server reads; setup workflows t7-code, t7-fit and t7-ward publish the code, fit the probes and stage the 25 rooms; the volume mimic_clif is only read and holds the demo patients and the trained patient model; everything written goes to the one volume twin-store; patient rows stay inside the cluster.</desc>
       <defs>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
         <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
@@ -58,11 +58,11 @@
       <rect x="850" y="360" width="60" height="16" rx="2" fill="#f5f5f5"/>
       <text x="880" y="372" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">WRITES</text>
       <path d="M 976,540 H 904" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="918" y="516" width="44" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="940" y="528" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">CLIF</text>
+      <rect x="914" y="516" width="52" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="940" y="528" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">READS</text>
       <path d="M 904,160 H 1100 Q 1108,160 1108,168 V 216" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="942" y="136" width="116" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="1000" y="148" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">MODEL · PROBES</text>
+      <rect x="946" y="136" width="108" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="1000" y="148" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">CODE · PROBES</text>
       <rect x="32" y="200" width="160" height="200" rx="6" fill="#f5f5f5"/>
       <rect x="32" y="200" width="160" height="200" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
       <rect x="40" y="208" width="44" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
@@ -82,7 +82,7 @@
       <rect x="288" y="120" width="92" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
       <text x="334" y="132" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GPU 1 OF 2</text>
       <text x="420" y="158" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Nemotron 3 Nano</text>
-      <text x="420" y="177" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">service nemotron · vLLM :8000</text>
+      <text x="420" y="177" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">NVIDIA model, used as is · :8000</text>
       <rect x="280" y="240" width="280" height="144" rx="6" fill="#f5f5f5"/>
       <rect x="280" y="240" width="280" height="144" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
       <rect x="288" y="248" width="36" height="16" rx="2" fill="transparent" stroke="#bf4520" stroke-opacity="0.5" stroke-width="0.8"/>
@@ -109,28 +109,28 @@
       <text x="544" y="556" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">1 run · 20 min gap</text>
       <rect x="288" y="568" width="264" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
       <text x="296" y="584" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">Template → copy</text>
-      <text x="544" y="584" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">4 tokens filled</text>
+      <text x="544" y="584" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">6 tokens filled</text>
       <rect x="648" y="112" width="256" height="172" rx="6" fill="#f5f5f5"/>
       <rect x="648" y="112" width="256" height="172" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="656" y="120" width="44" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="678" y="132" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ONCE</text>
-      <text x="776" y="158" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">One-time workflows</text>
+      <rect x="656" y="120" width="52" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="682" y="132" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SETUP</text>
+      <text x="776" y="158" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Setup workflows</text>
       <text x="776" y="177" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">Fuzzball, in this order</text>
       <rect x="656" y="192" width="240" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="664" y="208" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">t7-smoke</text>
-      <text x="888" y="208" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">stack check · prefetch</text>
+      <text x="664" y="208" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">t7-code</text>
+      <text x="888" y="208" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">publish code, packages</text>
       <rect x="656" y="220" width="240" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="664" y="236" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">t7-build</text>
-      <text x="888" y="236" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">train · ICU-Twin repo</text>
+      <text x="664" y="236" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">t7-fit</text>
+      <text x="888" y="236" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">fit the probes · GPU 2</text>
       <rect x="656" y="248" width="240" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="664" y="264" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">t7-fit</text>
-      <text x="888" y="264" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">probes · stage ward</text>
+      <text x="664" y="264" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">t7-ward</text>
+      <text x="888" y="264" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">stage the 25 rooms</text>
       <rect x="648" y="432" width="256" height="200" rx="6" fill="#f5f5f5"/>
       <rect x="648" y="432" width="256" height="200" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
       <rect x="656" y="440" width="92" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
       <text x="702" y="452" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GPU 2 OF 2</text>
       <text x="776" y="478" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">t7-forecast</text>
-      <text x="776" y="497" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">Fuzzball workflow · copy per run</text>
+      <text x="776" y="497" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">our patient model · copy per run</text>
       <rect x="656" y="512" width="240" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
       <text x="664" y="528" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">precheck</text>
       <text x="888" y="528" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">job · CPU</text>
@@ -145,40 +145,40 @@
       <text x="888" y="612" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">raw CLIF → Now</text>
       <rect x="976" y="216" width="264" height="200" rx="6" fill="#f5f5f5"/>
       <rect x="976" y="216" width="264" height="200" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
-      <rect x="984" y="224" width="60" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="1014" y="236" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VOLUME</text>
+      <rect x="984" y="224" width="156" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="1062" y="236" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VOLUME · TO CREATE</text>
       <text x="1108" y="262" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">twin-store</text>
-      <text x="1108" y="281" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">Fuzzball volume · team7</text>
+      <text x="1108" y="281" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">everything Lookahead writes</text>
       <rect x="984" y="296" width="248" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="992" y="312" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">forecast.json</text>
-      <text x="1224" y="312" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">unit counts, ranges</text>
+      <text x="992" y="312" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">rooms.json, forecast.json</text>
+      <text x="1224" y="312" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">t7-forecast</text>
       <rect x="984" y="324" width="248" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="992" y="340" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">rooms.json</text>
-      <text x="1224" y="340" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">stage-ward rooms</text>
+      <text x="992" y="340" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">capacity.json, runs.jsonl</text>
+      <text x="1224" y="340" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">t7-twin</text>
       <rect x="984" y="352" width="248" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="992" y="368" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">capacity.json</text>
-      <text x="1224" y="368" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">set on the board</text>
+      <text x="992" y="368" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">code/, py/</text>
+      <text x="1224" y="368" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">t7-code</text>
       <rect x="984" y="380" width="248" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="992" y="396" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">model, probes, code</text>
-      <text x="1224" y="396" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">one-time</text>
+      <text x="992" y="396" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">probes/, stage/</text>
+      <text x="1224" y="396" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">t7-fit, t7-ward</text>
       <rect x="976" y="448" width="264" height="200" rx="6" fill="#f5f5f5"/>
       <rect x="976" y="448" width="264" height="200" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
-      <rect x="984" y="456" width="68" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="1018" y="468" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VOLUMES</text>
-      <text x="1108" y="494" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Other team7 volumes</text>
-      <text x="1108" y="513" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">Fuzzball · no browser path</text>
+      <rect x="984" y="456" width="148" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="1058" y="468" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">EXIST · READ ONLY</text>
+      <text x="1108" y="494" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">mimic_clif · hfcache</text>
+      <text x="1108" y="513" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">Fuzzball volumes · never written</text>
       <rect x="984" y="528" width="248" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="992" y="544" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">25 demo patients</text>
-      <text x="1224" y="544" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">proposed load</text>
+      <text x="992" y="544" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">dashboard_data/</text>
+      <text x="1224" y="544" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">25 patients + names</text>
       <rect x="984" y="556" width="248" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="992" y="572" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">clif_work</text>
-      <text x="1224" y="572" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">tokens, stage ward</text>
+      <text x="992" y="572" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">model_output/final/</text>
+      <text x="1224" y="572" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">patient model</text>
       <rect x="984" y="584" width="248" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="992" y="600" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">mimic_clif</text>
-      <text x="1224" y="600" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">training rows</text>
+      <text x="992" y="600" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">tokenized_output/</text>
+      <text x="1224" y="600" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">training tokens</text>
       <rect x="984" y="612" width="248" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="992" y="628" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">hfcache, tooling</text>
-      <text x="1224" y="628" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">weights, deps</text>
+      <text x="992" y="628" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">hfcache</text>
+      <text x="1224" y="628" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">Nemotron weights</text>
       <line x1="40" y1="692" x2="1240" y2="692" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
       <text x="40" y="716" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.16em">LEGEND</text>
       <rect x="40" y="730" width="16" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
@@ -195,9 +195,10 @@
       <text x="1174" y="741" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Other host</text>
       <text x="40" y="768" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Where it runs: everything in the Local Lenovo PGX zone is a Fuzzball service, job or volume on the two on-site Lenovo PGX (GB10) machines. Nothing is hosted in the cloud.</text>
       <text x="40" y="786" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Patient rows never leave the cluster. The browser receives unit counts and the stage-ward room entries. Default ward: open MIMIC-IV Demo; real MIMIC-IV only with --real-ward, local only.</text>
-      <text x="40" y="804" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Two GB10 nodes, one GPU each. Nemotron holds one GPU while t7-twin is up; each t7-forecast run takes the other for minutes. Fuzzball places the jobs.</text>
+      <text x="40" y="804" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Two models, two GPUs. NVIDIA Nemotron 3 Nano, used as is, holds GPU 1 while t7-twin is up. The patient model, trained by us, runs in each t7-forecast job on GPU 2 for minutes.</text>
       <text x="40" y="822" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">The page has two tabs, Bed board and Unit strain, and a Now | Next 24 h switch. Now is life support running at 07:00, read from raw CLIF tables (clif_now.py). Next 24 h is the forecast.</text>
-      <text x="40" y="840" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Five predictions, 07:00 to 07:00: IMV, vasopressor, CRRT, leaving the ICU, death. The 25 demo patients are a CLIF extract of real MIMIC-IV stays; loading it onto a volume is proposed, not built.</text>
+      <text x="40" y="840" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Three volumes. mimic_clif exists and is only read: the 25 demo patients with fictional names, the trained patient model, training tokens. twin-store is the one volume to create. hfcache exists.</text>
+      <text x="40" y="858" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Five predictions, 07:00 to 07:00: IMV, vasopressor, CRRT, leaving the ICU, death. twin-store also holds tokens and per-stay scores, so treat it as restricted; the board serves only the JSON files.</text>
     </svg>
     </div>
   </div>

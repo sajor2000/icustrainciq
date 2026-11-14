@@ -21,9 +21,9 @@
     <p class="eyebrow">Lookahead · Backend · modules, files and who runs them</p>
     <h1>Three services, two workflows, four files: which module does what, and which Fuzzball service or job runs it</h1>
     <div class="diagram-container">
-    <svg viewBox="0 0 1280 868" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="backend-title backend-desc">
+    <svg viewBox="0 0 1280 886" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="backend-title backend-desc">
       <title id="backend-title">Backend modules, files and the Fuzzball objects that run them</title>
-      <desc id="backend-desc">Inside the Fuzzball workflow t7-twin, service board runs board.py, chat_agent.py and the page, service dispatcher runs dispatcher.py and renders the t7-forecast template, and service nemotron runs vLLM. Workflow t7-fit runs stage_ward.py, the tokenizer, the winnower, the extractor and the probe fit once per model. Workflow t7-forecast runs the winnower and extractor on the GPU, then rooms.py, aggregate.py and clif_now.py on CPU. They hand off through twin-store, which holds rooms.json, forecast.json, capacity.json and runs.jsonl, and through clif_work.</desc>
+      <desc id="backend-desc">Inside the Fuzzball workflow t7-twin, service board runs board.py, chat_agent.py and the page, service dispatcher runs dispatcher.py and renders the t7-forecast template, and service nemotron runs vLLM. Setup workflows run first: t7-code publishes the code and packages, t7-fit runs the winnower, the extractor and the probe fit once per model, and t7-ward runs stage_ward.py and the tokenizer for the 25 rooms. Workflow t7-forecast runs the winnower and extractor on the GPU, then rooms.py, aggregate.py and clif_now.py on CPU. They hand off through twin-store, which holds rooms.json, forecast.json, capacity.json and runs.jsonl; the volume mimic_clif is only read, for the demo patients, the trained patient model and the training tokens.</desc>
       <defs>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
         <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
@@ -52,17 +52,17 @@
       <rect x="712" y="360" width="116" height="16" rx="2" fill="#f5f5f5"/>
       <text x="770" y="372" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">WRITES 2 FILES</text>
       <path d="M 904,540 H 816" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="830" y="516" width="60" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="860" y="528" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">TOKENS</text>
+      <rect x="834" y="516" width="52" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="860" y="528" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">READS</text>
       <path d="M 816,160 H 1064 Q 1072,160 1072,168 V 216" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="910" y="136" width="60" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="940" y="148" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">PROBES</text>
+      <rect x="886" y="136" width="108" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="940" y="148" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">CODE · PROBES</text>
       <rect x="48" y="112" width="320" height="80" rx="6" fill="#f5f5f5"/>
       <rect x="48" y="112" width="320" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
       <rect x="56" y="120" width="92" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
       <text x="102" y="132" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GPU 1 OF 2</text>
       <text x="208" y="158" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">service nemotron</text>
-      <text x="208" y="177" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">vLLM :8000 · Nemotron 3 Nano</text>
+      <text x="208" y="177" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">vLLM :8000 · NVIDIA model, as is</text>
       <rect x="48" y="240" width="320" height="172" rx="6" fill="#f5f5f5"/>
       <rect x="48" y="240" width="320" height="172" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
       <rect x="56" y="248" width="36" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
@@ -92,19 +92,19 @@
       <text x="352" y="584" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">template → copy per run</text>
       <rect x="456" y="112" width="360" height="172" rx="6" fill="#f5f5f5"/>
       <rect x="456" y="112" width="360" height="172" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="464" y="120" width="124" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="526" y="132" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ONCE PER MODEL</text>
-      <text x="636" y="158" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">workflow t7-fit</text>
-      <text x="636" y="177" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">jobs stage → extract → fit</text>
+      <rect x="464" y="120" width="180" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="554" y="132" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SETUP · IN THIS ORDER</text>
+      <text x="636" y="158" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">t7-code → t7-fit → t7-ward</text>
+      <text x="636" y="177" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">run before the first forecast</text>
       <rect x="464" y="192" width="344" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="472" y="208" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">stage_ward.py</text>
-      <text x="800" y="208" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">job stage · 25 stays, rooms 1–25</text>
+      <text x="472" y="208" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">t7-code</text>
+      <text x="800" y="208" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">publish backend/ + packages · CPU</text>
       <rect x="464" y="220" width="344" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="472" y="236" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">tokenizer · winnower</text>
-      <text x="800" y="236" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">job stage · CPU</text>
+      <text x="472" y="236" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">t7-fit: winnower, extractor, rep_based</text>
+      <text x="800" y="236" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">1 GPU job</text>
       <rect x="464" y="248" width="344" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="472" y="264" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">extractor · rep_based</text>
-      <text x="800" y="264" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">GPU, then fit the probes</text>
+      <text x="472" y="264" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">t7-ward: stage_ward.py, tokenizer</text>
+      <text x="800" y="264" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">CPU</text>
       <rect x="456" y="432" width="360" height="200" rx="6" fill="#f5f5f5"/>
       <rect x="456" y="432" width="360" height="200" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
       <rect x="464" y="440" width="92" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
@@ -125,10 +125,10 @@
       <text x="800" y="612" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">job score · on now, raw CLIF</text>
       <rect x="904" y="216" width="336" height="200" rx="6" fill="#f5f5f5"/>
       <rect x="904" y="216" width="336" height="200" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
-      <rect x="912" y="224" width="60" height="16" rx="2" fill="transparent" stroke="#bf4520" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="942" y="236" fill="#bf4520" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VOLUME</text>
+      <rect x="912" y="224" width="156" height="16" rx="2" fill="transparent" stroke="#bf4520" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="990" y="236" fill="#bf4520" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VOLUME · TO CREATE</text>
       <text x="1072" y="262" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">twin-store</text>
-      <text x="1072" y="281" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">Fuzzball volume · also model, probes, code</text>
+      <text x="1072" y="281" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">the one volume Lookahead writes</text>
       <rect x="912" y="296" width="320" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
       <text x="920" y="312" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">rooms.json</text>
       <text x="1224" y="312" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">rooms.py writes</text>
@@ -143,18 +143,18 @@
       <text x="1224" y="396" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">dispatcher.py appends</text>
       <rect x="904" y="448" width="336" height="172" rx="6" fill="#f5f5f5"/>
       <rect x="904" y="448" width="336" height="172" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
-      <rect x="912" y="456" width="60" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="942" y="468" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VOLUME</text>
-      <text x="1072" y="494" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">clif_work</text>
-      <text x="1072" y="513" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">Fuzzball volume · restricted</text>
+      <rect x="912" y="456" width="156" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="990" y="468" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VOLUME · READ ONLY</text>
+      <text x="1072" y="494" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">mimic_clif</text>
+      <text x="1072" y="513" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">training's volume · never written</text>
       <rect x="912" y="528" width="320" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="920" y="544" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">stage/tokenized_output</text>
-      <text x="1224" y="544" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">tokens, features</text>
+      <text x="920" y="544" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">dashboard_data/</text>
+      <text x="1224" y="544" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">25 patients + name.parquet</text>
       <rect x="912" y="556" width="320" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="920" y="572" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">stage/stage_ward.csv</text>
-      <text x="1224" y="572" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">room → stay id</text>
+      <text x="920" y="572" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">model_output/final/</text>
+      <text x="1224" y="572" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">trained patient model</text>
       <rect x="912" y="584" width="320" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="920" y="600" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">tokenized_output</text>
+      <text x="920" y="600" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">tokenized_output/</text>
       <text x="1224" y="600" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">training tokens</text>
       <line x1="40" y1="692" x2="1240" y2="692" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
       <text x="40" y="716" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.16em">LEGEND</text>
@@ -170,11 +170,12 @@
       <text x="826" y="741" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Local Lenovo PGX (Fuzzball)</text>
       <rect x="1036" y="728" width="28" height="16" rx="2" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8" stroke-dasharray="4,4"/>
       <text x="1074" y="741" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Other host</text>
-      <text x="40" y="768" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Folders: backend/app (services and scoring glue), backend/icutwin (tokenizer, model, winnower, extractor, rep_based probes), backend/fuzzball (the workflows).</text>
-      <text x="40" y="786" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">The two services use the Python standard library only. The scoring jobs import icutwin with polars, transformers and scikit-learn.</text>
-      <text x="40" y="804" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Each JSON file is written to a temporary name, then renamed, so a reader never sees half a file. forecast.json is written last; the page watches its made_at.</text>
-      <text x="40" y="822" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">chat_agent.py runs inside service board. Its tools read the same three JSON files and can ask the dispatcher for a run, only on an explicit ask.</text>
-      <text x="40" y="840" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Where it runs: on the two on-site Lenovo PGX machines under Fuzzball. On a developer laptop, board.py alone runs with uv against examples/. Nothing is hosted in the cloud.</text>
+      <text x="40" y="768" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Folders: backend/app (services, scoring glue), backend/icutwin (tokenizer, model, winnower, extractor, rep_based probes), backend/fuzzball (workflows; ready/ holds the rendered files).</text>
+      <text x="40" y="786" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">twin-store also holds code/ and py/ (t7-code), probes/ and train/ (t7-fit) and stage/ (t7-ward, t7-forecast). There is no other volume to write to.</text>
+      <text x="40" y="804" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">The two services use the Python standard library only. The scoring jobs import icutwin with polars, transformers and scikit-learn.</text>
+      <text x="40" y="822" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Each JSON file is written to a temporary name, then renamed, so a reader never sees half a file. forecast.json is written last; the page watches its made_at.</text>
+      <text x="40" y="840" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">chat_agent.py runs inside service board. Its tools read the same three JSON files and can ask the dispatcher for a run, only on an explicit ask.</text>
+      <text x="40" y="858" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">Where it runs: on the two on-site Lenovo PGX machines under Fuzzball. On a developer laptop, board.py alone runs with uv against examples/. Nothing is hosted in the cloud.</text>
     </svg>
     </div>
   </div>
