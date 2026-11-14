@@ -1,0 +1,118 @@
+version: v4
+# t7-code: publish THIS repo's backend/ to the cluster. Run it first, and again after every code change.
+# CPU only (no GPU): safe beside training. Do not run it while a forecast update, t7-fit or t7-ward runs
+# (it swaps the code and the Python packages they import; the dispatcher refuses updates while it runs).
+#
+# What comes from where:
+#   github.com/sajor2000/icustrainciq (this repo), backend/  -> twin-store:/code   (board, dispatcher, forecast code)
+#   backend/requirements/t7-model.txt (hash-locked)          -> twin-store:/py     (Python packages)
+#   the Nemotron weights are already on hfcache (nemotron-3-nano-fp8/<revision>, put there by the workflow
+#   t7-fb-nemotron-persistent); t7-twin serves that folder, so nothing is downloaded here
+#   the trained model and the training tokens are NOT copied: t7-fit and t7-forecast read them where training
+#   left them, mimic_clif:/model_output/final and mimic_clif:/tokenized_output (docs/FUZZBALL_VALIDATION.md)
+#
+# PINNED: the ingress is the tarball of ONE commit, checked against its sha256 before anything is unpacked.
+# TEMPLATE (Fuzzball 4.3 has no parameters): 6a46ea4f25fbe4903bbdd0804691da3154e78e1d and cd609e4cb66b255d1c02cf1f41a1b0fc601c8d7fc94aaf9ffdce474a33682abb are filled in first,
+#   scripts/make_ready.sh [40-hex commit, default origin/main]      # writes fuzzball/ready/*.fz (the usual way)
+#   python scripts/render_fz.py fuzzball/t7-code.fz --code-ref <sha> --code-sha256 <sha256> -o /tmp/t7-code.fz
+#   sha256: curl -sL https://codeload.github.com/sajor2000/icustrainciq/tar.gz/<sha> | shasum -a 256
+#   fuzzball workflow validate <file> && fuzzball workflow start <file> --name t7-code
+# Jobs: publish (code, swapped in whole) | deps (packages, swapped in whole) -> check
+# (the imports and scripts resolve with PYTHONPATH=/store/py:/store/code, as every other workflow runs them).
+# Storage: the tarball and every temporary file stay on the ephemeral `work` volume, which Fuzzball removes
+# when the workflow ends. Only /store/code and /store/py persist.
+volumes:
+  store:
+    name: twin-store            # persistent: /store/code and /store/py (written here), read by every other workflow
+    use: team7
+  work:
+    use: team7                  # ephemeral scratch: tarball, unpacked copy, pip cache and temp files
+    size: 20GB
+    ingress:
+      - source: {uri: "https://codeload.github.com/sajor2000/icustrainciq/tar.gz/6a46ea4f25fbe4903bbdd0804691da3154e78e1d"}
+        destination: {uri: "file://code.tar.gz"}
+
+defaults:
+  job:
+    mounts: {/work: work}
+
+jobs:
+  publish:
+    # backend/ of the pinned commit -> /store/code, built beside it and renamed in, so no reader sees half a tree
+    image: {uri: "docker://python:3.12-slim"}
+    mounts: {/store: store, /work: work}
+    env: [HOME=/work/home-publish, TMPDIR=/work/tmp-publish]
+    resource: {cpu: {cores: 2}, memory: {size: 4GB}}
+    policy: {timeout: {execute: 15m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      CODE_REF="6a46ea4f25fbe4903bbdd0804691da3154e78e1d"; CODE_SHA256="cd609e4cb66b255d1c02cf1f41a1b0fc601c8d7fc94aaf9ffdce474a33682abb"
+      case "$CODE_REF$CODE_SHA256" in *@*|"") echo "CODE_REF / CODE_SHA256 not set: use fuzzball/ready/t7-code.fz (scripts/make_ready.sh)"; exit 1;; esac
+      echo "$CODE_SHA256  /work/code.tar.gz" | sha256sum -c - || { echo "code tarball does not match CODE_SHA256: refusing to publish it"; exit 1; }
+      mkdir -p "$HOME" "$TMPDIR" /work/src-publish
+      tar -xzf /work/code.tar.gz -C /work/src-publish --strip-components=1
+      SRC=/work/src-publish/backend
+      for f in app/board.py app/dispatcher.py app/rooms.py app/aggregate.py app/stage_ward.py app/ward_check.py \
+               app/static/index.html icutwin/common.py examples/winnow_24h.yaml examples/probe_tasks.yaml \
+               fuzzball/t7-forecast.fz clif_demo/clif_hospitalization.parquet requirements/t7-model.txt; do
+        test -f "$SRC/$f" || { echo "commit $CODE_REF has no backend/$f: wrong repo or commit"; exit 1; }
+      done
+      # not needed at run time: the rendered files of an older commit, the tests, local patient data (never in git)
+      rm -rf "$SRC/fuzzball/ready" "$SRC/tests" "$SRC/data"
+      NEW=/store/code.new; OLD=/store/code.old
+      rm -rf "$NEW" "$OLD"
+      cp -r "$SRC" "$NEW"
+      FILES=$(find "$NEW" -type f | wc -l)
+      printf 'repo: sajor2000/icustrainciq\npath: backend/\ncommit: %s\ntarball_sha256: %s\nfiles: %s\npublished_at: %s\n' \
+        "$CODE_REF" "$CODE_SHA256" "$FILES" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$NEW/PUBLISHED"
+      if [ -e /store/code ]; then mv /store/code "$OLD"; fi
+      mv "$NEW" /store/code
+      rm -rf "$OLD"
+      echo "published to /store/code: commit $CODE_REF, $FILES files"; cat /store/code/PUBLISHED
+
+  deps:
+    # the hash-locked packages -> /store/py, installed beside it and renamed in. Same image as the jobs that
+    # import them (Python 3.12, aarch64; the image supplies torch).
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    mounts: {/store: store, /work: work}
+    env: [HOME=/work/home-deps, TMPDIR=/work/tmp-deps]
+    resource: {cpu: {cores: 8}, memory: {size: 32GB}}
+    policy: {timeout: {execute: 45m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      CODE_REF="6a46ea4f25fbe4903bbdd0804691da3154e78e1d"; CODE_SHA256="cd609e4cb66b255d1c02cf1f41a1b0fc601c8d7fc94aaf9ffdce474a33682abb"
+      case "$CODE_REF$CODE_SHA256" in *@*|"") echo "CODE_REF / CODE_SHA256 not set: use fuzzball/ready/t7-code.fz (scripts/make_ready.sh)"; exit 1;; esac
+      echo "$CODE_SHA256  /work/code.tar.gz" | sha256sum -c - || { echo "code tarball does not match CODE_SHA256: refusing to install from it"; exit 1; }
+      mkdir -p "$HOME" "$TMPDIR" /work/src-deps
+      tar -xzf /work/code.tar.gz -C /work/src-deps --strip-components=1
+      NEW=/store/py.new; OLD=/store/py.old
+      rm -rf "$NEW" "$OLD"
+      pip install -q --target "$NEW" --no-deps --require-hashes -r /work/src-deps/backend/requirements/t7-model.txt
+      printf 'commit: %s\nlock: backend/requirements/t7-model.txt\n' "$CODE_REF" > "$NEW/PUBLISHED-DEPS"
+      echo "packages installed: $(find "$NEW" -maxdepth 1 -name '*.dist-info' | wc -l)"
+      if [ -e /store/py ]; then mv /store/py "$OLD"; fi
+      mv "$NEW" /store/py
+      rm -rf "$OLD"
+      du -sh /store/py
+
+  check:
+    # what the other workflows will do: import the packages and run each script's --help from the volumes
+    depends-on: [{name: publish, status: FINISHED}, {name: deps, status: FINISHED}]
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    mounts: {/store: store, /work: work}
+    env: [HOME=/work/home-check, TMPDIR=/work/tmp-check, "PYTHONPATH=/store/py:/store/code"]
+    resource: {cpu: {cores: 4}, memory: {size: 16GB}}
+    policy: {timeout: {execute: 15m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      mkdir -p "$HOME" "$TMPDIR" && cd "$TMPDIR"
+      python -c "import sys, transformers, sklearn, polars, pyarrow, duckdb, clifpy, torch; print('python', sys.version.split()[0], 'transformers', transformers.__version__, 'scikit-learn', sklearn.__version__, 'polars', polars.__version__, 'torch', torch.__version__)"
+      python -c "import icutwin.common, icutwin.tokenizer.cli, icutwin.scoring.winnower, icutwin.scoring.extractor, icutwin.scoring.rep_based; print('icutwin imports ok')"
+      for s in rooms aggregate stage_ward ward_check board dispatcher; do
+        python "/store/code/app/$s.py" --help > /dev/null || { echo "app/$s.py does not start from /store/code"; exit 1; }
+      done
+      python /store/code/app/dispatcher.py --render-only /store/code/fuzzball/t7-forecast.fz > /dev/null
+      echo "scripts start from /store/code; published:"; cat /store/code/PUBLISHED
