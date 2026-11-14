@@ -28,7 +28,11 @@ Synthetic data in the mockup ([`mockups/command-center.html`](mockups/command-ce
 
 ![How the pieces connect](docs/diagrams/connection.png)
 
-Fuzzball runs the real forecast on the team's two GB10 nodes and serves the live board; this laptop runs an offline demo; Vercel can host a public preview with synthetic numbers. Patient rows stay in the team7 volumes. Steps for the team, the data boundary and the hosting plan: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+![From data to the 07:00 board](docs/diagrams/lifecycle.png)
+
+![An update request, end to end](docs/diagrams/sequence.png)
+
+Fuzzball runs the real forecast on the team's two GB10 nodes and serves the live board; this laptop runs an offline demo; Vercel can host a public preview with synthetic numbers. Patient rows stay in the team7 volumes. Steps for the team ("In real life, step by step"), the data boundary and the hosting plan: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Editable diagram sources: [`lifecycle.html`](docs/diagrams/lifecycle.html), [`sequence.html`](docs/diagrams/sequence.html), [`connection.html`](docs/diagrams/connection.html).
 
 ## The charge nurse's day
 

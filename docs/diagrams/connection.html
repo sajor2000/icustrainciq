@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ICU-Twin · Board, backend and Fuzzball</title>
+  <title>Lookahead · Board, backend and Fuzzball</title>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -18,102 +18,144 @@
 </head>
 <body>
   <div class="frame">
-    <p class="eyebrow">ICU-Twin · How the pieces connect</p>
-    <h1>The board page talks to one service; the service asks Nemotron with counts and the dispatcher starts Fuzzball</h1>
+    <p class="eyebrow">Lookahead · How the pieces connect</p>
+    <h1>The board talks to one service; the service asks Nemotron with counts, and the dispatcher starts every update through Fuzzball</h1>
     <div class="diagram-container">
-    <svg viewBox="0 0 1280 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="connection-title connection-desc">
+    <svg viewBox="0 0 1280 784" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="connection-title connection-desc">
       <title id="connection-title">Board, backend and Fuzzball connections</title>
-      <desc id="connection-desc">The board page calls the board service with five operations; the service sends counts only to Nemotron for answers and asks the dispatcher for runs and reruns; the dispatcher starts the t7-forecast workflow through the Fuzzball API at 06:30 and on request; the forecast writes forecast.json to the twin-store volume, which the board service reads.</desc>
+      <desc id="connection-desc">The Lookahead board page calls seven operations on the board service; the service sends counts only to the Nemotron chat agent and asks the dispatcher for run status and updates; the dispatcher renders a copy of t7-forecast for each run and starts it through the Fuzzball API at 07:00 and on request; the workflow extracts on one GPU, scores on CPU and writes forecast.json and rooms.json to the twin-store volume, which the board service reads and where it keeps capacity.json.</desc>
       <defs>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
         <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
         <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
       </defs>
       <rect width="100%" height="100%" fill="#f5f5f5"/>
-      <rect x="24" y="152" width="232" height="200" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8" stroke-dasharray="4,4"/>
-      <rect x="36" y="144" width="172" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="40" y="156" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.12em">BROWSER · TEAM7 ONLY</text>
-      <rect x="288" y="64" width="280" height="392" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8" stroke-dasharray="4,4"/>
-      <rect x="300" y="56" width="236" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="304" y="68" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.12em">WORKFLOW t7-twin · ALWAYS ON</text>
-      <rect x="600" y="152" width="656" height="304" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8" stroke-dasharray="4,4"/>
-      <rect x="612" y="144" width="196" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="616" y="156" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.12em">FUZZBALL 4.3 · ON DEMAND</text>
-      <path d="M 232,252 H 320" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
-      <rect x="244.0" y="228" width="64" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="276" y="240" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">5 CALLS</text>
-      <path d="M 424,200 V 160" fill="none" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
-      <rect x="436.0" y="176" width="96" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="484" y="188" fill="#bf4520" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">COUNTS ONLY</text>
-      <path d="M 424,304 V 344" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="436.0" y="320" width="96" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="484" y="332" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">RUNS · RERUN</text>
-      <path d="M 528,380 H 648" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
-      <rect x="540.0" y="356" width="96" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="588" y="368" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">06:30 · ASK</text>
-      <path d="M 856,380 H 920" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="864.0" y="356" width="48" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="888" y="368" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">RUNS</text>
-      <path d="M 1064,344 V 304" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="1080.0" y="320" width="64" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="1112" y="332" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">WRITES</text>
-      <path d="M 920,236 H 528" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
-      <rect x="672.0" y="212" width="104" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="724" y="224" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">FORECAST.JSON</text>
-      <rect x="40" y="200" width="192" height="104" rx="6" fill="#f5f5f5"/>
-      <rect x="40" y="200" width="192" height="104" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
-      <rect x="48" y="208" width="44" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="70.0" y="220" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PAGE</text>
-      <text x="136.0" y="246" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Board page</text>
-      <text x="136.0" y="264" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">icustrainciq · static</text>
-      <rect x="320" y="200" width="208" height="104" rx="6" fill="#f5f5f5"/>
-      <rect x="320" y="200" width="208" height="104" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
-      <rect x="328" y="208" width="68" height="16" rx="2" fill="transparent" stroke="#bf4520" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="362.0" y="220" fill="#bf4520" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SERVICE</text>
-      <text x="424.0" y="246" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Board service</text>
-      <text x="424.0" y="264" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">app/board.py :8080</text>
-      <rect x="320" y="88" width="208" height="72" rx="6" fill="#f5f5f5"/>
-      <rect x="320" y="88" width="208" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="328" y="96" width="36" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="346.0" y="108" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GPU</text>
-      <text x="424.0" y="134" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Nemotron 3 Nano</text>
-      <text x="424.0" y="152" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">vLLM :8000</text>
-      <rect x="320" y="344" width="208" height="72" rx="6" fill="#f5f5f5"/>
-      <rect x="320" y="344" width="208" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="328" y="352" width="36" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="346.0" y="364" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CPU</text>
-      <text x="424.0" y="390" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Dispatcher</text>
-      <text x="424.0" y="408" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">app/dispatcher.py :9000</text>
-      <rect x="648" y="344" width="208" height="72" rx="6" fill="#f5f5f5"/>
-      <rect x="648" y="344" width="208" height="72" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
-      <rect x="656" y="352" width="36" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="674.0" y="364" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">API</text>
-      <text x="752.0" y="390" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Fuzzball API</text>
-      <text x="752.0" y="408" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">workflow token</text>
-      <rect x="920" y="344" width="288" height="72" rx="6" fill="#f5f5f5"/>
-      <rect x="920" y="344" width="288" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="928" y="352" width="36" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="946.0" y="364" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GPU</text>
-      <text x="1064.0" y="390" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">t7-forecast</text>
-      <text x="1064.0" y="408" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">extract → probe → aggregate</text>
-      <rect x="920" y="176" width="288" height="128" rx="6" fill="#f5f5f5"/>
-      <rect x="920" y="176" width="288" height="128" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
-      <rect x="928" y="184" width="60" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
-      <text x="958.0" y="196" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VOLUME</text>
-      <text x="1064.0" y="222" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">twin-store</text>
-      <text x="1064.0" y="240" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">team7 · counts only</text>
-      <rect x="932" y="252" width="264" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="940" y="268" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">forecast.json</text>
-      <text x="1188" y="268" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">6 + 8 tasks</text>
-      <line x1="40" y1="488" x2="1240" y2="488" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-      <text x="40" y="512" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.16em">LEGEND</text>
-      <rect x="40" y="526" width="16" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
-      <text x="66" y="537" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">The only door for the browser</text>
-      <rect x="290" y="526" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <text x="316" y="537" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Job or service</text>
-      <line x1="440" y1="532" x2="466" y2="532" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
-      <text x="474" y="537" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Crosses a boundary</text>
-      <text x="1240" y="537" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif" text-anchor="end">Calls: GET forecast, runs, rooms · POST ask, rerun. No patient rows reach the browser or Nemotron.</text>
+      <rect x="24" y="192" width="232" height="200" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <rect x="36" y="184" width="172" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="40" y="196" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.12em">BROWSER · TEAM7 ONLY</text>
+      <rect x="288" y="32" width="312" height="636" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <rect x="300" y="24" width="236" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="304" y="36" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.12em">WORKFLOW t7-twin · ALWAYS ON</text>
+      <rect x="632" y="152" width="624" height="516" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <rect x="644" y="144" width="172" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="648" y="156" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.12em">FUZZBALL 4.3 · TEAM7</text>
+      <path d="M 232,292 H 320" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="244" y="268" width="64" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="276" y="280" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">7 CALLS</text>
+      <path d="M 444,176 V 136" fill="none" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <rect x="456" y="148" width="92" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="462" y="160" fill="#bf4520" font-size="11" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.04em">COUNTS ONLY</text>
+      <path d="M 444,460 V 500" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="456" y="472" width="112" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="462" y="484" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.04em">/RUN · /STATUS</text>
+      <path d="M 568,572 H 680" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="576" y="548" width="96" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="624" y="560" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">07:00 · ASKS</text>
+      <path d="M 872,572 H 936" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="876" y="548" width="56" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="904" y="560" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">STARTS</text>
+      <path d="M 1084,500 V 356" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="1096" y="420" width="56" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="1102" y="432" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.04em">WRITES</text>
+      <path d="M 936,248 H 568" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="700" y="224" width="104" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="752" y="236" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">READS 3 FILES</text>
+      <path d="M 568,312 H 936" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="700" y="288" width="104" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="752" y="300" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">CAPACITY.JSON</text>
+      <rect x="40" y="240" width="192" height="104" rx="6" fill="#f5f5f5"/>
+      <rect x="40" y="240" width="192" height="104" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="48" y="248" width="44" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="70" y="260" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PAGE</text>
+      <text x="136" y="286" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Lookahead board</text>
+      <text x="136" y="305" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">one static page</text>
+      <rect x="320" y="56" width="248" height="80" rx="6" fill="#f5f5f5"/>
+      <rect x="320" y="56" width="248" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="328" y="64" width="36" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="346" y="76" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GPU</text>
+      <text x="444" y="102" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Nemotron 3 Nano</text>
+      <text x="444" y="121" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">vLLM :8000 · tool calls</text>
+      <rect x="320" y="176" width="248" height="284" rx="6" fill="#f5f5f5"/>
+      <rect x="320" y="176" width="248" height="284" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+      <rect x="328" y="184" width="64" height="16" rx="2" fill="transparent" stroke="#bf4520" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="360" y="196" fill="#bf4520" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SERVICE</text>
+      <text x="444" y="222" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Board service</text>
+      <text x="444" y="241" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">app/board.py :8080</text>
+      <rect x="328" y="256" width="232" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="336" y="272" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">GET /api/forecast</text>
+      <text x="552" y="272" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">unit counts</text>
+      <rect x="328" y="284" width="232" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="336" y="300" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">GET /api/rooms</text>
+      <text x="552" y="300" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">25 rooms</text>
+      <rect x="328" y="312" width="232" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="336" y="328" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">GET /api/runs</text>
+      <text x="552" y="328" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">run status</text>
+      <rect x="328" y="340" width="232" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="336" y="356" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">GET /api/capacity</text>
+      <text x="552" y="356" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">read</text>
+      <rect x="328" y="368" width="232" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="336" y="384" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">POST /api/capacity</text>
+      <text x="552" y="384" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">0 to 50</text>
+      <rect x="328" y="396" width="232" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="336" y="412" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">POST /api/rerun</text>
+      <text x="552" y="412" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">scope unit|room</text>
+      <rect x="328" y="424" width="232" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="336" y="440" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace">POST /api/ask</text>
+      <text x="552" y="440" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">chat agent</text>
+      <rect x="320" y="500" width="248" height="144" rx="6" fill="#f5f5f5"/>
+      <rect x="320" y="500" width="248" height="144" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="328" y="508" width="36" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="346" y="520" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CPU</text>
+      <text x="444" y="546" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Dispatcher</text>
+      <text x="444" y="565" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">app/dispatcher.py :9000</text>
+      <rect x="328" y="580" width="232" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="336" y="596" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">07:00 clock + updates</text>
+      <text x="552" y="596" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">unit|room</text>
+      <rect x="328" y="608" width="232" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="336" y="624" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">Guards</text>
+      <text x="552" y="624" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">1 run · 20 min</text>
+      <rect x="680" y="532" width="192" height="80" rx="6" fill="#f5f5f5"/>
+      <rect x="680" y="532" width="192" height="80" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="688" y="540" width="36" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="706" y="552" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">API</text>
+      <text x="776" y="578" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Fuzzball API</text>
+      <text x="776" y="597" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">workflow start · token</text>
+      <rect x="936" y="500" width="296" height="144" rx="6" fill="#f5f5f5"/>
+      <rect x="936" y="500" width="296" height="144" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="944" y="508" width="80" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="984" y="520" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GPU → CPU</text>
+      <text x="1084" y="546" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">t7-forecast</text>
+      <text x="1084" y="565" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">rendered copy, one per run</text>
+      <rect x="944" y="580" width="280" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="952" y="596" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">extract</text>
+      <text x="1216" y="596" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">1 GPU · minutes</text>
+      <rect x="944" y="608" width="280" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="952" y="624" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">score</text>
+      <text x="1216" y="624" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">CPU · rooms.py, aggregate.py</text>
+      <rect x="936" y="184" width="296" height="172" rx="6" fill="#f5f5f5"/>
+      <rect x="936" y="184" width="296" height="172" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <rect x="944" y="192" width="56" height="16" rx="2" fill="transparent" stroke="#5a6580" stroke-opacity="0.5" stroke-width="0.8"/>
+      <text x="972" y="204" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VOLUME</text>
+      <text x="1084" y="230" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">twin-store</text>
+      <text x="1084" y="249" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">team7 · counts, open demo rooms</text>
+      <rect x="944" y="264" width="280" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="952" y="280" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">forecast.json</text>
+      <text x="1216" y="280" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">unit · written last</text>
+      <rect x="944" y="292" width="280" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="952" y="308" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">rooms.json</text>
+      <text x="1216" y="308" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">25 stage-ward rooms</text>
+      <rect x="944" y="320" width="280" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+      <text x="952" y="336" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">capacity.json</text>
+      <text x="1216" y="336" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">set on the board</text>
+      <line x1="40" y1="692" x2="1240" y2="692" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="40" y="716" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" letter-spacing="0.16em">LEGEND</text>
+      <rect x="40" y="730" width="16" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+      <text x="66" y="741" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">The only door for the browser</text>
+      <rect x="288" y="730" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="314" y="741" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Job or service</text>
+      <line x1="440" y1="736" x2="466" y2="736" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <text x="474" y="741" fill="#4f5d75" font-size="12" font-family="'Geist', sans-serif">Crosses a boundary</text>
+      <text x="40" y="768" fill="#5a6580" font-size="12" font-family="'Geist', sans-serif">No patient rows reach the browser or Nemotron. A room update rewrites one room in rooms.json; a unit update rewrites rooms.json, then forecast.json last.</text>
     </svg>
     </div>
   </div>

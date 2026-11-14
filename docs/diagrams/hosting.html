@@ -23,7 +23,7 @@
     <div class="diagram-container">
     <svg viewBox="0 0 1280 552" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="hosting-title hosting-desc">
       <title id="hosting-title">ICU-Twin hosting: Fuzzball, local demo, Vercel</title>
-      <desc id="hosting-desc">Patient rows stay in restricted team7 volumes on the Fuzzball cluster, where the build trains the model on both GB10 GPUs, the forecast runs one forward pass and the probes, and only counts reach the always-on twin with Nemotron and the board; the board code comes from the laptop, which also runs a local demo on synthetic data and pushes the same static page to a Vercel preview.</desc>
+      <desc id="hosting-desc">Patient rows stay in restricted team7 volumes on the Fuzzball cluster, where the build trains the model on both GB10 GPUs, t7-fit saves the probes once, each forecast update runs one forward pass and applies them, and only counts reach the always-on twin with Nemotron and the board; the board code comes from the laptop, which also runs a local demo on synthetic data and pushes the same static page to a Vercel preview.</desc>
       <defs>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
         <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
@@ -57,7 +57,7 @@
       <text x="556" y="276" fill="#bf4520" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">COUNTS ONLY</text>
       <path d="M 608,320 H 504" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
       <rect x="512" y="328" width="88" height="16" rx="2" fill="#f5f5f5"/>
-      <text x="556" y="340" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">06:30 · RERUN</text>
+      <text x="556" y="340" fill="#5a6580" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">07:00 · ASKS</text>
       <path d="M 888,176 H 808" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
       <rect x="824" y="152" width="48" height="16" rx="2" fill="#f5f5f5"/>
       <text x="848" y="164" fill="#2e5aa8" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">CODE</text>
@@ -88,7 +88,7 @@
       <rect x="328" y="128" width="60" height="16" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.5" stroke-width="0.8"/>
       <text x="358" y="140" fill="#2d3142" font-size="11" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GPU × 2</text>
       <text x="412" y="168" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Build</text>
-      <text x="412" y="187" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">t7-build.fz</text>
+      <text x="412" y="187" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">t7-build · t7-fit</text>
       <rect x="328" y="200" width="168" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
       <text x="336" y="216" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">icutwin m</text>
       <text x="488" y="216" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">35M</text>
@@ -101,8 +101,8 @@
       <text x="412" y="312" fill="#2d3142" font-size="15" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Forecast</text>
       <text x="412" y="331" fill="#4f5d75" font-size="12" font-family="'Geist Mono', monospace" text-anchor="middle">t7-forecast.fz</text>
       <rect x="328" y="344" width="168" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
-      <text x="336" y="360" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">extract · probe</text>
-      <text x="488" y="360" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">13 heads</text>
+      <text x="336" y="360" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">extract · score</text>
+      <text x="488" y="360" fill="#4f5d75" font-size="11" font-family="'Geist Mono', monospace" text-anchor="end">5 tasks</text>
 
       <!-- twin -->
       <rect x="608" y="136" width="200" height="208" rx="6" fill="#f5f5f5"/>
