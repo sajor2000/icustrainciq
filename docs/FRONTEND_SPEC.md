@@ -22,6 +22,14 @@ Five predictions only, all for the next 24 h, 07:00 to 07:00: ICU discharge, IMV
 
 **Five predictions from one pass.** For each patient the model reads the events up to the cut in one forward pass (`icutwin/scoring/extractor.py`). The hidden state of the last layer at the last event goes to a logistic probe per task (`icutwin/scoring/rep_based.py`; standardize, then logistic regression with cross-validation). The probe heads are ward, step-down, IMV, vasopressor start, CRRT start and death, each for the next 24 hours (`examples/probe_tasks.yaml`); the board reports ward and step-down together as ICU discharge. Probes are fit once per model on the train split and only applied by the daily update. `app/aggregate.py` adds patients up into unit counts with a likely range (8 in 10). Nothing is generated or simulated (decision D2).
 
+**From chart to prediction, in four steps.**
+1. *Read the chart.* The patient's history up to the cut becomes a list of event tokens (the last 4,096 before the cut).
+2. *One pass through GEM.* The model reads the list once. It does not write out the next 24 hours. At each position it forms an internal summary of everything so far: the hidden state. We take the hidden state of the last layer at the last event, a list of numbers that stands for "this patient right now" (`extractor.py`, `hidden_states[-1]` at the last real token).
+3. *Five small questions on that summary.* One logistic probe per task turns the numbers into a chance that the event happens in the next 24 hours. Each probe was fit on past stays, with the answer taken from what really happened in the 24 hours after the cut in the training data, and skipping stays where the event had already happened (`rep_based.py`, `fit_label`).
+4. *Add up the patients.* Chances become unit counts with a likely range.
+
+*Why not generate the 24 hours?* We built that first: sample many possible futures and count how often the event occurs. We dropped it (decision D2) because one pass is faster, needs one GPU for minutes, and gives the same kind of answer directly. The generating code is kept for reference. This is a standard "linear probe" technique; the five answers are only as good as what the hidden state captures, which is why accuracy is Not ready yet until a held-out check is published.
+
 **How Fuzzball ran it.** Two Lenovo ThinkStation PGX nodes (NVIDIA GB10, one GPU each). The scheduler places work, so jobs are not pinned to a named node, and no node names are recorded in the repos.
 
 | Step | Fuzzfile | Where |

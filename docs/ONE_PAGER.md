@@ -8,7 +8,13 @@
 
 **The model: native, not fine-tuned.** The team calls it GEM (the repo says Gemma4 and Nemotron). We trained it from scratch, from random weights, on MIMIC-IV-Ext-CLIF patient timelines written as sequences of events (a lab bin, a drug start, a transfer, a clock tick) over our own vocabulary of about 1,200 tokens. It uses no pretrained weights from Google or NVIDIA and is not fine-tuned. We copied only the layer layout of NVIDIA Nemotron 3.5 Bolt E4B (Gemma4 text): five sliding-window layers, then one full-attention layer; grouped-query attention; shared key/value layers; per-layer input embeddings; logit softcapping. Sizes in the config: s (12.3M parameters at a vocabulary of 1,200), m (about 35M), l (about 70M). Training uses m.
 
-**How it predicts.** One forward pass per patient up to the cut. The hidden state of the last layer at the last event goes to one logistic probe per prediction. No futures are simulated. Probes are fit once per model; the daily update only applies them.
+**From chart to prediction, in four steps.**
+1. *Read the chart.* The patient's history up to the cut becomes a list of event tokens (the last 4,096 before the cut).
+2. *One pass through GEM.* The model reads the list once. It does not write out the next 24 hours. At each position it forms an internal summary of everything so far: the hidden state. We take the hidden state of the last layer at the last event, a list of numbers that stands for "this patient right now" (`extractor.py`, `hidden_states[-1]` at the last real token).
+3. *Five small questions on that summary.* One logistic probe per task turns the numbers into a chance that the event happens in the next 24 hours. Each probe was fit on past stays, with the answer taken from what really happened in the 24 hours after the cut in the training data, and skipping stays where the event had already happened (`rep_based.py`, `fit_label`).
+4. *Add up the patients.* Chances become unit counts with a likely range.
+
+*Why not generate the 24 hours?* We built that first: sample many possible futures and count how often the event occurs. We dropped it (decision D2) because one pass is faster, needs one GPU for minutes, and gives the same kind of answer directly. The generating code is kept for reference. This is a standard "linear probe" technique; the five answers are only as good as what the hidden state captures, which is why accuracy is Not ready yet until a held-out check is published.
 
 **How we used Fuzzball 4.3, on two Lenovo ThinkStation PGX (NVIDIA GB10, one GPU each).**
 - *Data in:* a tar goes to the team-only object cache (`fb://group/`), then a workflow copies it onto the persistent volume `mimic_clif`.
