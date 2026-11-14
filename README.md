@@ -1,4 +1,6 @@
-# Lookahead: the ICU board (frontend)
+# Lookahead: ICU forecast for the next 24 hours
+
+**Taking this over? Start with [`HANDOFF.md`](HANDOFF.md).**
 
 *The next 24 hours, in one place.* The command-center board for **Lookahead** (backend working name ICU-Twin), team7's project at the CIQ × NVIDIA Local AI Hackathon (Chicago, Nov 14–15, 2026).
 
@@ -6,7 +8,7 @@
 
 **Why it matters: the rural ICU.** A small or rural hospital has one ICU, a few ventilators and CRRT machines, no data-science team and no cloud contract for patient data. When the unit runs short, the nearest help is a transfer hours away, so knowing at 07:00 what the next 24 hours will need is worth the most there. Lookahead is sized for that hospital: one 25-bed unit, two desk-size local machines, nothing in the cloud, and patient data that never leaves the building. The model is trained and run on local hardware; it is trained on MIMIC-IV in CLIF format, and a hospital with CLIF-format data can run the same pipeline on its own records.
 
-**This repo** is the frontend: what the board must do, for whom, and how it should look. The backend (model, Fuzzball workflows, the board server `app/board.py`, the forecast dispatcher) is in [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin).
+**This repo** is the full app except model training: the board page (`mockups/`), the backend that serves and feeds it (`backend/`: board server, dispatcher, chat agent, forecast builders, Fuzzball workflows), and the team's docs and diagrams (`docs/`). Model training lives in [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin).
 
 ## The board
 
