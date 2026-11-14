@@ -8,14 +8,12 @@
 :root{
   --board:#F4F5F2; --board-2:#E9EBE6; --ink:#1E2A33; --ink-2:#4A5862; --rule:rgba(30,42,51,.12);
   --magnet:#2F6FB0; --magnet-ink:#FFFFFF; --ok:#2E7D5B; --tight:#9A5410; --short:#B23A3A;
-  --surface:#FFFFFF; --focus:#2F6FB0; --shadow:0 1px 2px rgba(30,42,51,.10),0 6px 18px rgba(30,42,51,.08);
-  --sel:rgba(47,111,176,.22);
+  --surface:#FFFFFF; --focus:#2F6FB0; --sel:rgba(47,111,176,.22);
 }
 [data-board="night"]{
   --board:#1C2126; --board-2:#232A30; --ink:#E8ECE6; --ink-2:#A9B4AE; --rule:rgba(232,236,230,.14);
   --magnet:#7FB2E5; --magnet-ink:#10161B; --ok:#6CC59B; --tight:#E8A85C; --short:#EE8A80;
-  --surface:#252D34; --focus:#9CC6EE; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.35);
-  --sel:rgba(127,178,229,.28);
+  --surface:#252D34; --focus:#9CC6EE; --sel:rgba(127,178,229,.28);
 }
 *{box-sizing:border-box}
 html{color-scheme:light}
@@ -27,35 +25,58 @@ body{margin:0;background:var(--board);color:var(--ink);
 :focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
 button{font:inherit;color:inherit}
 .wrap{max-width:1440px;margin:0 auto;padding:16px 24px 32px}
+@media (max-width:560px){.wrap{padding:12px 16px 24px}}
 
 /* top strip */
 .top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;padding-bottom:12px;border-bottom:2px solid var(--ink)}
 .unit h1{margin:0;font-size:24px;line-height:1.1;letter-spacing:-.01em}
-.unit p{margin:2px 0 0;color:var(--ink-2);font-size:14px}
-.synthetic{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--short);border:1.5px solid currentColor;border-radius:4px;padding:2px 6px;white-space:nowrap}
+.unit p{margin:2px 0 0;color:var(--ink-2);font-size:13px}
+.synthetic{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--ink);border:1.5px dashed var(--ink);border-radius:4px;padding:2px 6px;white-space:nowrap}
 .spacer{flex:1}
-.seg{display:inline-flex;border:1.5px solid var(--ink);border-radius:8px;overflow:hidden}
-.seg button{background:transparent;border:0;padding:8px 14px;cursor:pointer;font-weight:600;border-left:1.5px solid var(--ink)}
-.seg button:first-child{border-left:0}
-.seg button[aria-pressed="true"]{background:var(--magnet);color:var(--magnet-ink)}
-.seg button:hover:not([aria-pressed="true"]){background:var(--board-2)}
 .toggle{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1.5px solid var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600}
 .toggle:hover{background:var(--board-2)}
 .runbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .runbox select{font:inherit;color:var(--ink);background:var(--board);border:1.5px solid var(--ink);border-radius:8px;padding:7px 8px}
+.runstate{flex-basis:100%;font-size:13px;color:var(--ink-2);margin:0}
+.runstate b{color:var(--ink)}
 
-/* layout */
-.main{display:grid;grid-template-columns:minmax(0,2fr) minmax(320px,1fr);gap:0;margin-top:16px}
-.left{padding-right:24px;align-self:start;position:sticky;top:12px}
-.margin{border-left:2px solid var(--ink);padding-left:24px}
-@media (max-width:960px){.main{grid-template-columns:1fr}.left{position:static;padding-right:0}.margin{border-left:0;padding-left:0;border-top:2px solid var(--ink);margin-top:20px;padding-top:4px}}
+/* layout: the right column is brief, unit rows, room drawer, chat. On a phone the verdict and the
+   rows (your row first) come before the 25-room board; the chat comes last. */
+.main{display:grid;grid-template-columns:minmax(0,2fr) minmax(340px,1fr);
+  grid-template-areas:"left brief" "left rows" "left drawer" "left chat";grid-template-rows:auto auto auto 1fr;margin-top:16px}
+.margin{display:contents}
+.left{grid-area:left;padding-right:24px;align-self:start;position:sticky;top:12px}
+.brief{grid-area:brief} #unitpanel{grid-area:rows} #drawer{grid-area:drawer} .chat{grid-area:chat}
+.brief,.margin>.panel{border-left:2px solid var(--ink);padding-left:24px}
+@media (max-width:960px){
+  .main{grid-template-columns:1fr;grid-template-areas:"brief" "rows" "drawer" "left" "chat";grid-template-rows:auto}
+  .left{position:static;padding-right:0;border-top:2px solid var(--ink);padding-top:12px;margin-top:4px}
+  .brief,.margin>.panel{border-left:0;padding-left:0}
+  .chat{border-top:2px solid var(--ink)!important;margin-top:20px}
+}
+
+/* shift brief: three lines at most */
+.brief h2{margin:0;font-size:18px}
+.brief .sub{margin:0 0 6px;color:var(--ink-2);font-size:13px}
+.brief ol{margin:0;padding:0;list-style:none}
+.brief li{padding:6px 0;border-top:1px solid var(--rule);font-size:15px}
+.brief li:first-child{border-top:0;font-size:18px;font-weight:700}
+.brief li .w{font-size:12px;font-weight:800;letter-spacing:.05em;border:1.5px solid currentColor;border-radius:4px;padding:1px 4px;vertical-align:2px}
+.brief .roomlink{background:transparent;border:0;border-bottom:1.5px solid currentColor;padding:0;cursor:pointer;font-weight:700}
+.brief{padding-bottom:12px}
 
 /* board */
-.boardhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px}
+.boardhead{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 16px;margin-bottom:8px}
 .boardhead h2{margin:0;font-size:18px}
-.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ink-2)}
+.legend{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);margin:0}
 .legend i{display:inline-block;width:28px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px;border:1px solid var(--rule)}
 .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.grid.top3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.top3 .mag{min-height:112px}
+details.allrooms{margin-top:12px;border-top:1px solid var(--rule)}
+details.allrooms summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:14px;font-weight:600}
+details.allrooms summary:hover{color:var(--ink-2)}
+details.allrooms[open] summary{margin-bottom:8px}
 .mag{position:relative;min-height:92px;text-align:left;border:1.5px solid var(--ink);border-radius:6px;padding:8px 10px;cursor:pointer;
   background:var(--surface);color:var(--ink);box-shadow:0 1px 1px rgba(0,0,0,.18),0 2px 4px rgba(0,0,0,.06);
   transition:background-color .2s ease-out,transform .15s ease-out}
@@ -66,52 +87,54 @@ button{font:inherit;color:inherit}
 .mag .on{position:absolute;top:8px;right:8px;display:flex;gap:4px}
 .mag .short{display:none}
 .mag .on>span{font-size:11px;font-weight:700;letter-spacing:.04em;border:1.2px solid currentColor;border-radius:3px;padding:0 4px;line-height:16px}
-@media (max-width:560px){.grid{gap:6px}.mag{min-height:68px;padding:6px}.mag .rm{font-size:20px}.mag .top1{font-size:12px;margin-top:4px}.mag .long{display:none}.mag .short{display:inline}.mag .on{position:static;margin-top:4px;gap:3px}.mag .on>span{font-size:10px;padding:0 3px;line-height:14px}}
+@media (max-width:560px){.grid{gap:6px}.mag{min-height:68px;padding:6px}.mag .rm{font-size:20px}.mag .top1{font-size:12px;margin-top:4px}.mag .long{display:none}.mag .short{display:inline}.mag .on{position:static;margin-top:4px;gap:3px;flex-wrap:wrap}.mag .on>span{font-size:11px;padding:0 3px;line-height:14px}}
 
 /* margin */
-.margin{display:flex;flex-direction:column;gap:0}
 .panel{padding:14px 0 18px;border-top:1px solid var(--rule)}
-.margin>.panel:first-child,.margin>.panel[hidden]+.panel{border-top:0}
-.left .panel{border-top:2px solid var(--ink);margin-top:20px}
+.margin>.panel:first-child{border-top:0}
 .panel h2{margin:0 0 4px;font-size:18px}
-.panel .sub{margin:0 0 10px;color:var(--ink-2);font-size:13px}
-.team{margin-top:10px}
-.team h3{margin:14px 0 2px;font-size:15px;color:var(--ink)}
-.row{display:grid;grid-template-columns:120px 44px minmax(0,1fr) 78px;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--rule)}
-.row .name{font-weight:600;font-size:14px}
+.panel .sub{margin:0 0 8px;color:var(--ink-2);font-size:13px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(96px,1fr) 88px;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--rule)}
+.row .name{font-weight:600;font-size:14px;line-height:1.25}
 .row .n{font-size:28px;font-weight:800;line-height:1;text-align:right}
-.row svg{width:100%;height:28px;display:block}
-.status{font-size:12px;font-weight:800;letter-spacing:.05em;text-align:center;border-radius:4px;padding:3px 4px;border:1.5px solid currentColor}
-.status.ok{color:var(--ok)} .status.tight{color:var(--tight)} .status.short{color:var(--short)} .status.none{color:var(--ink-2);border-style:dashed;font-weight:600}
-.range{font-size:12px;color:var(--ink-2)}
-@media (max-width:420px){.row{grid-template-columns:96px 36px minmax(0,1fr) 64px}.row .n{font-size:22px}}
-
-.brief ol{margin:6px 0 0;padding-left:20px}
-.brief li{margin:4px 0}
+.row svg{width:100%;height:24px;display:block}
+.range{font-size:12px;color:var(--ink-2);font-weight:400}
+.own{font-size:12px;font-weight:700;color:var(--ink)}
+.status{font-size:12px;font-weight:800;letter-spacing:.05em;text-align:center;border-radius:4px;padding:3px 4px;border:1.5px solid currentColor;line-height:1.2}
+.status.ok{color:var(--ok)} .status.tight{color:var(--tight)} .status.short{color:var(--short)}
+.status.none{color:var(--ink-2);border:0;font-weight:400;letter-spacing:0;font-size:12px}
+details.more{border-top:1px solid var(--rule)}
+details.more summary{cursor:pointer;min-height:44px;display:flex;align-items:center;padding:0;font-size:14px;font-weight:600;color:var(--ink-2)}
+details.more summary:hover{color:var(--ink)}
 .label{font-size:12px;color:var(--ink-2)}
+.note{font-size:12px;color:var(--ink-2);margin:8px 0 0}
+@media (max-width:420px){.row{grid-template-columns:minmax(0,1fr) 34px 72px 76px;gap:8px}.row .n{font-size:22px}}
 
-/* drawer */
+/* room drawer: opens under the unit rows */
 .drawer[hidden]{display:none}
 .drawer .head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .drawer .head h2{font-size:22px}
-.close{background:transparent;border:1.5px solid var(--rule);border-radius:6px;padding:4px 10px;cursor:pointer}
-.close:hover{border-color:var(--ink)}
-.risks{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
-.risks th,.risks td{text-align:right;padding:5px 6px;border-top:1px solid var(--rule)}
-.risks th:first-child,.risks td:first-child{text-align:left}
-.risks thead th{font-size:12px;color:var(--ink-2);border-top:0}
-.picker{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 6px}
-.chip{background:transparent;border:1.5px solid var(--ink);border-radius:999px;padding:3px 10px;cursor:pointer;font-size:13px;font-weight:600}
-.chip[aria-pressed="true"]{background:var(--ink);color:var(--board)}
-.futures{display:block;width:100%;height:auto;margin-top:4px;border:1px solid var(--rule);border-radius:6px;background:var(--board)}
-.drivers{margin:8px 0 0;padding-left:20px;font-size:14px}
+.close{min-height:44px;background:transparent;border:1.5px solid var(--ink);border-radius:6px;padding:4px 12px;cursor:pointer}
+.close:hover{background:var(--board-2)}
+.bars{list-style:none;margin:4px 0 0;padding:0}
+.bars li{display:grid;grid-template-columns:minmax(0,1fr) minmax(80px,1.2fr) 52px;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--rule);font-size:14px}
+.bars .track{height:10px;border-radius:5px;background:var(--rule);overflow:hidden}
+.bars .fill{height:100%;background:var(--magnet);border-radius:5px}
+.bars .pct{font-weight:800;font-size:18px;text-align:right}
+.onnow{margin:8px 0 0;font-size:13px}
+.onnow span{font-size:11px;font-weight:700;letter-spacing:.04em;border:1.2px solid currentColor;border-radius:3px;padding:0 4px;margin-right:4px}
+.drawer h3{font-size:14px;margin:14px 0 0}
 .past{margin:6px 0 0;padding:0;list-style:none;font-size:13px}
 .past li{display:grid;grid-template-columns:56px 1fr;gap:8px;padding:3px 0;border-top:1px solid var(--rule)}
 .past time{color:var(--ink-2)}
-.note{font-size:12px;color:var(--ink-2);margin:8px 0 0}
+.linkbtn{min-height:44px;background:transparent;border:0;padding:4px 0;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
 
 /* chat */
-.chat .log{max-height:300px;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:6px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.chip{min-height:44px;background:transparent;border:1.5px solid var(--ink);border-radius:999px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:600;text-align:left}
+.chip:hover{background:var(--board-2)}
+.chat .log{max-height:300px;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:0 0 10px}
+.chat .log:empty{display:none}
 .msg{padding:8px 10px;border-radius:8px;font-size:14px;max-width:92%}
 .msg.q{align-self:flex-end;background:var(--board-2)}
 .msg.a{align-self:flex-start;border:1.5px solid var(--rule)}
@@ -121,8 +144,9 @@ button{font:inherit;color:inherit}
 .ask input::placeholder{color:var(--ink-2)}
 .ask button{background:var(--ink);color:var(--board);border:0;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer}
 .ask button:hover{opacity:.9}
+.sr{position:absolute;left:-9999px}
 
-/* engine strip */
+/* run strip */
 .engine{margin-top:24px;padding-top:12px;border-top:2px solid var(--ink);display:flex;flex-wrap:wrap;gap:8px 32px;font-size:14px}
 .engine b{font-weight:700}
 .pending{color:var(--ink-2);font-style:italic}
@@ -136,80 +160,81 @@ button{font:inherit;color:inherit}
   <header class="top">
     <div class="unit">
       <h1>Medical ICU · 25 beds</h1>
-      <p>For 07:00 morning rounds · patients in the ICU at least 24 h · 100 futures each · will run on 2 × NVIDIA GB10 on site, so patient data stays on site</p>
+      <p>For 07:00 morning rounds · <b>next 24 h, 07:00 to 07:00</b> · patients in the ICU at least 24 h</p>
     </div>
     <span class="synthetic" title="Every number on this page is made up for the mockup">SYNTHETIC DATA</span>
     <span class="spacer"></span>
-    <div class="seg" role="group" aria-label="Forecast horizon" id="horizon"></div>
     <button class="toggle" id="theme" aria-pressed="false" type="button">Night board</button>
     <div class="runbox">
       <label for="role" class="label">I am</label>
-      <select id="role"><option>ICU nurse</option><option>ICU physician</option><option>pharmacy</option><option>respiratory therapy</option><option>bed manager</option></select>
+      <select id="role">
+        <option value="ICU nurse">ICU nurse (charge)</option><option>ICU physician</option><option>pharmacy</option><option>respiratory therapy</option><option>bed manager</option>
+      </select>
       <button class="toggle" id="rerun" type="button">Rerun forecast</button>
-      <span class="label" id="runstate" aria-live="polite">Scheduled 06:30 daily · last run 06:30 by schedule (mock)</span>
     </div>
+    <p class="runstate" id="runstate" aria-live="polite">Ran <b>06:30</b> by schedule (mock) · next run 06:30 tomorrow</p>
   </header>
 
   <div class="main">
-    <div class="left">
-    <section aria-labelledby="board-h">
-      <div class="boardhead">
-        <h2 id="board-h">Rooms · shaded by highest risk, <span id="hz-label">next 24 h (to 07:00 tomorrow)</span></h2>
-        <div class="legend" aria-hidden="true">
-          <span><i style="background:color-mix(in srgb,var(--magnet) 8%,var(--surface))"></i>under 5%</span>
-          <span><i style="background:color-mix(in srgb,var(--magnet) 55%,var(--surface))"></i>about 1 in 4</span>
-          <span><i style="background:var(--magnet)"></i>45% or more</span>
-        </div>
-      </div>
-      <div class="grid" id="grid" role="group" aria-label="Rooms 1 to 25; choose a room to open its forecast"></div>
-      <p class="note">Rooms are the stage ward: open MIMIC-IV Demo patients, excluded from training. VENT and PRESS tags (V and P on a phone) mean already on a ventilator or vasopressor before now.</p>
+    <section class="brief" aria-labelledby="brief-h">
+      <h2 id="brief-h">Shift brief (mock)</h2>
+      <p class="sub">Median (80% range) for the next 24 h. Drafted from the counts below; check before acting.</p>
+      <ol id="brief"></ol>
     </section>
-      <section class="panel brief" aria-labelledby="brief-h">
-        <h2 id="brief-h">Shift brief (mock)</h2>
-        <p class="sub">AI-drafted by Nemotron 3 Nano from the counts above. Check before acting.</p>
-        <ol id="brief"></ol>
+
+    <div class="left">
+      <section aria-labelledby="board-h">
+        <div class="boardhead">
+          <h2 id="board-h">Watch first · the three highest-risk rooms</h2>
+          <p class="legend">
+            <span><i style="background:color-mix(in srgb,var(--magnet) 8%,var(--surface))"></i>under 5%</span>
+            <span><i style="background:color-mix(in srgb,var(--magnet) 55%,var(--surface))"></i>about 1 in 4</span>
+            <span><i style="background:var(--magnet)"></i>45% or more</span>
+          </p>
+        </div>
+        <div class="grid top3" id="top3" role="group" aria-label="The three highest-risk rooms; choose one to open its forecast"></div>
+        <details class="allrooms" id="allrooms"><summary>Show all 25 rooms</summary>
+          <div class="grid" id="grid" role="group" aria-label="Rooms 1 to 25; choose a room to open its forecast"></div>
+        </details>
+        <p class="note">Shade: the room's highest chance of a new event in the next 24 h (leaving the ICU is not counted as a risk). Tags: already on before 07:00, so not counted as new (V, P, C on a phone). Rooms are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
       </section>
     </div>
 
-    <aside class="margin">
+    <div class="margin">
       <section class="panel" aria-labelledby="unit-h" id="unitpanel">
-        <h2 id="unit-h">Unit strain · <span id="hz-label2">next 24 h (to 07:00 tomorrow)</span></h2>
-        <p class="sub">New events across all 25 rooms. Number = median; blue bar = 80% range; red line = what is free.</p>
-        <div id="teams"></div>
+        <h2 id="unit-h">Unit · next 24 h</h2>
+        <p class="sub">New starts across all 25 rooms. Big number = median; blue bar = 80% range; ink line = what is free.</p>
+        <div id="rows"></div>
       </section>
 
       <section class="panel drawer" id="drawer" aria-labelledby="room-h" hidden>
-        <div class="head"><h2 id="room-h">Room</h2><button class="close" id="close" type="button">Back to unit</button></div>
+        <div class="head"><h2 id="room-h" tabindex="-1">Room</h2><button class="close" id="close" type="button">Close room</button></div>
         <p class="sub" id="room-sub"></p>
-        <table class="risks" id="risks"></table>
-        <div class="picker" role="group" aria-label="Event to trace" id="picker"></div>
-        <canvas class="futures" id="futures" width="640" height="290" role="img" aria-label="100 sampled futures"></canvas>
-        <p class="label" id="futures-cap"></p>
-        <h3 style="font-size:14px;margin:12px 0 0">What most often came before it, in those futures</h3>
-        <ol class="drivers" id="drivers"></ol>
-        <h3 style="font-size:14px;margin:12px 0 0">What the model read · last 12 h</h3>
+        <ul class="bars" id="rbars"></ul>
+        <p class="onnow" id="onnow"></p>
+        <p class="label">How far to trust these: held-out check (calibration, AUROC) <span class="pending">pending run</span>.</p>
+        <h3>What the model read · last 12 h</h3>
         <ul class="past" id="past"></ul>
-        <p class="note">Evidence from the model's own futures, not a cause. Decision support, not a treatment recommendation.</p>
+        <button class="linkbtn" id="pastmore" type="button"></button>
+        <p class="note">Model evidence, not a cause. Decision support, not a treatment recommendation.</p>
       </section>
-
-
 
       <section class="panel chat" aria-labelledby="chat-h">
         <h2 id="chat-h">Ask the board</h2>
         <p class="sub" id="chat-scope">Answers from this forecast only, on the local Nemotron 3 Nano. Mock replies in this file.</p>
+        <div class="chips" id="chips" role="group" aria-label="Suggested questions"></div>
         <div class="log" id="log" aria-live="polite"></div>
-        <form class="ask" id="ask"><label class="label" for="q" style="position:absolute;left:-9999px">Question</label>
-          <input id="q" autocomplete="off" placeholder="Ask about the forecast, or: rerun the forecast">
+        <form class="ask" id="ask"><label class="sr" for="q">Question</label>
+          <input id="q" autocomplete="off" placeholder="Or type a question">
           <button type="submit">Ask</button></form>
       </section>
-    </aside>
+    </div>
   </div>
 
   <footer class="engine" aria-label="Run details">
-    <span>Model <b>icutwin m</b> · 35M parameters, training on site: <span class="pending">pending run</span></span>
-    <span>Forecast · 1 GPU: <span class="pending">pending run</span></span>
-    <span>Burst · 2 GPUs: <span class="pending">pending run</span></span>
-    <span>Workflows <b>t7-forecast</b> (06:30 daily and on request) · <b>t7-twin</b> on Fuzzball</span>
+    <span>Model <b>icutwin m</b> · 35M parameters, trained on site: <span class="pending">pending run</span></span>
+    <span>Forecast · one forward pass per patient on 1 × NVIDIA GB10: <span class="pending">pending run</span></span>
+    <span>Workflows <b>t7-forecast</b> (06:30 daily and on request) · <b>t7-twin</b> on Fuzzball · data stays on site</span>
   </footer>
 </div>
 
@@ -217,33 +242,31 @@ button{font:inherit;color:inherit}
 (() => {
   // deterministic synthetic data
   let s = 20261114; const rnd = () => (s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296;
-  const H = [{k:"d1",t:"Next 24\u00a0h",l:"next 24 h (to 07:00 tomorrow)"},{k:"d2",t:"Day 2",l:"Day 2 (07:00 to 07:00)"},{k:"d3",t:"Day 3",l:"Day 3 (07:00 to 07:00)"},{k:"stay",t:"Rest of stay",l:"rest of stay"}];
+  // the six board tasks (backend docs/DECISIONS.md D8), one horizon: next 24 h, 07:00 to 07:00
   const EV = [
-    {k:"vent",name:"Ventilator",short:"Vent",team:"Respiratory therapy",tag:"VENT"},
-    {k:"nippv",name:"NIPPV",short:"NIPPV",team:"Respiratory therapy"},
-    {k:"hfnc",name:"High-flow",short:"HFNC",team:"Respiratory therapy"},
-    {k:"press",name:"Vasopressor",short:"Press",team:"Pharmacy",tag:"PRESS"},
-    {k:"out",name:"Leaves ICU",short:"Out",team:"Bed manager"},
-    {k:"death",name:"Death",short:"Death",team:"ICU team"}];
+    {k:"vent", name:"Ventilator", row:"Ventilator starts", bl:"Ventilators", lc:"ventilator starts", short:"Vent", team:"respiratory therapy", tag:"VENT", t:"V", base:.10},
+    {k:"press",name:"Vasopressor",row:"Vasopressor starts",bl:"Vasopressors",lc:"vasopressor starts",short:"Press",team:"pharmacy", tag:"PRESS", t:"P", base:.12},
+    {k:"crrt", name:"CRRT",       row:"CRRT starts",       bl:"CRRT",       lc:"CRRT starts",       short:"CRRT", team:"ICU team", tag:"CRRT", t:"C", base:.05},
+    {k:"hypo", name:"Hypotension",row:"Hypotension (MAP < 65 or SBP < 90)",bl:"Hypotension",lc:"hypotension (MAP < 65 or SBP < 90)",short:"Hypo",team:"ICU team", base:.13},
+    {k:"death",name:"Death",      row:"Deaths",            bl:"Deaths",            lc:"deaths",            short:"Death",team:"ICU team", base:.05},
+    {k:"out",  name:"Leaves the ICU",row:"Leave the ICU to ward or step-down",bl:"Departures",lc:"leaving the ICU",short:"Out",team:"bed manager", base:.33}];
+  const OWN = {"ICU nurse":null, "ICU physician":["crrt","hypo","death"], "pharmacy":["press"], "respiratory therapy":["vent"], "bed manager":["out"]};
+  const cap = {vent:3}; // placeholder until the clinical lead sets capacities
+
   const rooms = Array.from({length:25},(_,i)=>{
     const acuity = Math.pow(rnd(),1.6);
-    const onVent = rnd() < .22 + acuity*.3, onPress = rnd() < .14 + acuity*.3;
+    const on = {vent: rnd() < .22+acuity*.3, press: rnd() < .14+acuity*.3, crrt: rnd() < .03+acuity*.12};
     const p = {};
     for (const e of EV){
-      let base = {vent:.10,nippv:.08,hfnc:.12,press:.10,out:.35,death:.04}[e.k];
-      base *= e.k==="out" ? (1.4-acuity) : (0.4+acuity*2.2);
-      if ((e.k==="vent"&&onVent)||(e.k==="press"&&onPress)) base = NaN;
-      const d1 = Math.min(.92, base*(.7+rnd()*.6));
-      const d2 = Math.min(.9, d1*(.45+rnd()*.3)), d3 = Math.min(.85, d2*(.5+rnd()*.3));
-      const stay = Math.min(.97, d1+d2+d3+base*.3*rnd());
-      p[e.k] = {d1,d2,d3,stay};
+      let v = e.base * (e.k==="out" ? (1.4-acuity) : (0.4+acuity*2.2)) * Math.exp((rnd()-.5)*1.6);
+      p[e.k] = on[e.k] ? NaN : Math.min(.9, v);
     }
-    return {n:i+1, acuity, onVent, onPress, p, age: 40+Math.round(rnd()*45)};
+    return {n:i+1, on, p, age: 40+Math.round(rnd()*45)};
   });
-  const cap = {vent:{free:4,label:"vents free"}, beds:{free:2,label:"beds free"}};
-  let hz = "d1", theme = "day", room = null, trace = "vent";
+  let theme = "day", room = null, pastOpen = false;
+  const role = () => document.getElementById("role").value;
 
-  // tile colour: mix magnet blue into the board surface, then pick the ink with the higher contrast (>= 4.5:1)
+  // tile colour: mix magnet blue into the surface, then pick the ink with the higher contrast (>= 4.5:1)
   const hex=h=>{h=h.trim().replace('#','');return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16));};
   const lum=c=>{const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(c[0])+.7152*f(c[1])+.0722*f(c[2]);};
   const ratio=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
@@ -251,140 +274,145 @@ button{font:inherit;color:inherit}
     const inks=['#1E2A33','#FFFFFF','#10161B','#E8ECE6'].map(hex);
     const mix=k=>su.map((v,i)=>Math.round(v*(1-k)+m[i]*k)), pick=c=>inks.slice().sort((a,b)=>ratio(c,b)-ratio(c,a))[0];
     const k0=.06+t*.94; let best=null;
-    // nearest mix to k0 where the better ink reaches 4.5:1 (moves the fill out of the middle band)
     for(let d=0; d<=1 && !best; d+=.01) for(const k of [k0-d,k0+d]) if(k>=0&&k<=1){const c=mix(k); if(ratio(c,pick(c))>=4.5){best=[c,pick(c)];break;}}
     best=best||[mix(k0),pick(mix(k0))]; return [`rgb(${best[0]})`,`rgb(${best[1]})`];}
-  // Poisson-binomial by simulation
+
+  // unit counts: Poisson-binomial over the rooms, by simulation
   function counts(ps){ const draws=4000, out=[]; for(let d=0;d<draws;d++){let c=0;for(const q of ps) if(rnd()<q) c++; out.push(c);} out.sort((a,b)=>a-b);
-    const q=f=>out[Math.floor(f*(draws-1))]; return {p10:q(.1),p50:q(.5),p90:q(.9),exp:ps.reduce((a,b)=>a+b,0)}; }
-  function p(r,k){ const v=r.p[k][hz]; return Number.isNaN(v)?0:v; }
-  const top = r => EV.filter(e=>e.k!=="out").map(e=>[e,p(r,e.k)]).sort((a,b)=>b[1]-a[1])[0];
+    const q=f=>out[Math.floor(f*(draws-1))]; return {p10:q(.1),p50:q(.5),p90:q(.9)}; }
+  const pv = (r,k) => Number.isNaN(r.p[k]) ? 0 : r.p[k];
+  const top = r => EV.filter(e=>e.k!=="out"&&!Number.isNaN(r.p[e.k])).map(e=>[e,r.p[e.k]]).sort((a,b)=>b[1]-a[1])[0];
+  const ranked = () => rooms.slice().sort((a,b)=>top(b)[1]-top(a)[1]);
+  const pct = v => Math.round(v*100)+"%";
+  const C = {}; for (const e of EV) C[e.k] = counts(rooms.map(r=>pv(r,e.k)));
 
-  function status(c, free){ if(free==null) return ["none",""]; if(c.p50>free) return ["short","SHORT"]; if(c.p90>free) return ["tight","TIGHT"]; return ["ok","ON TRACK"]; }
-  function bar(c, max, free){
-    const x=v=>8+ (v/max)*(250); const f = free==null?"":`<rect x="${x(free)-1.5}" y="1" width="3" height="26" fill="var(--short)"/>`;
-    return `<svg viewBox="0 0 300 28" aria-hidden="true"><line x1="8" x2="258" y1="14" y2="14" stroke="var(--rule)" stroke-width="6" stroke-linecap="round"/>
-      <line x1="${x(c.p10)}" x2="${Math.max(x(c.p90),x(c.p10)+2)}" y1="14" y2="14" stroke="var(--magnet)" stroke-width="10" stroke-linecap="round"/>
-      <line x1="${x(c.p50)}" x2="${x(c.p50)}" y1="4" y2="24" stroke="var(--ink)" stroke-width="3"/>${f}</svg>`;
+  const RANK = {short:0, tight:1, ok:2, none:3};
+  function status(k){ const c=C[k], free=cap[k]; if(free==null) return ["none","no capacity set"]; if(c.p50>free) return ["short","SHORT"]; if(c.p90>free) return ["tight","TIGHT"]; return ["ok","ON TRACK"]; }
+  function bar(c, free){
+    const max=Math.max(c.p90, free??0)+1, x=v=>6+(v/max)*288;
+    const f = free==null ? "" : `<rect x="${x(free)-1.5}" y="0" width="3" height="24" fill="var(--ink)"/>`;
+    return `<svg viewBox="0 0 300 24" aria-hidden="true"><line x1="6" x2="294" y1="12" y2="12" stroke="var(--rule)" stroke-width="6" stroke-linecap="round"/>
+      <line x1="${x(c.p10)}" x2="${Math.max(x(c.p90),x(c.p10)+2)}" y1="12" y2="12" stroke="var(--magnet)" stroke-width="10" stroke-linecap="round"/>
+      <line x1="${x(c.p50)}" x2="${x(c.p50)}" y1="3" y2="21" stroke="var(--ink)" stroke-width="3"/>${f}</svg>`;
   }
 
-  function renderHorizon(){
-    const el=document.getElementById("horizon"); el.innerHTML="";
-    for(const h of H){ const b=document.createElement("button"); b.type="button"; b.textContent=h.t; b.setAttribute("aria-pressed",String(h.k===hz));
-      b.onclick=()=>{hz=h.k; render();}; el.appendChild(b); }
-    const lab=H.find(h=>h.k===hz).l; document.getElementById("hz-label").textContent=lab; document.getElementById("hz-label2").textContent=lab;
-  }
-  function renderGrid(){
-    const g=document.getElementById("grid"); g.innerHTML="";
-    for(const r of rooms){ const [e,v]=top(r); const b=document.createElement("button"); b.type="button"; b.className="mag"; const [bg,fg]=tile(Math.min(1,v/.45)); b.style.background=bg; b.style.color=fg; b.setAttribute("aria-pressed",String(room===r.n));
-      b.setAttribute("aria-label",`Room ${r.n}: ${e.name} ${Math.round(v*100)} percent${r.onVent?", on ventilator":""}${r.onPress?", on vasopressor":""}`);
-      b.innerHTML=`<span class="rm">${r.n}</span><span class="top1"><span class="long">${e.name}</span><span class="short">${e.short}</span> ${Math.round(v*100)}%</span><span class="on">${r.onVent?'<span><span class="long">VENT</span><span class="short">V</span></span>':""}${r.onPress?'<span><span class="long">PRESS</span><span class="short">P</span></span>':""}</span>`;
-      b.onclick=()=>openRoom(r.n); g.appendChild(b); }
-  }
-  let unit={};
-  function renderTeams(){
-    const c={}; for(const e of EV) c[e.k]=counts(rooms.map(r=>p(r,e.k)));
-    const net = counts([]); // net beds from draws
-    const arr = Math.round(c.vent.exp*0+ (hz==="stay"?7.2:hz==="d1"?2.4:hz==="d2"?1.6:1.1));
-    const out=c.out, dea=c.death;
-    const n50 = out.p50 + dea.p50 - arr, n10 = out.p10+dea.p10-arr-1, n90 = out.p90+dea.p90-arr+1;
-    unit={c, arr, net:{p10:Math.max(-2,n10),p50:n50,p90:n90}};
-    const groups=[["ICU team",[["Deaths",dea,null],["Arrivals*",null,null]]],
-      ["Pharmacy",[["Vasopressor starts",c.press,null]]],
-      ["Respiratory therapy",[["Ventilator starts",c.vent,cap.vent.free],["NIPPV starts",c.nippv,null],["High-flow starts",c.hfnc,null]]],
-      ["Bed manager",[["Beds freed (net)",unit.net,null]]]];
-    document.getElementById("teams").innerHTML = groups.map(([t,rows])=>`<div class="team"><h3>${t}</h3>${rows.map(([name,cc,free])=>{
-      if(!cc) return `<div class="row"><span class="name">${name}<br><span class="range">not forecast</span></span><span class="n" style="color:var(--ink-2)">—</span><svg viewBox="0 0 300 28" aria-hidden="true"><line x1="8" x2="292" y1="14" y2="14" stroke="var(--ink-2)" stroke-width="2" stroke-dasharray="4 4"/></svg><span></span></div>`;
-      const max=Math.max(cc.p90,free??0)+2;
-      const [cls,word]=status(cc,free); return `<div class="row"><span class="name">${name}<br><span class="range">${cc.p10} to ${cc.p90}${free!=null?` · ${free} free`:""}</span></span><span class="n">${cc.p50}</span>${bar({p10:Math.max(0,cc.p10),p50:Math.max(0,cc.p50),p90:Math.max(0,cc.p90)},max,free)}${word?`<span class="status ${cls}">${word}</span>`:"<span></span>"}</div>`;}).join("")}</div>`).join("")
-      + `<p class="note">*Arrivals from the ED or OR are outside the ICU-only cohort, so the model does not forecast them; this row is a placeholder. A status word shows only where a capacity is set (ventilators: placeholder 4 free).</p>`;
-  }
+  // shift brief: three lines at most, exceptions first
   function renderBrief(){
-    const c=unit.c, w=c.vent; const lines=[
-      `Ventilators: ${w.p50} new starts likely ${H.find(h=>h.k===hz).l} (80% range ${w.p10} to ${w.p90}); ${cap.vent.free} free, so ${w.p90>cap.vent.free?"plan one more vent and a respiratory therapist for the busy case":"on track"}.`,
-      `Vasopressors: ${c.press.p50} new drips likely (${c.press.p10} to ${c.press.p90}); pharmacy can pre-mix norepinephrine.`,
-      `Non-invasive support: ${c.nippv.p50} NIPPV and ${c.hfnc.p50} high-flow starts.`,
-      `Beds: about ${Math.max(0,unit.net.p50)} beds free up net; highest-risk rooms: ${rooms.slice().sort((a,b)=>top(b)[1]-top(a)[1]).slice(0,3).map(r=>r.n).join(", ")}.`];
-    document.getElementById("brief").innerHTML=lines.map(l=>`<li>${l}</li>`).join("");
+    const ex = EV.filter(e=>["short","tight"].includes(status(e.k)[0])).sort((a,b)=>RANK[status(a.k)[0]]-RANK[status(b.k)[0]]);
+    // three short lines; full detail stays in the rows and the drawer
+    const mr = c => `${c.p50} (${c.p10}\u2013${c.p90})`;
+    const l1 = ex.length
+      ? ex.map(e=>{const [cls,w]=status(e.k); return `${e.bl} <span class="w" style="color:var(--${cls==="short"?"short":"tight"})">${w}</span> ${mr(C[e.k])}; ${cap[e.k]} free`;}).join("; ")
+      : `Nothing short where a capacity is set`;
+    const busy = EV.filter(e=>!cap[e.k]).sort((a,b)=>C[b.k].p50-C[a.k].p50).slice(0,2)
+      .map((e,i)=>`${i?e.bl.toLowerCase():e.bl} ${mr(C[e.k])}`).join("; ");
+    const t3 = ranked().slice(0,3);
+    document.getElementById("brief").innerHTML =
+      `<li>${l1}</li><li>${busy}</li><li>Review rooms ${t3.map(r=>`<button class="roomlink" type="button" data-room="${r.n}">${r.n}</button>`).join(", ")}</li>`;
+    document.querySelectorAll(".roomlink").forEach(b=>b.onclick=()=>openRoom(+b.dataset.room));
   }
 
-  // room drawer
-  function futuresFor(r,k){ // 100 futures over 72 h; event time if it happens within the horizon
-    const prob=r.p[k], out=[]; let seed = r.n*97+k.length;
-    const R=()=> (seed=(seed*1103515245+12345)%2147483648)/2147483648;
-    for(let i=0;i<100;i++){ const u=R(); let t=null;
-      if(!Number.isNaN(prob.d1)){ if(u<prob.d1) t=R()*24; else if(u<prob.d1+prob.d2*(1-prob.d1)) t=24+R()*24; else if(u<prob.d1+(prob.d2+prob.d3)*(1-prob.d1)) t=48+R()*24; }
-      const ends = 24+R()*120; out.push({t, ends:Math.min(72,ends)}); }
-    return out.sort((a,b)=>(a.t??999)-(b.t??999));
+  // unit rows: your rows first, then SHORT and TIGHT; the rest folded (charge nurse sees all six)
+  function renderRows(){
+    const mine = OWN[role()], all = mine===null;
+    const order = EV.slice().sort((a,b)=>{ const oa = mine&&mine.includes(a.k)?0:1, ob = mine&&mine.includes(b.k)?0:1;
+      return oa-ob || RANK[status(a.k)[0]]-RANK[status(b.k)[0]]; });
+    const row = e => { const c=C[e.k], [cls,w]=status(e.k), own = mine&&mine.includes(e.k);
+      return `<div class="row"><span class="name">${e.row}<br>${own?`<span class="own">your row</span>`:`<span class="range">${e.team}</span>`}</span>
+        <span class="n">${c.p50}</span><span>${bar(c,cap[e.k])}<span class="range">range ${c.p10} to ${c.p90}${cap[e.k]!=null?` · ${cap[e.k]} free (placeholder)`:""}</span></span>
+        <span class="status ${cls}">${w}</span></div>`; };
+    const shown = order.filter(e=>all || (mine.includes(e.k)) || ["short","tight"].includes(status(e.k)[0]));
+    const folded = order.filter(e=>!shown.includes(e));
+    document.getElementById("rows").innerHTML = shown.map(row).join("")
+      + (folded.length ? `<details class="more"><summary>${folded.length} more rows · ${[[folded.filter(e=>status(e.k)[0]==="ok").length,"on track"],[folded.filter(e=>status(e.k)[0]==="none").length,"capacity not assessed"]].filter(x=>x[0]).map(x=>`${x[0]} ${x[1]}`).join(", ")}</summary>${folded.map(row).join("")}</details>` : "")
+      + `<p class="note">Already on before 07:00 is not counted as new. Arrivals from the ED or OR are not forecast.</p>`;
   }
-  function drawFutures(r){
-    const cv=document.getElementById("futures"), ctx=cv.getContext("2d"), cs=getComputedStyle(document.documentElement);
-    const dpr=window.devicePixelRatio||1, W=cv.clientWidth||640, Hh=290; cv.width=W*dpr; cv.height=Hh*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
-    const ink=cs.getPropertyValue("--ink").trim(), rule=cs.getPropertyValue("--rule").trim(), mag=cs.getPropertyValue("--magnet").trim(), sh=cs.getPropertyValue("--short").trim();
-    ctx.clearRect(0,0,W,Hh); const L=34, Rr=W-14, top=10, rowH=2.5, x=h=>L+(h/72)*(Rr-L);
-    const hzEnd={d1:24,d2:48,d3:72,stay:72}[hz], hzStart={d1:0,d2:24,d3:48,stay:0}[hz];
-    ctx.fillStyle=mag; ctx.globalAlpha=.12; ctx.fillRect(x(hzStart),top,x(hzEnd)-x(hzStart),100*rowH); ctx.globalAlpha=1;
-    const fs=futuresFor(r,trace); let hit=0;
-    fs.forEach((f,i)=>{ const y=top+i*rowH; ctx.strokeStyle=ink; ctx.globalAlpha=.22; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(L,y+1.2); ctx.lineTo(x(f.ends),y+1.2); ctx.stroke(); ctx.globalAlpha=1;
-      if(f.t!=null && f.t<=f.ends){ const inH=f.t>=hzStart&&f.t<hzEnd; if(inH) hit++; ctx.fillStyle=inH?sh:ink; ctx.globalAlpha=inH?1:.5; ctx.fillRect(x(f.t)-3,y,6,rowH); ctx.globalAlpha=1; } });
-    ctx.fillStyle=ink; ctx.font="12px system-ui";
-    [0,24,48,72].forEach(h=>{ ctx.textAlign=h===0?"left":h===72?"right":"center"; ctx.fillText(W<480?(h===0?"07:00":`+${h/24}d`):(h===0?"07:00 today":`07:00 +${h/24}d`), x(h), top+100*rowH+16); ctx.strokeStyle=rule; ctx.beginPath(); ctx.moveTo(x(h),top); ctx.lineTo(x(h),top+100*rowH); ctx.stroke(); });
-    ctx.save(); ctx.textAlign="center"; ctx.translate(12,top+50*rowH); ctx.rotate(-Math.PI/2); ctx.fillText("100 futures",0,0); ctx.restore();
-    const name=EV.find(e=>e.k===trace).name;
-    document.getElementById("futures-cap").textContent = Number.isNaN(r.p[trace].d1) ? `${name}: already started before now, so not forecast as new.` : `${name} in ${hit} of 100 futures, ${H.find(h=>h.k===hz).l}. Red marks: inside the horizon; grey: later; each line ends at discharge or death.`;
-    document.getElementById("futures").setAttribute("aria-label",`${name} happens in ${hit} of 100 sampled futures for the chosen horizon`);
-    const drivers={vent:["Lactate above 4 rising","Norepinephrine started","FiO2 at or above 0.6","Respiratory rate above 30"],press:["MAP below 65","Lactate above 2","Fluid bolus","Heart rate above 120"],
-      nippv:["SpO2 below 90","PaCO2 above 50","Respiratory rate above 28"],hfnc:["SpO2 below 92","FiO2 at or above 0.4","Respiratory rate above 24"],out:["Off vasopressors 12 h","Room air","Stable vitals 24 h"],death:["Comfort-care order","MAP below 55","Lactate above 6"]}[trace];
-    const n=Math.max(hit,1); document.getElementById("drivers").innerHTML = Number.isNaN(r.p[trace].d1)?"<li>Not forecast: already started.</li>":drivers.map((d,i)=>`<li>${d} · in ${Math.max(1,Math.round(n*(.78-i*.16)))} of ${hit} futures</li>`).join("");
+
+  function renderGrid(){
+    const g=document.getElementById("grid"), t3=document.getElementById("top3"); g.innerHTML=""; t3.innerHTML="";
+    const top3=ranked().slice(0,3);
+    for(const r of top3.concat(rooms)){ const [e,v]=top(r); const b=document.createElement("button"); b.type="button"; b.className="mag"; b.dataset.room=r.n; const [bg,fg]=tile(Math.min(1,v/.45)); b.style.background=bg; b.style.color=fg; b.setAttribute("aria-pressed",String(room===r.n));
+      const tags=EV.filter(x=>x.tag&&r.on[x.k]);
+      b.setAttribute("aria-label",`Room ${r.n}: highest risk ${e.name} ${pct(v)}${tags.map(x=>`, on ${x.name.toLowerCase()}`).join("")}`);
+      b.innerHTML=`<span class="rm">${r.n}</span><span class="top1"><span class="long">${e.name}</span><span class="short">${e.short}</span> ${pct(v)}</span><span class="on">${tags.map(x=>`<span><span class="long">${x.tag}</span><span class="short">${x.t}</span></span>`).join("")}</span>`;
+      b.onclick=()=>openRoom(r.n); (t3.children.length<3 ? t3 : g).appendChild(b); }
   }
-  function openRoom(n){
-    room=n; const r=rooms[n-1]; document.getElementById("drawer").hidden=false; document.getElementById("unitpanel").hidden=true;
+
+  // room drawer: six bars sorted by risk, "on now" chips, last events capped at five
+  const PAST=["Lactate 3.1 (up from 2.2)","Norepinephrine 0.08 mcg/kg/min","SpO2 91% on 6 L","Chest x-ray ordered","Heart rate 118","Urine output 20 mL/h","CBC and BMP drawn","Temperature 38.4"];
+  function openRoom(n, opts={}){
+    if(!Number.isInteger(n) || !rooms[n-1]) return;
+    const first = room!==n; room=n; if(first){ log.innerHTML=""; pastOpen=false; } /* new room: fresh chat, recent events folded */ const r=rooms[n-1]; document.getElementById("drawer").hidden=false;
     document.getElementById("room-h").textContent=`Room ${n}`;
-    document.getElementById("room-sub").textContent=`Stage ward, open demo patient · age ${r.age} · ${r.onVent?"on ventilator · ":""}${r.onPress?"on vasopressor · ":""}in ICU at least 24 h`;
-    document.getElementById("risks").innerHTML = `<thead><tr><th>Event</th>${H.map(h=>`<th scope="col">${h.t}</th>`).join("")}</tr></thead><tbody>`+
-      EV.map(e=>`<tr><th scope="row">${e.name}</th>${H.map(h=>{const v=r.p[e.k][h.k]; return `<td>${Number.isNaN(v)?"on now":Math.round(v*100)+"%"}</td>`;}).join("")}</tr>`).join("")+"</tbody>";
-    const pk=document.getElementById("picker"); pk.innerHTML=""; for(const e of EV){ const b=document.createElement("button"); b.type="button"; b.className="chip"; b.textContent=e.name;
-      b.setAttribute("aria-pressed",String(e.k===trace)); b.onclick=()=>{trace=e.k; openRoom(n);}; pk.appendChild(b); }
-    const past=["Lactate 3.1 (up from 2.2)","Norepinephrine 0.08 mcg/kg/min","SpO2 91% on 6 L","Chest x-ray ordered","Heart rate 118","Urine output 20 mL/h","CBC and BMP drawn","Temperature 38.4"];
-    document.getElementById("past").innerHTML=past.slice(0,6).map((t,i)=>`<li><time>-${(i*2)+1} h</time><span>${t}</span></li>`).join("");
+    document.getElementById("room-sub").textContent=`Stage ward, open demo patient · age ${r.age} · chance of each event in the next 24 h`;
+    const live=EV.filter(e=>!Number.isNaN(r.p[e.k])).sort((a,b)=>r.p[b.k]-r.p[a.k]), on=EV.filter(e=>Number.isNaN(r.p[e.k]));
+    document.getElementById("rbars").innerHTML = live.map(e=>`<li><span>${e.name}</span><span class="track" aria-hidden="true"><span class="fill" style="display:block;width:${Math.max(2,r.p[e.k]*100)}%"></span></span><span class="pct">${pct(r.p[e.k])}</span></li>`).join("");
+    document.getElementById("onnow").innerHTML = on.length ? `On now, not forecast as new: ${on.map(e=>`<span>${e.tag}</span>`).join("")}` : "";
+    const items = pastOpen ? PAST : PAST.slice(0,5);
+    document.getElementById("past").innerHTML=items.map((t,i)=>`<li><time>-${(i*1.5+1).toFixed(0)} h</time><span>${t}</span></li>`).join("");
+    const pm=document.getElementById("pastmore"); pm.textContent = pastOpen ? "Show fewer" : `Show ${PAST.length-5} more`; pm.onclick=()=>{pastOpen=!pastOpen; openRoom(n); pm.focus();};
     document.getElementById("chat-scope").textContent=`Asking about room ${n} (open demo patient) and the unit. Mock replies in this file.`;
-    document.getElementById("q").placeholder=`Room ${n}: is intubation likely in the next 24 hours?`;
-    renderGrid(); drawFutures(r);
+    renderGrid(); renderChips();
     if(window.innerWidth<960) document.getElementById("drawer").scrollIntoView({behavior:"smooth",block:"start"});
+    // move focus into the drawer when a room opens (not on in-drawer updates)
+    if(first && opts.focus!==false) document.getElementById("room-h").focus({preventScroll: window.innerWidth<960});
   }
-  document.getElementById("close").onclick=()=>{room=null; document.getElementById("drawer").hidden=true; document.getElementById("unitpanel").hidden=false;
-    document.getElementById("chat-scope").textContent="Answers from this forecast only, on the local Nemotron 3 Nano. Mock replies in this file."; document.getElementById("q").placeholder="How many ventilators will we need in the next 24 hours?"; renderGrid(); };
+  document.getElementById("close").onclick=()=>{const was=room; room=null; pastOpen=false; log.innerHTML=""; document.getElementById("drawer").hidden=true;
+    document.getElementById("chat-scope").textContent="Answers from this forecast only, on the local Nemotron 3 Nano. Mock replies in this file."; renderGrid(); renderChips();
+    // return focus to the room's magnet
+    const back=[...document.querySelectorAll(`.mag[data-room="${was}"], .roomlink[data-room="${was}"]`)].find(el=>el.offsetParent!==null) || document.querySelector("#allrooms summary"); back.focus(); };
+  document.getElementById("drawer").addEventListener("keydown",e=>{ if(e.key==="Escape") document.getElementById("close").click(); });
 
-  // chat (mock)
+  // chat (mock): suggested questions by role, room question first when a room is open
+  const CHIPS = {"ICU nurse":["What will we be short of tonight?","Which rooms are highest risk?","How many vasopressor starts?"],
+    "ICU physician":["Which rooms are highest risk?","What will we be short of tonight?","How many CRRT starts?"],
+    "pharmacy":["How many vasopressor starts?","What will we be short of tonight?"],
+    "respiratory therapy":["How many ventilator starts?","What will we be short of tonight?"],
+    "bed manager":["How many patients leave the ICU?","What will we be short of tonight?"]};
+  function renderChips(){
+    const qs = (room ? [`Room ${room}: what is most likely in the next 24 h?`] : []).concat(CHIPS[role()]).slice(0,3).concat(["Rerun the forecast"]);
+    const el=document.getElementById("chips"); el.innerHTML="";
+    for(const q of qs){ const b=document.createElement("button"); b.type="button"; b.className="chip"; b.textContent=q; b.onclick=()=>ask(q); el.appendChild(b); }
+  }
   const log=document.getElementById("log");
   function say(who,text,cls){ const d=document.createElement("div"); d.className="msg "+cls; d.innerHTML=`<span class="who">${who}</span>`; d.append(document.createTextNode(text)); log.appendChild(d); log.scrollTop=log.scrollHeight; }
   let lastRun=0;
-  function rerun(role){ const now=new Date(); if(Date.now()-lastRun<20*60*1000) return `Forecast not started: the last run was under 20 minutes ago.`;
-    lastRun=Date.now(); const name=`t7-forecast-${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}-${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}`;
-    document.getElementById("runstate").textContent=`Running ${name} for ${role} on 1 GPU (mock) · scheduled 06:30 daily`; return `Started ${name} for ${role}; the board updates when it finishes (mock).`; }
-  document.getElementById("rerun").onclick=()=>{ const msg=rerun(document.getElementById("role").value); if(msg.startsWith("Forecast not")) document.getElementById("runstate").textContent=msg; };
+  function rerun(who){ if(Date.now()-lastRun<20*60*1000) return `Forecast not started: the last run was under 20 minutes ago.`;
+    lastRun=Date.now(); const now=new Date(), z=v=>String(v).padStart(2,"0"), name=`t7-forecast-${z(now.getMonth()+1)}${z(now.getDate())}-${z(now.getHours())}${z(now.getMinutes())}`;
+    document.getElementById("runstate").innerHTML=`<b>Running ${name}</b> for ${who} (mock) · the board updates when it finishes · last forecast stays on screen`;
+    return `Started ${name} for ${who}; the board updates when it finishes (mock).`; }
+  document.getElementById("rerun").onclick=()=>{ const m=rerun(role()); if(m.startsWith("Forecast not")) document.getElementById("runstate").textContent=m; };
+  const cnt = k => `median ${C[k].p50} in the next 24 h (80% range ${C[k].p10} to ${C[k].p90})`;
   function answer(q){
-    const t=q.toLowerCase(), hl=H.find(h=>h.k===hz).l, c=unit.c;
-    if(/\b(re-?run|run|start|refresh|update)\b.{0,30}\bforecast\b/.test(t)) return rerun(document.getElementById("role").value);
-    if(room && /(intubat|vent)/.test(t)){ const r=rooms[room-1], v=r.p.vent; if(Number.isNaN(v.d1)) return `Room ${room} is already on a ventilator, so the forecast does not count it as a new start.`;
-      return `Room ${room}: a ventilator start happens in ${Math.round(v.d1*100)} of 100 futures in the next 24 h, ${Math.round(v.stay*100)} over the rest of the stay. In those futures it most often followed a rising lactate and a norepinephrine start. This is the model's evidence, not a cause; the team decides.`; }
-    if(/vent/.test(t)) return `Ventilators, ${hl}: ${c.vent.p50} new starts likely (80% range ${c.vent.p10} to ${c.vent.p90}); ${cap.vent.free} are free, so the busy case is ${c.vent.p90>cap.vent.free?"tight":"covered"}.`;
-    if(/(pressor|norepi|drip|pharm)/.test(t)) return `Vasopressor starts, ${hl}: ${c.press.p50} likely (80% range ${c.press.p10} to ${c.press.p90}).`;
-    if(/bed/.test(t)) return `Net beds, ${hl}: about ${Math.max(0,unit.net.p50)} free up (80% range ${unit.net.p10} to ${unit.net.p90}). Arrivals from the ED or OR come from a separate estimate.`;
-    return `I can answer from this forecast: ventilators, NIPPV, high-flow, vasopressors, beds, deaths, or one room. Try "how many vasopressor starts ${hl}?"`;
+    const t=q.toLowerCase();
+    if(/\b(re-?run|run|start|refresh|update)\b.{0,30}\bforecast\b/.test(t)) return rerun(role());
+    if(room && /(intubat|vent)/.test(t)){ const v=rooms[room-1].p.vent; if(Number.isNaN(v)) return `Room ${room} is already on a ventilator, so the forecast does not count it as a new start.`;
+      return `Room ${room}: ${pct(v)} chance of a ventilator start in the next 24 h (07:00 to 07:00). This is the probe's reading of the model's summary of the stay, not a cause; the held-out check is pending a run. The team decides.`; }
+    if(room && /most likely/.test(t)){ const r=rooms[room-1], live=EV.filter(e=>!Number.isNaN(r.p[e.k])).sort((a,b)=>r.p[b.k]-r.p[a.k]).slice(0,2), on=EV.filter(e=>Number.isNaN(r.p[e.k]));
+      return `Room ${room}, next 24 h: ${live.map(e=>`${e.name.toLowerCase()} ${pct(r.p[e.k])}`).join(", then ")}.${on.length?` Already on: ${on.map(e=>e.name.toLowerCase()).join(" and ")}, so not forecast as new.`:""} Model evidence, not a cause; the held-out check is pending a run.`; }
+    if(/short/.test(t)){ const ex=EV.filter(e=>["short","tight"].includes(status(e.k)[0])); return ex.length ? ex.map(e=>`${e.row}: ${status(e.k)[1]}, ${cnt(e.k)}, ${cap[e.k]} free`).join("; ")+". Only ventilators have a capacity set so far." : "Nothing is short where a capacity is set; only ventilators have one so far."; }
+    if(/(highest|risk|rooms)/.test(t)) return `Highest single risks in the next 24 h: ${ranked().slice(0,3).map(r=>`room ${r.n} (${top(r)[0].name.toLowerCase()} ${pct(top(r)[1])})`).join(", ")}.`;
+    if(/vent/.test(t)) return `Ventilator starts: ${cnt("vent")}; ${cap.vent} free (placeholder).`;
+    if(/(pressor|norepi|drip|pharm)/.test(t)) return `Vasopressor starts: ${cnt("press")}.`;
+    if(/crrt|dialys/.test(t)) return `CRRT starts: ${cnt("crrt")}.`;
+    if(/hypot|map/.test(t)) return `Hypotension (MAP < 65 or SBP < 90): ${cnt("hypo")}.`;
+    if(/death|die/.test(t)) return `Deaths: ${cnt("death")}.`;
+    if(/(leave|bed|out|transfer)/.test(t)) return `Patients leaving the ICU to ward or step-down: ${cnt("out")}. Arrivals from the ED or OR are not forecast.`;
+    return `I can answer from this forecast: ventilator, vasopressor and CRRT starts, hypotension, deaths, patients leaving the ICU, the highest-risk rooms, or one stage-ward room.`;
   }
-  document.getElementById("ask").onsubmit=e=>{ e.preventDefault(); const q=document.getElementById("q"); const v=q.value.trim()||q.placeholder; say("ICU team",v,"q"); say("Nemotron 3 Nano (mock)",answer(v),"a"); q.value=""; };
+  function ask(q){ say(role(),q,"q"); say("Nemotron 3 Nano (mock)",answer(q),"a"); }
+  document.getElementById("ask").onsubmit=e=>{ e.preventDefault(); const q=document.getElementById("q"); const v=q.value.trim(); if(!v) return; ask(v); q.value=""; };
+  document.getElementById("role").onchange=()=>{ log.innerHTML=""; renderRows(); renderChips(); }; // a new role starts a fresh chat
 
   // theme
-  const tb=document.getElementById("theme"); tb.onclick=()=>{ theme=theme==="day"?"night":"day"; document.documentElement.dataset.board=theme; tb.setAttribute("aria-pressed",String(theme==="night")); tb.textContent=theme==="day"?"Night board":"Day board"; renderGrid(); if(room) drawFutures(rooms[room-1]); };
+  const tb=document.getElementById("theme"); tb.onclick=()=>{ theme=theme==="day"?"night":"day"; document.documentElement.dataset.board=theme; tb.setAttribute("aria-pressed",String(theme==="night")); tb.textContent=theme==="day"?"Night board":"Day board"; renderGrid(); };
 
-  function render(){ renderHorizon(); renderGrid(); renderTeams(); renderBrief(); if(room) openRoom(room); }
-  render();
-  say("ICU team","How many ventilators will we need in the next 24 hours?","q"); say("Nemotron 3 Nano (mock)",answer("ventilators"),"a");
-  window.addEventListener("resize",()=>{ if(room) drawFutures(rooms[room-1]); });
-  // deep links for review captures: #room=7 opens a room, #night switches the board
-  if(location.hash.includes("night")) tb.click();
-  const m=location.hash.match(/room=(\d+)/); if(m) openRoom(+m[1]);
+  renderBrief(); renderGrid(); renderRows(); renderChips();
+  // deep links for review captures: #room=7 opens a room, #night switches the board, #role=pharmacy picks a role
+  let h=location.hash; try{ h=decodeURIComponent(h); }catch(e){ /* malformed hash: use it raw */ }
+  if(/(^|[#&])night(&|$)/.test(h)) tb.click();
+  const rm=h.match(/role=([a-z ]+)/i); if(rm && Object.prototype.hasOwnProperty.call(OWN, rm[1])){ document.getElementById("role").value=rm[1]; renderRows(); renderChips(); }
+  const m=h.match(/room=(\d+)/); if(m){ const n=+m[1]; if(n>=1 && n<=rooms.length){ document.getElementById("allrooms").open=true; openRoom(n,{focus:false}); } }
 })();
 </script>
 </body>

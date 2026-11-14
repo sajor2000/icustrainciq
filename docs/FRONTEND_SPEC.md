@@ -30,14 +30,31 @@ Roles accepted: `ICU nurse`, `ICU physician`, `pharmacy`, `respiratory therapy`,
 
 ## Screens and what each must do
 
-1. **Top strip**: unit name, "For 07:00 morning rounds · patients in the ICU at least 24 h", when it ran; the fixed horizon "Next 24 h (07:00 to 07:00)" (no tabs); Day/Night board switch; role picker and **Rerun forecast** with the last-run line.
-2. **Room board**: 25 room magnets, number large, highest of the six probabilities and its percent, shaded by risk; VENT/PRESS tags for already on a ventilator or vasopressor. Click opens the room drawer.
-3. **Margin (unit strain)**: rows by team with median, 80% range bar, red capacity line and status word where a capacity exists (ON TRACK / TIGHT / SHORT, always as a word).
-4. **Room drawer** (stage ward only): the six probabilities for the next 24 h as bars with percent, each with its held-out check (calibration, AUROC) when a run supplies it, "on now" for tasks already started, what the model read in the last 12 h, and the "model evidence, not a cause; not a treatment recommendation" note.
-5. **Suggested questions (PRN)**: one-tap chips above the chat, by role: "What will we be short of tonight?", "How many vasopressor starts?", "Which rooms are highest risk?", "Room 7: likely to need a ventilator?", "Rerun the forecast".
-6. **Shift brief**: AI-drafted from the counts, labelled.
-7. **Ask the board**: chat for unit and room questions and for "rerun the forecast".
-8. **Run strip**: model, workflows, GPU timings or "pending run".
+1. **Top strip**: unit name, "For 07:00 morning rounds · next 24 h, 07:00 to 07:00 · patients in the ICU at least 24 h" (one horizon, no tabs); Day/Night board switch; role picker ("I am") and **Rerun forecast**; the run line (when it ran, or "Running ..." while a run is in progress).
+2. **Shift brief** (top of the right column; first on a phone): at most three lines, labelled (mock) until Nemotron drafts it. A shared caption says "Median (80% range)". Line 1 is the verdict: every SHORT or TIGHT row ("Ventilators TIGHT 3 (1–5); 3 free"), or "Nothing short where a capacity is set". Line 2: the two busiest rows without a capacity ("Departures 7 (5–10); hypotension 5 (3–7)"). Line 3: "Review rooms 20, 12, 7", each number a link that opens the room. Short labels; no percentages that the magnets already show; full detail stays in the rows and the drawer.
+3. **Room board**: 25 room magnets, number large, the room's highest risk (task name and percent; leaving the ICU is not counted as a risk), shaded by that risk; VENT / PRESS / CRRT tags for tasks already on before 07:00. Click opens the room drawer.
+4. **Unit rows**: one row per D8 task: name and team (or "your row"), median as the big number, 80% range bar with the range in words, an ink line at the free count, and the status word (ON TRACK / TIGHT / SHORT) where a capacity is set, "no capacity set" where none is. Order and folding follow the role (see Cognitive load).
+5. **Room drawer** (stage ward only), opens under the unit rows so the verdict stays in view: the room's live tasks as bars sorted by risk, with percent; "On now, not forecast as new" tags for tasks already started; one line on how far to trust them (held-out calibration and AUROC, "pending run" until a run supplies them); what the model read in the last 12 h, five items and "Show more"; the "model evidence, not a cause; not a treatment recommendation" note.
+6. **Ask the board**: suggested-question chips (at most three by role, plus "Rerun the forecast"; with a room open, the first chip is "Room N: what is most likely in the next 24 h?"), then the answers, then a text box ("Or type a question"). The chat starts empty: no seeded exchange.
+7. **Run strip**: model, workflows, GPU timings or "pending run".
+
+## Cognitive load
+
+The board is read at 07:00 by a tired team standing at a workstation or a projector, often mid-conversation. Every screen decision below lowers what they must hold in their heads. Target: the shift question ("what will we be short of tonight, and how sure are we?") is answered within 10 seconds, without scrolling on a 1440 px screen. On a phone the order is brief, unit rows (your row first), room drawer, room board, chat, so no one scrolls past 25 rooms to reach their row.
+
+| What we surface | Rule | Why it lowers load |
+|---|---|---|
+| The verdict first | The shift brief's first line names every SHORT or TIGHT row, or says nothing is short. It sits at the top of the right column and is the first block on a phone. | The answer comes before the evidence; no one scans eight rows to find one word. |
+| Exceptions only | Unit rows sort SHORT, then TIGHT, then the rest. Rows that are ON TRACK or have no capacity fold under "N more rows · 1 on track, 3 capacity not assessed". | Attention goes to the rows that need a decision. |
+| Each role sees its own row first | The role picker ("I am") puts that team's rows on top, marked "your row" (pharmacy: vasopressor starts; respiratory therapy: ventilator starts; bed manager: leaving the ICU; ICU physician: CRRT, hypotension, deaths). The charge nurse (ICU nurse) sees all six rows open. | Each team reads one row, not the whole unit. The role also picks the chat chips. |
+| One number per row | The big number is the median; the 80% range is a bar and "range a to b" in small text; the status is a word. No probability tables by default. | One glance per row; uncertainty is shown, not computed. |
+| Top three rooms | The three highest-risk rooms lead the board as magnets; "Review rooms 20, 12, 7" in the brief links to their drawers; the full board is under "Show all 25 rooms". | No scanning 25 magnets to find where to start rounds. |
+| The room drawer | Live tasks as bars sorted by risk; tasks already on as tags, not percentages; one trust line in words; last 12 h capped at five events with "Show more". It opens under the unit rows; focus moves to its heading and returns to the room's magnet on close (Escape closes it). | The attending sees this room's top risk first and still sees the unit verdict. |
+| Suggested questions | At most three chips by role plus "Rerun the forecast" (44 px targets); a room chip when a room is open; the chat starts empty and clears when the role or the room changes. | Tapping beats composing a question at rounds; an empty chat never looks like an answer. |
+| Shift brief | Three lines at most; never repeats a full row. | It is something to read aloud at rounds, not a report. |
+| One horizon | Next 24 h, 07:00 to 07:00. No tabs, no time slider. | Nothing to choose before reading. |
+| Consistent colour | Blue means risk (magnet shading, range bars). Red means SHORT only, amber TIGHT only, green ON TRACK only, always with the word. The capacity line and the SYNTHETIC badge are ink. | A colour never needs decoding twice. |
+| Day and night boards | Same layout and words; the user picks the board, not the OS. | Nothing moves when the lights go down. |
 
 ## States the frontend must handle
 
@@ -55,7 +72,7 @@ Roles accepted: `ICU nurse`, `ICU physician`, `pharmacy`, `respiratory therapy`,
 
 - **Counts only for real MIMIC-IV.** Room-level views and room chat only for the stage ward (open MIMIC-IV Demo patients, excluded from training). Never log questions.
 - **Every number has its range.** Never a bare median.
-- **Status never by colour alone**; tile text at 4.5:1 or better in day and night.
+- **Status never by colour alone**; tile text at 4.5:1 or better in day and night. Red is reserved for SHORT.
 - **Honest labels**: SYNTHETIC on demo data, "(mock)" on drafted text, "pending run" where no run has produced a number, "not forecast" for arrivals.
 - **Decision support, never a treatment recommendation.**
 - **Design**: follow [`../DESIGN.md`](../DESIGN.md) (the unit whiteboard world: enamel board, marker-navy ink, magnet blue, system UI stack with tabular numerals). Use the Impeccable skill (`/impeccable`) for any UI work; the mockup's direction contract is in `.impeccable/surfaces/`.

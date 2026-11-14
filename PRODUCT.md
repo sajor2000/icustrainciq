@@ -19,7 +19,7 @@ delegated: static HTML + vanilla JS (no build step), written at the event with a
 
 ## Product Purpose
 
-ICU-Twin forecasts a whole unit for the next 24 hours (07:00 to 07:00): mechanical ventilation, vasopressor starts, CRRT starts, hypotension (MAP < 65), in-hospital deaths and ICU departures to ward or step-down, each with an 80% range. For each current patient it does one forward pass of a small generative event model and reads its last hidden state with a logistic probe per task, then adds the patients up. Success: the ICU team of nurses and physicians, pharmacy, respiratory therapy and the bed manager can act on the next day's staffing and beds before the unit is short, and a judge can see the scaling result in one glance.
+ICU-Twin forecasts a whole unit for the next 24 hours (07:00 to 07:00): mechanical ventilation, vasopressor starts, CRRT starts, hypotension (MAP < 65 or SBP < 90), in-hospital deaths and ICU departures to ward or step-down, each with an 80% range. For each current patient it does one forward pass of a small generative event model and reads its last hidden state with a logistic probe per task, then adds the patients up. Success: the ICU team of nurses and physicians, pharmacy, respiratory therapy and the bed manager can act on the next day's staffing and beds before the unit is short, and a judge can see the scaling result in one glance.
 
 ## Positioning
 
