@@ -136,11 +136,28 @@ details.allrooms[open] summary{margin-bottom:8px}
 .cl.empty .bedline{margin-bottom:0}
 .cl .sec{margin:2px 0 6px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
 .cl .sec.two{margin-top:12px;padding-top:10px;border-top:1px solid var(--rule)}
-.cl .stats{display:flex;align-items:flex-start;gap:20px}
+.cl .stats{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 16px}
 .cl .stats>div{display:flex;flex-direction:column;min-width:0}
 .cl .stats .sl{font-size:12px;color:var(--ink-2)}
 .cl .stats b{font-size:24px;font-weight:800;line-height:1.15}
 .cl .stats b.free{color:var(--ok)}
+.cl .frees{margin:8px 0 0;color:var(--ink)}
+.cl .frees:empty,.cl .frees[hidden]{display:none}
+.cl .frees.mf{margin-top:4px}
+.cl .frees b{font-size:15px;font-weight:800}
+/* devices a likely leaver is on now, attached to the figure: lungs = ventilator, kidney = CRRT, drop = vasopressor */
+.pp{position:relative}
+.pp .dv{position:absolute;top:-4px;right:-5px;display:flex;flex-direction:column;gap:1px}
+.pp .dv i,.cl .frees i{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--surface);border:1px solid var(--line)}
+.pp .dv svg,.cl .frees svg{width:12px;height:12px;fill:var(--dc);stroke:none}
+.pp .dv svg .ln,.cl .frees svg .ln{fill:none;stroke:var(--dc);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.d-vent{--dc:#0891B2} .d-crrt{--dc:#7C3AED} .d-press{--dc:#BE185D}
+[data-board="night"] .d-vent{--dc:#1A9DBA} [data-board="night"] .d-crrt{--dc:#9A7CF2} [data-board="night"] .d-press{--dc:#DB5C9B}
+.pp .dv i:has(.d-vent),.cl .frees i:has(.d-vent){border-color:color-mix(in srgb,#0891B2 55%,var(--line))}
+.pp .dv i:has(.d-crrt),.cl .frees i:has(.d-crrt){border-color:color-mix(in srgb,#7C3AED 55%,var(--line))}
+.pp .dv i:has(.d-press),.cl .frees i:has(.d-press){border-color:color-mix(in srgb,#BE185D 55%,var(--line))}
+.cl .frees .fr{display:inline-flex;align-items:center;gap:4px;margin:4px 12px 0 0;white-space:nowrap}
+.cl .frees i{flex:none}
 .cl .ub{margin-top:6px}
 .cl .ub svg{display:block;width:100%;height:auto}
 .cl .expl{margin:4px 0 0;color:var(--ink);font-weight:600}
@@ -703,8 +720,14 @@ details.more summary:hover{color:var(--ink)}
   document.getElementById("capbox").addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.type==="number"){ e.preventDefault(); e.target.blur(); } });
   function setLines(fn){ for(const k of KEYS) thrBy[k]=fn(k); saveLines(); renderClusters(); }
   const FIG=`<circle cx="20" cy="10.5" r="8.5"/><path d="M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z"/>`;
-  const chip=(r,e,v,label,w3)=>`<button type="button" class="pp${e.k==="out"?" neutral":""}${e.k!=="out"&&w3.includes(r.n)&&top(r)[0].k===e.k?" w":""}" data-room="${r.n}" aria-pressed="${room===r.n}" aria-label="Bed ${r.n}: ${e.name} ${pct(v)}" title="Bed ${r.n}: ${e.name} ${pct(v)}">
-      <span class="av" style="--p:${Math.round(v*100)}%" aria-hidden="true"><svg class="base" viewBox="0 0 40 42">${FIG}</svg><svg class="fill" viewBox="0 0 40 42">${FIG}</svg></span><span class="rm">${r.n}</span><span class="pc">${label}</span></button>`;
+  const chip=(r,e,v,label,w3)=>`<button type="button" class="pp${e.k==="out"?" neutral":""}${e.k!=="out"&&w3.includes(r.n)&&top(r)[0].k===e.k?" w":""}" data-room="${r.n}" aria-pressed="${room===r.n}" aria-label="Bed ${r.n}: ${e.name} ${pct(v)}${e.k==="out"&&devs(r).length?`, on ${devs(r).map(x=>x.name.toLowerCase()).join(" and ")} now`:""}" title="Bed ${r.n}: ${e.name} ${pct(v)}">
+      <span class="av" style="--p:${Math.round(v*100)}%" aria-hidden="true"><svg class="base" viewBox="0 0 40 42">${FIG}</svg><svg class="fill" viewBox="0 0 40 42">${FIG}</svg></span><span class="rm">${r.n}</span><span class="pc">${label}</span>${e.k==="out"&&devs(r).length?`<span class="dv" aria-hidden="true">${devs(r).map(x=>`<i title="${x.name}">${DICON[x.k]}</i>`).join("")}</span>`:""}</button>`;
+  // devices a bed is on now, and how many of a device the likely leavers (beds on the Leave card) would hand back
+  const devs=r=>EV.filter(x=>x.tag&&r.on[x.k]);
+  const DICON={vent:`<svg class="d-vent" viewBox="0 0 28 24"><path d="M11 7C6 7 2 13 2 19c0 3 3 3 6 2s4-3 4-6V8c0-.6-.4-1-1-1ZM17 7c5 0 9 6 9 12 0 3-3 3-6 2s-4-3-4-6V8c0-.6.4-1 1-1Z"/><path class="ln" d="M14 1v8.5"/></svg>`,
+    crrt:`<svg class="d-crrt" viewBox="0 0 24 24"><path d="M11 3C6.5 3 4 7.5 4 12s2.500 9 7 9c3.200 0 4.600-2.400 3.400-5.400-.7-1.700-.7-3.500 0-5.200C15.600 7.400 14.200 3 11 3Z"/><path class="ln" d="M14.500 12H19v9"/></svg>`,
+    press:`<svg class="d-press" viewBox="0 0 24 24"><path d="M12 3c3.500 4.500 5.500 7.500 5.500 10.500a5.500 5.500 0 0 1-11 0C6.500 10.500 8.500 7.500 12 3Z"/></svg>`};
+  const mayFree=k=>rooms.filter(r=>r.on[k]&&r.p.out>=thrBy.out).length;
   const live=k=>rooms.filter(r=>!Number.isNaN(r.p[k]));
   const nbeds=n=>n?`${n} ${n===1?"bed":"beds"}`:"no beds";
   // Alternative view: the warning follows the line. Predicted new* (beds at or above the line) against what is free:
@@ -730,6 +753,11 @@ details.more summary:hover{color:var(--ink)}
     card.querySelector(".lv").textContent=`${t}%`; card.querySelector(".lc").textContent=nbeds(rs.length);
     // "Predicted new*" is the number of beds at or above the line (a flag per bed, not a certainty; the footnote says so).
     const on = k in rooms[0].on ? rooms.filter(r=>r.on[k]).length : null;
+    const setMf=x=>{ const m=document.querySelector(`.cl[data-k="${x}"] .mf`); if(m){ const n=mayFree(x); m.hidden=!n; m.querySelector("b").textContent=n; } }; setMf(k);
+    if(k==="out"){ // the Leave card says what its beds would hand back, and the resource cards follow its threshold
+      const parts=RES.map(x=>[mayFree(x),EV.find(v=>v.k===x)]).filter(x=>x[0]).map(([n,v])=>`<span class="fr"><i>${DICON[v.k]}</i><b>${n}</b> ${v.k==="crrt"?"CRRT":n===1?v.name.toLowerCase():v.bl.toLowerCase()}</span>`);
+      card.querySelector(".frees").innerHTML = rs.length ? (parts.length ? `If these beds leave, they free ${parts.join("")}` : "None of these beds is on a ventilator, vasopressor or CRRT.") : "";
+      RES.forEach(setMf); }
     card.querySelector(".exp b").textContent=rs.length; const ub=card.querySelector(".ub"); if(ub) ub.innerHTML=usageBar(on,cap[k],rs.length);
 
     const row=document.querySelector(`#linesbox [data-k="${k}"]`);
@@ -762,6 +790,8 @@ details.more summary:hover{color:var(--ink)}
         <div class="stats">${k in rooms[0].on ? `<div><span class="sl">On now</span><b>${rooms.filter(r=>r.on[k]).length}</b><span class="range">beds</span></div>
           <div><span class="sl">Free</span><b class="${cap[k]!=null?"free":""}">${cap[k]!=null?cap[k]:"–"}</b><span class="range">${cap[k]==null?"not set":userCap[k]?`of ${total[k]}`:"placeholder"}</span></div>`:""}
           <div class="exp"><span class="sl">Predicted new*</span><b>${c.p50}</b></div></div>
+        ${k in rooms[0].on?`<p class="range frees mf" hidden><span class="fr"><i>${DICON[k]}</i><b></b> may free up if likely leavers go</span></p>`:""}
+        ${k==="out"?`<p class="range frees"></p>`:""}
         ${k==="vent"||k==="crrt"?`<div class="ub"></div>`:""}
         <p class="sec two">Beds to watch</p>
         <p class="range bedline">Beds at <b class="lv"></b> or more · <span class="lc"></span> <button type="button" class="chg" data-k="${k}" aria-label="Change the threshold for ${e.name} in settings">Change</button></p>
