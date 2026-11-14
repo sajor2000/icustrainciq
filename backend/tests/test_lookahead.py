@@ -1337,3 +1337,54 @@ def test_room_scope_refuses_a_file_made_for_the_other_ward(tmp_path, monkeypatch
     _run(monkeypatch, tmp_path, root, "--real-ward")
     with pytest.raises(SystemExit, match="another ward"):
         _run(monkeypatch, tmp_path, root, "--room", "2")
+
+
+# ---- CodeRabbit PR #16: unknown stays unknown in the shared producers ----
+
+
+def test_unit_summaries_keep_incomplete_coverage_unknown(tmp_path):
+    """one stay whose current IMV state is unknown: the unit's ventilator count, the
+    combined count, the yardstick and the strain index have no estimate, never a
+    count that treats the unknown stay as 0"""
+    train = scores(8).with_columns(
+        pl.lit(False).alias(f"{t}_future") for t in (IMV, VASO, CRRT, WARD, STEP, DEATH)
+    )
+    train.write_parquet(tmp_path / "train_for_inference.parquet")
+    df = scores(2, p={IMV: [0.4, 0.4]}, ids=["a", "b"])
+    off = {"imv": False, "vasopressor": False, "crrt": False}
+    clif = {"a": {**off, "imv": None}, "b": off}
+    fc = aggregate.build_forecast(df, "m", clif=clif, baseline=tmp_path)
+    vent = fc["resources"]["ventilator"]
+    assert vent["available"] is False and vent["expected"] is None
+    assert fc["resources"]["vasopressor"]["available"] is True  # fully observed
+    ls = fc["life_support"]
+    assert ls["expected_by"]["imv"]["available"] is False
+    assert ls["expected_new_patients"]["available"] is False
+    assert ls["expected_new_patients"]["p50"] is None
+    assert fc["yardstick"] is None
+    assert "ventilator" not in (fc.get("strain") or {"tasks": []})["tasks"]
+    # the same unit, fully observed, keeps every count
+    fc = aggregate.build_forecast(
+        df, "m", clif={"a": off, "b": off}, baseline=tmp_path
+    )
+    assert fc["resources"]["ventilator"]["expected"] == 0.8
+    assert fc["life_support"]["expected_new_patients"]["p50"] is not None
+
+
+def test_room_combined_forecast_is_unknown_when_a_support_is_skipped():
+    """IMV unknown, the other two at 0: not any_life_support 0 and level low"""
+    df = scores(2, p={IMV: [0.4, 0.4], VASO: [0.0, 0.0], CRRT: [0.0, 0.0]}, ids=["a", "b"])
+    off = {"imv": False, "vasopressor": False, "crrt": False}
+    clif = {"a": {**off, "imv": None}, "b": off}
+    cut = dt.datetime(2026, 11, 14, 7, tzinfo=dt.timezone.utc)
+    a, b = rooms.room_entries(df, {"a": 1, "b": 2}, {}, cut, "now", clif=clif)
+    assert a["skipped"]["imv"] is True
+    assert a["any_life_support"] is None and a["level"] == "unavailable"
+    assert b["any_life_support"] == 0.4 and b["level"] == "high"
+    # a probe skipped in training, token path: the same rule
+    df = scores(1, p={CRRT: [float("nan")]}, ids=["a"])
+    (r,) = rooms.room_entries(df, {"a": 1}, {}, cut, "now")
+    assert r["any_life_support"] is None and r["level"] == "unavailable"
+    # check_first never lists a room without a combined forecast
+    df = scores(1, p={IMV: [0.9], CRRT: [float("nan")]}, ids=["a"])
+    assert aggregate.check_first(df, aggregate.patient_table(df), {"a": 1}) == []

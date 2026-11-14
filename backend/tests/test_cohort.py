@@ -463,10 +463,20 @@ def test_with_model_and_probes_the_predictions_are_filled(demo_run, monkeypatch)
         f["resources"]["death"]["available"]
         and f["resources"]["death"]["p50"] is not None
     )
-    assert f["life_support"]["expected_new_patients"]["p50"] is not None
+    # a stay whose current support is unknown in CLIF, or a support without a probe,
+    # leaves the combined counts unknown: never a count that takes it as 0
+    ls = f["life_support"]
+    partial = not all(ls["expected_by"][k]["available"] for k in aggregate.SUPPORTS)
+    assert (ls["expected_new_patients"]["p50"] is None) == partial
+    assert (f["yardstick"] is None) == partial
+    assert ls["expected_by"]["vasopressor"]["p50"] is not None
     free = [x for x in r["rooms"] if not x["on_now"]["vasopressor"]]
     assert free and all(0 <= x["p"]["vasopressor"] <= 1 for x in free)
-    assert all(x["level"] in ("low", "medium", "high") for x in r["rooms"])
+    for x in r["rooms"]:
+        gap = any(x["skipped"][k] for k in aggregate.SUPPORTS)
+        assert (x["level"] == "unavailable") == gap
+        assert (x["any_life_support"] is None) == gap
+        assert x["level"] in ("low", "medium", "high", "unavailable")
     assert all(x["p"]["imv"] is None for x in r["rooms"] if x["on_now"]["imv"])
     assert run_cohort.source_years(r) == run_cohort.source_years(f) == 0
     # weights or probes missing: still valid files, pending

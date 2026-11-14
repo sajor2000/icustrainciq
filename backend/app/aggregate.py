@@ -570,6 +570,9 @@ def life_support_block(tab: dict) -> dict:
     # a patient already on one support is not a *new* life-support patient, so the
     # new-patient distribution only runs over patients on none of the three
     new = unit_counts(np.where(any_on, 0.0, p_any))
+    if any(tab["skipped"][SUPPORT_RESOURCE[s]].any() for s in SUPPORTS):
+        # a support without a score for some stay: the combined count is unknown
+        new = _counts_or_none(np.full(any_on.size, np.nan))
     return {
         "now_patients": None if unknown_patients.any() else int(any_on.sum()),
         "now_known_patients": int(any_on.sum()),
@@ -799,6 +802,9 @@ def check_first(unit: pl.DataFrame, tab: dict, rooms: dict[str, int], k: int = 3
     if not rooms:
         return []
     score = np.where(_on_any(tab["on"]), 0.0, p_any_life_support(tab["p"]))
+    # no combined forecast for a stay with a support that has no score
+    for s in SUPPORTS:
+        score = np.where(tab["skipped"][SUPPORT_RESOURCE[s]], 0.0, score)
     ids = unit["hospitalization_id"].to_list()
     order = np.argsort(-score, kind="stable")
     out = []
@@ -848,6 +854,12 @@ def build_forecast(
     if clif is not None:
         for support, task in SUPPORT_RESOURCE.items():
             probs[task] = np.where(tab["on"][support], 0.0, tab["p"][task])
+    # Incomplete coverage is no estimate: one stay without a score (its probe was
+    # skipped, or its current state is unknown) must not count as 0 in the unit's
+    # count or in the strain index, so the whole task is left without data.
+    for task, sk in tab["skipped"].items():
+        if task in probs and sk.any():
+            probs[task] = np.full(unit.height, np.nan)
     resources = strain(probs, rng, RESOURCES_REP)
     made = dt.datetime.now(dt.timezone.utc)
     cut = cut_time_for(made, tz, cut_time, demo_clock_hours)
@@ -858,6 +870,7 @@ def build_forecast(
         print("no train_for_inference.parquet: typical yardstick left out")
     ls = life_support_block(tab)
     pending = forecast_state == PENDING
+    partial = not ls["expected_new_patients"].get("available", True)
     if pending:  # no model: nothing is expected, nothing is 0
         resources = {
             name: {"team": team, **NO_COUNTS}
@@ -883,7 +896,7 @@ def build_forecast(
         "resources": resources,
         "life_support": ls,
         "yardstick": None
-        if pending
+        if pending or partial  # no combined count: nothing to compare
         else yardstick(
             ls,
             unit.height,

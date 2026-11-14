@@ -31,6 +31,7 @@ import json
 import math
 import pathlib
 
+import numpy as np
 import polars as pl
 import yaml
 
@@ -207,6 +208,11 @@ def room_entries(
     p, on, stopped, sk = tab["p"], tab["on"], tab["stopped"], tab["skipped"]
     any_p = aggregate.p_any_life_support(p)
     ids = df[HOSP].to_list()
+    # A support without a score (its probe was skipped, or what runs now is unknown)
+    # leaves the combined forecast unknown: never 0 and "low" from the other two.
+    no_any = np.any(
+        [sk[aggregate.SUPPORT_RESOURCE[s]] for s in aggregate.SUPPORTS], axis=0
+    )
     entries = []
     for i, sid in enumerate(ids):
         if sid not in room_of:
@@ -255,8 +261,14 @@ def room_entries(
                     "icu_departure": dep,
                     "death": None if pending else _num(p["death"][i]),
                 },
-                "any_life_support": None if pending else _num(any_p[i]),
-                "level": None if pending else aggregate.level_of(float(any_p[i])),
+                "any_life_support": None
+                if pending or no_any[i]
+                else _num(any_p[i]),
+                "level": None
+                if pending
+                else "unavailable"
+                if no_any[i]
+                else aggregate.level_of(float(any_p[i])),
                 "out": dep is not None and dep >= aggregate.OUT_TAG,
                 "past_12h": events.get(sid, []),
             }
