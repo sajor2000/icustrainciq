@@ -50,7 +50,7 @@ def test_labels_split_past_future(tmp_path):
     # a label must not change the cut: same past length as tokens
     assert df["tokens_past"].list.len().to_list() == [2, 2]
 
-    # horizon 1h, counted from the last past token: b's 26h hit drops out
+    # horizon 1h, counted from the 24 h cut: b's 26h hit drops out
     cfg.horizon_after_threshold_s = 3600
     df = Winnower(tmp_path, cfg, LOOKUP).prepare_winnowed_frame().collect()
     assert df.sort("hospitalization_id")["LABEL//hyperk_init_future"].to_list() == [
@@ -169,3 +169,76 @@ def test_offset_cannot_put_the_cut_before_icu_arrival(tmp_path):
     ok = Winnower(tmp_path, _after_icu_cfg(-82800), lookup)  # cut 1 h after arrival
     df = ok.prepare_winnowed_frame().collect()
     assert df["cut_s"].to_list() == [2 * 3600 + 3600]
+
+
+def test_outcome_window_runs_from_the_cut_not_from_the_last_token_before_it(tmp_path):
+    """the 24 h window is cut to cut + 24 h. ICU at 1 h, cut at 25 h; the last token
+    before the cut is at 20 h. An event at 46 h (25 + 21) is inside the window; one
+    at 49.5 h is outside. Measured from the 20 h token, 46 h would be 26 h away and
+    wrongly left out."""
+    lookup = {
+        "BOS": 1,
+        "ADT//TRANSFER_IN//icu": 2,
+        "RESP//device_category//imv": 3,
+        "LABEL//x": 4,
+        "EOS": 5,
+    }
+    t0 = dt.datetime(2020, 1, 1)
+    h = lambda x: t0 + dt.timedelta(hours=x)
+    rows = [  # (stay, hours, token)
+        ("a", 0, "BOS"),
+        ("a", 1, "ADT//TRANSFER_IN//icu"),
+        ("a", 20, "LABEL//x"),  # the last token before the 25 h cut
+        ("a", 46, "RESP//device_category//imv"),  # 21 h after the cut: inside
+        ("a", 60, "EOS"),
+        ("b", 0, "BOS"),
+        ("b", 1, "ADT//TRANSFER_IN//icu"),
+        ("b", 24.5, "LABEL//x"),
+        ("b", 49.5, "RESP//device_category//imv"),  # 24.5 h after the cut: outside
+        ("b", 60, "EOS"),
+        ("c", 0, "BOS"),
+        ("c", 1, "ADT//TRANSFER_IN//icu"),
+        ("c", 24, "LABEL//x"),
+        ("c", 49, "RESP//device_category//imv"),  # exactly 24 h after the cut: inside
+        ("c", 60, "EOS"),
+    ]
+    pl.DataFrame(
+        {
+            "hospitalization_id": [r[0] for r in rows],
+            "event_time": [h(r[1]) for r in rows],
+            "token_id": [lookup[r[2]] for r in rows],
+            "value": [None] * len(rows),
+            "position_id": list(range(len(rows))),
+        },
+        schema_overrides={"value": pl.Float64},
+    ).write_parquet(tmp_path / "tokens_held_out.parquet")
+    cfg = OmegaConf.create(
+        {
+            "outcome_tokens": ["RESP//device_category//imv"],
+            "threshold": {
+                "after_first_occurrence": {
+                    "token": "ADT//TRANSFER_IN//icu",
+                    "duration_s": 86400,
+                }
+            },
+            "horizon_after_threshold_s": 86400,
+            "labels": {"LABEL//vent": [["RESP//device_category//imv"]]},
+        }
+    )
+    df = Winnower(tmp_path, cfg, lookup).prepare_winnowed_frame().collect()
+    df = df.sort("hospitalization_id")
+    assert df["hospitalization_id"].to_list() == ["a", "b", "c"]
+    assert df["RESP//device_category//imv_future"].to_list() == [True, False, True]
+    assert df["LABEL//vent_future"].to_list() == [True, False, True]  # labels alike
+    assert df["tokens_future"].list.len().to_list() == [1, 0, 1]
+    # a plain duration cut (24 h from the first token) is measured the same way
+    cfg = OmegaConf.create(
+        {
+            "outcome_tokens": ["RESP//device_category//imv"],
+            "threshold": {"duration_s": 86400},
+            "horizon_after_threshold_s": 79200,  # 22 h: to hour 46
+        }
+    )
+    df = Winnower(tmp_path, cfg, lookup).prepare_winnowed_frame().collect()
+    df = df.sort("hospitalization_id")
+    assert df["RESP//device_category//imv_future"].to_list() == [True, False, False]

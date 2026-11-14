@@ -158,25 +158,43 @@ class Winnower:
             ),
         )  # split into past and future
         if self.cfg.get("horizon_after_threshold_s") is not None:
-            df = (
-                df.with_columns(
+            horizon = self.cfg.horizon_after_threshold_s
+            th = self.cfg.get("threshold", {})
+            if "cut_s" in df.collect_schema().names():
+                cut = pl.col("cut_s")  # after_first_occurrence: the stay's own cut
+            elif "horizon_s" in self.cfg or "duration_s" in th:
+                cut = pl.lit(float(self.cfg.get("horizon_s", th.get("duration_s"))))
+            else:
+                cut = None  # first_occurrence: the triggering token is the cut
+            if cut is not None:
+                # the window is (cut, cut + horizon], measured from the cut itself.
+                # It used to start at the last token before the cut, which ended it
+                # early by the gap between that token and the cut.
+                df = df.with_columns(
+                    valid_future_count=(
+                        pl.col("s_elapsed").list.tail(
+                            pl.col("tokens").list.len() - pl.col("last_valid")
+                        )
+                        - cut
+                    )
+                    .list.eval(pl.element() <= horizon)
+                    .list.sum()
+                )
+            else:
+                df = df.with_columns(
                     s_elapsed_thresh=pl.col("times")
                     .list.tail(
                         pl.col("tokens_future").list.len() + 1
                     )  # include threshold time
                     .list.eval((pl.element() - pl.element().first()).dt.total_seconds())
-                )
-                .with_columns(
+                ).with_columns(
                     valid_future_count=pl.col("s_elapsed_thresh")
-                    .list.eval(pl.element() <= self.cfg.horizon_after_threshold_s)
+                    .list.eval(pl.element() <= horizon)
                     .list.sum()
                     - pl.lit(1)  # threshold token was counted, drop it
                 )
-                .with_columns(
-                    tokens_future=pl.col("tokens_future").list.head(
-                        "valid_future_count"
-                    )
-                )
+            df = df.with_columns(
+                tokens_future=pl.col("tokens_future").list.head("valid_future_count")
             )
         # derived labels, cut exactly as the tokens they come from
         hit = lambda n: pl.col(f"{n}_hit")
