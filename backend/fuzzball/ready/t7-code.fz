@@ -12,7 +12,7 @@ version: v4
 #   left them, mimic_clif:/model_output/final and mimic_clif:/tokenized_output (docs/FUZZBALL_VALIDATION.md)
 #
 # PINNED: the ingress is the tarball of ONE commit, checked against its sha256 before anything is unpacked.
-# TEMPLATE (Fuzzball 4.3 has no parameters): 6a46ea4f25fbe4903bbdd0804691da3154e78e1d and cd609e4cb66b255d1c02cf1f41a1b0fc601c8d7fc94aaf9ffdce474a33682abb are filled in first,
+# TEMPLATE (Fuzzball 4.3 has no parameters): d52ec568c8ef5133ad8bb7c3ba55569bf46b3d56 and c0d64763772b259c4ae63dc575d828985395d4f217bf6e5d66c4dc74eff0f21d are filled in first,
 #   scripts/make_ready.sh [40-hex commit, default origin/main]      # writes fuzzball/ready/*.fz (the usual way)
 #   python scripts/render_fz.py fuzzball/t7-code.fz --code-ref <sha> --code-sha256 <sha256> -o /tmp/t7-code.fz
 #   sha256: curl -sL https://codeload.github.com/sajor2000/icustrainciq/tar.gz/<sha> | shasum -a 256
@@ -29,7 +29,7 @@ volumes:
     use: team7                  # ephemeral scratch: tarball, unpacked copy, pip cache and temp files
     size: 20GB
     ingress:
-      - source: {uri: "https://codeload.github.com/sajor2000/icustrainciq/tar.gz/6a46ea4f25fbe4903bbdd0804691da3154e78e1d"}
+      - source: {uri: "https://codeload.github.com/sajor2000/icustrainciq/tar.gz/d52ec568c8ef5133ad8bb7c3ba55569bf46b3d56"}
         destination: {uri: "file://code.tar.gz"}
 
 defaults:
@@ -47,7 +47,7 @@ jobs:
     script: |
       #!/bin/bash
       set -euo pipefail
-      CODE_REF="6a46ea4f25fbe4903bbdd0804691da3154e78e1d"; CODE_SHA256="cd609e4cb66b255d1c02cf1f41a1b0fc601c8d7fc94aaf9ffdce474a33682abb"
+      CODE_REF="d52ec568c8ef5133ad8bb7c3ba55569bf46b3d56"; CODE_SHA256="c0d64763772b259c4ae63dc575d828985395d4f217bf6e5d66c4dc74eff0f21d"
       case "$CODE_REF$CODE_SHA256" in *@*|"") echo "CODE_REF / CODE_SHA256 not set: use fuzzball/ready/t7-code.fz (scripts/make_ready.sh)"; exit 1;; esac
       echo "$CODE_SHA256  /work/code.tar.gz" | sha256sum -c - || { echo "code tarball does not match CODE_SHA256: refusing to publish it"; exit 1; }
       mkdir -p "$HOME" "$TMPDIR" /work/src-publish
@@ -82,7 +82,7 @@ jobs:
     script: |
       #!/bin/bash
       set -euo pipefail
-      CODE_REF="6a46ea4f25fbe4903bbdd0804691da3154e78e1d"; CODE_SHA256="cd609e4cb66b255d1c02cf1f41a1b0fc601c8d7fc94aaf9ffdce474a33682abb"
+      CODE_REF="d52ec568c8ef5133ad8bb7c3ba55569bf46b3d56"; CODE_SHA256="c0d64763772b259c4ae63dc575d828985395d4f217bf6e5d66c4dc74eff0f21d"
       case "$CODE_REF$CODE_SHA256" in *@*|"") echo "CODE_REF / CODE_SHA256 not set: use fuzzball/ready/t7-code.fz (scripts/make_ready.sh)"; exit 1;; esac
       echo "$CODE_SHA256  /work/code.tar.gz" | sha256sum -c - || { echo "code tarball does not match CODE_SHA256: refusing to install from it"; exit 1; }
       mkdir -p "$HOME" "$TMPDIR" /work/src-deps
