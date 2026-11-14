@@ -53,6 +53,15 @@ The demo has one user at a time. There is no login and no user id. `role` is a l
 
 The trained model knows ICU data. The NVIDIA model knows language. Both run on the two local machines.
 
+### How the patient model makes a prediction
+
+1. **It learns the language of the ICU.** We trained it to read a patient's chart as a sequence of events (labs, vital signs, drugs, machines) and predict the next event, the way a language model predicts the next word.
+2. **We take its last layer.** At 07:00 the model runs once over each patient's chart so far. We keep the output of its last layer: one vector that summarises the patient's state.
+3. **Five small classifiers read that vector.** One for each event that matters to clinicians in the next 24 hours: starting a ventilator, starting a vasopressor, starting CRRT, leaving the ICU, and death. Each gives a percentage. The classifiers are fitted on past patients whose outcomes are known.
+4. **The patients are added up** into what the unit will need, with a likely range.
+
+Why this way: one pass per patient takes minutes on one GPU, with no need to generate thousands of possible futures. The five questions were chosen because they drive beds, machines and staff.
+
 ## 1. Technical architecture
 
 ![Technical architecture](diagrams/architecture.png)
