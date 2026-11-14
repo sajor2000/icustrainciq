@@ -13,8 +13,10 @@ GET  /api/forecast     forecast.json (unit counts only), or {"resources": {}, "n
        --host 127.0.0.1 binds loopback only (a laptop run on real patients); default 0.0.0.0
 GET  /api/rooms        rooms.json next to the forecast (stage ward only)
 GET  /api/runs         dispatcher status: next 07:00, running update, last per scope, demo clock
-GET  /api/capacity     {"life_support_patients", "vents_free", "updated_at"} (null = not set)
-POST /api/capacity     {"life_support_patients": 0..50, "vents_free": 0..50, "role"} -> capacity.json
+GET  /api/capacity     {"life_support_patients", "vents_total", "vents_free", "crrt_total", "crrt_free",
+                       "updated_at", "set_by_role"} (null = not set; free = total - on now)
+POST /api/capacity     {"role", and any of "life_support_patients", "vents_total", "crrt_total",
+                       "vents_free": whole numbers 0..50} -> capacity.json (the file is replaced)
 POST /api/rerun        {"role", "scope": "unit" | "room", "room"?: 1..25} -> dispatcher
 POST /api/ask          {"question","role","room?","seen_made_at?"} -> {"answer","trace"?,"made_at"}
 
@@ -39,6 +41,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 try:
+    from app import capacity as capacity_mod
     from app.chat_agent import (
         ROLES,
         ChatAgent,
@@ -50,6 +53,7 @@ try:
         updated_line,
     )
 except ImportError:  # run as `python app/board.py`
+    import capacity as capacity_mod
     from chat_agent import (
         ROLES,
         ChatAgent,
@@ -63,7 +67,7 @@ except ImportError:  # run as `python app/board.py`
 
 log = logging.getLogger("board")
 STATIC = pathlib.Path(__file__).with_name("static") / "index.html"
-CAPACITY_MAX = 50
+CAPACITY_MAX = capacity_mod.CAPACITY_MAX
 BODY_CAP = 4096
 SOCKET_TIMEOUT_S = 10  # a slow or stalled client cannot hold a handler thread
 REFUSED = {"ok": False, "reason": "request refused"}
@@ -173,27 +177,29 @@ def make_handler(
             cap = json.loads(capacity_path.read_text())
         except (OSError, ValueError):
             cap = {}
+        cap = cap if isinstance(cap, dict) else {}
         return {
-            "life_support_patients": cap.get("life_support_patients"),
-            "vents_free": cap.get("vents_free"),
+            **capacity_mod.view(cap, load()),
             "updated_at": cap.get("updated_at"),
+            "set_by_role": cap.get("set_by_role"),
         }
 
     def set_capacity(req: dict) -> tuple[int, dict]:
         role = str(req.get("role", ""))
         if role not in ROLES:
             return 400, {"ok": False, "reason": "choose your role"}
-        ls, vf = req.get("life_support_patients"), req.get("vents_free")
-        if not (
-            _int_in_range(ls) and (vf is None or _int_in_range(vf))
-        ):  # vents free is optional
+        keys = ("life_support_patients", "vents_total", "crrt_total", "vents_free")
+        given = {k: req.get(k) for k in keys}
+        # each number is optional; one of the first three must be there
+        if not all(v is None or _int_in_range(v) for v in given.values()) or all(
+            given[k] is None for k in keys[:3]
+        ):
             return 400, {
                 "ok": False,
                 "reason": f"enter whole numbers from 0 to {CAPACITY_MAX}",
             }
         cap = {
-            "life_support_patients": ls,
-            "vents_free": vf,
+            **given,  # as entered: free machines are derived when the file is read
             "updated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
             "set_by_role": role,  # role only, never a name (aggregate.py shows "set by")
         }
@@ -209,7 +215,8 @@ def make_handler(
             return 500, {"ok": False, "reason": f"could not save ({type(e).__name__})"}
         # privacy: time and role only; the numbers are not logged
         log.info("capacity set at=%s role=%s", cap["updated_at"], role)
-        return 200, {"ok": True, "capacity": cap}
+        shown = {**cap, **capacity_mod.view(cap, load())}  # with the free machines
+        return 200, {"ok": True, "capacity": shown}
 
     def origin_ok(origin: str | None, host: str | None, fwd_host: str | None) -> bool:
         """no Origin (non-browser client) passes; otherwise it must be this site"""

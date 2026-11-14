@@ -48,8 +48,10 @@ import numpy as np
 import polars as pl
 
 try:  # imported as app.aggregate (tests) or run as a script (the job)
+    from app import capacity as capacity_mod
     from app import clif_now as clif_now_mod
 except ImportError:  # pragma: no cover
+    import capacity as capacity_mod
     import clif_now as clif_now_mod
 
 PRESSORS = [
@@ -580,31 +582,90 @@ def _count_like(v, lo: float = 0, hi: float = CAPACITY_MAX) -> bool:
     )
 
 
-def read_capacity(path: pathlib.Path | None) -> dict | None:
-    """the charge nurse's capacity file {life_support_patients, vents_free, set_at,
-    set_by_role}; None when absent or unusable (the typical yardstick then applies).
-    life_support_patients must be a number 0..50 (not a bool or a string); anything
-    else prints one "unreadable" line and falls back to the typical yardstick."""
+def _capacity_raw(path: pathlib.Path | None):
+    """the capacity file as parsed JSON; None when absent or not JSON"""
     if not path or not pathlib.Path(path).is_file():
         return None
     try:
-        raw = json.loads(pathlib.Path(path).read_text())
-        cap = raw["life_support_patients"]
-        ok = _count_like(cap)
-    except (ValueError, KeyError, TypeError, OSError):
-        ok = False
-    if not ok:
-        print("capacity file unreadable: using the typical yardstick")
+        return json.loads(pathlib.Path(path).read_text())
+    except (ValueError, OSError):
+        return None
+
+
+def read_capacity(path: pathlib.Path | None) -> dict | None:
+    """the charge nurse's capacity file {life_support_patients, vents_free,
+    vents_total, crrt_total, set_at, set_by_role}; None when absent or without a
+    usable staffing number (the typical yardstick then applies).
+    life_support_patients must be a number 0..50 (not a bool or a string); anything
+    else prints one "unreadable" line and falls back to the typical yardstick,
+    unless the file only carries machine totals (`read_machine_totals`)."""
+    if not path or not pathlib.Path(path).is_file():
+        return None
+    raw = _capacity_raw(path)
+    tot = capacity_mod.totals(raw)
+    cap = raw.get("life_support_patients") if isinstance(raw, dict) else None
+    if not _count_like(cap):
+        machines_only = cap is None and (
+            tot["vents_total"] is not None or tot["crrt_total"] is not None
+        )
+        if not machines_only:
+            print("capacity file unreadable: using the typical yardstick")
         return None
     vents = raw.get("vents_free")
     return {
         "life_support_patients": int(cap) if cap == int(cap) else cap,
         "vents_free": vents if _count_like(vents, 0, 1e6) else None,
+        "vents_total": tot["vents_total"],
+        "crrt_total": tot["crrt_total"],
         "set_at": raw.get("set_at") if isinstance(raw.get("set_at"), str) else None,
         "set_by_role": raw.get("set_by_role")
         if isinstance(raw.get("set_by_role"), str)
         else None,
     }
+
+
+def read_machine_totals(path: pathlib.Path | None) -> dict:
+    """{"vents_total", "crrt_total", "vents_free"} from the capacity file: whole
+    numbers 0..50 or None (an absent, broken or older file reads as not set)"""
+    return capacity_mod.totals(_capacity_raw(path))
+
+
+def machine_yardsticks(tab: dict, totals: dict, pending: bool = False) -> dict | None:
+    """ventilators and CRRT machines against the unit's totals, as the page's cards:
+    free = total - in use at the cut (an entered ventilators-free number wins);
+    flagged = beds not on that support whose chance of starting it is FLAG_AT or
+    more; SHORT when flagged > free, AT LIMIT when flagged == free and > 0, else
+    ON TRACK. None when no total is set; a support without a total is None. With no
+    forecast (pending, or the probe skipped) `flagged`, `words` and `level` are null:
+    in use and free stay real."""
+    out = {}
+    for s in capacity_mod.MACHINES:
+        on = tab["on"][s]
+        in_use = int(on.sum())
+        free = capacity_mod.free(s, totals, in_use)
+        if free is None:
+            out[s] = None
+            continue
+        name = SUPPORT_RESOURCE[s]
+        p, sk = tab["p"][name], tab["skipped"][name]
+        entry = {
+            "total": totals.get(capacity_mod.MACHINES[s]),
+            "in_use": in_use,
+            "free": free,
+            "flag_at": capacity_mod.FLAG_AT,
+            "flagged": None,
+            "short_by": None,
+            "words": None,
+            "level": None,
+        }
+        if not (pending or (sk.any() and (sk | on).all())):
+            flagged = int((~on & (np.nan_to_num(p, nan=0.0) >= entry["flag_at"])).sum())
+            w, lv = capacity_mod.words(flagged, free)
+            entry.update(
+                flagged=flagged, short_by=max(0, flagged - free), words=w, level=lv
+            )
+        out[s] = entry
+    return out if any(v is not None for v in out.values()) else None
 
 
 def typical_life_support_rate(labels: pl.DataFrame) -> float | None:
@@ -835,6 +896,10 @@ def build_forecast(
         print("no train_for_inference.parquet: typical yardstick left out")
     ls = life_support_block(tab)
     pending = forecast_state == PENDING
+    totals = read_machine_totals(capacity)
+    cap = read_capacity(capacity)
+    if cap and cap["vents_free"] is None:  # derived from the ventilator total
+        cap["vents_free"] = capacity_mod.free("imv", totals, ls["now_by"]["imv"])
     if pending:  # no model: nothing is expected, nothing is 0
         resources = {
             name: {"team": team, **NO_COUNTS}
@@ -862,9 +927,10 @@ def build_forecast(
         else yardstick(
             ls,
             unit.height,
-            read_capacity(capacity),
+            cap,
             typical_life_support_rate(labels) if labels is not None else None,
         ),
+        "machines": machine_yardsticks(tab, totals, pending),
         "check_first": []
         if pending
         else check_first(unit, tab, read_room_map(stage_csv)),
@@ -960,7 +1026,8 @@ def main() -> None:
     ap.add_argument(
         "--capacity",
         type=pathlib.Path,
-        help="capacity JSON {life_support_patients, vents_free, set_at, set_by_role}; "
+        help="capacity JSON {life_support_patients, vents_free, vents_total, "
+        "crrt_total, set_at, set_by_role}; "
         "when it exists the yardstick is ON TRACK / TIGHT / SHORT against it",
     )
     ap.add_argument(

@@ -347,6 +347,19 @@ def test_life_support_and_capacity_tools(env, tmp_path):
     f, a = env([tc("get_capacity"), text("ok")])
     a.ask("capacity?", "bed manager")
     assert '"vents_free":3' in tool_msgs(f)[0]["content"]
+    # machine totals: free = total - on now, and the forecast's words come along
+    fc = json.loads((tmp_path / "forecast.json").read_text())
+    fc["life_support"]["now_by"] = {"imv": 5, "vasopressor": 1, "crrt": 2}
+    fc["machines"] = {"imv": {"words": "SHORT", "short_by": 1}, "crrt": None}
+    (tmp_path / "forecast.json").write_text(json.dumps(fc))
+    (tmp_path / "capacity.json").write_text(
+        json.dumps({"vents_total": 8, "crrt_total": 2})
+    )
+    f, a = env([tc("get_capacity"), text("ok")])
+    a.ask("are we short of ventilators?", "respiratory therapy")
+    got = tool_msgs(f)[0]["content"]
+    assert '"vents_total":8' in got and '"vents_free":3' in got
+    assert '"crrt_total":2' in got and '"crrt_free":0' in got and "SHORT" in got
 
 
 def test_unit_forecast_has_five_rows_and_check_first_no_strain(env):
