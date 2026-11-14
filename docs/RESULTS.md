@@ -26,12 +26,12 @@ How well the patient model's five classifiers did on patients they never saw dur
 | Ventilator start | 25,307 | 780 | 0.769 |
 | Vasopressor start | 30,230 | 796 | 0.792 |
 
-Held-out AUROC is close to the cross-validated AUROC for every task, so the classifiers did not overfit the training patients.
+Held-out AUROC is close to the cross-validated AUROC for every task.
 
 ## How to read it
 
 - **AUROC:** the chance that the model ranks a random patient who had the event above one who did not. 0.5 is a coin toss; 1.0 is perfect.
-- **AUPRC:** how precise the flags are, compared with the event's own rate (prevalence). An AUPRC of 0.399 for death against a 1.6% prevalence means flagged patients are about 25 times richer in deaths than the unit as a whole.
+- **AUPRC:** a summary of precision across all thresholds, read against the event's own rate (prevalence); a model that guesses scores about the prevalence. It is not the precision at the board's flag line; that would need precision measured at that threshold.
 - **Brier:** the mean squared error of the predicted chance. Lower is better; compare it with the prevalence.
 - **Patient counts differ by task** because a patient already on that support at the cut is not counted for its start (for example, a patient already on a ventilator cannot start one).
 
