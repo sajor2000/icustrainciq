@@ -1,493 +1,107 @@
 {
-  "made_at": "2026-11-14T09:47:46",
+  "made_at": "2026-11-14T10:28:29",
   "beds": 25,
   "range": "80% (p10-p90)",
+  "method": "probe on icutwin features, one forward pass per patient",
   "default_horizon": "24h",
-  "horizon": "Next 24 h (Day 1)",
+  "horizon": "Next 24 h (to 07:00 tomorrow)",
   "model": "synthetic",
-  "shards": 1,
   "resources": {
-    "vasopressor": {
-      "team": "pharmacy",
+    "ventilator": {
+      "team": "respiratory therapy",
       "p10": 0,
       "p50": 2,
       "p90": 4,
-      "expected": 1.87
+      "expected": 2.09
     },
-    "ventilator": {
-      "team": "respiratory therapy",
+    "vasopressor": {
+      "team": "pharmacy",
       "p10": 1,
       "p50": 3,
       "p90": 5,
-      "expected": 2.95
+      "expected": 3.13
     },
-    "nippv": {
-      "team": "respiratory therapy",
+    "crrt": {
+      "team": "ICU team",
       "p10": 0,
       "p50": 1,
       "p90": 3,
-      "expected": 1.52
+      "expected": 1.29
     },
-    "high_flow_nc": {
-      "team": "respiratory therapy",
-      "p10": 0,
-      "p50": 2,
-      "p90": 4,
-      "expected": 2.11
-    },
-    "icu_admission": {
+    "hypotension": {
       "team": "ICU team",
-      "p10": 1,
-      "p50": 3,
-      "p90": 5,
-      "expected": 3.26
+      "p10": 5,
+      "p50": 8,
+      "p90": 11,
+      "expected": 7.72
     },
     "death": {
       "team": "ICU team",
       "p10": 0,
       "p50": 1,
-      "p90": 2,
-      "expected": 0.88
+      "p90": 3,
+      "expected": 1.49
     },
     "icu_departure": {
       "team": "bed manager",
-      "p10": 3,
-      "p50": 5,
-      "p90": 8,
-      "expected": 5.35
-    },
-    "icu_beds_net": {
-      "team": "bed manager",
-      "p10": -6,
-      "p50": -3,
-      "p90": 0,
-      "expected": -2.97
+      "p10": 5,
+      "p50": 8,
+      "p90": 11,
+      "expected": 7.65
     }
   },
   "horizons": {
     "24h": {
-      "label": "Next 24 h (Day 1)",
+      "label": "Next 24 h (to 07:00 tomorrow)",
       "resources": {
-        "vasopressor": {
-          "team": "pharmacy",
+        "ventilator": {
+          "team": "respiratory therapy",
           "p10": 0,
           "p50": 2,
           "p90": 4,
-          "expected": 1.87
+          "expected": 2.09
         },
-        "ventilator": {
-          "team": "respiratory therapy",
+        "vasopressor": {
+          "team": "pharmacy",
           "p10": 1,
           "p50": 3,
           "p90": 5,
-          "expected": 2.95
+          "expected": 3.13
         },
-        "nippv": {
-          "team": "respiratory therapy",
+        "crrt": {
+          "team": "ICU team",
           "p10": 0,
           "p50": 1,
           "p90": 3,
-          "expected": 1.52
+          "expected": 1.29
         },
-        "high_flow_nc": {
-          "team": "respiratory therapy",
-          "p10": 0,
-          "p50": 2,
-          "p90": 4,
-          "expected": 2.11
-        },
-        "icu_admission": {
+        "hypotension": {
           "team": "ICU team",
-          "p10": 1,
-          "p50": 3,
-          "p90": 5,
-          "expected": 3.26
-        },
-        "death": {
-          "team": "ICU team",
-          "p10": 0,
-          "p50": 1,
-          "p90": 2,
-          "expected": 0.88
-        },
-        "icu_departure": {
-          "team": "bed manager",
-          "p10": 3,
-          "p50": 5,
-          "p90": 8,
-          "expected": 5.35
-        },
-        "icu_beds_net": {
-          "team": "bed manager",
-          "p10": -6,
-          "p50": -3,
-          "p90": 0,
-          "expected": -2.97
-        }
-      }
-    },
-    "48h": {
-      "label": "Within 48 h",
-      "resources": {
-        "vasopressor": {
-          "team": "pharmacy",
-          "p10": 1,
-          "p50": 3,
-          "p90": 5,
-          "expected": 2.91
-        },
-        "ventilator": {
-          "team": "respiratory therapy",
-          "p10": 2,
-          "p50": 4,
-          "p90": 7,
-          "expected": 4.58
-        },
-        "nippv": {
-          "team": "respiratory therapy",
-          "p10": 1,
-          "p50": 2,
-          "p90": 4,
-          "expected": 2.36
-        },
-        "high_flow_nc": {
-          "team": "respiratory therapy",
-          "p10": 1,
-          "p50": 3,
-          "p90": 6,
-          "expected": 3.28
-        },
-        "icu_admission": {
-          "team": "ICU team",
-          "p10": 3,
-          "p50": 5,
-          "p90": 8,
-          "expected": 5.07
+          "p10": 5,
+          "p50": 8,
+          "p90": 11,
+          "expected": 7.72
         },
         "death": {
           "team": "ICU team",
           "p10": 0,
           "p50": 1,
           "p90": 3,
-          "expected": 1.37
+          "expected": 1.49
         },
         "icu_departure": {
           "team": "bed manager",
           "p10": 5,
           "p50": 8,
           "p90": 11,
-          "expected": 8.32
-        },
-        "icu_beds_net": {
-          "team": "bed manager",
-          "p10": -9,
-          "p50": -5,
-          "p90": -1,
-          "expected": -4.62
-        }
-      }
-    },
-    "72h": {
-      "label": "Within 72 h",
-      "resources": {
-        "vasopressor": {
-          "team": "pharmacy",
-          "p10": 1,
-          "p50": 3,
-          "p90": 6,
-          "expected": 3.53
-        },
-        "ventilator": {
-          "team": "respiratory therapy",
-          "p10": 3,
-          "p50": 5,
-          "p90": 8,
-          "expected": 5.56
-        },
-        "nippv": {
-          "team": "respiratory therapy",
-          "p10": 1,
-          "p50": 3,
-          "p90": 5,
-          "expected": 2.87
-        },
-        "high_flow_nc": {
-          "team": "respiratory therapy",
-          "p10": 2,
-          "p50": 4,
-          "p90": 6,
-          "expected": 3.98
-        },
-        "icu_admission": {
-          "team": "ICU team",
-          "p10": 4,
-          "p50": 6,
-          "p90": 9,
-          "expected": 6.15
-        },
-        "death": {
-          "team": "ICU team",
-          "p10": 0,
-          "p50": 2,
-          "p90": 3,
-          "expected": 1.66
-        },
-        "icu_departure": {
-          "team": "bed manager",
-          "p10": 7,
-          "p50": 10,
-          "p90": 13,
-          "expected": 10.1
-        },
-        "icu_beds_net": {
-          "team": "bed manager",
-          "p10": -10,
-          "p50": -6,
-          "p90": -1,
-          "expected": -5.61
-        }
-      }
-    },
-    "stay": {
-      "label": "Rest of stay",
-      "resources": {
-        "vasopressor": {
-          "team": "pharmacy",
-          "p10": 2,
-          "p50": 4,
-          "p90": 7,
-          "expected": 4.15
-        },
-        "ventilator": {
-          "team": "respiratory therapy",
-          "p10": 4,
-          "p50": 6,
-          "p90": 9,
-          "expected": 6.54
-        },
-        "nippv": {
-          "team": "respiratory therapy",
-          "p10": 1,
-          "p50": 3,
-          "p90": 6,
-          "expected": 3.38
-        },
-        "high_flow_nc": {
-          "team": "respiratory therapy",
-          "p10": 2,
-          "p50": 5,
-          "p90": 7,
-          "expected": 4.68
-        },
-        "icu_admission": {
-          "team": "ICU team",
-          "p10": 4,
-          "p50": 7,
-          "p90": 10,
-          "expected": 7.24
-        },
-        "death": {
-          "team": "ICU team",
-          "p10": 0,
-          "p50": 2,
-          "p90": 4,
-          "expected": 1.95
-        },
-        "icu_departure": {
-          "team": "bed manager",
-          "p10": 9,
-          "p50": 12,
-          "p90": 15,
-          "expected": 11.88
-        },
-        "icu_beds_net": {
-          "team": "bed manager",
-          "p10": -11,
-          "p50": -7,
-          "p90": -2,
-          "expected": -6.6
+          "expected": 7.65
         }
       }
     }
   },
-  "per_day": {
-    "Day 1": {
-      "vasopressor": {
-        "team": "pharmacy",
-        "p10": 0,
-        "p50": 2,
-        "p90": 4,
-        "expected": 1.87
-      },
-      "ventilator": {
-        "team": "respiratory therapy",
-        "p10": 1,
-        "p50": 3,
-        "p90": 5,
-        "expected": 2.95
-      },
-      "nippv": {
-        "team": "respiratory therapy",
-        "p10": 0,
-        "p50": 1,
-        "p90": 3,
-        "expected": 1.52
-      },
-      "high_flow_nc": {
-        "team": "respiratory therapy",
-        "p10": 0,
-        "p50": 2,
-        "p90": 4,
-        "expected": 2.11
-      },
-      "icu_admission": {
-        "team": "ICU team",
-        "p10": 1,
-        "p50": 3,
-        "p90": 5,
-        "expected": 3.26
-      },
-      "death": {
-        "team": "ICU team",
-        "p10": 0,
-        "p50": 1,
-        "p90": 2,
-        "expected": 0.88
-      },
-      "icu_departure": {
-        "team": "bed manager",
-        "p10": 3,
-        "p50": 5,
-        "p90": 8,
-        "expected": 5.35
-      },
-      "icu_beds_net": {
-        "team": "bed manager",
-        "p10": -6,
-        "p50": -3,
-        "p90": 0,
-        "expected": -2.97
-      }
-    },
-    "Day 2": {
-      "vasopressor": {
-        "team": "pharmacy",
-        "p10": 0,
-        "p50": 1,
-        "p90": 2,
-        "expected": 1.04
-      },
-      "ventilator": {
-        "team": "respiratory therapy",
-        "p10": 0,
-        "p50": 1,
-        "p90": 3,
-        "expected": 1.64
-      },
-      "nippv": {
-        "team": "respiratory therapy",
-        "p10": 0,
-        "p50": 1,
-        "p90": 2,
-        "expected": 0.84
-      },
-      "high_flow_nc": {
-        "team": "respiratory therapy",
-        "p10": 0,
-        "p50": 1,
-        "p90": 3,
-        "expected": 1.17
-      },
-      "icu_admission": {
-        "team": "ICU team",
-        "p10": 0,
-        "p50": 2,
-        "p90": 4,
-        "expected": 1.81
-      },
-      "death": {
-        "team": "ICU team",
-        "p10": 0,
-        "p50": 0,
-        "p90": 1,
-        "expected": 0.49
-      },
-      "icu_departure": {
-        "team": "bed manager",
-        "p10": 1,
-        "p50": 3,
-        "p90": 5,
-        "expected": 2.97
-      },
-      "icu_beds_net": {
-        "team": "bed manager",
-        "p10": -4,
-        "p50": -2,
-        "p90": 1,
-        "expected": -1.65
-      }
-    },
-    "Day 3": {
-      "vasopressor": {
-        "team": "pharmacy",
-        "p10": 0,
-        "p50": 0,
-        "p90": 2,
-        "expected": 0.62
-      },
-      "ventilator": {
-        "team": "respiratory therapy",
-        "p10": 0,
-        "p50": 1,
-        "p90": 2,
-        "expected": 0.98
-      },
-      "nippv": {
-        "team": "respiratory therapy",
-        "p10": 0,
-        "p50": 0,
-        "p90": 1,
-        "expected": 0.51
-      },
-      "high_flow_nc": {
-        "team": "respiratory therapy",
-        "p10": 0,
-        "p50": 1,
-        "p90": 2,
-        "expected": 0.7
-      },
-      "icu_admission": {
-        "team": "ICU team",
-        "p10": 0,
-        "p50": 1,
-        "p90": 2,
-        "expected": 1.09
-      },
-      "death": {
-        "team": "ICU team",
-        "p10": 0,
-        "p50": 0,
-        "p90": 1,
-        "expected": 0.29
-      },
-      "icu_departure": {
-        "team": "bed manager",
-        "p10": 0,
-        "p50": 2,
-        "p90": 3,
-        "expected": 1.78
-      },
-      "icu_beds_net": {
-        "team": "bed manager",
-        "p10": -3,
-        "p50": -1,
-        "p90": 1,
-        "expected": -0.99
-      }
-    }
-  },
+  "per_day": {},
   "already_started": {
-    "vasopressor": 0,
-    "ventilator": 0
+    "ventilator": 7,
+    "vasopressor": 5
   }
 }

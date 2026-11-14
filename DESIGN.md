@@ -93,19 +93,6 @@ components:
     rounded: "{rounded.magnet}"
     padding: "8px 10px"
     height: "92px"
-  segment:
-    backgroundColor: "transparent"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.control}"
-    padding: "8px 14px"
-  segment-selected:
-    backgroundColor: "{colors.magnet}"
-    textColor: "{colors.magnet-ink}"
-    rounded: "{rounded.control}"
-    padding: "8px 14px"
-  segment-hover:
-    backgroundColor: "{colors.board-2}"
-    textColor: "{colors.ink}"
   board-toggle:
     backgroundColor: "transparent"
     textColor: "{colors.ink}"
@@ -124,17 +111,12 @@ components:
     textColor: "{colors.status-short}"
   synthetic-badge:
     backgroundColor: "transparent"
-    textColor: "{colors.status-short}"
+    textColor: "{colors.ink}"
     rounded: "{rounded.badge}"
     padding: "2px 6px"
   chip:
     backgroundColor: "transparent"
     textColor: "{colors.ink}"
-    rounded: "{rounded.pill}"
-    padding: "3px 10px"
-  chip-selected:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.board}"
     rounded: "{rounded.pill}"
     padding: "3px 10px"
   ask-input:
@@ -165,9 +147,9 @@ components:
 
 **Creative North Star: "The Unit Whiteboard"**
 
-The board is the whiteboard an ICU team already reads at shift change, made to forecast. An enamel-white ground carries marker-navy ink, rooms are flat magnets with ink borders, and one blue (the magnet) does double duty as risk shading and as the mark of the current choice. Everything else is ink, rules, and words. It refuses the KPI-tile dashboard and the departure board: no hero numbers floating in cards, no flipping split-flap rows.
+The board is the whiteboard an ICU team already reads at shift change, made to forecast. An enamel-white ground carries marker-navy ink, rooms are flat magnets with ink borders, and one blue (the magnet) means risk: magnet shading and range bars. Everything else is ink, rules, and words. It refuses the KPI-tile dashboard and the departure board: no hero numbers floating in cards, no flipping split-flap rows.
 
-Density is operational. The first viewport holds 25 rooms in a 5-column grid on the left two-thirds and a ruled margin column of team counts on the right, so a charge nurse and an attending can answer "what will we be short of, when, and how sure are we" from across a room or on a projector. Numerals are large, tabular, and heavy; prose is short, plain, and honest about what is mock, synthetic, or not yet run.
+Density is operational, and the answer comes first. The first viewport holds a three-line shift brief (the verdict on top) and the six task rows in a ruled right column, and on the left the three highest-risk rooms as magnets with the full 25-room board one tap away ("Show all 25 rooms"), so a charge nurse and an attending can answer "what will we be short of, when, and how sure are we" from across a room or on a projector. Numerals are large, tabular, and heavy; prose is short, plain, and honest about what is mock, synthetic, or not yet run.
 
 A night board (charcoal ground, chalk ink) is the same grammar with lifted colours, chosen by the user, not by the OS.
 
@@ -183,24 +165,24 @@ A night board (charcoal ground, chalk ink) is the same grammar with lifted colou
 A near-monochrome board of ink on enamel, one working blue, and three status inks that are always paired with a word.
 
 ### Primary
-- **Magnet Blue** (`magnet`; night `night-magnet`): the only chromatic fill. Shades magnets by risk, fills the selected horizon segment, draws the 80% range bar, tints the selected horizon band in the futures chart (12% alpha), and doubles as the day focus ring.
+- **Magnet Blue** (`magnet`; night `night-magnet`): the only chromatic fill. Shades magnets by risk, draws the 80% range bar and the room drawer's risk bars, and doubles as the day focus ring.
 
 ### Status
-- **On-Track Green** (`status-ok`), **Tight Amber** (`status-tight`), **Short Red** (`status-short`): ink for the status words ON TRACK / TIGHT / SHORT, outlined in the same colour. Short Red also draws the capacity line on range bars, the in-horizon event marks in the futures chart, and the SYNTHETIC DATA badge.
+- **On-Track Green** (`status-ok`), **Tight Amber** (`status-tight`), **Short Red** (`status-short`): ink for the status words ON TRACK / TIGHT / SHORT, outlined in the same colour. Each colour means its word and nothing else: red is SHORT only. The capacity line and the SYNTHETIC DATA badge are ink.
 
 ### Neutral
-- **Enamel Board** (`board`): page ground; also the ground of the futures chart and the ask input.
+- **Enamel Board** (`board`): page ground; also the ground of the ask input.
 - **Board Shadow** (`board-2`): hover fill for controls and the fill of the team's own chat messages.
 - **Magnet Surface** (`surface`): the unshaded magnet face that magnet blue mixes into.
-- **Marker Navy** (`ink`): text, magnet borders, 2px region rules, the median tick, selected chips, the Ask button.
+- **Marker Navy** (`ink`): text, magnet borders, 2px region rules, the median tick, the capacity line, the SYNTHETIC badge, the Ask button.
 - **Faded Marker** (`ink-2`): secondary text, subtitles, ranges, timestamps, "not forecast" rows.
 - **Rule** (`rule`): 1px row dividers, the range-bar track, quiet borders.
 - **Night counterparts** (`night-*`): charcoal ground, chalk ink, lifted blue and status inks; `night-focus` is a lighter blue than the night magnet so the focus ring separates from selected fills.
 
 ### Named Rules
-**The One Blue Rule.** Magnet blue is the only chromatic fill on the board. It means "risk" on a magnet and "chosen" on a control; no second accent is introduced.
+**The One Blue Rule.** Magnet blue is the only chromatic fill on the board. It means "risk"; controls show selection with ink, not blue. No second accent is introduced.
 
-**The Word Beside the Colour Rule.** Status is never colour alone. Every status colour appears as the ink of a word (ON TRACK, TIGHT, SHORT) with a matching outline, and the capacity line is explained in text ("red line = what is free").
+**The Word Beside the Colour Rule.** Status is never colour alone. Every status colour appears as the ink of a word (ON TRACK, TIGHT, SHORT) with a matching outline, and the capacity line is an ink line explained in text ("ink line = what is free").
 
 **The Readable Ink Rule.** Text ink must reach 4.5:1 against its own ground on both boards. Magnet ink is chosen in code from the four board inks by contrast, and the fill is nudged along the mix until the better ink reaches 4.5:1. Status inks are held to the same bar: day Tight Amber is #9A5410 (5.26:1 on the board; the earlier #B8661A measured 3.87:1 and was darkened).
 
@@ -228,13 +210,13 @@ A near-monochrome board of ink on enamel, one working blue, and three status ink
 
 ## Layout
 
-The page is a 1440px-max frame with 16px/24px/32px padding. A top strip (unit name, SYNTHETIC DATA badge, horizon segments, board toggle) closes with a 2px ink rule. Below it a two-column grid: the room board at `2fr` (sticky at 12px from the top) and the margin column at `minmax(320px, 1fr)`, divided by a 2px ink rule with 24px gutters either side. The room board is a 5-column grid with 12px gaps; the shift brief sits under it behind another 2px rule. A run-details strip closes the page behind a 2px rule.
+The page is a 1440px-max frame with 16px/24px/32px padding. A top strip (unit name with the fixed horizon "next 24 h, 07:00 to 07:00", SYNTHETIC DATA badge, board toggle, role picker, Rerun, and the run line) closes with a 2px ink rule. Below it a two-column grid: the room board at `2fr` (sticky at 12px from the top; the three highest-risk rooms as larger magnets in a 3-column row, the full 5-column board under a "Show all 25 rooms" disclosure) and the right column at `minmax(340px, 1fr)`, divided by a 2px ink rule with 24px gutters either side. The right column opens with the three-line shift brief, then the unit rows, the room drawer when open, and the chat. The room board is a 5-column grid with 12px gaps. A run-details strip closes the page behind a 2px rule.
 
-Inside the margin column, panels are separated by 1px rules with 14px/18px vertical padding. Each team row is a fixed four-track grid: name and range (120px), median numeral (44px), range bar (flexible), status word (78px), separated by 1px rules.
+Inside the margin column, panels are separated by 1px rules with 14px/18px vertical padding. Each task row is a four-track grid: name and team (flexible), median numeral (44px), range bar with its range in words (flexible), status word (88px), separated by 1px rules. Rows without a verdict fold under a `details` summary that says why ("N more rows · 1 on track, 3 capacity not assessed").
 
 Rhythm runs on 4/8/12/16/24/32px; component interiors use 6px and 10px half-steps (magnet tags, row padding).
 
-Responsive: under 960px the columns stack, the vertical rule becomes a horizontal one, and opening a room scrolls the drawer into view. Under 560px magnets shrink (68px, 6px gaps) and labels shorten (Vent, Press, V, P). Under 420px row tracks tighten to 96/36/flex/64px.
+Responsive: under 960px the columns stack in the order brief, unit rows, room drawer, board, chat (the verdict and each role's own row before the 25 magnets), the vertical rule becomes horizontal ones, and opening a room scrolls the drawer into view. Under 560px magnets shrink (68px, 6px gaps) and labels shorten (Vent, Press, V, P). Under 420px row tracks tighten to 96/36/flex/64px.
 
 **The Ruled Margin Rule.** Regions are separated by 2px ink rules; rows by 1px rules at 12% ink (14% at night). No cards, no panel backgrounds.
 
@@ -249,43 +231,46 @@ The board is flat. Depth is carried by ink rules and borders, not by panels. The
 
 ## Shapes
 
-Corners are small and practical: 3px on magnet tags and legend swatches, 4px on status words and the synthetic badge, 6px on magnets, the futures chart, the close button and the focus ring, 8px on segmented controls, the toggle, the ask input and button, and chat messages, and full pills only on event chips. Borders are 1.5px solid ink on anything interactive or board-like (magnets, segments, toggle, chips, input), 1.5px currentColor on status words and tags, and 1px rule on quiet containers (chart frame).
+Corners are small and practical: 3px on magnet tags and legend swatches, 4px on status words and the synthetic badge, 6px on magnets, the close button and the focus ring, 8px on the toggle, the select, the ask input and button, and chat messages, and full pills only on suggested-question chips. Borders are 1.5px solid ink on anything interactive or board-like (magnets, toggle, select, chips, input), 1.5px currentColor on status words and tags, and 1.5px dashed ink on the SYNTHETIC badge.
 
 ## Components
 
 ### Magnet (room tile)
 The signature piece: a flat tile with an ink border, the room number large, the top risk beneath.
 - **Shape:** 6px corners, 1.5px ink border, min-height 92px, 8px/10px padding.
-- **Fill:** magnet blue mixed into the surface by the room's highest non-discharge risk for the chosen horizon (6% at zero, full magnet at 45% or more). Ink is the higher-contrast of the four board inks; the mix moves until that ink reaches 4.5:1.
-- **Content:** room number (26px/800), risk line (13px/600, event name + percent), and top-right VENT / PRESS tags for devices already running.
+- **Fill:** magnet blue mixed into the surface by the room's highest risk in the next 24 h (leaving the ICU is not a risk) (6% at zero, full magnet at 45% or more). Ink is the higher-contrast of the four board inks; the mix moves until that ink reaches 4.5:1.
+- **Content:** room number (26px/800), risk line (13px/600, event name + percent), and top-right VENT / PRESS / CRRT tags for tasks already on before 07:00 (V / P / C on a phone).
 - **States:** hover lifts 1px; selected gets a 3px ink outline offset 2px; `aria-pressed` reflects selection; the accessible label spells the risk in words.
-- **Legend:** three swatches (under 5%, about 1 in 4, 45% or more) above the grid.
+- **Legend:** three swatches (under 5%, about 1 in 4, 45% or more) above the grid, readable by screen readers; a note under the grid says what the shade and tags mean.
 
 ### Margin row and range bar
-- **Row:** four tracks (name with "p10 to p90" range beneath, median numeral, bar, status word).
-- **Bar:** a rounded 6px Rule track; the 80% range as a 10px rounded magnet-blue stroke; the median as a 3px ink tick spanning the bar; where a capacity is set, a 3px Short Red line at the free count.
+- **Row:** four tracks (name with team or "your row" beneath, median numeral (the p50, never called "most likely"), bar with "range p10 to p90" beneath, status word or "no capacity set").
+- **Bar:** a rounded 6px Rule track; the 80% range as a 10px rounded magnet-blue stroke; the median as a 3px ink tick spanning the bar; where a capacity is set, a 3px ink line at the free count.
 - **Not forecast:** a row with no model output shows "not forecast", an em dash in Faded Marker, and a dashed Faded Marker line instead of a bar.
 
 ### Status word
-ON TRACK / TIGHT / SHORT, 12px/800 uppercase, outlined in currentColor, 4px corners. Shown only where a capacity is set; elsewhere the cell is empty. SHORT when the median exceeds what is free, TIGHT when the 90th percentile does, ON TRACK otherwise.
+ON TRACK / TIGHT / SHORT, 12px/800 uppercase, outlined in currentColor, 4px corners. Shown only where a capacity is set; elsewhere the cell reads "no capacity set" in plain Faded Marker, with no outline. SHORT when the median exceeds what is free, TIGHT when the 90th percentile does, ON TRACK otherwise.
 
-### Horizon segments and board toggle
-- **Segments:** a 1.5px ink-bordered group with 8px corners and 1.5px dividers; selected segment fills magnet blue with magnet ink; hover fills Board Shadow. Labels: Next 24 h, Day 2, Day 3, Rest of stay.
-- **Board toggle:** the same border and corners, one button, `aria-pressed`, label names the board it switches to.
+### Board toggle and role picker
+- **Board toggle:** 1.5px ink border, 8px corners, one button, `aria-pressed`; the label names the board it switches to.
+- **Role picker:** a native select with the same border ("I am ..."). It reorders the unit rows and the suggested questions; it never stores a name.
+
+### Shift brief
+Top of the right column (first block on a phone). Title "Shift brief (mock)" and a 13px sub-line, then at most three lines separated by 1px rules: the verdict (18px/700, with the status word as an outlined label), the two busiest rows with their ranges, and "Watch first" with three room links (700, 1.5px underline).
 
 ### Room drawer
-Replaces the unit-strain panel in the margin column; "Back to unit" restores it. Holds a sub-line, a risk table (events by horizon, right-aligned percentages, "on now" for running devices), event chips (pill, 1.5px ink border; selected fills ink with board text), the futures chart, drivers with counts "in n of N futures", and a 12-hour history list with Faded Marker timestamps. Closes with the evidence-not-cause note.
+Opens under the unit rows; "Close room" removes it. Holds a sub-line, the room's live tasks as bars sorted by risk (10px Rule track, magnet-blue fill, 18px/800 percent), an "On now, not forecast as new" line of tags, one trust line ("held-out check ... pending run"), the last 12 h of events (five, then "Show more"), and the evidence-not-cause note.
 
-### 100-futures chart
-A canvas on the board ground with a 1px rule frame and 6px corners. One faint ink line per future (22% alpha) ending at discharge or death; event marks 6px wide, Short Red inside the chosen horizon and half-alpha ink after it; the horizon band tinted magnet at 12%; day gridlines in Rule with 07:00 labels. A caption states the count in words ("in n of 100 futures") and the accessible label repeats it.
+### Suggested questions
+Pill chips (1.5px ink border, 13px/600) above the chat log: at most three by role plus "Rerun the forecast"; with a room open the first chip asks about that room. Hover fills Board Shadow.
 
 ### Ask the board (chat)
 - **Messages:** 8px corners, 14px text, max 92% width; the team's questions right-aligned on Board Shadow, answers left-aligned with a 1.5px Rule border; a 12px/700 Faded Marker speaker line.
-- **Input:** board ground, 1.5px ink border, 8px corners; placeholder in Faded Marker carries an example question.
+- **Input:** board ground, 1.5px ink border, 8px corners; placeholder "Or type a question" in Faded Marker. The log starts empty and hides until the first question.
 - **Ask button:** ink fill, board text, 700, 8px corners.
 
 ### Honesty labels
-- **SYNTHETIC DATA:** a Short Red outlined badge in the top strip whenever numbers are made up.
+- **SYNTHETIC DATA:** a dashed ink outlined badge in the top strip whenever numbers are made up (red stays reserved for SHORT).
 - **(mock):** appended to any panel or speaker whose content is mocked (Shift brief, Nemotron 3 Nano).
 - **pending run:** italic Faded Marker in place of any measured number that does not exist yet.
 - **not forecast:** Faded Marker under a row the model does not cover.
@@ -297,7 +282,8 @@ All focusable elements: 3px solid focus colour, 2px offset, 6px corners (`:focus
 
 ### Do:
 - **Do** shade magnets only by mixing magnet blue into the surface, and pick the magnet ink by contrast so it reaches 4.5:1.
-- **Do** pair every status colour with its word (ON TRACK, TIGHT, SHORT) and show the word only where a capacity is set.
+- **Do** pair every status colour with its word (ON TRACK, TIGHT, SHORT), show the word only where a capacity is set, and keep red for SHORT alone.
+- **Do** lead with the verdict and the exceptions; fold rows with nothing to decide.
 - **Do** give every forecast number its 80% range, as "p10 to p90" text and as a range bar with a median tick.
 - **Do** separate regions with 2px ink rules and rows with 1px Rule lines.
 - **Do** label mock, synthetic, and missing numbers in place: SYNTHETIC DATA, (mock), pending run, not forecast.
@@ -306,6 +292,7 @@ All focusable elements: 3px solid focus colour, 2px offset, 6px corners (`:focus
 
 ### Don't:
 - **Don't** build KPI tiles or departure-board rows; counts live in ruled margin rows.
+- **Don't** add horizon tabs, time sliders or probability tables: the board has one horizon, the next 24 h.
 - **Don't** introduce a second accent colour or fill panels with colour.
 - **Don't** convey status, risk, or capacity by colour alone.
 - **Don't** add shadows to anything but magnets.

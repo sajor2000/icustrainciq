@@ -2,6 +2,88 @@
   "detector": {
     "ignoreRules": [],
     "ignoreFiles": [],
-    "ignoreValues": []
+    "ignoreValues": [
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "mockups/command-center.html"
+        ],
+        "createdAt": "2026-11-14T17:01:29.719Z",
+        "reason": "Claude triage: .brief has a 2px left rule with 24px padding-left on desktop; under 960px both are 0 (no rule). Verified in browser at 1440 and 390 px; nothing sits flush against a visible edge."
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          "docs/diagrams/hosting.html"
+        ],
+        "createdAt": "2026-11-14T17:27:02.686Z",
+        "reason": "Claude triage: team diagrams use the diagram-design skin (Instrument Serif, Geist, Geist Mono) shared with the backend's docs/diagrams, not the board's DESIGN.md type system; the backend repo scoped the same rule off for its diagram HTML."
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          "docs/diagrams/journey.html"
+        ],
+        "createdAt": "2026-11-14T17:27:02.744Z",
+        "reason": "Claude triage: team diagrams use the diagram-design skin (Instrument Serif, Geist, Geist Mono) shared with the backend's docs/diagrams, not the board's DESIGN.md type system; the backend repo scoped the same rule off for its diagram HTML."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "docs/diagrams/hosting.html"
+        ],
+        "createdAt": "2026-11-14T17:27:15.273Z",
+        "reason": "Claude triage: team diagrams use the shared diagram-design skin (paper #f5f5f5, ink #2d3142, Instrument Serif/Geist/Geist Mono) to match the backend's docs/diagrams; they are not board UI and DESIGN.md does not govern them."
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "docs/diagrams/hosting.html"
+        ],
+        "createdAt": "2026-11-14T17:27:15.301Z",
+        "reason": "Claude triage: team diagrams use the shared diagram-design skin (paper #f5f5f5, ink #2d3142, Instrument Serif/Geist/Geist Mono) to match the backend's docs/diagrams; they are not board UI and DESIGN.md does not govern them."
+      },
+      {
+        "rule": "overused-font",
+        "value": "*",
+        "files": [
+          "docs/diagrams/hosting.html"
+        ],
+        "createdAt": "2026-11-14T17:27:15.332Z",
+        "reason": "Claude triage: team diagrams use the shared diagram-design skin (paper #f5f5f5, ink #2d3142, Instrument Serif/Geist/Geist Mono) to match the backend's docs/diagrams; they are not board UI and DESIGN.md does not govern them."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "docs/diagrams/journey.html"
+        ],
+        "createdAt": "2026-11-14T17:27:15.357Z",
+        "reason": "Claude triage: team diagrams use the shared diagram-design skin (paper #f5f5f5, ink #2d3142, Instrument Serif/Geist/Geist Mono) to match the backend's docs/diagrams; they are not board UI and DESIGN.md does not govern them."
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "docs/diagrams/journey.html"
+        ],
+        "createdAt": "2026-11-14T17:27:15.383Z",
+        "reason": "Claude triage: team diagrams use the shared diagram-design skin (paper #f5f5f5, ink #2d3142, Instrument Serif/Geist/Geist Mono) to match the backend's docs/diagrams; they are not board UI and DESIGN.md does not govern them."
+      },
+      {
+        "rule": "overused-font",
+        "value": "*",
+        "files": [
+          "docs/diagrams/journey.html"
+        ],
+        "createdAt": "2026-11-14T17:27:15.408Z",
+        "reason": "Claude triage: team diagrams use the shared diagram-design skin (paper #f5f5f5, ink #2d3142, Instrument Serif/Geist/Geist Mono) to match the backend's docs/diagrams; they are not board UI and DESIGN.md does not govern them."
+      }
+    ]
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-14T12:00:00Z",
+  "generatedAt": "2026-11-14T17:05:09Z",
   "title": "Design System: ICU-Twin",
   "extensions": {
     "colorMeta": {
@@ -478,20 +478,12 @@
       "css": ".ds-grid{display:grid;grid-template-columns:repeat(2,168px);gap:12px;font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}.ds-mag{position:relative;min-height:92px;text-align:left;border:1.5px solid var(--ink,#1E2A33);border-radius:6px;padding:8px 10px;cursor:pointer;color:var(--ink,#1E2A33);font:inherit;box-shadow:0 1px 1px rgba(0,0,0,.18),0 2px 4px rgba(0,0,0,.06);transition:background-color .2s ease-out,transform .15s ease-out}.ds-mag:hover{transform:translateY(-1px)}.ds-mag[aria-pressed=\"true\"]{outline:3px solid var(--ink,#1E2A33);outline-offset:2px}.ds-mag:focus-visible{outline:3px solid var(--focus,#2F6FB0);outline-offset:2px}.ds-rm{display:block;font-size:26px;font-weight:800;line-height:1}.ds-top1{display:block;margin-top:6px;font-size:13px;font-weight:600}.ds-on{position:absolute;top:8px;right:8px;display:flex;gap:4px}.ds-on>span{font-size:11px;font-weight:700;letter-spacing:.04em;border:1.2px solid currentColor;border-radius:3px;padding:0 4px;line-height:16px}"
     },
     {
-      "name": "Margin row with range bar",
+      "name": "Task row with range bar",
       "kind": "custom",
       "refersTo": "status-word",
-      "description": "Team count: median, 80% range bar, red capacity line, status word.",
+      "description": "Task count: median (p50), 80% range bar with the range in words, ink capacity line, status word or 'no capacity set'.",
       "html": "<div class=\"ds-row\"><span class=\"ds-name\">Ventilator starts<br><span class=\"ds-range\">2 to 6 · 4 free</span></span><span class=\"ds-n\">4</span><svg viewBox=\"0 0 300 28\" aria-hidden=\"true\"><line x1=\"8\" x2=\"258\" y1=\"14\" y2=\"14\" stroke=\"rgba(30,42,51,.12)\" stroke-width=\"6\" stroke-linecap=\"round\"/><line x1=\"70\" x2=\"195\" y1=\"14\" y2=\"14\" stroke=\"#2F6FB0\" stroke-width=\"10\" stroke-linecap=\"round\"/><line x1=\"133\" x2=\"133\" y1=\"4\" y2=\"24\" stroke=\"#1E2A33\" stroke-width=\"3\"/><rect x=\"131.5\" y=\"1\" width=\"3\" height=\"26\" fill=\"#B23A3A\"/></svg><span class=\"ds-status ds-tight\">TIGHT</span></div>",
       "css": ".ds-row{display:grid;grid-template-columns:120px 44px minmax(0,1fr) 78px;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--rule,rgba(30,42,51,.12));font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums;color:var(--ink,#1E2A33);width:420px}.ds-name{font-weight:600;font-size:14px}.ds-range{font-size:12px;font-weight:400;color:var(--ink-2,#4A5862)}.ds-n{font-size:28px;font-weight:800;line-height:1;text-align:right}.ds-row svg{width:100%;height:28px;display:block}.ds-status{font-size:12px;font-weight:800;letter-spacing:.05em;text-align:center;border-radius:4px;padding:3px 4px;border:1.5px solid currentColor}.ds-ok{color:var(--ok,#2E7D5B)}.ds-tight{color:var(--tight,#9A5410)}.ds-short{color:var(--short,#B23A3A)}"
-    },
-    {
-      "name": "Horizon segments",
-      "kind": "nav",
-      "refersTo": "segment-selected",
-      "description": "Horizon scrubber; selected segment fills magnet blue.",
-      "html": "<div class=\"ds-seg\" role=\"group\" aria-label=\"Forecast horizon\"><button aria-pressed=\"true\">Next 24&nbsp;h</button><button aria-pressed=\"false\">Day 2</button><button aria-pressed=\"false\">Day 3</button><button aria-pressed=\"false\">Rest of stay</button></div>",
-      "css": ".ds-seg{display:inline-flex;border:1.5px solid var(--ink,#1E2A33);border-radius:8px;overflow:hidden;font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif}.ds-seg button{font:inherit;font-size:15px;font-weight:600;color:var(--ink,#1E2A33);background:transparent;border:0;border-left:1.5px solid var(--ink,#1E2A33);padding:8px 14px;cursor:pointer}.ds-seg button:first-child{border-left:0}.ds-seg button[aria-pressed=\"true\"]{background:var(--magnet,#2F6FB0);color:var(--magnet-ink,#FFFFFF)}.ds-seg button:hover:not([aria-pressed=\"true\"]){background:var(--board-2,#E9EBE6)}.ds-seg button:focus-visible{outline:3px solid var(--focus,#2F6FB0);outline-offset:-3px}"
     },
     {
       "name": "Board toggle",
@@ -502,11 +494,11 @@
       "css": ".ds-toggle{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--ink,#1E2A33);border:1.5px solid var(--ink,#1E2A33);border-radius:8px;padding:7px 12px;cursor:pointer;font:600 15px/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif}.ds-toggle:hover{background:var(--board-2,#E9EBE6)}.ds-toggle:focus-visible{outline:3px solid var(--focus,#2F6FB0);outline-offset:2px;border-radius:6px}"
     },
     {
-      "name": "Event chip",
+      "name": "Suggested-question chip",
       "kind": "chip",
-      "refersTo": "chip-selected",
-      "description": "Picks the event traced in the 100-futures chart.",
-      "html": "<div class=\"ds-picker\"><button class=\"ds-chip\" aria-pressed=\"true\">Ventilator</button><button class=\"ds-chip\" aria-pressed=\"false\">Vasopressor</button><button class=\"ds-chip\" aria-pressed=\"false\">Leaves ICU</button></div>",
+      "refersTo": "chip",
+      "description": "One-tap question above the chat: at most three by role plus Rerun the forecast; 44 px target; the chat starts empty.",
+      "html": "<div class=\"ds-picker\"><button class=\"ds-chip\" type=\"button\">What will we be short of tonight?</button><button class=\"ds-chip\" type=\"button\">Which rooms are highest risk?</button><button class=\"ds-chip\" type=\"button\">Rerun the forecast</button></div>",
       "css": ".ds-picker{display:flex;flex-wrap:wrap;gap:6px;font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif}.ds-chip{font:inherit;font-size:13px;font-weight:600;color:var(--ink,#1E2A33);background:transparent;border:1.5px solid var(--ink,#1E2A33);border-radius:999px;padding:3px 10px;cursor:pointer}.ds-chip[aria-pressed=\"true\"]{background:var(--ink,#1E2A33);color:var(--board,#F4F5F2)}.ds-chip:focus-visible{outline:3px solid var(--focus,#2F6FB0);outline-offset:2px}"
     },
     {
@@ -528,7 +520,7 @@
   ],
   "narrative": {
     "northStar": "The Unit Whiteboard",
-    "overview": "The board is the whiteboard an ICU team already reads at shift change, made to forecast. An enamel-white ground carries marker-navy ink, rooms are flat magnets with ink borders, and one blue (the magnet) does double duty as risk shading and as the mark of the current choice. Everything else is ink, rules, and words. It refuses the KPI-tile dashboard and the departure board: no hero numbers floating in cards, no flipping split-flap rows.\n\nDensity is operational. The first viewport holds 25 rooms in a 5-column grid on the left two-thirds and a ruled margin column of team counts on the right, so a charge nurse and an attending can answer \"what will we be short of, when, and how sure are we\" from across a room or on a projector. Numerals are large, tabular, and heavy; prose is short, plain, and honest about what is mock, synthetic, or not yet run.\n\nA night board (charcoal ground, chalk ink) is the same grammar with lifted colours, chosen by the user, not by the OS.",
+    "overview": "The board is the whiteboard an ICU team already reads at shift change, made to forecast. An enamel-white ground carries marker-navy ink, rooms are flat magnets with ink borders, and one blue (the magnet) means risk: magnet shading and range bars. Everything else is ink, rules, and words. It refuses the KPI-tile dashboard and the departure board: no hero numbers floating in cards, no flipping split-flap rows.\n\nDensity is operational, and the answer comes first. The first viewport holds a three-line shift brief (the verdict on top) and the six task rows in a ruled right column, and on the left the three highest-risk rooms as magnets with the full 25-room board one tap away (\"Show all 25 rooms\"), so a charge nurse and an attending can answer \"what will we be short of, when, and how sure are we\" from across a room or on a projector. Numerals are large, tabular, and heavy; prose is short, plain, and honest about what is mock, synthetic, or not yet run.\n\nA night board (charcoal ground, chalk ink) is the same grammar with lifted colours, chosen by the user, not by the OS.",
     "keyCharacteristics": [
       "Two boards, one grammar: day (`data-board=\"day\"`) and night (`data-board=\"night\"`) swap only custom-property values.",
       "Flat magnets with 1.5px ink borders and 6px corners; risk shown by mixing magnet blue into the surface.",
