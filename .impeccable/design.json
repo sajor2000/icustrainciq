@@ -1,0 +1,593 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-14T12:00:00Z",
+  "title": "Design System: ICU-Twin",
+  "extensions": {
+    "colorMeta": {
+      "board": {
+        "role": "neutral",
+        "displayName": "Enamel Board",
+        "canonical": "oklch(96.9% 0.004 122)",
+        "tonalRamp": [
+          "#0B0B0A",
+          "#252523",
+          "#414240",
+          "#61625F",
+          "#828380",
+          "#A4A5A3",
+          "#C8C9C7",
+          "#EEEFEC"
+        ]
+      },
+      "board-2": {
+        "role": "neutral",
+        "displayName": "Board Shadow",
+        "canonical": "oklch(93.7% 0.007 124)",
+        "tonalRamp": [
+          "#0A0C09",
+          "#242622",
+          "#41433F",
+          "#60625E",
+          "#81837F",
+          "#A4A6A1",
+          "#C8CAC5",
+          "#EDEFEA"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Magnet Surface",
+        "canonical": "oklch(100.0% 0.000 90)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Marker Navy",
+        "canonical": "oklch(27.8% 0.023 241)",
+        "tonalRamp": [
+          "#030C14",
+          "#1B2730",
+          "#37444E",
+          "#56636E",
+          "#76848F",
+          "#99A7B3",
+          "#BCCCD7",
+          "#E1F1FD"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Faded Marker",
+        "canonical": "oklch(45.2% 0.024 239)",
+        "tonalRamp": [
+          "#030C14",
+          "#1A2730",
+          "#37444E",
+          "#55636E",
+          "#76858F",
+          "#98A8B3",
+          "#BCCCD7",
+          "#E1F1FD"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule (ink at 12%)",
+        "canonical": "oklch(27.8% 0.023 241)",
+        "tonalRamp": [
+          "#030C14",
+          "#1B2730",
+          "#37444E",
+          "#56636E",
+          "#76848F",
+          "#99A7B3",
+          "#BCCCD7",
+          "#E1F1FD"
+        ]
+      },
+      "magnet": {
+        "role": "primary",
+        "displayName": "Magnet Blue",
+        "canonical": "oklch(53.2% 0.121 251)",
+        "tonalRamp": [
+          "#00003B",
+          "#00225C",
+          "#00427F",
+          "#2363A3",
+          "#4786C8",
+          "#6AA9EE",
+          "#8DCEFF",
+          "#B2F4FF"
+        ]
+      },
+      "magnet-ink": {
+        "role": "neutral",
+        "displayName": "Magnet Ink",
+        "canonical": "oklch(100.0% 0.000 90)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "Focus Blue",
+        "canonical": "oklch(53.2% 0.121 251)",
+        "tonalRamp": [
+          "#00003B",
+          "#00225C",
+          "#00427F",
+          "#2363A3",
+          "#4786C8",
+          "#6AA9EE",
+          "#8DCEFF",
+          "#B2F4FF"
+        ]
+      },
+      "selection": {
+        "role": "primary",
+        "displayName": "Selection (magnet at 22%)",
+        "canonical": "oklch(53.2% 0.121 251)",
+        "tonalRamp": [
+          "#00003B",
+          "#00225C",
+          "#00427F",
+          "#2363A3",
+          "#4786C8",
+          "#6AA9EE",
+          "#8DCEFF",
+          "#B2F4FF"
+        ]
+      },
+      "status-ok": {
+        "role": "status",
+        "displayName": "On-Track Green",
+        "canonical": "oklch(53.1% 0.095 162)",
+        "tonalRamp": [
+          "#001501",
+          "#003216",
+          "#005132",
+          "#207250",
+          "#479471",
+          "#6BB893",
+          "#8FDDB6",
+          "#B4FFDB"
+        ]
+      },
+      "status-tight": {
+        "role": "status",
+        "displayName": "Tight Amber (3.87:1 on board; below the 4.5:1 bar)",
+        "canonical": "oklch(59.3% 0.133 57)",
+        "tonalRamp": [
+          "#2A0000",
+          "#4C0700",
+          "#6F2B00",
+          "#924C00",
+          "#B76E31",
+          "#DD9155",
+          "#FFB579",
+          "#FFDA9E"
+        ]
+      },
+      "status-short": {
+        "role": "status",
+        "displayName": "Short Red",
+        "canonical": "oklch(52.3% 0.156 24)",
+        "tonalRamp": [
+          "#2D0000",
+          "#510003",
+          "#751F20",
+          "#9A413E",
+          "#C0635E",
+          "#E78680",
+          "#FFAAA3",
+          "#FFCFC7"
+        ]
+      },
+      "night-board": {
+        "role": "neutral",
+        "displayName": "Charcoal Board",
+        "canonical": "oklch(24.5% 0.012 248)",
+        "tonalRamp": [
+          "#070C10",
+          "#21262B",
+          "#3D4348",
+          "#5C6268",
+          "#7D8389",
+          "#9FA6AC",
+          "#C3CAD1",
+          "#E8EFF6"
+        ]
+      },
+      "night-board-2": {
+        "role": "neutral",
+        "displayName": "Charcoal Shadow",
+        "canonical": "oklch(28.1% 0.015 244)",
+        "tonalRamp": [
+          "#060C11",
+          "#1F262C",
+          "#3C4349",
+          "#5A6269",
+          "#7B848B",
+          "#9EA6AE",
+          "#C1CAD2",
+          "#E6F0F8"
+        ]
+      },
+      "night-surface": {
+        "role": "neutral",
+        "displayName": "Night Magnet Surface",
+        "canonical": "oklch(29.2% 0.017 245)",
+        "tonalRamp": [
+          "#060C12",
+          "#1E262D",
+          "#3B434B",
+          "#59626A",
+          "#7A848C",
+          "#9DA6AF",
+          "#C0CBD4",
+          "#E5F0F9"
+        ]
+      },
+      "night-ink": {
+        "role": "neutral",
+        "displayName": "Chalk",
+        "canonical": "oklch(93.8% 0.009 135)",
+        "tonalRamp": [
+          "#0A0C08",
+          "#232622",
+          "#40433E",
+          "#5F625D",
+          "#80847E",
+          "#A3A6A1",
+          "#C7CAC5",
+          "#ECF0EA"
+        ]
+      },
+      "night-ink-2": {
+        "role": "neutral",
+        "displayName": "Faded Chalk",
+        "canonical": "oklch(76.0% 0.015 162)",
+        "tonalRamp": [
+          "#060D09",
+          "#1F2723",
+          "#3B4540",
+          "#5A645F",
+          "#7B8580",
+          "#9DA8A2",
+          "#C1CCC6",
+          "#E6F2EB"
+        ]
+      },
+      "night-rule": {
+        "role": "neutral",
+        "displayName": "Night Rule (chalk at 14%)",
+        "canonical": "oklch(93.8% 0.009 135)",
+        "tonalRamp": [
+          "#0A0C08",
+          "#232622",
+          "#40433E",
+          "#5F625D",
+          "#80847E",
+          "#A3A6A1",
+          "#C7CAC5",
+          "#ECF0EA"
+        ]
+      },
+      "night-magnet": {
+        "role": "primary",
+        "displayName": "Night Magnet Blue",
+        "canonical": "oklch(74.7% 0.092 249)",
+        "tonalRamp": [
+          "#00072F",
+          "#00254F",
+          "#114470",
+          "#346593",
+          "#5587B7",
+          "#77AADC",
+          "#9ACFFF",
+          "#BFF4FF"
+        ]
+      },
+      "night-magnet-ink": {
+        "role": "neutral",
+        "displayName": "Night Magnet Ink",
+        "canonical": "oklch(19.6% 0.014 244)",
+        "tonalRamp": [
+          "#070C11",
+          "#20262B",
+          "#3C4349",
+          "#5B6269",
+          "#7C838A",
+          "#9EA6AD",
+          "#C2CAD2",
+          "#E7F0F7"
+        ]
+      },
+      "night-focus": {
+        "role": "primary",
+        "displayName": "Night Focus Blue",
+        "canonical": "oklch(81.0% 0.072 247)",
+        "tonalRamp": [
+          "#000A27",
+          "#002746",
+          "#1E4566",
+          "#3E6588",
+          "#5F86AC",
+          "#81AAD1",
+          "#A4CEF6",
+          "#C8F4FF"
+        ]
+      },
+      "night-selection": {
+        "role": "primary",
+        "displayName": "Night Selection (magnet at 28%)",
+        "canonical": "oklch(74.7% 0.092 249)",
+        "tonalRamp": [
+          "#00072F",
+          "#00254F",
+          "#114470",
+          "#346593",
+          "#5587B7",
+          "#77AADC",
+          "#9ACFFF",
+          "#BFF4FF"
+        ]
+      },
+      "night-status-ok": {
+        "role": "status",
+        "displayName": "Night On-Track Green",
+        "canonical": "oklch(75.6% 0.106 162)",
+        "tonalRamp": [
+          "#001600",
+          "#003313",
+          "#005230",
+          "#07734E",
+          "#3B966E",
+          "#61BA90",
+          "#86DFB4",
+          "#ABFFD9"
+        ]
+      },
+      "night-status-tight": {
+        "role": "status",
+        "displayName": "Night Tight Amber",
+        "canonical": "oklch(77.7% 0.120 69)",
+        "tonalRamp": [
+          "#260000",
+          "#471100",
+          "#693100",
+          "#8C5200",
+          "#B07321",
+          "#D5964A",
+          "#FCBB6F",
+          "#FFE094"
+        ]
+      },
+      "night-status-short": {
+        "role": "status",
+        "displayName": "Night Short Red",
+        "canonical": "oklch(73.8% 0.124 27)",
+        "tonalRamp": [
+          "#2D0000",
+          "#510000",
+          "#751F1C",
+          "#9A413B",
+          "#C0635B",
+          "#E7867C",
+          "#FFAA9F",
+          "#FFCFC4"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Unit name in the top strip only."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel headings; the open room heading steps up to 22px."
+      },
+      "numeral": {
+        "displayName": "Numeral",
+        "purpose": "Median count in each margin row, right-aligned; 22px under 420px."
+      },
+      "room-number": {
+        "displayName": "Room Number",
+        "purpose": "Room number on each magnet; 20px under 560px."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Base text; row names 14px/600; risk table 14px."
+      },
+      "body-sm": {
+        "displayName": "Body small",
+        "purpose": "Subtitles, legend, magnet risk line, chips, event history."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Status words ON TRACK / TIGHT / SHORT, uppercase."
+      }
+    },
+    "shadows": [
+      {
+        "name": "magnet-contact",
+        "value": "0 1px 1px rgba(0,0,0,.18), 0 2px 4px rgba(0,0,0,.06)",
+        "purpose": "Magnets only; everything else is flat."
+      }
+    ],
+    "motion": [
+      {
+        "name": "board-swap",
+        "value": "background-color .2s ease-out, color .2s ease-out",
+        "purpose": "Day/night board switch and magnet refill."
+      },
+      {
+        "name": "magnet-lift",
+        "value": "transform .15s ease-out; translateY(-1px) on hover",
+        "purpose": "Magnet hover."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "transition: none",
+        "purpose": "All transitions off under prefers-reduced-motion: reduce."
+      }
+    ],
+    "focus": {
+      "value": "outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px",
+      "purpose": "Every :focus-visible element on both boards."
+    },
+    "breakpoints": [
+      {
+        "name": "stack",
+        "value": "960px"
+      },
+      {
+        "name": "compact-magnets",
+        "value": "560px"
+      },
+      {
+        "name": "tight-rows",
+        "value": "420px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Magnet",
+      "kind": "custom",
+      "refersTo": "magnet",
+      "description": "Room tile shaded by highest risk; ink picked for 4.5:1.",
+      "html": "<div class=\"ds-grid\"><button class=\"ds-mag\" style=\"background:color-mix(in srgb,var(--magnet,#2F6FB0) 8%,var(--surface,#FFFFFF))\" aria-label=\"Room 4: Ventilator 3 percent\"><span class=\"ds-rm\">4</span><span class=\"ds-top1\">Ventilator 3%</span></button><button class=\"ds-mag\" style=\"background:#2F6FB0;color:#FFFFFF\" aria-pressed=\"true\" aria-label=\"Room 7: Vasopressor 52 percent, on ventilator\"><span class=\"ds-rm\">7</span><span class=\"ds-top1\">Vasopressor 52%</span><span class=\"ds-on\"><span>VENT</span></span></button></div>",
+      "css": ".ds-grid{display:grid;grid-template-columns:repeat(2,168px);gap:12px;font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}.ds-mag{position:relative;min-height:92px;text-align:left;border:1.5px solid var(--ink,#1E2A33);border-radius:6px;padding:8px 10px;cursor:pointer;color:var(--ink,#1E2A33);font:inherit;box-shadow:0 1px 1px rgba(0,0,0,.18),0 2px 4px rgba(0,0,0,.06);transition:background-color .2s ease-out,transform .15s ease-out}.ds-mag:hover{transform:translateY(-1px)}.ds-mag[aria-pressed=\"true\"]{outline:3px solid var(--ink,#1E2A33);outline-offset:2px}.ds-mag:focus-visible{outline:3px solid var(--focus,#2F6FB0);outline-offset:2px}.ds-rm{display:block;font-size:26px;font-weight:800;line-height:1}.ds-top1{display:block;margin-top:6px;font-size:13px;font-weight:600}.ds-on{position:absolute;top:8px;right:8px;display:flex;gap:4px}.ds-on>span{font-size:11px;font-weight:700;letter-spacing:.04em;border:1.2px solid currentColor;border-radius:3px;padding:0 4px;line-height:16px}"
+    },
+    {
+      "name": "Margin row with range bar",
+      "kind": "custom",
+      "refersTo": "status-word",
+      "description": "Team count: median, 80% range bar, red capacity line, status word.",
+      "html": "<div class=\"ds-row\"><span class=\"ds-name\">Ventilator starts<br><span class=\"ds-range\">2 to 6 · 4 free</span></span><span class=\"ds-n\">4</span><svg viewBox=\"0 0 300 28\" aria-hidden=\"true\"><line x1=\"8\" x2=\"258\" y1=\"14\" y2=\"14\" stroke=\"rgba(30,42,51,.12)\" stroke-width=\"6\" stroke-linecap=\"round\"/><line x1=\"70\" x2=\"195\" y1=\"14\" y2=\"14\" stroke=\"#2F6FB0\" stroke-width=\"10\" stroke-linecap=\"round\"/><line x1=\"133\" x2=\"133\" y1=\"4\" y2=\"24\" stroke=\"#1E2A33\" stroke-width=\"3\"/><rect x=\"131.5\" y=\"1\" width=\"3\" height=\"26\" fill=\"#B23A3A\"/></svg><span class=\"ds-status ds-tight\">TIGHT</span></div>",
+      "css": ".ds-row{display:grid;grid-template-columns:120px 44px minmax(0,1fr) 78px;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--rule,rgba(30,42,51,.12));font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums;color:var(--ink,#1E2A33);width:420px}.ds-name{font-weight:600;font-size:14px}.ds-range{font-size:12px;font-weight:400;color:var(--ink-2,#4A5862)}.ds-n{font-size:28px;font-weight:800;line-height:1;text-align:right}.ds-row svg{width:100%;height:28px;display:block}.ds-status{font-size:12px;font-weight:800;letter-spacing:.05em;text-align:center;border-radius:4px;padding:3px 4px;border:1.5px solid currentColor}.ds-ok{color:var(--ok,#2E7D5B)}.ds-tight{color:var(--tight,#9A5410)}.ds-short{color:var(--short,#B23A3A)}"
+    },
+    {
+      "name": "Horizon segments",
+      "kind": "nav",
+      "refersTo": "segment-selected",
+      "description": "Horizon scrubber; selected segment fills magnet blue.",
+      "html": "<div class=\"ds-seg\" role=\"group\" aria-label=\"Forecast horizon\"><button aria-pressed=\"true\">Next 24&nbsp;h</button><button aria-pressed=\"false\">Day 2</button><button aria-pressed=\"false\">Day 3</button><button aria-pressed=\"false\">Rest of stay</button></div>",
+      "css": ".ds-seg{display:inline-flex;border:1.5px solid var(--ink,#1E2A33);border-radius:8px;overflow:hidden;font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif}.ds-seg button{font:inherit;font-size:15px;font-weight:600;color:var(--ink,#1E2A33);background:transparent;border:0;border-left:1.5px solid var(--ink,#1E2A33);padding:8px 14px;cursor:pointer}.ds-seg button:first-child{border-left:0}.ds-seg button[aria-pressed=\"true\"]{background:var(--magnet,#2F6FB0);color:var(--magnet-ink,#FFFFFF)}.ds-seg button:hover:not([aria-pressed=\"true\"]){background:var(--board-2,#E9EBE6)}.ds-seg button:focus-visible{outline:3px solid var(--focus,#2F6FB0);outline-offset:-3px}"
+    },
+    {
+      "name": "Board toggle",
+      "kind": "button",
+      "refersTo": "board-toggle",
+      "description": "Switches day and night boards; label names the target board.",
+      "html": "<button class=\"ds-toggle\" aria-pressed=\"false\" type=\"button\">Night board</button>",
+      "css": ".ds-toggle{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--ink,#1E2A33);border:1.5px solid var(--ink,#1E2A33);border-radius:8px;padding:7px 12px;cursor:pointer;font:600 15px/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif}.ds-toggle:hover{background:var(--board-2,#E9EBE6)}.ds-toggle:focus-visible{outline:3px solid var(--focus,#2F6FB0);outline-offset:2px;border-radius:6px}"
+    },
+    {
+      "name": "Event chip",
+      "kind": "chip",
+      "refersTo": "chip-selected",
+      "description": "Picks the event traced in the 100-futures chart.",
+      "html": "<div class=\"ds-picker\"><button class=\"ds-chip\" aria-pressed=\"true\">Ventilator</button><button class=\"ds-chip\" aria-pressed=\"false\">Vasopressor</button><button class=\"ds-chip\" aria-pressed=\"false\">Leaves ICU</button></div>",
+      "css": ".ds-picker{display:flex;flex-wrap:wrap;gap:6px;font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif}.ds-chip{font:inherit;font-size:13px;font-weight:600;color:var(--ink,#1E2A33);background:transparent;border:1.5px solid var(--ink,#1E2A33);border-radius:999px;padding:3px 10px;cursor:pointer}.ds-chip[aria-pressed=\"true\"]{background:var(--ink,#1E2A33);color:var(--board,#F4F5F2)}.ds-chip:focus-visible{outline:3px solid var(--focus,#2F6FB0);outline-offset:2px}"
+    },
+    {
+      "name": "Ask the board",
+      "kind": "input",
+      "refersTo": "ask-input",
+      "description": "Chat log with question and answer messages, input and Ask button.",
+      "html": "<div class=\"ds-chat\"><div class=\"ds-log\"><div class=\"ds-msg ds-q\"><span class=\"ds-who\">ICU team</span>How many ventilators will we need in the next 24 hours?</div><div class=\"ds-msg ds-a\"><span class=\"ds-who\">Nemotron 3 Nano (mock)</span>Ventilators, next 24 h: 4 new starts likely (80% range 2 to 6); 4 are free, so the busy case is tight.</div></div><form class=\"ds-ask\" onsubmit=\"return false\"><input aria-label=\"Question\" placeholder=\"How many ventilators will we need in the next 24 hours?\"><button type=\"submit\">Ask</button></form></div>",
+      "css": ".ds-chat{font:15px/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;color:var(--ink,#1E2A33);max-width:420px}.ds-log{display:flex;flex-direction:column;gap:8px;margin:6px 0 10px}.ds-msg{padding:8px 10px;border-radius:8px;font-size:14px;max-width:92%}.ds-q{align-self:flex-end;background:var(--board-2,#E9EBE6)}.ds-a{align-self:flex-start;border:1.5px solid var(--rule,rgba(30,42,51,.12))}.ds-who{display:block;font-size:12px;font-weight:700;color:var(--ink-2,#4A5862);margin-bottom:2px}.ds-ask{display:flex;gap:8px}.ds-ask input{flex:1;min-width:0;font:inherit;color:var(--ink,#1E2A33);background:var(--board,#F4F5F2);border:1.5px solid var(--ink,#1E2A33);border-radius:8px;padding:8px 10px}.ds-ask input::placeholder{color:var(--ink-2,#4A5862)}.ds-ask input:focus-visible,.ds-ask button:focus-visible{outline:3px solid var(--focus,#2F6FB0);outline-offset:2px}.ds-ask button{font:inherit;font-weight:700;background:var(--ink,#1E2A33);color:var(--board,#F4F5F2);border:0;border-radius:8px;padding:8px 14px;cursor:pointer}.ds-ask button:hover{opacity:.9}"
+    },
+    {
+      "name": "Honesty labels",
+      "kind": "custom",
+      "refersTo": "synthetic-badge",
+      "description": "SYNTHETIC DATA badge, (mock), pending run, not forecast.",
+      "html": "<div class=\"ds-honest\"><span class=\"ds-synthetic\">SYNTHETIC DATA</span><span>Shift brief (mock)</span><span>Forecast · 1 GPU: <span class=\"ds-pending\">pending run</span></span><span class=\"ds-range\">not forecast</span></div>",
+      "css": ".ds-honest{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;font:14px/1.45 system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;color:var(--ink,#1E2A33)}.ds-synthetic{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--short,#B23A3A);border:1.5px solid currentColor;border-radius:4px;padding:2px 6px;white-space:nowrap}.ds-pending{color:var(--ink-2,#4A5862);font-style:italic}.ds-range{font-size:12px;color:var(--ink-2,#4A5862)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Unit Whiteboard",
+    "overview": "The board is the whiteboard an ICU team already reads at shift change, made to forecast. An enamel-white ground carries marker-navy ink, rooms are flat magnets with ink borders, and one blue (the magnet) does double duty as risk shading and as the mark of the current choice. Everything else is ink, rules, and words. It refuses the KPI-tile dashboard and the departure board: no hero numbers floating in cards, no flipping split-flap rows.\n\nDensity is operational. The first viewport holds 25 rooms in a 5-column grid on the left two-thirds and a ruled margin column of team counts on the right, so a charge nurse and an attending can answer \"what will we be short of, when, and how sure are we\" from across a room or on a projector. Numerals are large, tabular, and heavy; prose is short, plain, and honest about what is mock, synthetic, or not yet run.\n\nA night board (charcoal ground, chalk ink) is the same grammar with lifted colours, chosen by the user, not by the OS.",
+    "keyCharacteristics": [
+      "Two boards, one grammar: day (`data-board=\"day\"`) and night (`data-board=\"night\"`) swap only custom-property values.",
+      "Flat magnets with 1.5px ink borders and 6px corners; risk shown by mixing magnet blue into the surface.",
+      "A ruled margin column: 2px ink rules separate regions, 12-14% ink rules separate rows.",
+      "Every forecast number carries its 80% range; status words appear only where a capacity is set.",
+      "Honesty labels are part of the visual system, not footnotes."
+    ],
+    "rules": [
+      {
+        "name": "The One Blue Rule",
+        "section": "colors",
+        "body": "Magnet blue is the only chromatic fill on the board. It means \"risk\" on a magnet and \"chosen\" on a control; no second accent is introduced."
+      },
+      {
+        "name": "The Word Beside the Colour Rule",
+        "section": "colors",
+        "body": "Status is never colour alone. Every status colour appears as the ink of a word (ON TRACK, TIGHT, SHORT) with a matching outline, and the capacity line is explained in text (\"red line = what is free\")."
+      },
+      {
+        "name": "The Readable Ink Rule",
+        "section": "colors",
+        "body": "Text ink must reach 4.5:1 against its own ground on both boards. Magnet ink is chosen in code from the four board inks by contrast, and the fill is nudged along the mix until the better ink reaches 4.5:1. Status inks are held to the same bar: day Tight Amber measures 3.87:1 on the board and must be darkened before it is reused; do not copy it as a passing value."
+      },
+      {
+        "name": "The Tabular Rule",
+        "section": "typography",
+        "body": "Every numeral is tabular; counts, ranges, and percentages must align in columns without per-element overrides."
+      },
+      {
+        "name": "The Weight Ladder Rule",
+        "section": "typography",
+        "body": "Hierarchy comes from weight (400, 600, 700, 800) and a short size ladder (11-28px), not from a second family."
+      },
+      {
+        "name": "The Ruled Margin Rule",
+        "section": "layout",
+        "body": "Regions are separated by 2px ink rules; rows by 1px rules at 12% ink (14% at night). No cards, no panel backgrounds."
+      },
+      {
+        "name": "The Flat Board Rule",
+        "section": "elevation",
+        "body": "Only magnets cast a shadow. Panels, controls, the chart, and chat messages stay flat on the board."
+      }
+    ],
+    "dos": [
+      "**Do** shade magnets only by mixing magnet blue into the surface, and pick the magnet ink by contrast so it reaches 4.5:1.",
+      "**Do** pair every status colour with its word (ON TRACK, TIGHT, SHORT) and show the word only where a capacity is set.",
+      "**Do** give every forecast number its 80% range, as \"p10 to p90\" text and as a range bar with a median tick.",
+      "**Do** separate regions with 2px ink rules and rows with 1px Rule lines.",
+      "**Do** label mock, synthetic, and missing numbers in place: SYNTHETIC DATA, (mock), pending run, not forecast.",
+      "**Do** keep both boards on the same custom properties; a new surface sets values for `data-board=\"day\"` and `data-board=\"night\"`.",
+      "**Do** keep the 3px focus ring with 2px offset on every focusable element."
+    ],
+    "donts": [
+      "**Don't** build KPI tiles or departure-board rows; counts live in ruled margin rows.",
+      "**Don't** introduce a second accent colour or fill panels with colour.",
+      "**Don't** convey status, risk, or capacity by colour alone.",
+      "**Don't** add shadows to anything but magnets.",
+      "**Don't** show a measured number that does not come from a run; use \"pending run\"."
+    ]
+  }
+}
