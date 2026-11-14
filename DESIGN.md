@@ -348,16 +348,16 @@ Night values carry the same names with a `night-` prefix. On the night board blu
 - **Room number** (800, 1.75rem, 1): the room number on a bed tile; 1.5rem on phone.
 - **Headline** (700, 1.375rem, 1.15): the unit name in the header.
 - **Title** (700, 1.125rem, 1.2): section and card headings, the counts in the strain summary pill.
-- **Body large** (600, 1rem): room page rows and the room status chip; the "N in 10" beside icons on wall screens.
+- **Body large** (600, 1rem): room page rows and the room status chip; the percentage beside icons on wall screens.
 - **Body** (400, .9375rem, 1.45): base text.
-- **Control** (600 to 700, .875rem): buttons, tab labels, chat messages, the "N in 10" on desktop tiles, small headings.
+- **Control** (600 to 700, .875rem): buttons, tab labels, chat messages, the percentage on tiles, small headings.
 - **Caption** (400 to 700, .8125rem): ranges, count captions, status words on tiles, notes.
-- **Label** (600 to 800, .75rem): the status chip (800, 0.05em tracking, the word already in capitals), field labels, "N in 10" under figures and on phone tiles.
+- **Label** (600 to 800, .75rem): the status chip (800, 0.05em tracking, the word already in capitals), field labels, percentages under figures, the NOW and NEXT 24 H captions (700, 0.05em tracking, capitals).
 
 All sizes are rem. From 1800px the root is 120%, so every size and space on a wall screen grows together.
 
 ### Named Rules
-**The Count Rule.** A chance is "N in 10" on tiles and figures, "about N in 10" on the room page, "fewer than 1 in 10" below one, and "No estimate" when it is null. No percentage sign appears anywhere.
+**The Count Rule.** A chance is a whole percentage on every screen ("23%"), "<5%" when very small, and "No estimate" when it is null (J.C., 2026-11-14 evening; this replaces the earlier natural frequencies). The room page keeps its 10-dot array as the picture beside the percentage. Thresholds are 40%, 20% and 60%.
 
 **The Range Rule.** Every forecast count carries its range in Caption weight 400 beside it ("+3" then "1 to 5").
 
@@ -368,8 +368,8 @@ One centred column, max 92rem, with a 1.5rem gutter (1rem on phone). The header 
 - **Bed board:** the Worry first rail, then All rooms. The room grid is five across, four below 1200px, three at 960px and below, two at 560px and below, with a .75rem gap (.5rem on phone, .625rem on wall screens). With the chat docked the grid becomes auto-fill at a 12.5rem minimum.
 - **Unit strain:** the Life support lead card (two columns, one at 960px and below), then support cards in an auto-fill grid at an 18.5rem minimum with a 1rem gap. The card for the reader's role is ordered first.
 - **Room page:** two cards, 1.2fr and 1fr, stacking at 960px and below.
-- **Chat:** docked as a 24.5rem right column from 1200px, and the page reflows beside it; a floating panel below that; a bottom sheet at 560px and below.
-- **Wall screens (1800px and up):** root 120%, tiles slightly shorter (5.25rem), larger room numbers and "N in 10".
+- **Chat:** a launcher fixed 1.5rem from the bottom right (3.5rem tall, radius 1rem); the page keeps 6.5rem of bottom padding so it never rests on content at the end of the page. The panel is 25rem by 37.5rem (at most 80vh) in the same corner; at 560px and below it is a bottom sheet at 85% of the height.
+- **Wall screens (1800px and up):** root 120%, tiles slightly shorter (5.25rem), larger room numbers and percentages.
 
 Spacing is a short rem scale: .125, .25, .375, .5, .625, .75, 1, 1.25, 1.5. Every interactive target is at least 2.75rem (44px) tall.
 
@@ -407,7 +407,7 @@ A button, min-height 5.75rem, radius .75rem, with the card shadow. Top row: room
 - **Leaving:** white, 2px green border, the bed-with-arrow icon and the word in green.
 - **Steady:** white, a small dot, the word in ink-2 at 600.
 
-**Now -> Next 24 h strip.** Left of the arrow: solid icons for the life support running at 07:00, or a ring when there is none. Right: outline icons for new support at 2 in 10 or more, each with "N in 10"; a plus in a ring with the combined chance when no single support reaches 2 in 10; the leaving bed with its chance at 6 in 10 or more; a dash when nothing new is expected. Icons are 1.375rem on phone and 1.75rem from 961px. On a filled tile the knocked-out details of solid icons take the tile colour.
+**Now -> Next 24 h strip.** Two captioned columns joined by an arrow (see Strip captions). NOW: solid icons for the life support running at 07:00, or "no support". NEXT 24 H: an outline icon and its percentage for each new support at 20% or more; a plus in a ring with the combined chance when no single support reaches 20%; the bed with an arrow and its percentage when leaving is 60% or more, and from 20% for a bed on life support; "leaving <20%" on a Not improving bed; "nothing new" otherwise.
 
 ### Worry first rail
 Not a card. A Title heading and two groups set straight on the ground, closed by a hairline: Worsening, then Not improving, each with its shape, word and count. The tiles are the same bed tiles, slightly taller (6.25rem) with a 2rem room number, in an auto-fill grid at a 12rem minimum. When no room qualifies, one ink-2 line says so.
@@ -423,13 +423,10 @@ Dema's cluster cards, one per support (IMV, Vasopressor, CRRT) and one for Leavi
 
 **Range bar** (Dema's, with the ink line for free capacity). A 6-unit rounded track in figure grey; a 10-unit rounded blue segment for the 8-in-10 range; a surface bead with a blue ring at the median; a solid ink line for what is free or what tonight's staffing covers; a dashed ink line for a typical day.
 
-**Person figure** (Dema's). A 2.5rem by 2.625rem head-and-shoulders silhouette above a room number (800) and "N in 10" (Label). It is two stacked SVGs of the same path: a base in figure grey and a fill in blue clipped with `clip-path: inset(calc(100% - var(--p)) 0 0 0)`, so it fills from the bottom to the bed's chance. Solid ink means the support is on now. A green fill means leaving. Each figure is a button that opens the room; hover lifts the silhouette 1px.
+**Person figure** (Dema's). A 2.5rem by 2.625rem head-and-shoulders silhouette above a room number (800) and its percentage (Label). It is two stacked SVGs of the same path: a base in figure grey and a fill in blue clipped with `clip-path: inset(calc(100% - var(--p)) 0 0 0)`, so it fills from the bottom to the bed's chance. Solid ink means the support is on now. A green fill means leaving. Each figure is a button that opens the room; hover lifts the silhouette 1px.
 
 ### Room page
-A back link and previous and next room links, underlined ink at 700 with the arrow icon. Then the room number in Room heading, the room status chip (the bed tile's five statuses as a chip at 1rem, radius .5rem), and the Now -> Next 24 h strip in its own small card with "Now" and "Next 24 h" labels. Two cards below. The first lists each event as a row: icon and name, a level chip (Low on board-2, Medium on `level-medium`, High on `level-high`, On now in ink), a ten-dot array (.75rem circles, filled blue to the count, outlined in line otherwise) and "about N in 10". Death is a plain row with no icon and no colour. The second card holds the last 12 hours and the two room actions.
-
-### Chat panel
-Surface, line border, radius 1rem, floating shadow. Heading, a Close button, an optional room scope pill, suggested-question chips (transparent pills with a line border, 2.75rem), a scrolling log and an input with an ink Ask button. The asker's messages are board-2 bubbles on the right; answers are hairline-bordered bubbles on the left. From 1200px it docks as a 24.5rem right column with no radius or shadow; at 560px and below it is a bottom sheet with rounded top corners.
+A back link and previous and next room links, underlined ink at 700 with the arrow icon. Then the room number in Room heading, the room status chip (the bed tile's five statuses as a chip at 1rem, radius .5rem), and the Now -> Next 24 h strip in its own small card with "Now" and "Next 24 h" labels. Two cards below. The first lists each event as a row: icon and name, a level chip (Low on board-2, Medium on `level-medium`, High on `level-high`, On now in ink), a ten-dot array (.75rem circles, filled blue to the count, outlined in line otherwise) and the percentage. Death is a plain row with no icon and no colour. The second card holds the last 12 hours and the two room actions.
 
 ### "How this forecast was made" disclosure
 One folded disclosure in the footer above a hairline holds every definition: the tile grammar, the thresholds, the icon key, the five forecasts with median and range in a plain ruled table, and the model facts as short definition lists. The summary is Control 700 in ink-2 and turns ink on hover. Nothing here is shown on the board by default.
@@ -451,11 +448,29 @@ A 3px outline in `focus` with a 2px offset and a .5rem radius on every focusable
 ### Motion
 State changes only: a .2s ease-out on the board colour swap, a .15s ease-out 1px lift on tile and figure hover, a .15s chevron turn. Nothing pulses or loops. Reduced motion removes all of it.
 
+### Product title and unit chip
+The H1 is the product, "Lookahead", with the descriptor "ICU forecast · next 24 hours" beside it at 1rem / 600 in secondary ink. The unit ("Medical ICU · 25 beds") is a pill chip in the sub-line next to the data-source tag and is read from the forecast, never written into the page.
+
+### Time switch (Now | Next 24 h)
+A pill-shaped two-state switch beside the tabs and on the room page, visually lighter than the tabs (surface ground, line border, .875rem / 700, 2.75rem targets). The selected side carries the system's two time colours: **Now is ink, Next 24 h is blue**. It decides when; the tabs decide what. Now shows only what is running at 07:00; Next 24 h shows the forecast. Switching keeps the grid, the room order and the scroll position; tiles cross-fade for 180ms when motion is allowed.
+
+### Bed tile, Now
+Room, sex and age, and 1.75rem solid icons with their names. Weight is the number of supports running: none is a white tile that reads "No life support"; one sits on the tinted ground (`board-2`); two or more adds the 3px ink border and reads "On 2 supports". No blue appears in Now.
+
+### Strip captions
+In Next 24 h every tile and the room page carry two captioned columns joined by the arrow: **NOW** over the solid icons (or "no support") and **NEXT 24 H** over the forecast items (or "nothing new", or "leaving <20%" on a Not improving bed). Captions are Label size, 700, capitals, in the tile's secondary ink. On a phone the two columns become two labelled rows and the arrow is dropped. In the Worry first rail and on the room page each forecast item also shows its name ("Vasopressor 43%").
+
+### Chat widget
+A launcher (ink fill, board text, chat icon and "Ask", floating shadow) and a non-modal panel (surface, line border, radius 1rem, the same floating shadow, no scrim). Header: "Ask Lookahead", a context pill button ("Unit" or "Room 12", `board-2` fill), and minimise and close as 2.75rem icon buttons. Suggested questions are stacked pills shown only while the conversation is empty. The team's messages sit right on `board-2`; answers sit left with a rule border, numbers at 800 and room numbers as blue underlined links. "Thinking…" carries an outlined Stop button. The input is a textarea that grows to four lines beside a 2.75rem send button that is `board-2` when disabled and ink when it can send. A blue dot on the launcher means the forecast changed since the chat was last open. On a phone the sheet has a short handle bar at its top edge.
+
+### Figure legend (tooltip)
+One element for the whole page: ink fill, board text, .8125rem / 600, radius .5rem, at most 19rem wide, floating shadow, `pointer-events: none`. It appears 150ms after hover, at once on keyboard focus, and on touch by tap or long-press; it leaves at once. It sits above its target, or below when there is no room, and is clamped to the viewport. Text only, two short lines at most, the same wording as the key and "How this forecast was made" (one `DEF` map in the page builds all three). It adds to the visible labels and never replaces them.
+
 ## Do's and Don'ts
 
 ### Do:
 - **Do** draw now in ink and forecast in blue, on every surface.
-- **Do** write chances as "N in 10" on tiles and figures, "about N in 10" on the room page, "fewer than 1 in 10" below one, and "No estimate" for null.
+- **Do** write chances as whole percentages ("23%"), "<5%" when very small, and "No estimate" for null.
 - **Do** carry every status as a fill or border, a shape and a word.
 - **Do** show the range beside every forecast count.
 - **Do** use solid icons for support running now and outline icons for support expected.
@@ -465,7 +480,6 @@ State changes only: a .2s ease-out on the board colour swap, a .15s ease-out 1px
 - **Do** credit Dema (deetherese) wherever the cluster card, person figure, range bar, status chip or segmented switch is reused.
 
 ### Don't:
-- **Don't** show a percentage anywhere.
 - **Don't** let death colour or mark a bed. It is a plain count on Unit strain and a plain row on the room page.
 - **Don't** use red for anything but SHORT and VERY BUSY, or amber for anything but TIGHT and BUSY.
 - **Don't** signal status by colour alone.

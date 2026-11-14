@@ -63,9 +63,9 @@ Removed from the board: hypotension and ICU readmission. A task already under wa
 
 **Life support** means IMV (breathing tube or tracheostomy), a vasopressor infusion (inotropes alone do not count) or CRRT. **Now** means running at the 07:00 cut. ECMO and other mechanical support are not in the data and are not shown on the board.
 
-**Room level** is the combined chance of any new life support in the next 24 hours, skipping supports already running: High at 4 in 10 or more, Medium at 2 in 10 or more, else Low. Death never colours or marks a bed.
+**Room level** is the combined chance of any new life support in the next 24 hours, skipping supports already running: High at 40% or more, Medium at 20% or more, else Low. Death never colours or marks a bed.
 
-**Bed board** (the default tab): every bed reads Now → Next 24 h. Left of the arrow, the life support running at 07:00; right of it, each new support at 2 in 10 or more with its chance, and the bed-with-arrow when leaving the ICU is 6 in 10 or more. Each bed has one status: **Worsening** (level High), **Watch** (level Medium), **Not improving** (on life support now, a chance of leaving under 2 in 10, nothing new flagged; worked out on the board from the five predictions, since coming off support is not forecast), **Leaving** (6 in 10 or more) or **Steady**. "Worry first" at the top lists the Worsening rooms, then the Not improving rooms.
+**Bed board** (the default tab): a **Now / Next 24 h** switch chooses when. **Now** shows only current sickness: the life support running at 07:00 on each bed, weighted by how many supports are running, with "Sickest now" on top; nothing forecast is shown. **Next 24 h** (the default) shows the forecast: under NOW the support running at 07:00, under NEXT 24 H each new support at 20% or more with its percentage, and the chance of leaving the ICU at 60% or more (from 20% for a bed on life support). Each bed has one status: **Worsening** (level High), **Watch** (level Medium), **Not improving** (on life support now, under 20% to leave, nothing new flagged; worked out on the board from the five predictions, since coming off support is not forecast), **Leaving** (60% or more) or **Steady**. "Worry first" at the top lists the Worsening rooms, then the Not improving rooms. The page is titled Lookahead, "ICU forecast · next 24 hours"; the unit name is a label beside it.
 
 **Unit strain** (its own tab; one line of it sits in the header): "N patients on now · +M expected (range)" and a one-word yardstick. With a capacity set ("Set tonight's capacity": life-support patients tonight's staffing covers, optionally ventilators free) the word is ON TRACK (p90 at or under it), TIGHT (p90 over it) or SHORT (the median over it), named "vs tonight's staffing"; otherwise USUAL, BUSY or VERY BUSY "vs a typical day". Then a card for IMV, vasopressor, CRRT and leaving the ICU (the role's card first): on now, expected with its range, and the beds behind the count. "Deaths expected" is one small line. There is no shift brief.
 
@@ -78,7 +78,7 @@ Removed from the board: hypotension and ICU readmission. A task already under wa
 3. Local and private by construction: say where it ran and that data stayed on site.
 4. Honest evidence: measured numbers only; projections are labelled.
 5. Decision support, never a treatment recommendation.
-6. Plain words: natural frequencies ("about 4 in 10"), never percentages on the board.
+6. Plain words and one number format: chances are whole percentages ("23%", "<5%"); every figure explains itself on hover (J.C., 2026-11-14 evening; replaces natural frequencies).
 
 ## Accessibility & Inclusion
 

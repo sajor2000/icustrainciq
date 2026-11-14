@@ -12,21 +12,29 @@
 
 Synthetic data in the mockup ([`mockups/command-center.html`](mockups/command-center.html)); the same page reads the live API when `app/board.py` serves it. Two tabs. **Bed board**: every bed reads now, then the next 24 hours (solid icons for the ventilator, vasopressor or CRRT running at 07:00, an arrow, outline icons for what may start with its chance, "3 in 10"), with one status per bed (Worsening, Watch, Not improving, Leaving, Steady) and a "Worry first" rail on top. **Unit strain**: patients on life support now, how many more are expected, one word against tonight's staffing or a typical day, and a card per support with the beds behind each count. A room opens its own page; "Update the unit" and "Update this room" start a forecast; "Ask" opens a chat panel beside the board. The cluster cards, bed figures and range bars come from Dema's (deetherese) design on the `alternative` branch.
 
-| Bed board, 1440 px | Unit strain, 1440 px |
+| Bed board, Next 24 h | Bed board, Now |
 |---|---|
-| ![Bed board](docs/screenshots/beds-desktop.png) | ![Unit strain](docs/screenshots/strain-desktop.png) |
+| ![Bed board, forecast](docs/screenshots/beds-next.png) | ![Bed board, now](docs/screenshots/beds-now.png) |
+
+| Unit strain, Next 24 h | Unit strain, Now |
+|---|---|
+| ![Unit strain, forecast](docs/screenshots/strain-next.png) | ![Unit strain, now](docs/screenshots/strain-now.png) |
 
 | Night board | Wall screen, 1920 px |
 |---|---|
 | ![Night board](docs/screenshots/night.png) | ![Wall screen](docs/screenshots/wall-1920.png) |
 
-| Room page | Chat docked beside the board |
+| Room page | Chat widget |
 |---|---|
-| ![Room page](docs/screenshots/room-page.png) | ![Chat docked](docs/screenshots/chat-docked.png) |
+| ![Room page](docs/screenshots/room-page.png) | ![Chat widget](docs/screenshots/chat-widget.png) |
 
-| Phone, bed board | Phone, unit strain | Icons |
+| Chat on a room page | Figure legend on hover | Icons |
 |---|---|---|
-| ![Phone, bed board](docs/screenshots/beds-phone.png) | ![Phone, unit strain](docs/screenshots/strain-phone.png) | ![Icon family](docs/screenshots/icons.png) |
+| ![Chat, room](docs/screenshots/chat-room.png) | ![Tooltip](docs/screenshots/tooltip.png) | ![Icon family](docs/screenshots/icons.png) |
+
+| Phone, forecast | Phone, now | Phone, unit strain | Phone, chat |
+|---|---|---|---|
+| ![Phone, forecast](docs/screenshots/beds-next-phone.png) | ![Phone, now](docs/screenshots/beds-now-phone.png) | ![Phone, unit strain](docs/screenshots/strain-phone.png) | ![Phone, chat](docs/screenshots/chat-phone.png) |
 
 ## How it runs
 

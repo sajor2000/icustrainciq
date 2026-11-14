@@ -6,12 +6,12 @@ Everything a user sees is a count with a likely range, or one stage-ward room's 
 
 ## Charge nurse: who to worry about, then staffing (06:45 to 07:15)
 
-1. **06:45, before rounds.** Opens the board on the unit workstation or the wall screen. It opens on the **Bed board**. The header gives the run time ("Updated 06:58") and one line of strain ("10 on life support · +5 expected · USUAL").
-2. **Reads "Worry first".** Two groups of bed tiles: **Worsening** (a new life support is likely) and **Not improving** (on life support now, unlikely to leave, nothing new flagged). Each tile reads left to right: what is running now, an arrow, what may start in the next 24 hours, with its chance ("4 in 10").
+1. **06:45, before rounds.** Opens the board on the unit workstation or the wall screen. It opens on the **Bed board**, on **Next 24 h**. To see only how sick the unit is right now she flips the switch to **Now**: each bed shows just the life support running at 07:00, and "Sickest now" lists the beds on two or more supports first. The header gives the run time ("Updated 06:58") and one line of strain ("10 on life support now · +5 new expected in 24 h · USUAL").
+2. **Reads "Worry first".** Two groups of bed tiles: **Worsening** (a new life support is likely) and **Not improving** (on life support now, unlikely to leave, nothing new flagged). Each tile reads left to right: what is running now, an arrow, what may start in the next 24 hours, with its chance ("43%").
 3. **Opens a room** from the rail for the detail, and notes the rooms for rounds. Below the rail every room is in room order with the same tile, so Watch, Leaving and Steady rooms are one glance away.
 4. **Checks cover on the Unit strain tab** (or taps the header line). One word against tonight's staffing or a typical day, and a card per support with the beds behind each count.
 5. **Sets tonight's capacity if it is not set.** Opens "Set tonight's capacity", types how many life-support patients tonight's staffing covers (and ventilators free if she knows), saves. The word is now ON TRACK, TIGHT or SHORT against that number, and the card says "Capacity set 07:12 by ICU nurse (charge)".
-6. **Taps Ask, then "Summarise the shift"** if she wants it in words; Nemotron answers from the counts.
+6. **Taps Ask** (bottom right), then "Who should we worry about first?" or "Summarise the next 24 hours" if she wants it in words; Nemotron answers from the counts, and room numbers in the answer open that room. Anything she does not recognise on the board (an icon, a bar, a status mark) explains itself on hover or long-press.
 7. **Decides**: asks for a second respiratory therapist for the night, tells the bed manager.
 
 What the frontend must make true: "who do we worry about?" is answered in two seconds from the Worry first rail, and "are we covered?" from the header line, without scrolling on a 1440 px screen; on a phone the rail is the first thing under the tabs.
@@ -19,15 +19,15 @@ What the frontend must make true: "who do we worry about?" is answered in two se
 ## Attending physician: the room they worry about (07:00 rounds)
 
 1. **During rounds** opens room 14 (a stage-ward patient) from "Worry first" or the room grid.
-2. **Reads the room page**: "Room 14", its status (Worsening, Watch, Not improving, Leaving or Steady) and the same Now → Next 24 h strip; previous and next room for rounds; the window ("07:00 to 07:00 tomorrow") and when it was updated. Then New life support (IMV, vasopressor, CRRT), Leaving the ICU and Death, each an icon, a level word, a 10-dot array and "about 3 in 10". Supports already running read "On now"; a support that stopped before 07:00 has a faint note.
+2. **Reads the room page**: "Room 14", its status (Worsening, Watch, Not improving, Leaving or Steady) and the same Now → Next 24 h strip; previous and next room for rounds; the window ("07:00 to 07:00 tomorrow") and when it was updated. Then New life support (IMV, vasopressor, CRRT), Leaving the ICU and Death, each named in full ("Starts a ventilator (IMV)") with an icon, a level word, a 10-dot array and the percentage ("30%"). On **Now** the page shows only what is running and the last 12 hours. Supports already running read "On now"; a support that stopped before 07:00 has a faint note.
 3. **Reads the last 12 hours** (rising lactate, a norepinephrine start).
-4. **Asks the chat** ("Ask about this forecast"): "Room 14: what is most likely in the next 24 hours?" Nemotron answers from that room and the counts, and declines treatment questions.
+4. **Asks the chat** (the chip in its header now reads "Room 14"): "Why is this room Worsening?" Nemotron answers from that room and the counts, and declines treatment questions.
 5. **Updates the room** if something changed (a code, a new infusion): "Update this room". The last numbers stay on screen, marked "updating", and refresh in place.
 6. **Decides with the team.** The board never recommends a treatment.
 
 ## Pharmacy (07:15)
 
-Opens the **Unit strain** tab and picks "pharmacy": the Vasopressor card comes first ("6 on now · +2 expected, 1 to 4") with the beds on a vasopressor now and the beds that may start one, each with its chance. Pre-mixes for the busy case. Optional: "How many vasopressor starts?".
+Opens the **Unit strain** tab and picks "pharmacy": the Vasopressor card comes first ("6 on now · +2 expected new starts (1 to 4)") with the beds on a vasopressor now and the beds that may start one, each with its percentage. Pre-mixes for the busy case. Optional: "How many vasopressor starts?".
 
 ## Respiratory therapy (07:15)
 
@@ -35,7 +35,7 @@ Opens **Unit strain** and picks "respiratory therapy": the IMV card comes first.
 
 ## Bed manager (07:30 and through the day)
 
-Opens **Unit strain** and picks "bed manager": the Leaving the ICU card comes first ("10 expected to leave, 7 to 13") with the beds likely to leave. On the Bed board the same rooms have a green border and the bed-with-arrow icon. Plans ED boarding, step-down transfers and elective surgery holds.
+Opens **Unit strain** and picks "bed manager": the Leaving the ICU card comes first ("10 expected to leave (7 to 13)") with the beds likely to leave. On the Bed board the same rooms have a green border and the bed-with-arrow icon. Plans ED boarding, step-down transfers and elective surgery holds.
 
 ## Midday: something changed (any role)
 
@@ -48,7 +48,7 @@ What the frontend must make true: one obvious way to update, the reason when it 
 
 ## Cognitive load
 
-The full list is in `FRONTEND_SPEC.md` under "Cognitive load". In short: who to worry about comes first, every bed reads now then next, icons carry the supports and one word carries the status, ink is now and blue is forecast, strain has its own tab, numbers are natural frequencies, the room page has a fixed order, the chat is closed until asked, and there is one time window.
+The full list is in `FRONTEND_SPEC.md` under "Cognitive load". In short: who to worry about comes first, every bed reads now then next, NOW and NEXT 24 H are captioned on every bed, a Now / Next 24 h switch shows current sickness without the forecast, icons carry the supports and one word carries the status, ink is now and blue is forecast, strain has its own tab, chances are percentages, every figure has a legend on hover, the room page has a fixed order, the chat is closed until asked, and there is one time window.
 
 ## Night shift
 
