@@ -96,7 +96,7 @@ h2{font-size:15px;line-height:1.3;font-weight:800;letter-spacing:-.01em;margin-b
 
 /* second machine, built, next */
 .tail{margin-top:8px}
-.two{display:grid;grid-template-columns:250px 1fr;column-gap:26px}
+.two{display:grid;grid-template-columns:1fr 1fr;column-gap:26px}
 .meas{display:grid;grid-template-columns:repeat(3,1fr);column-gap:22px;margin-top:6px;border-top:1px solid var(--rule);padding-top:5px}
 .meas div{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
 .meas dt{color:var(--ink-2)}
@@ -131,7 +131,7 @@ h2{font-size:15px;line-height:1.3;font-weight:800;letter-spacing:-.01em;margin-b
   <header class="mast pad">
     <div class="row">
       <h1>Lookahead</h1>
-      <p class="event"><b>Team7</b> · J.C. · Dema (deetherese) · Vaishvik · <span class="fill" data-fill="team-other-members" data-empty="two more"></span><br>CIQ × NVIDIA Local AI Hackathon · Chicago · Nov 14–15, 2026<br><span class="fine">Screens show demo data with made-up names. Not a medical device; for unit planning.</span></p>
+      <p class="event"><b>Team 7 · CLIF</b> · J.C. Rojas · Kaveri Chhikara · Vaishvik Chaudhari · Dema Therese<br>CIQ × NVIDIA Local AI Hackathon · Chicago · Nov 14–15, 2026<br><span class="fine">Screens show demo data with made-up names. Not a medical device; for unit planning.</span></p>
     </div>
     <p class="tag">The next 24 hours of an ICU, on two machines the hospital owns.</p>
   </header>
@@ -141,17 +141,17 @@ h2{font-size:15px;line-height:1.3;font-weight:800;letter-spacing:-.01em;margin-b
   <section class="intro pad">
     <div>
       <h2>The problem: a small or rural ICU</h2>
-      <p>A small hospital has few of these machines, no data-science team and no cloud contract for patient data. If three patients need a breathing machine tonight and two are free, one is transferred hours away, and staff find out when it happens.</p>
+      <p>A small hospital has few of these machines, no data-science team and no cloud contract. Three patients need a breathing machine, two are free: one is transferred hours away.</p>
     </div>
     <div>
-      <h2>The solution: local compute</h2>
-      <p>Two machines the hospital owns run everything; nothing goes to a cloud. At 7 am the board shows five predictions for every patient for the next 24 hours: starting a ventilator, vasopressors or CRRT, leaving the ICU, and death.</p>
+      <h2>What we built: local compute</h2>
+      <p>Two machines the hospital owns run everything. At 7 am the board shows five predictions per patient for the next 24 hours: ventilator, vasopressors, CRRT, leaving the ICU, death.</p>
     </div>
   </section>
 
   <section class="screens pad" aria-label="Screens from the board">
     <div class="frame axis">
-      <div class="step fc"><span class="cap">Next 24 h <em>every bed reads left to right: life support now, then what may start. One status word per bed.</em></span><img src="img/beds-next.png" alt="Three beds in the Next 24 h view: room 1 Watch 26%, room 2 Not improving, room 3 Leaving 66%"></div>
+      <div class="step fc"><span class="cap">Next 24 h <em>life support now, then what may start. One colour per bed.</em></span><img src="img/beds-next.png" alt="Three beds in the Next 24 h view: room 1 Watch 26%, room 2 Not improving, room 3 Leaving 66%"></div>
       <div class="step fc duo">
         <div><span class="cap">Worry first <em>who to see before rounds</em></span><img src="img/worry-1.png" alt="Room 20, Worsening: vasopressor 43%, ventilator 40%"></div>
         <div><span class="cap">Unit strain <em>how stretched the unit is</em></span><img src="img/strain-line.png" alt="Header line: 10 on life support now, plus 5 new expected in 24 hours, SHORT, ventilators short by 1">
@@ -161,7 +161,7 @@ h2{font-size:15px;line-height:1.3;font-weight:800;letter-spacing:-.01em;margin-b
   </section>
 
   <section class="stack pad">
-    <div class="head"><h2>How we used the stack: two models, two jobs</h2><p>Trained and run on local hardware.</p></div>
+    <div class="head"><h2>How we used CIQ Fuzzball and the stack: two models, two jobs</h2><p>Every step is a Fuzzball workflow file.</p></div>
     <div class="dg" role="img" aria-label="Diagram: the board in the clinician's browser talks to a board server on two Lenovo ThinkStation PGX machines run by CIQ Fuzzball 4.3. Always-on Fuzzball services: board server and dispatcher. GPU 1 holds the chat model, NVIDIA Nemotron 3 Nano on vLLM, used as it is. The dispatcher starts the forecast workflow on GPU 2, which runs the patient model we trained: precheck, model pass, score. Fuzzball volumes hold patient data, the model and results. Patient data never leaves the two machines.">
       <svg class="wires" viewBox="0 0 720 231" aria-hidden="true">
         <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1l6 3-6 3" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
@@ -198,8 +198,8 @@ h2{font-size:15px;line-height:1.3;font-weight:800;letter-spacing:-.01em;margin-b
 
   <section class="tail pad">
     <div class="two">
-      <div><h2>What the second machine unlocks</h2><p>One GPU each for the chat and the forecast. Both GPUs for training.</p></div>
-      <div><h2>Built in two days</h2><p><b>249</b> backend tests passing · <b><span data-fill="workflow-count">5</span></b> Fuzzball workflows · <b>8</b> diagrams · <b>8</b> API calls · <b>1</b> board page. On the cluster: 25 demo patients loaded, workflows validated. Held-out AUROC 0.77 (vasopressor) to 0.93 (death).</p></div>
+      <div><h2>What is new</h2><p>A patient model small enough to train from scratch on two desk-side GPUs. One pass and five small classifiers per patient, not thousands of simulated futures.</p></div>
+      <div><h2>In the real world</h2><p>A hospital with CLIF tables (an open ICU format) can rerun the same Fuzzball files on its own records. <b>255</b> tests · <b><span data-fill="workflow-count">6</span></b> workflows · held-out AUROC 0.77 to 0.93.</p></div>
     </div>
     <dl class="meas">
       <div><dt>Patient model size</dt><dd><span class="fill" data-fill="model-size" data-empty="confirm"></span></dd></div>
