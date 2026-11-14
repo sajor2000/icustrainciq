@@ -127,12 +127,12 @@ def test_runs_when_the_dispatcher_is_down(tmp_path):
 def test_capacity_validates_saves_and_logs_role_only(stack, caplog):
     base, tmp, fake, page = stack
     assert jcall(base, "/api/capacity")[1]["vents_free"] is None
-    good = {"life_support_patients": 12, "vents_free": 3, "role": "ICU nurse"}
+    good = {"life_support_patients": 12, "role": "ICU nurse"}
     with caplog.at_level("INFO", logger="board"):
         c, r = jcall(base, "/api/capacity", good)
-    assert c == 200 and r["ok"] and r["capacity"]["vents_free"] == 3
+    assert c == 200 and r["ok"] and r["capacity"]["life_support_patients"] == 12
     saved = json.loads((tmp / "capacity.json").read_text())
-    assert saved["life_support_patients"] == 12 and saved["vents_free"] == 3
+    assert saved["life_support_patients"] == 12 and "vents_free" not in saved
     assert jcall(base, "/api/capacity")[1]["life_support_patients"] == 12
     msg = " ".join(x.getMessage() for x in caplog.records)
     assert "role=ICU nurse" in msg
@@ -145,11 +145,8 @@ def test_capacity_validates_saves_and_logs_role_only(stack, caplog):
         "capacity.json"
     ]
     for bad in (
-        {**good, "vents_free": 51},
-        {**good, "vents_free": -1},
         {**good, "life_support_patients": 3.5},
         {**good, "life_support_patients": "7"},
-        {**good, "vents_free": True},
         {**good, "role": "visitor"},
         {"role": "ICU nurse"},
     ):
@@ -158,14 +155,7 @@ def test_capacity_validates_saves_and_logs_role_only(stack, caplog):
     assert (
         json.loads((tmp / "capacity.json").read_text()) == saved
     )  # bad input changed nothing
-    assert (
-        jcall(
-            base,
-            "/api/capacity",
-            {**good, "vents_free": 0, "life_support_patients": 50},
-        )[0]
-        == 200
-    )
+    assert jcall(base, "/api/capacity", {**good, "life_support_patients": 50})[0] == 200
 
 
 def test_ask_degrades_without_nemotron_and_update_asks_still_work(stack):
@@ -195,12 +185,12 @@ def test_ask_degrades_without_nemotron_and_update_asks_still_work(stack):
     assert r["made_at"] == "2026-11-14T07:00:00-06:00"
 
 
-def test_capacity_vents_free_is_optional(stack):
+def test_capacity_post_ignores_a_vents_free_number(stack):
     base, tmp, fake, page = stack
-    c, r = jcall(
-        base, "/api/capacity", {"life_support_patients": 9, "role": "ICU nurse"}
-    )
+    body = {"life_support_patients": 9, "vents_free": 3, "role": "ICU nurse"}
+    c, r = jcall(base, "/api/capacity", body)
     assert c == 200 and r["ok"] and r["capacity"]["vents_free"] is None
+    assert "vents_free" not in json.loads((tmp / "capacity.json").read_text())
     saved = json.loads((tmp / "capacity.json").read_text())
     assert (
         saved["set_by_role"] == "ICU nurse" and saved["set_at"]

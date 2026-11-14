@@ -147,7 +147,31 @@ def test_cut_before_any_rows(tmp_path):
         crrt=[("s1", h(1), "cvvh", 100.0)],
     )
     r = run(tmp_path, cut=h(2), **t)
-    assert r == {"imv": None, "vasopressor": False, "crrt": False}
+    assert r == {"imv": None, "vasopressor": False, "crrt": False, "vasoactives": 0}
+
+
+def test_vasoactives_counts_distinct_running_agents(tmp_path):
+    meds = [
+        ("s1", h(9), "norepinephrine", "start", 0.1),
+        ("s1", h(8), "norepinephrine", "dose_change", 0.2),  # same agent: one
+        ("s1", h(7), "vasopressin", "start", 0.04),
+        ("s1", h(6), "epinephrine", "start", 0.05),
+        ("s1", h(5), "epinephrine", "stop", None),  # stopped: not counted
+        ("s1", h(4), "Dobutamine", "start", 2.5),  # an inotrope counts
+        ("s1", h(3), "milrinone", "dose_change", 0.0),  # dose 0: off
+        ("s1", h(2), "propofol", "start", 20.0),  # not vasoactive
+        ("s1", h(30), "dopamine", "start", 5.0),  # older than 24 h
+    ]
+    r = run(tmp_path, meds=meds)
+    assert r["vasoactives"] == 3 and r["vasopressor"] is True
+    # an inotrope alone: one vasoactive, and the vasopressor flag stays off
+    r = run(tmp_path, meds=[("s1", h(4), "milrinone", "start", 0.3)])
+    assert r["vasoactives"] == 1 and r["vasopressor"] is False
+    assert run(tmp_path)["vasoactives"] == 0
+    assert set(clif_now.VASOACTIVES) == set(clif_now.PRESSORS) | {
+        "dobutamine",
+        "milrinone",
+    }
 
 
 def test_naive_cut_is_utc_and_stay_cuts_follow_icu_arrival(tmp_path):

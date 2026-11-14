@@ -13,7 +13,8 @@ Everything a user sees is a count with a likely range, or one stage-ward room's 
 4. **Checks cover on the Unit strain tab** (or taps the header line). One word against tonight's staffing or a typical day, and a card per support with the beds behind each count.
 6. **Sets tonight's capacity if it is not set.** Opens "Set tonight's capacity", types the ventilators and CRRT machines on the unit (and, if she wants the staffing word, how many life-support patients tonight's staffing covers), saves. A card whose flagged beds outnumber the free machines turns red and reads SHORT, and the header says "Ventilators short by 1". The word is now ON TRACK, TIGHT or SHORT against that number, and the card says "Capacity set 07:12 by ICU nurse (charge)".
 6. **Taps Ask** (bottom right), then "Who should we worry about first?" or "Summarise the next 24 hours" if she wants it in words; Nemotron answers from the counts, and room numbers in the answer open that room. Anything she does not recognise on the board (an icon, a bar, a status mark) explains itself on hover or long-press.
-7. **Decides**: asks for a second respiratory therapist for the night, tells the bed manager.
+7. **Reads the Staffing card.** Nurses needed now and in the next 24 hours (1:1 for a patient on CRRT or on two or more vasoactive infusions, 1:2 otherwise) and respiratory therapists (one per six ventilated). With the nurses and RTs on shift entered, the card and the header say when she is short ("Nurses short by 2").
+8. **Decides**: asks for a second respiratory therapist for the night, tells the bed manager.
 
 What the frontend must make true: "who do we worry about?" is answered in two seconds from the Worry first rail, and "are we covered?" from the header line, without scrolling on a 1440 px screen; on a phone the rail is the first thing under the tabs.
 

@@ -223,6 +223,8 @@ def room_entries(
                     "crrt": bool(on["crrt"][i]),
                     "ecmo": None,  # no ecmo/mcs token: not available
                 },
+                # vasoactive infusions running at the cut (raw CLIF only, else null)
+                "on_now_detail": {"vasoactives": tab["vasoactives"][i]},
                 "on_life_support": bool(sum(on[k][i] for k in aggregate.SUPPORTS) >= 2),
                 "stopped_before_cut": {
                     "imv": bool(stopped["imv"][i]),
