@@ -52,6 +52,30 @@ Nothing is hosted in the cloud. The real app runs on two local Lenovo PGX machin
 
 More figures: [frontend](docs/diagrams/frontend.png), [backend](docs/diagrams/backend.png), [how to run it on the cluster](docs/diagrams/workflow.png), [API map](docs/diagrams/api.png), [the 07:00 run](docs/diagrams/sequence.png).
 
+## How this forecast was made
+
+**A native model.** Every number on the board comes from one model we trained ourselves, from scratch, on our own vocabulary of patient-event tokens (about 1,200: lab bins, drug starts, transfers, time gaps, a clock token) built from MIMIC-IV-Ext-CLIF patient timelines. It is not fine-tuned and starts with no pretrained weights, from Google or from NVIDIA. Only the layer layout is borrowed, from NVIDIA Nemotron 3.5 Bolt E4B (Gemma4 text), as set in ICU-Twin `icutwin/config/decoder.yaml`: five sliding-window layers, then one full-attention layer (the last layer is always full), grouped-query attention, key/value shared across the last layers, per-layer input embeddings, and logit softcapping. The config defines three sizes: s (12.3M parameters at a vocabulary of 1,200), m (about 35M) and l (about 70M). Training is size m for three epochs (`examples/train_fuzzball.yaml`, `workflows/job_3_train`), with a time-to-next-token loss added to next-token loss. The checkpoint packaged as `final` is step 2616 of 4351 from run `ep2-20261114c`; those training runs were stopped (`backend/docs/FUZZBALL_VALIDATION.md`).
+
+**Five predictions from one pass.** For each patient the model reads the events up to the cut in one forward pass (`icutwin/scoring/extractor.py`). The hidden state of the last layer at the last event goes to a logistic probe per task (`icutwin/scoring/rep_based.py`; standardize, then logistic regression with cross-validation). The probe heads are ward, step-down, IMV, vasopressor start, CRRT start and death, each for the next 24 hours (`examples/probe_tasks.yaml`); the board reports ward and step-down together as ICU discharge. Probes are fit once per model on the train split and only applied by the daily update. `app/aggregate.py` adds patients up into unit counts with a likely range (8 in 10). Nothing is generated or simulated (decision D2).
+
+**How Fuzzball ran it.** Two Lenovo ThinkStation PGX nodes (NVIDIA GB10, one GPU each). The scheduler places work, so jobs are not pinned to a named node, and no node names are recorded in the repos.
+
+| Step | Fuzzfile | Where |
+|---|---|---|
+| Data in: tar to the object cache (`fb://group/`, team only), then copy onto volume `mimic_clif` | `workflows/job_1_data_move` (ICU-Twin) | CPU |
+| Tokenize the CLIF tables and drop the demo patients; log and QC report leave by object-cache egress | `workflows/job_2_tokenize` | CPU |
+| Train, data-parallel over both nodes (`multinode`, 2 nodes, `torchrun`, NCCL over TCP sockets) | `workflows/job_3_train` | both GPUs |
+| Package a checkpoint as the model folder `final/` | `workflows/job_3_1_package` | CPU |
+| Extract hidden states on both GPUs, fit the probes, write `probe_metrics.json` | `workflows/job_4_probe` | both GPUs, then CPU |
+| Publish the board code and packages, pinned to one commit by sha256 | `backend/fuzzball/t7-code.fz` | CPU |
+| Fit probes on the app side; stage the 25 open-demo rooms | `t7-fit.fz`, `t7-ward.fz` | one GPU, then CPU |
+| One update: precheck, extract, score | `t7-forecast.fz` | one GPU for the extract, rest CPU |
+| Always on: Nemotron 3 Nano (chat), the board, the dispatcher | `t7-twin.fz` | other GPU, plus CPU |
+
+Volumes: `mimic_clif` (credentialed data, the model, training tokens; read-only by rule in the forecast workflows), `twin-store` (code, probes, `forecast.json`, `rooms.json`, run log), `hfcache` (Nemotron weights), and scratch volumes Fuzzball removes when a workflow ends. Results an agent can read back leave through the object cache; the object cache never overwrites, so each run gets its own path. The board is a Fuzzball service on port 8080 with an https endpoint (group scope). Fuzzball 4.3 has no cron and no workflow parameters, so a dispatcher service, using the workflow token Fuzzball injects, starts the 07:00 run and every rerun: "Update the unit" posts to the board, the board to the dispatcher, and the dispatcher fills a copy of `t7-forecast.fz` and runs `workflow start` (one run at a time, 20 minutes between updates of the same scope). Details: [`ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+**Not ready yet:** accuracy (`probe_metrics.json` is defined but no results are published), backtest against persistence, and run times on the GB10s (no `results/bench.jsonl`; nothing timed). Real MIMIC-IV stays counts-only; room pages use the open MIMIC-IV Demo stage ward (D6). Decision support only.
+
 ## Who uses it
 
 Every role's morning, step by step: [`docs/USER_JOURNEY.md`](docs/USER_JOURNEY.md).
@@ -68,6 +92,7 @@ python3 -m http.server 8000   # from this repo, then open:
 | Read | For |
 |---|---|
 | [`HANDOFF.md`](HANDOFF.md) | where things stand, who owns what, how to run it, what to do next on the cluster |
+| [`docs/ONE_PAGER.md`](docs/ONE_PAGER.md) | one printable page for judges: the model, how it predicts, how Fuzzball ran it |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | the team's guide: what runs where, tech stack, architecture and API figures, how the board starts a Fuzzball job, how to run it locally and on the cluster |
 | [`docs/USER_JOURNEY.md`](docs/USER_JOURNEY.md) | the 07:00 morning: charge nurse, physician, pharmacy, respiratory therapy, bed manager, midday rerun, night shift, judges |
 | [`docs/FRONTEND_SPEC.md`](docs/FRONTEND_SPEC.md) | screens, data contract (`forecast.json`, `rooms.json`, `/api/runs`, `/api/rerun`, `/api/capacity`, `/api/ask`), states, rules |

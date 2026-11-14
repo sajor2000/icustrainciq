@@ -73,6 +73,14 @@ Removed from the board: hypotension and ICU readmission. A task already under wa
 
 **Updates**: "Update the unit" (header) and "Update this room" (room page) start a forecast for the unit or one room, for the role chosen (never a name), at most once every 20 minutes. The last forecast stays on screen and is marked "updating"; the numbers refresh in place; a refusal reads "Updated 12 minutes ago. You can update again at 13:17." The 07:00 morning run is the scheduled update. The chat can start an update only when asked ("update room 12", "update the unit"). In the demo the replay clock is advanced and labelled ("Demo clock: recorded patients, time advanced N h").
 
+## How this forecast was made
+
+A native model: trained from scratch on our own token vocabulary (about 1,200 tokens) over MIMIC-IV-Ext-CLIF patient timelines. Not fine-tuned, no pretrained weights. Only the layer layout comes from NVIDIA Nemotron 3.5 Bolt E4B (Gemma4 text), per ICU-Twin `icutwin/config/decoder.yaml`: five sliding-window layers to one full-attention layer, grouped-query attention, shared key/value, per-layer input embeddings, logit softcapping. Sizes s (12.3M parameters at vocabulary 1,200), m, l; training uses m.
+
+The five predictions come from one forward pass per patient up to the cut: a logistic probe per task reads the last layer's hidden state (`icutwin/scoring/extractor.py`, `rep_based.py`). Patients are added up into unit counts with an 8-in-10 range.
+
+On Fuzzball 4.3 across two GB10 nodes: data in through the object cache onto `mimic_clif`, a CPU tokenize job, a two-node training job, a probe job on both GPUs, a forecast workflow (extract on one GPU, probes and counts on CPU), and a `t7-twin` workflow holding Nemotron 3 Nano (other GPU), the board (service on port 8080) and a dispatcher. Fuzzball 4.3 has no cron or workflow parameters, so the dispatcher starts the 07:00 run and every "Update" itself. Accuracy and run times: Not ready yet. Real MIMIC-IV stays counts-only; rooms are the open MIMIC-IV Demo stage ward (D6). Full account in [`README.md`](README.md).
+
 ## Product Principles
 
 1. Answer the shift question first: what will we be short of, when, and how sure are we.
