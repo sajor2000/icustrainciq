@@ -348,6 +348,9 @@ details.allrooms[open] summary{margin-bottom:8px}
 [data-view="alt"] .drawer{width:min(640px,calc(100vw - 32px))}
 @media (max-width:560px){.vgrid{grid-template-columns:minmax(0,1fr)}}
 
+/* Alternative: the "All 14 forecasts" disclosure is not shown */
+[data-view="alt"] details.about{display:none}
+
 /* margin */
 .panel{padding:14px 0 18px;border-top:1px solid var(--rule)}
 .margin>.panel:first-child{border-top:0}
@@ -542,7 +545,7 @@ details.more summary:hover{color:var(--ink)}
 
   <footer class="engine" aria-labelledby="about-h">
     <h2 id="about-h">How this forecast was made</h2>
-    <p class="aboutline">At 06:30, on the hospital's own servers, a small model trained on this ICU's records read each patient's history once and estimated 14 events for the next 24 h. The board shows the six that teams staff for. Patient records never leave the hospital.</p>
+    <p class="aboutline">At 06:30, on the hospital's own servers, a small model trained on this ICU's records read each patient's history once and estimated 14 events for the next 24 h. The board shows the <span id="shown-n">six</span> that teams staff for. Patient records never leave the hospital.</p>
     <details class="more about">
       <summary>All 14 forecasts, and what each one means</summary>
       <table class="all">
@@ -844,6 +847,7 @@ details.more summary:hover{color:var(--ink)}
     document.getElementById("close").textContent=tw("Close room");
     const dr=document.getElementById("drawer"); if(v==="alt"){ dr.setAttribute("role","dialog"); dr.setAttribute("aria-modal","true"); } else { dr.removeAttribute("role"); dr.removeAttribute("aria-modal"); }
     if(room){ document.getElementById("room-h").textContent=tw(`Room ${room}`); document.getElementById("chat-scope").textContent=tw(`Asking about room ${room} (open demo patient) and the unit. Mock replies in this file.`); }
+    document.getElementById("shown-n").textContent = v==="alt" ? "five" : "six";
     renderBrief(); renderChips(); renderGrid(); if(room) openRoom(room,{focus:false}); }
   function setGearLabel(){ const r=document.getElementById("role"), g=document.getElementById("gear"), t=`Settings: I am ${r.options[r.selectedIndex].text}`; g.setAttribute("aria-label",t); g.title=t; }
   document.getElementById("role").addEventListener("change",setGearLabel);
