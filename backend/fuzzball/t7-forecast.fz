@@ -5,8 +5,14 @@ version: v4
 #   @SCOPE@  unit | room       @ROOM@  1..25 (0 for unit)       @HOURS@  demo-clock hours past the 07:00 cut
 #   @WARD_FLAG@  empty = the open demo ward (default); "--real-ward" only when lane 2 started the dispatcher
 #                with --real-ward (real MIMIC-IV room views, local only; docs/DECISIONS.md D6)
-# and starts that copy (docs/DECISIONS.md D9). By hand: replace the four tokens first, e.g.
-#   sed 's/@SCOPE@/unit/;s/@ROOM@/0/;s/@HOURS@/0/;s/@WARD_FLAG@//' fuzzball/t7-forecast.fz > /tmp/f.fz && fuzzball workflow start /tmp/f.fz
+#   @CLIF_DIR@   CLIF folder of the ward: /store/code/clif_demo by default (the open demo); a cohort folder on a
+#                team volume (e.g. /rows/stage/unit25) when the dispatcher runs with --clif-dir. Never the repo.
+#   @NAMES@      empty by default (no names on the tiles); "--names <file on a team volume | fake>" when the
+#                dispatcher runs with --names: made-up names only (app/fake_names.py), never in git or a log
+# and starts that copy (docs/DECISIONS.md D9). By hand: replace the six tokens first, e.g.
+#   sed 's/@SCOPE@/unit/;s/@ROOM@/0/;s/@HOURS@/0/;s/@WARD_FLAG@//;s/@NAMES@//;s#@CLIF_DIR@#/store/code/clif_demo#' fuzzball/t7-forecast.fz > /tmp/f.fz && fuzzball workflow start /tmp/f.fz --name t7-forecast-manual
+#   or: python scripts/render_fz.py fuzzball/t7-forecast.fz --scope unit -o /tmp/f.fz   (refuses a token left unfilled)
+# Always pass --name t7-forecast-...: the dispatcher's one-run-at-a-time guard goes by the name.
 # A room run needs a whole-ward rooms.json (rooms.py refuses otherwise; the dispatcher refuses first).
 # Jobs: precheck (CPU: probes and stage tokens exist) -> extract (one GPU) -> score (CPU).
 #
@@ -45,14 +51,19 @@ jobs:
       test -d /rows/stage/tokenized_output || { echo "no stage ward tokens: run t7-fit first"; exit 1; }
       test -f /rows/stage/stage_ward.csv || { echo "no stage ward list: run t7-fit first"; exit 1; }
       test -d /store/model/mdl-icutwin || { echo "no model: run t7-build first"; exit 1; }
+      test -f @CLIF_DIR@/clif_hospitalization.parquet || { echo "no ward CLIF folder at @CLIF_DIR@"; exit 1; }
       echo "prechecks ok"
 
   extract:
     # one forward pass per stage-ward stay (about 100 short passes): icutwin's last hidden state at the cut
     depends-on: [{name: precheck, status: FINISHED}]
     image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
-    resource: {cpu: {cores: 16}, memory: {size: 100GB}, devices: {nvidia.com/gpu: 1}, exclusive: true}
-    policy: {timeout: {execute: 30m}}
+    # No `exclusive`: in Fuzzball 4.3 it reserves the whole NODE ("If true, job gets exclusive node access",
+    # docs.ciq.com/fuzzball/4.3/appendices/workflow-syntax), and this job must share a node with the board and
+    # dispatcher while Nemotron holds the other. The GPU request alone takes the node's only GPU. 25 stays are
+    # one batch: 8 cores / 48 GB / 10 m are starting values (docs/COMPUTE_PLAN.md), to be measured at rehearsal.
+    resource: {cpu: {cores: 8}, memory: {size: 48GB}, devices: {nvidia.com/gpu: 1}}
+    policy: {timeout: {execute: 10m}}
     script: |
       #!/bin/bash
       set -euo pipefail
@@ -77,14 +88,15 @@ jobs:
       SCOPE=@SCOPE@; ROOM=@ROOM@; HOURS=@HOURS@
       WARD="@WARD_FLAG@"   # empty: open demo ward; --real-ward: real MIMIC-IV rooms (opt-in, local only)
       STAGE=/rows/stage/tokenized_output
+      CLIF=@CLIF_DIR@      # the ward's CLIF folder: the open demo, or a cohort folder on a team volume
       # rooms.py applies the saved probes (never refits) and writes rooms.json; ids stay on the volume
-      COMMON="--model /store/model/mdl-icutwin --probes /store/probes/mdl-icutwin --stay-ids /rows/stage/stage_ward.csv --out /store/rooms.json --demo-clock-hours $HOURS --demographics /store/code/clif_demo --clif-now /store/code/clif_demo --tz America/Chicago $WARD"
+      COMMON="--model /store/model/mdl-icutwin --probes /store/probes/mdl-icutwin --stay-ids /rows/stage/stage_ward.csv --out /store/rooms.json --demo-clock-hours $HOURS --demographics $CLIF --clif-now $CLIF --tz America/Chicago $WARD @NAMES@"
       if [ "$SCOPE" = "room" ]; then
         python /store/code/app/rooms.py $STAGE $COMMON --room "$ROOM"   # this room only; the header keeps the unit numbers
       else
         python /store/code/app/rooms.py $STAGE $COMMON
         CAP=""; test -f /store/capacity.json && CAP="--capacity /store/capacity.json"
         python /store/code/app/aggregate.py $STAGE /store/forecast.json --beds 25 --score rep \
-          --baseline /rows/tokenized_output --stage-csv /rows/stage/stage_ward.csv --demo-clock-hours "$HOURS" --clif-now /store/code/clif_demo --tz America/Chicago $WARD $CAP
+          --baseline /rows/tokenized_output --stage-csv /rows/stage/stage_ward.csv --demo-clock-hours "$HOURS" --clif-now $CLIF --tz America/Chicago $WARD $CAP
         python -c "import json; d=json.load(open('/store/forecast.json')); print('made_at', d.get('made_at'), 'rows', len(d.get('resources', {})))"
       fi

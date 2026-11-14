@@ -1,7 +1,15 @@
 version: v4
 # t7-fit: the ONE-TIME step between t7-build and t7-forecast (docs/LIVE_DEMO.md G2, G3). Run it once after
 # t7-build has published the model, and again only when the model changes. A forecast update never refits.
-#   fuzzball workflow validate fuzzball/t7-fit.fz && fuzzball workflow start fuzzball/t7-fit.fz --name t7-fit
+# TEMPLATE (Fuzzball 4.3 has no parameters): two ward tokens are replaced before the start,
+#   @CLIF_DIR@   CLIF folder of the stage ward: /store/code/clif_demo (the open demo) by default; for the final
+#                cohort a folder on a team volume, e.g. /rows/stage/unit25. Never the repo.
+#   @WARD_IDS@   empty by default (stage_ward.py selects 25 open-demo stays); for a given ward
+#                "--ward-ids /rows/stage/unit25/dashboard_patients_unit25.parquet --real-ward"
+#   python app/dispatcher.py --render-only fuzzball/t7-fit.fz > /tmp/t7-fit.fz      # defaults: the open demo
+#   python app/dispatcher.py --render-only fuzzball/t7-fit.fz --clif-dir /rows/stage/unit25 \
+#     --ward-ids /rows/stage/unit25/dashboard_patients_unit25.parquet --real-ward > /tmp/t7-fit.fz
+#   fuzzball workflow validate /tmp/t7-fit.fz && fuzzball workflow start /tmp/t7-fit.fz --name t7-fit
 # Jobs: stage (CPU: pick the 25 stage-ward stays, tokenize and winnow the open demo data, check the vocabulary),
 # extract (one GPU: features for train, tuning and held_out), fit (CPU: logistic probes, saved to twin-store).
 # The extract uses ONE GPU (the dispatcher refuses updates while a t7-fit runs, so the GPU is free).
@@ -31,8 +39,10 @@ jobs:
       #!/bin/bash
       set -euo pipefail
       mkdir -p /rows/stage && cd /rows/stage
-      python /store/code/app/stage_ward.py /store/code/clif_demo --out /rows/stage/stage_ward.csv   # seed 20261114, 25 rooms; prints counts and a digest
-      printf 'clif_path: /store/code/clif_demo\ntimezone: US/Eastern\nfiletype: parquet\n' > site.yaml
+      CLIF=@CLIF_DIR@
+      test -f $CLIF/clif_hospitalization.parquet || { echo "no ward CLIF folder at $CLIF"; exit 1; }
+      python /store/code/app/stage_ward.py $CLIF --out /rows/stage/stage_ward.csv @WARD_IDS@   # seed 20261114, 25 rooms; prints counts only
+      printf 'clif_path: %s\ntimezone: US/Eastern\nfiletype: parquet\n' "$CLIF" > site.yaml
       python -c "from icutwin.tokenizer.cli import main; main()" pipeline site.yaml                   # -> /rows/stage/tokenized_output
       python -c "from icutwin.scoring.winnower import main; main()" tokenized_output -c /store/code/examples/winnow_24h.yaml
       # the stage vocabulary must equal the training one, or the token ids would not match the model
@@ -41,7 +51,9 @@ jobs:
 
   extract:
     image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
-    resource: {cpu: {cores: 16}, memory: {size: 100GB}, devices: {nvidia.com/gpu: 1}, exclusive: true}
+    # No `exclusive` (it reserves the whole node in Fuzzball 4.3, workflow-syntax): a refit can then run on the
+    # free GPU while t7-twin is up. The GPU request alone takes the node's only GPU (docs/COMPUTE_PLAN.md).
+    resource: {cpu: {cores: 16}, memory: {size: 100GB}, devices: {nvidia.com/gpu: 1}}
     policy: {timeout: {execute: 2h}}
     script: |
       #!/bin/bash

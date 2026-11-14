@@ -355,9 +355,14 @@ def test_rooms_json_contract_and_readable_past(tmp_path, monkeypatch, capsys):
     root = _stage(tmp_path, ids)
     doc = _run(monkeypatch, tmp_path, root)
     assert "pat-" not in capsys.readouterr().out + json.dumps(doc)  # room numbers only
-    assert set(doc) == {"made_at", "ward", "rooms", "dropped", "on_now_source"} and [
-        r["room"] for r in doc["rooms"]
-    ] == [1, 2, 3, 4]
+    assert set(doc) == {
+        "made_at",
+        "ward",
+        "rooms",
+        "dropped",
+        "on_now_source",
+        "forecast_state",
+    } and [r["room"] for r in doc["rooms"]] == [1, 2, 3, 4]
     r1, r4 = doc["rooms"][0], doc["rooms"][3]
     keys = "room updated_at cut_time window scope on_now p any_life_support"
     for k in (keys + " level out past_12h").split():

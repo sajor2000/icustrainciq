@@ -490,6 +490,48 @@ def level_of(x: float, levels: dict | None = None) -> str:
     )
 
 
+UNIT_NAME = "Medical ICU"  # forecast.json "unit_name": the page's header chip
+READY, PENDING = "ready", "pending-model"  # forecast_state (docs/CONTRACT.md)
+NO_COUNTS = {
+    "available": False,
+    "p10": None,
+    "p50": None,
+    "p90": None,
+    "expected": None,
+}
+PROBE_TASKS = (
+    pathlib.Path(__file__).resolve().parent.parent / "examples" / "probe_tasks.yaml"
+)
+
+
+def probe_tokens() -> list[str]:
+    """the tokens behind the five predictions (examples/probe_tasks.yaml)"""
+    import yaml
+
+    return list(yaml.safe_load(PROBE_TASKS.read_text())["score"]["target_tokens"])
+
+
+def pending_scores(root: pathlib.Path, ids: list[str] | None = None) -> pl.DataFrame:
+    """the probe-score table of a ward that has no model yet: the winnower's labels
+    (every <split>_for_inference.parquet, list columns left out) with each task's
+    `_rep_score` NaN. Read by patient_table / build_forecast like a real one: every
+    prediction is then "no data", what is on at the cut stays real."""
+    parts = []
+    for f in sorted(pathlib.Path(root).glob("*_for_inference.parquet")):
+        cols = [
+            c for c, t in pl.read_parquet_schema(f).items() if t.base_type() != pl.List
+        ]
+        parts.append(pl.read_parquet(f, columns=cols))
+    if not parts:
+        raise SystemExit(f"no *_for_inference.parquet under {root}: winnow first")
+    df = pl.concat(parts, how="diagonal")
+    if ids is not None:
+        df = df.filter(pl.col("hospitalization_id").is_in(list(ids)))
+    return df.with_columns(
+        pl.lit(float("nan")).alias(f"{t}_rep_score") for t in probe_tokens()
+    )
+
+
 def _on_any(on: dict[str, np.ndarray]) -> np.ndarray:
     return np.any([on[s] for s in SUPPORTS], axis=0)
 
@@ -766,18 +808,21 @@ def build_forecast(
     stage_csv: pathlib.Path | None = None,
     ward: dict | None = None,
     clif_now: pathlib.Path | None = None,
+    forecast_state: str = READY,
+    clif: dict | None = None,
+    unit_name: str = UNIT_NAME,
 ) -> dict:
     """forecast.json (docs/CONTRACT.md) from a probe-score table; unit scope.
-    clif_now: raw CLIF folder; what is on at the cut then comes from it"""
+    clif_now: raw CLIF folder; what is on at the cut then comes from it (`clif`: the
+    same answer already read, {stay id: {...}}, so the caller and the file agree).
+    forecast_state "pending-model" (no weights or probes yet, `pending_scores`):
+    what is on now stays real, every expected count is null, no yardstick."""
     unit = df.sample(n=min(beds, df.height), seed=seed)
     rng = np.random.default_rng(seed)
-    clif = (
-        clif_now_mod.running_for_stays(
+    if clif is None and clif_now:
+        clif = clif_now_mod.running_for_stays(
             clif_now, unit["hospitalization_id"].to_list(), demo_clock_hours
         )
-        if clif_now
-        else None
-    )
     tab = patient_table(unit, clif=clif)
     probs = unit_probs(unit, "_rep_score", RESOURCES_REP)
     resources = strain(probs, rng, RESOURCES_REP)
@@ -789,26 +834,40 @@ def build_forecast(
     else:
         print("no train_for_inference.parquet: typical yardstick left out")
     ls = life_support_block(tab)
+    pending = forecast_state == PENDING
+    if pending:  # no model: nothing is expected, nothing is 0
+        resources = {
+            name: {"team": team, **NO_COUNTS}
+            for name, (team, _) in RESOURCES_REP.items()
+        }
+        ls["expected_new_patients"] = dict(NO_COUNTS)
+        ls["expected_by"] = {s: dict(NO_COUNTS) for s in SUPPORTS}
     label = "Next 24 h (to 07:00 tomorrow)"
     forecast = {
         "made_at": made.isoformat(timespec="seconds"),
         "cut_time": cut.isoformat(timespec="seconds"),
         "window": window_for(cut),
         "scope": "unit",
+        "unit_name": str(unit_name or UNIT_NAME)[:60],
         "ward": dict(ward or WARDS[False]),
-        "on_now_source": "clif" if clif_now else "tokens",
+        "forecast_state": forecast_state,
+        "on_now_source": "clif" if (clif_now or clif) else "tokens",
         "demo_clock_hours": demo_clock_hours,
         "beds": unit.height,
         "range": "80% (p10-p90)",
         "resources": resources,
         "life_support": ls,
-        "yardstick": yardstick(
+        "yardstick": None
+        if pending
+        else yardstick(
             ls,
             unit.height,
             read_capacity(capacity),
             typical_life_support_rate(labels) if labels is not None else None,
         ),
-        "check_first": check_first(unit, tab, read_room_map(stage_csv)),
+        "check_first": []
+        if pending
+        else check_first(unit, tab, read_room_map(stage_csv)),
         "levels": dict(LEVELS),
         "out_tag": OUT_TAG,
         # kept for the current board and chat (they read these with defaults)
@@ -823,7 +882,7 @@ def build_forecast(
             "vasopressor": int(tab["on"]["vasopressor"].sum()),
         },
     }
-    if labels is not None:
+    if labels is not None and not pending:
         st = strain_index(probs, typical_rates(labels), np.random.default_rng(seed + 1))
         if st:
             forecast["strain"] = st
@@ -865,6 +924,7 @@ def main_rep(a) -> None:
         stage_csv=a.stage_csv,
         ward=ward,
         clif_now=a.clif_now,
+        unit_name=a.unit_name,
     )
     write_json(a.out, forecast)
     ls = forecast["life_support"]  # counts only
@@ -942,6 +1002,11 @@ def main() -> None:
         "admin_continuous, clif_crrt_therapy): IMV, vasopressor and CRRT running at "
         "the cut are read from it instead of the tokenized at-cut flags "
         "(on_now_source 'clif'); same ward guard as --real-ward",
+    )
+    ap.add_argument(
+        "--unit-name",
+        default=UNIT_NAME,
+        help=f"the unit's name: forecast.json unit_name (default {UNIT_NAME})",
     )
     ap.add_argument(
         "--score",
