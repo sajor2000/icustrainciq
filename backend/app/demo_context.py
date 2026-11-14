@@ -382,6 +382,21 @@ def verified_scores(root, model, ids, demo_clock_hours=0):
     return df, provenance, words
 
 
+def active_census(clif, room_of, demo_clock_hours=0):
+    """(each roster stay's own cut, the ids still in the ICU at it). The roster keeps
+    all 25 room slots; scores are verified and views built for the active ids only."""
+    from app import clif_now
+
+    try:
+        cuts = clif_now.stay_cuts(clif, list(room_of), demo_clock_hours)
+    except SystemExit:
+        raise ContextUnavailable(
+            "Selected CLIF hospitalizations or ICU arrivals are incomplete"
+        ) from None
+    here = clif_now.present_at_cut(clif, cuts)
+    return cuts, [sid for sid in room_of if here[sid]]
+
+
 def build_context(
     *,
     root,
@@ -422,14 +437,7 @@ def build_context(
         raise ContextUnavailable(
             "A stable 25-room roster and valid replay state are required"
         )
-    try:
-        cuts = clif_now.stay_cuts(clif, list(room_of), demo_clock_hours)
-    except SystemExit:
-        raise ContextUnavailable(
-            "Selected CLIF hospitalizations or ICU arrivals are incomplete"
-        ) from None
-    here = clif_now.present_at_cut(clif, cuts)
-    ids = [sid for sid in room_of if here[sid]]
+    cuts, ids = active_census(clif, room_of, demo_clock_hours)
     if (
         df.height != len(ids)
         or df[rooms.HOSP].n_unique() != len(ids)
@@ -648,9 +656,17 @@ def publish_context(
 
     room_of = read_roster(roster)
     ward = aggregate.check_ward(room_of, real_ward)
-    df, provenance, _ = verified_scores(
-        tokenized_output, model, list(room_of), demo_clock_hours
-    )
+    if (
+        len(room_of) != 25
+        or not math.isfinite(demo_clock_hours)
+        or demo_clock_hours < 0
+    ):
+        raise ContextUnavailable(
+            "A stable 25-room roster and valid replay state are required"
+        )
+    # a roster stay that has ended keeps its room slot but has no current scores
+    _, ids = active_census(pathlib.Path(clif), room_of, demo_clock_hours)
+    df, provenance, _ = verified_scores(tokenized_output, model, ids, demo_clock_hours)
     context = build_context(
         root=tokenized_output,
         df=df,

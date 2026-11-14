@@ -748,3 +748,32 @@ def test_atomic_context_preserves_fictional_names_and_custom_unit(ward_files):
     assert not any(
         r["name"]["display"] in run.stdout + run.stderr for r in doc["rooms"]["rooms"]
     )
+
+
+@pytest.mark.parametrize("score_files", ["retain", "omit"])
+def test_publisher_verifies_scores_for_the_active_census(ward_files, score_files):
+    """CodeRabbit PR #16: one roster stay has ended. Scores are verified for the 24
+    stays present, whether the score files still hold the ended stay or not; the
+    roster keeps all 25 room slots."""
+    from app.demo_context import load_context
+
+    ended = ward_files["ids"][0]
+    path = ward_files["clif"] / "clif_hospitalization.parquet"
+    pl.read_parquet(path).with_columns(
+        pl.when(pl.col("hospitalization_id") == ended)
+        .then(pl.lit(SOURCE_START + dt.timedelta(hours=12)))
+        .otherwise(pl.col("discharge_dttm"))
+        .alias("discharge_dttm")
+    ).write_parquet(path)
+    if score_files == "omit":
+        for name in ("scores", "labels", "features"):
+            pl.read_parquet(ward_files[name]).filter(
+                pl.col("hospitalization_id") != ended
+            ).write_parquet(ward_files[name])
+    assert publish_direct(ward_files)["rooms_written"] == 25
+    context = load_context(ward_files["out"])
+    assert context["forecast"]["beds"] == 24 and context["rooms"]["dropped"] == 1
+    room = context["rooms"]["rooms"][0]
+    assert room["room"] == 1 and room["present"] is False
+    assert all(v is None for v in room["p"].values())
+    assert sum(r["present"] for r in context["rooms"]["rooms"]) == 24
