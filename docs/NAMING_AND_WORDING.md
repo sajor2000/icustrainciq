@@ -1,6 +1,6 @@
 # Naming and wording
 
-Proposals for J.C., researched 2026-11-14. Nothing here is applied to the board yet. Conflict checks are web searches, not a trademark search; run a formal search before committing to a name.
+Proposals for J.C., researched 2026-11-14. **Applied to the board 2026-11-14 (D11): the name Lookahead, the tagline "The next 24 hours, in one place.", Update forecast / Update the unit, Not ready yet, Ask about this forecast, the refusal wording, the evidence note, "Room N: next 24 hours", "Check first".** The tables below keep the research. Conflict checks are web searches, not a trademark search; run a formal search before committing to a name.
 
 ## Product name
 
