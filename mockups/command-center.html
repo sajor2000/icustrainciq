@@ -132,9 +132,19 @@ details.allrooms[open] summary{margin-bottom:8px}
 .cl .u svg{display:block;width:100%;height:20px}
 .cl .who{margin:2px 0 0}
 .cl .who .status{display:inline-block;padding:0 4px;font-size:11px}
-.cl .bedline{margin:10px 0 8px;padding-top:8px;border-top:1px solid var(--rule)}
+.cl .bedline{margin:0 0 8px}
 .cl.empty .bedline{margin-bottom:0}
+.cl .sec{margin:2px 0 6px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.cl .sec.two{margin-top:12px;padding-top:10px;border-top:1px solid var(--rule)}
+.cl .stats{display:flex;align-items:flex-start;gap:20px}
+.cl .stats>div{display:flex;flex-direction:column;min-width:0}
+.cl .stats .sl{font-size:12px;color:var(--ink-2)}
+.cl .stats b{font-size:24px;font-weight:800;line-height:1.15}
+.cl .ub{margin-top:6px}
+.cl .ub svg{display:block;width:100%;height:20px}
+.cl .expl{margin:4px 0 0;color:var(--ink);font-weight:600}
 .cl .bedline b{color:var(--ink)}
+.cl .why{margin:0 0 10px;color:var(--ink)}
 .cl .lc{font-weight:600;color:var(--ink)}
 .cl .chg{background:transparent;border:0;padding:6px 4px;margin:-6px 0 -6px 4px;font:inherit;font-weight:600;color:var(--magnet);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .cl.empty .set{display:none}
@@ -169,7 +179,7 @@ details.allrooms[open] summary{margin-bottom:8px}
    ripples that leave the card one after the other. SHORT ripples faster and tints the card. The status word stays in the heading. */
 .cl.hot{position:relative;border:2px solid var(--short);padding:15px 17px;background:color-mix(in srgb,var(--short) 6%,var(--surface));box-shadow:0 0 0 5px color-mix(in srgb,var(--short) 22%,transparent),var(--card,0 0 0 transparent)}
 .cl.hot h3 .status{background:var(--short);border-color:var(--short);color:var(--surface)}
-.cl.hot .u .n{color:var(--short)}
+.cl.hot .exp b{color:var(--short)}
 .cl.hot::before,.cl.hot::after{content:"";position:absolute;inset:-2px;border:4px solid var(--short);border-radius:inherit;opacity:0;pointer-events:none;
   animation:ripple 1.6s cubic-bezier(.2,.6,.3,1) infinite}
 .cl.hot::after{animation-delay:.8s}
@@ -255,10 +265,16 @@ details.allrooms[open] summary{margin-bottom:8px}
 .setmenu .sethead .close{min-height:36px;padding:4px 12px}
 .seth{margin:14px 0 0;padding-top:14px;border-top:1px solid var(--rule);font-size:14px}
 .seti{margin:0 0 4px}
-.lrow{display:grid;grid-template-columns:minmax(0,1fr) 32px 44px 32px 56px;align-items:center;gap:6px;padding:6px 0;border-top:1px solid var(--rule)}
+.lrow{display:grid;grid-template-columns:minmax(0,1fr) 32px 58px 32px 52px;align-items:center;gap:6px;padding:6px 0;border-top:1px solid var(--rule)}
 .lrow:first-child{border-top:0}
 .lrow .nm{font-size:14px;font-weight:600}
-.lrow output{text-align:center;font-size:15px;font-weight:800}
+.sethrow{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--rule)}
+.sethrow .seth{margin:0;padding:0;border:0}
+.setmenu .reset{min-height:32px;padding:2px 10px;font-size:13px}
+.pctin{position:relative;display:block}
+.pctin input{width:100%;height:32px;font:inherit;font-size:15px;font-weight:800;text-align:right;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:0 20px 0 4px;-moz-appearance:textfield;appearance:textfield}
+.pctin input::-webkit-inner-spin-button,.pctin input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.pctin i{position:absolute;right:7px;top:50%;transform:translateY(-50%);font-style:normal;font-size:13px;font-weight:600;color:var(--ink-2);pointer-events:none}
 .lrow .cnt{text-align:right}
 .setmenu .lrow .step{display:grid;place-items:center;width:32px;height:32px;min-height:0;padding:0;border-radius:8px;font-size:17px;line-height:1}
 .setmenu .lrow .step:disabled{opacity:.35;cursor:default}
@@ -270,7 +286,7 @@ details.allrooms[open] summary{margin-bottom:8px}
 .custom[hidden]{display:none}
 .custom input{width:92px;min-height:44px;font:inherit;font-weight:700;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
 .custom input::placeholder{font-weight:400;color:var(--ink-2)}
-@media (max-width:560px){.setmenu .lrow .step{width:44px;height:44px}.lrow{grid-template-columns:minmax(0,1fr) 44px 44px 44px 52px}}
+@media (max-width:560px){.setmenu .lrow .step{width:44px;height:44px}.lrow{grid-template-columns:minmax(0,1fr) 44px 58px 44px 48px}.pctin input{height:44px}}
 
 /* Alternative: vitals in the bed detail, as small multiples (one chart per vital) */
 #vitals{display:none}
@@ -389,7 +405,7 @@ details.more summary:hover{color:var(--ink)}
         <span class="label">Board appearance</span>
         <button type="button" data-t="day" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>Light</button>
         <button type="button" data-t="night" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.6 6.6 0 0 0 10.5 10.5Z"/></svg>Dark</button>
-        <h3 class="seth">Cluster lines</h3>
+        <div class="sethrow"><h3 class="seth">Cluster lines</h3><button type="button" class="reset" id="linesreset">Reset to 25%</button></div>
         <p class="range seti">A bed joins a cluster when its chance of that event is at or above the cluster's line. Remembered on this device.</p>
         <div id="linesbox"></div>
         <span class="label" id="thr-l">Set every line to</span>
@@ -434,7 +450,7 @@ details.more summary:hover{color:var(--ink)}
       <section aria-labelledby="alt-h" id="altview">
         <div class="boardhead">
           <h2 id="alt-h">Patient clusters · chance of a new event in the next 24 h</h2>
-          <p class="legend">Big number = unit median of new starts · bar = 80% range · ink line = what is free · figure fills with a bed's chance</p>
+          <p class="legend">Expected new = unit median of new starts · bar = its 80% range · ink line = what is free · figure fills with a bed's chance</p>
         </div>
         <div class="thr">
           <button class="toggle resttoggle" id="resttoggle" type="button" aria-pressed="false">Hide no-risk beds</button>
@@ -647,8 +663,12 @@ details.more summary:hover{color:var(--ink)}
     const rs=live(k).filter(r=>r.p[k]>=thrBy[k]).sort((a,b)=>b.p[k]-a.p[k]);
     card.querySelector(".lv").textContent=`${t}%`; card.querySelector(".lc").textContent=nbeds(rs.length);
     const row=document.querySelector(`#linesbox [data-k="${k}"]`);
-    if(row){ row.querySelector("output").textContent=`${t}%`; row.querySelector(".cnt").textContent=nbeds(rs.length); row.querySelector(".step[data-d='-5']").disabled=t<=LO; row.querySelector(".step[data-d='5']").disabled=t>=HI; }
-    card.querySelector(".set").innerHTML=rs.map(r=>chip(r,e,r.p[k],pct(r.p[k]),w3)).join(""); card.classList.toggle("empty",!rs.length);
+    if(row){ row.querySelector("input").value=t; row.querySelector(".cnt").textContent=nbeds(rs.length); row.querySelector(".step[data-d='-5']").disabled=t<=LO; row.querySelector(".step[data-d='5']").disabled=t>=HI; }
+    // a pulsing card with no bed at its line would look wrong: the warning comes from the unit count (many smaller chances added up),
+    // so say that and show the three beds with the highest chance
+    const hot=card.classList.contains("hot"), shown=rs.length||!hot ? rs : live(k).slice().sort((a,b)=>b.p[k]-a.p[k]).slice(0,3), why=card.querySelector(".why");
+    why.hidden=!!rs.length||!hot; if(!why.hidden) why.textContent=`No single bed reaches ${t}%, but the smaller chances across the unit add up to a median of ${C[k].p50} new starts against ${cap[k]} free. Highest chances:`;
+    card.querySelector(".set").innerHTML=shown.map(r=>chip(r,e,r.p[k],pct(r.p[k]),w3)).join(""); card.classList.toggle("empty",!shown.length);
   }
   // the last card: beds under every risk line, each with its top risk
   function updateRest(){
@@ -665,20 +685,32 @@ details.more summary:hover{color:var(--ink)}
     for(const k of order){ const e=EV.find(x=>x.k===k), c=C[k], st=status(k), hot=["short","tight"].includes(st[0]);
       // a cluster card: the unit line for that event (median, 80% range bar, what is free, status), its line control, then its beds
       html+=`<section class="cl${hot?` hot ${st[0]}`:""}" data-k="${k}"><h3>${e.row.replace(/ \(.*\)/,"")}${hot?`<span class="status ${st[0]}">${st[1]}</span>`:""}</h3>
-        <div class="u"><span class="n">${c.p50}</span><span class="ub">${bar(c,cap[k])}<span class="range">range ${c.p10} to ${c.p90}${cap[k]!=null?` · ${cap[k]} free (placeholder)`:""}</span></span></div>
+        <p class="sec">Whole unit · next 24 h</p>
+        <div class="stats">${k in rooms[0].on ? `<div><span class="sl">On now</span><b>${rooms.filter(r=>r.on[k]).length}</b><span class="range">beds</span></div>
+          <div><span class="sl">Free</span><b>${cap[k]!=null?cap[k]:"–"}</b><span class="range">${cap[k]!=null?"placeholder":"not set"}</span></div>`:""}
+          <div class="exp"><span class="sl">Expected new</span><b>${c.p50}</b><span class="range">range ${c.p10} to ${c.p90}</span></div></div>
+        <div class="ub">${bar(c,cap[k])}</div>
+        ${hot?`<p class="range expl">${st[0]==="short"?`The median of ${c.p50} new starts is more than the ${cap[k]} free.`:`New starts could reach ${c.p90}, more than the ${cap[k]} free.`}</p>`:""}
         <p class="range who">${mine.includes(k)?`<span class="own">your row</span>`:e.team}${cap[k]==null?" · no capacity set":st[0]==="ok"?` · <span class="status ok">${st[1]}</span>`:""}</p>
+        <p class="sec two">Beds to watch</p>
         <p class="range bedline">Beds at <b class="lv"></b> or more · <span class="lc"></span> <button type="button" class="chg" data-k="${k}" aria-label="Change the line for ${e.name} in settings">Change</button></p>
+        <p class="range why" hidden></p>
         <div class="set"></div></section>`; }
     html+=`<section class="cl rest" id="restcard"><h3>No risk at the line</h3><p class="range bedline lc"></p><div class="set"></div></section>`;
     // settings: one row per cluster, in the same order: name, − value +, how many beds that gives
     document.getElementById("linesbox").innerHTML=order.map(k=>{ const e=EV.find(x=>x.k===k); return `<div class="lrow" data-k="${k}"><span class="nm">${e.bl}</span>
-      <button type="button" class="step" data-d="-5" aria-label="Lower the line for ${e.name} by 5 points">−</button><output aria-live="polite"></output><button type="button" class="step" data-d="5" aria-label="Raise the line for ${e.name} by 5 points">+</button><span class="cnt range"></span></div>`; }).join("");
+      <button type="button" class="step" data-d="-5" aria-label="Lower the line for ${e.name} by 5 points">−</button><span class="pctin"><input type="number" min="1" max="99" step="1" inputmode="numeric" aria-label="Line for ${e.name}, percent"><i aria-hidden="true">%</i></span><button type="button" class="step" data-d="5" aria-label="Raise the line for ${e.name} by 5 points">+</button><span class="cnt range"></span></div>`; }).join("");
     document.getElementById("clusters").innerHTML=html; KEYS.forEach(updateCard); updateRest();
   }
   document.getElementById("clusters").addEventListener("click",e=>{ const b=e.target.closest(".pp"); if(b) return openRoom(+b.dataset.room);
     const c=e.target.closest(".chg"); if(c){ e.stopPropagation(); setMenu(true); const r=document.querySelector(`#linesbox [data-k="${c.dataset.k}"]`); r.scrollIntoView({block:"nearest"}); (r.querySelector(".step:not(:disabled)")||r).focus(); } });
   document.getElementById("linesbox").addEventListener("click",e=>{ const st=e.target.closest(".step"); if(!st) return; const k=st.closest(".lrow").dataset.k;
     thrBy[k]=Math.max(LO,Math.min(HI,Math.round(thrBy[k]*100)+ +st.dataset.d))/100; updateCard(k); updateRest(); saveLines(); if(st.disabled) st.parentNode.querySelector(".step:not(:disabled)").focus(); });
+  // type a line straight into its box (any whole percent from 1 to 99); a bad entry goes back to the current value
+  document.getElementById("linesbox").addEventListener("change",e=>{ if(e.target.type!=="number") return; const k=e.target.closest(".lrow").dataset.k, v=Math.round(+e.target.value);
+    if(e.target.value!==""&&okLine(v)){ thrBy[k]=v/100; saveLines(); } updateCard(k); updateRest(); });
+  document.getElementById("linesbox").addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.type==="number"){ e.preventDefault(); e.target.blur(); e.target.focus(); } });
+  document.getElementById("linesreset").onclick=()=>{ document.getElementById("customrow").hidden=true; document.querySelector('#thr [data-v="custom"]').setAttribute("aria-expanded","false"); setLines(()=>.25); };
   // "Set every line to": three presets, or Custom, which opens a box for any whole percent from 1 to 99
   { const row=document.getElementById("customrow"), inp=document.getElementById("customv"), cb=document.querySelector('#thr [data-v="custom"]'), show=o=>{ row.hidden=!o; cb.setAttribute("aria-expanded",String(o)); };
     document.querySelectorAll("#thr button").forEach(b=>b.onclick=()=>{ if(b.dataset.v!=="custom"){ show(false); return setLines(()=>+b.dataset.v/100); }
