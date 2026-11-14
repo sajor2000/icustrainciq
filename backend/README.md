@@ -10,11 +10,15 @@ Everything the Lookahead board needs at run time, copied from the ICU-Twin repo
 | `app/chat_agent.py` | "Ask about this forecast" agent (Nemotron 3 Nano via vLLM, tool calling) |
 | `app/rooms.py`, `app/aggregate.py` | Build `rooms.json` (per room) and `forecast.json` (unit counts with ranges) |
 | `app/clif_now.py` | Life support running at the 07:00 cut, read from raw CLIF tables |
+| `app/stage_ward.py`, `app/ward_check.py` | The ward's room map (25 open-demo stays, or exactly the ids of a file with `--ward-ids`); is a ward's CLIF folder ready |
+| `app/fake_names.py` | Made-up names for the room tiles (`--names`); never real names |
+| `scripts/run_cohort.py` | A given ward end to end on a laptop: no GPU, no cluster, no model needed |
+| `scripts/render_fz.py` | Fills a Fuzzfile template's tokens; refuses one left unfilled |
 | `app/static/index.html` | The page the board serves (copy of `mockups/command-center.html`) |
 | `icutwin/` | Tokenizer, model definition and probe scoring used to score patients |
-| `fuzzball/` | `t7-smoke`, `t7-fit`, `t7-forecast`, `t7-twin` workflows (Fuzzball 4.3) |
+| `fuzzball/` | `t7-smoke`, `t7-fit`, `t7-ward`, `t7-forecast`, `t7-twin` workflows (Fuzzball 4.3) |
 | `clif_demo/` | Open MIMIC-IV Demo in CLIF format (the default stage ward) |
-| `docs/` | `CONTRACT.md` (JSON shapes), `LIVE_DEMO.md` (runbook), `CHAT_AGENT.md` |
+| `docs/` | `CONTRACT.md` (JSON shapes), `LIVE_DEMO.md` (runbook), `FUZZBALL_TEST_PLAN.md` (first run on the cluster), `COMPUTE_PLAN.md`, `FUZZBALL_43_REVIEW.md`, `CHAT_AGENT.md` |
 
 ## Architecture
 
@@ -30,5 +34,23 @@ uv run python app/board.py --forecast ../examples/forecast.json --static ../mock
 ```
 
 Open http://localhost:8080. Every POST needs `Content-Type: application/json` and `X-Lookahead: 1`.
+
+## Run the final cohort on a laptop
+
+The 25 demo patients are real MIMIC-IV stays in CLIF format. They live in `data/local/unit25/` (git ignores `backend/data/`) and never leave the machine. Two commands, from `backend/`:
+
+```
+uv run --extra model python scripts/run_cohort.py data/local/unit25 --ward-ids data/local/unit25/dashboard_patients_unit25.parquet --real-ward --names data/local/unit25/name.parquet
+uv run python app/board.py --forecast data/local/out/forecast.json --host 127.0.0.1 --port 8080
+```
+
+The first builds the room map, tokenizes, winnows at the cut, reads what is running at the cut from raw CLIF, and writes `rooms.json` and `forecast.json` to `data/local/out/`. The second serves the page on loopback only: open http://127.0.0.1:8080. On real patients always pass `--host 127.0.0.1`.
+
+- No model yet: the files say `"forecast_state": "pending-model"`. The Now side is real; every prediction is null (`docs/CONTRACT.md`).
+- With a model: add `--model <mdl dir> --probes <probes dir>`. Needs the trained weights and the probes from `t7-fit`.
+- Later in the stay: `--demo-clock-hours 6` moves every patient six hours on, on that patient's own clock. `--cut-table 0,24,48,72` prints how many rooms remain and how many are on each support at each clock (counts only, writes nothing).
+- The open demo instead of the cohort: `python app/stage_ward.py clif_demo --out /tmp/ids.csv`, then `scripts/run_cohort.py clif_demo --ward-ids /tmp/ids.csv --names fake --out /tmp/out --work /tmp/work`.
+
+Every script prints counts only: never a row, an id, a date of the data or a name.
 
 Real patient data, model weights and probes are never stored in this repo.

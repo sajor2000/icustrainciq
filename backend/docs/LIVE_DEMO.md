@@ -225,12 +225,14 @@ Superseded by section 9: the fit step is its own workflow (`t7-fit`), so an upda
 | Situation | What happens | What to do |
 |---|---|---|
 | Node with the **forecast** GPU fails mid-run | the job fails (one-shot jobs have no automatic retry; `policy.restart: on-node-fault` is the only retry option) | dispatcher guard clears when the workflow errors; press Rerun; it lands on the free node; the board keeps the last good forecast |
-| Node with **Nemotron** fails | `t7-twin` loses a service; the board and dispatcher (CPU, may sit on either node) keep running if they are not on that node; chat says Nemotron is not answering | `fuzzball workflow describe <twin-id>`; if Nemotron is gone, restart `t7-twin` (the model reloads from `hfcache`, minutes). Rooms, rerun and counts keep working meanwhile |
+| Node with **Nemotron** fails | Expect **all of `t7-twin` to fail**: on Fuzzball 4.3.1 a service that fails (a node fault, or an exit with an error) fails the workflow (release notes v4.3.1), so the board and dispatcher go with it and the endpoint URL is removed. Whether a node loss ends only the service on that node is not documented (`FUZZBALL_TEST_PLAN.md`, live check) | `fuzzball workflow describe <twin-id>`; restart `t7-twin` (the model reloads from `hfcache`, minutes) and read the new URL. If only one node is left, start the no-chat copy (`COMPUTE_PLAN.md` mode F). The files on `twin-store` are untouched, so the board comes back with the last forecast |
 | Both GPUs end up on one node's workflows | the forecast job pends (`INSUFFICIENT_RESOURCES`) | `fuzzball workflow why <id> <alloc>`; free the GPU by stopping the stale workflow (lane 2 owns that) |
-| The board or dispatcher is on the failed node | the service restarts only if the whole workflow restarts | restart `t7-twin`; the dispatcher gets a new token and the board comes back on a new URL (`workflow endpoints`) |
+| The board or dispatcher is on the failed node | same as above: expect the whole workflow to fail | restart `t7-twin`; the dispatcher gets a new token and the board comes back on a new URL (`workflow endpoints`) |
+| The board or dispatcher **process** crashes, or the dispatcher cannot install or verify the Fuzzball CLI | Nothing else is lost. Both scripts in `t7-twin.fz` loop and never exit with an error. A dispatcher without a usable CLI stays up degraded: `/api/runs` says `{"available": false, "reason": "dispatcher unavailable: ..."}`, its log says `DISPATCHER UNAVAILABLE`, `GET /health` on it is 503, no 07:00 run and no updates start | read `fuzzball workflow log <twin-id> dispatcher -n 50`; fix the cause (`FB_UI_URL`, `FB_CLI_SHA256`) and restart `t7-twin` at a quiet moment |
+| A forecast run waits and never starts | the dispatcher stops a run still pending after 5 minutes, or not ended after 45; `/api/runs` has `stuck` with the reason; the next ask or the next 07:00 retry starts a new run | `fuzzball workflow why <id> <alloc>` to see what holds the GPU |
 | Cluster API unreachable | dispatcher refuses ("cannot list workflows"); the board still serves the last files | section 6 fallbacks |
 
-`t7-twin.fz` today has `depends-on: nemotron RUNNING` on the board, so **a Nemotron that never starts keeps the board down too**. Remove it (G7): the board already degrades by itself when Nemotron does not answer.
+The board has no `depends-on` on Nemotron (G7), so a Nemotron that is still loading does not keep the board down. A Nemotron that **crashes** is different: `vllm serve` exiting with an error fails the workflow (row above).
 
 ---
 
@@ -302,7 +304,7 @@ If `t7-twin` is not running:
 
 ```bash
 fuzzball workflow start fuzzball/t7-twin.fz --name t7-twin
-fuzzball workflow describe <twin-id>                   # nemotron and dispatcher RUNNING, board RUNNING
+fuzzball workflow describe <twin-id>                   # nemotron, board and dispatcher Started
 fuzzball workflow log <twin-id> dispatcher -n 50       # CLI downloaded, no auth error (G7 check)
 fuzzball workflow endpoints <twin-id> board web        # the URL
 fuzzball workflow connect --name board --endpoint web <twin-id>
@@ -316,7 +318,7 @@ Press **Update the unit** on the board as "ICU nurse" (or `curl` the board, `POS
 
 ```bash
 fuzzball workflow list --parent <twin-id>              # a t7-forecast-MMDD-HHMM with t7-twin as parent
-fuzzball workflow describe <forecast-id>               # extract RUNNING on the free node, then CPU jobs
+fuzzball workflow describe <forecast-id>               # extract Started on the free node, then CPU jobs
 fuzzball workflow log <forecast-id> extract -n 100     # counts only
 fuzzball report charges workflow <forecast-id> -o json # GPU-hours
 ```
@@ -333,7 +335,7 @@ Write down: extract seconds, total seconds, new `made_at`, `forecast.json` carry
 | Check | Go | No-go action |
 |---|---|---|
 | Our two nodes ready | yes | restart on the other node; if only one node: board plus forecast on it, no Nemotron (chat off) |
-| `t7-twin` started, `board`, `nemotron`, `dispatcher` RUNNING | yes | `describe`, `log`; restart `t7-twin` (minutes for Nemotron) |
+| `t7-twin` started, `board`, `nemotron`, `dispatcher` Started | yes | `describe`, `log`; restart `t7-twin` (minutes for Nemotron) |
 | `forecast.json` and `rooms.json` < 24 h old, same run, 25 rooms | yes | press Update the unit; if refused, read the reason |
 | `life_support` and `yardstick` present | yes | check the aggregate flags in the `score` job; the page shows "pending run" (acceptable) |
 | Chat answers in < 10 s | yes | chat off, say so; counts and rooms still work |
@@ -374,7 +376,7 @@ Size: XS under an hour, S a few hours, M most of a day.
 | G4 | `app/rooms.py`: writes `rooms.json` (on now, five probabilities, level, last 12 h of readable events from the open demo tokens), rooms before forecast; with test | 3 | M | done (t7/fc-lookahead-forecast), contract in `docs/CONTRACT.md`, flags in section 1.5 |
 | G5 | `app/stage_ward.py` | 3 | done | here, with tests; reconcile digest with team list (XS) |
 | G6 | `app/board.py`: serve `app/static/index.html` read per request, `GET /api/rooms`, `room` on ask; chat agent loop | 4 | M | in progress (`t7/ui-chat-agent`) |
-| G7 | `t7-twin.fz`: drop `depends-on nemotron` on the board; dispatcher CLI to a mounted volume (docs: binary larger than the writable layer); confirm `FB_UI_URL` | 2 | S | **done** in `t7-twin.fz`: board no longer depends on Nemotron, CLI on `/store/bin`; `FB_UI_URL` still to confirm |
+| G7 | `t7-twin.fz`: drop `depends-on nemotron` on the board; dispatcher CLI to a mounted volume (docs: binary larger than the writable layer); confirm `FB_UI_URL` | 2 | S | **done** in `t7-twin.fz`: board no longer depends on Nemotron, CLI on container-local tmpfs (`/dev/shm`, passed as `--cli "$CLI"`); `FB_UI_URL` still to confirm |
 | G8 | Dispatcher: add `t7-smoke` and the fit workflow to the busy prefixes; `/status` shows whether a forecast is active | 2 + 4 | S | **done**: `t7-smoke`, `t7-fit` in the busy list; `/status` has `running` and `updating` |
 | G9 | `t7-sync.fz`: code-only update from a git tag into `/store/code` (atomic directory swap) | 2 | S | open |
 | G10 | `t7-preflight.fz`: CPU job that prints counts for the go/no-go list | 2 | S | open |
@@ -419,7 +421,7 @@ Decided by J.C. on 2026-11-14 (`docs/DECISIONS.md` D9). Code: `app/dispatcher.py
 | board "Update the unit", or chat "update the unit" / "rerun the forecast" | `unit` | extract, apply probes, `rooms.json`, `forecast.json` last |
 | board "Update this room", or chat "update room 12" | `room` + number | extract, apply probes to that room, `rooms.json` only |
 
-`t7-forecast.fz` is a **template**: Fuzzball 4.3 has no workflow parameters and `workflow start` has no `--set` (docs.ciq.com/fuzzball/4.3, workflow syntax; `fuzzball workflow start --help`), so the dispatcher replaces `@SCOPE@`, `@ROOM@`, `@HOURS@`, `@WARD_FLAG@` and starts the copy (kept under `/store/rendered`, last 30). Names: `t7-forecast-MMDD-HHMM` (unit), `t7-forecast-room12-MMDD-HHMM`.
+`t7-forecast.fz` is a **template**: Fuzzball 4.3 has no workflow parameters and `workflow start` has no `--set` (docs.ciq.com/fuzzball/4.3, workflow syntax; `fuzzball workflow start --help`), so the dispatcher replaces all six tokens, `@SCOPE@`, `@ROOM@`, `@HOURS@`, `@WARD_FLAG@`, `@CLIF_DIR@`, `@NAMES@`, refuses to start a copy that still has a token, and starts the copy (kept under `/store/rendered`, last 30). Names: `t7-forecast-MMDD-HHMM` (unit), `t7-forecast-room12-MMDD-HHMM`.
 
 Guards (all tested without a cluster): one run at a time (any scope, `t7-forecast*`, `t7-build`, `t7-smoke`, `t7-fit`); 20 minutes between updates of one scope; the room gap is per room and a unit update also counts for every room. Refusals are plain words, for example "Updated 12 minutes ago. You can update again at 13:17.", "Room 12 updated 7 minutes ago. You can update again at 13:17.", "Another update is running (...); the two GPUs are in use. Try again in a few minutes." The gap is kept across a dispatcher restart (read from `runs.jsonl`) and is cleared when the listed run is seen to have failed within the gap. Two requests at once cannot both start (the first is tracked until the list shows it). A room update before any whole-ward run is refused ("No room data yet. Update the unit first, then a single room."). A forecast run is an update of the open demo ward by default; `--real-ward` on the dispatcher command (lane 2 only) renders `--real-ward` into the runs, for real MIMIC-IV room views, local only (D6). The log has time, role (or `schedule`), scope, room, workflow id and name; nothing else.
 
@@ -434,11 +436,56 @@ The charge nurse enters two whole numbers from 0 to 50 (life-support patients th
 ### 9.5 Start an update by hand (if the dispatcher or token is broken)
 
 ```bash
-sed 's/@SCOPE@/unit/;s/@ROOM@/0/;s/@HOURS@/0/;s/@WARD_FLAG@//' fuzzball/t7-forecast.fz > /tmp/t7-forecast-manual.fz
+python scripts/render_fz.py fuzzball/t7-forecast.fz --scope unit -o /tmp/t7-forecast-manual.fz
 fuzzball workflow validate /tmp/t7-forecast-manual.fz && fuzzball workflow start /tmp/t7-forecast-manual.fz --name t7-forecast-manual
 ```
 
-(Room: `s/@SCOPE@/room/;s/@ROOM@/12/;s/@HOURS@/4.5/`; real ward: `s/@WARD_FLAG@/--real-ward/`.) Ask lane 2 before starting anything.
+`scripts/render_fz.py` is the code the dispatcher uses. It fills every token and exits 1, writing nothing, if one is left (a plain `sed` of four tokens leaves `@CLIF_DIR@` and `@NAMES@` in the file, and `precheck` then fails). Room: `--scope room --room 12 --hours 4.5`. The final cohort: add `--real-ward --clif-dir /rows/stage/unit25 --names /rows/stage/unit25/name.parquet`. Without Python, all six tokens by hand:
+
+```bash
+sed 's/@SCOPE@/unit/;s/@ROOM@/0/;s/@HOURS@/0/;s/@WARD_FLAG@//;s/@NAMES@//;s#@CLIF_DIR@#/store/code/clif_demo#' fuzzball/t7-forecast.fz > /tmp/t7-forecast-manual.fz
+grep -c '@[A-Z_]*@' /tmp/t7-forecast-manual.fz    # must print 0
+```
+
+Always pass `--name t7-forecast-...`: the dispatcher's one-run-at-a-time guard goes by the name, and an unnamed run is named after its file. Ask lane 2 before starting anything.
+
+### 9.5a Final cohort (the 25 demo patients)
+
+Nothing in this section is started until training (`t7-build`) has finished. Step by step, with commands: `FUZZBALL_TEST_PLAN.md`.
+
+**What it is.** A CLIF extract of 25 real MIMIC-IV stays: 19 `clif_*.parquet` tables, `dashboard_patients_unit25.parquet` (one column, `hospitalization_id`) and `name.parquet` (made-up names; it holds real ids). On the laptop it is `backend/data/local/unit25/`, which git ignores. It never goes into the repo, a commit, a log, a screenshot or a public host.
+
+**Where it must be on the cluster.** `/rows/stage/unit25/` on the team volume `clif_work` (restricted like `mimic_clif`). Never `twin-store` (the board reads it) and never the code tree.
+
+**Getting it there is a manual step, and the team has to choose how.** No workflow copies it. `CLUSTER_FACTS.md` says "Laptops never hold or move the data"; this extract is already on a laptop, so the choice is open:
+
+| Option | What it needs | Notes |
+|---|---|---|
+| A. Rebuild on the cluster | The 25 ids (one small file) on `clif_work`, and the full CLIF tables on `mimic_clif`. A one-off CPU job filters each table to those ids and writes `/rows/stage/unit25/`. | No patient rows cross the network. Needs the full CLIF set on `mimic_clif` to hold all 19 tables, and someone to write the filter job (not in this repo). The id file is itself patient-level: move it the same careful way. |
+| B. Copy the extract | A team-scoped S3 secret and volume `ingress` (`s3://`), as for the training data; or a short-lived upload service on the cluster. Fuzzball volume ingress takes `s3://`, `https://`, `hf://` and inline files only: there is no direct upload from a laptop (4.3 docs, volume ingress). | About 2 MB. The rows leave the laptop over the network once: use the team bucket, delete the object afterwards. Who: whoever holds the credentialed copy (J.C.), with lane 2. |
+
+Either way, afterwards check with `t7-ward` job `load` (counts only), not by listing files by hand.
+
+**Order after training finishes.**
+
+1. `t7-fit` (once per model): saves the probes. It stages the open demo ward by default.
+2. `t7-ward`, rendered for the cohort: job `load` checks the folder, the table list, the 25 ids and the names file; job `tokenize` builds the room map and the tokens with the training vocabulary and swaps them into `/rows/stage/`.
+3. `t7-twin`, with the dispatcher line ending in `--real-ward --clif-dir /rows/stage/unit25 --names /rows/stage/unit25/name.parquet`.
+4. The first unit forecast ("Update the unit", or 07:00). It writes `rooms.json` and `forecast.json` with `"ward": {"source": "mimic-iv", ...}`.
+
+```bash
+python scripts/render_fz.py fuzzball/t7-ward.fz --real-ward --clif-dir /rows/stage/unit25 \
+  --ward-ids /rows/stage/unit25/dashboard_patients_unit25.parquet --names /rows/stage/unit25/name.parquet -o /tmp/t7-ward.fz
+fuzzball workflow validate /tmp/t7-ward.fz && fuzzball workflow start /tmp/t7-ward.fz --name t7-ward
+```
+
+Rendered with no options, `t7-ward` puts the open demo ward back.
+
+**Rooms.** Rooms 1 to 25 follow a seeded shuffle of the ids (`stage_ward.py --ward-ids`, seed 20261114): the same map on the laptop and on the cluster, and a room number says nothing about the id or the admission date.
+
+**One day for all 25.** Each patient is cut on that patient's own clock (first ICU arrival + 24 h + the demo clock); the board shows all of them at one 07:00 (`CONTRACT.md`, "Shared demo day"). When the demo clock advances, every patient advances by the same hours, and a patient whose ICU stay has ended drops out of the ward. The cohort thins quickly, so pick the clock from `scripts/run_cohort.py ... --cut-table 0,6,12,24,48,72` on the laptop (counts only; the numbers stay out of this public repo).
+
+**Until the model exists** the laptop run shows the Now side with every prediction pending (`README.md`, "Run the final cohort on a laptop").
 
 ### 9.6 Rehearsal additions at T-45
 
