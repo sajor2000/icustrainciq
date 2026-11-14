@@ -254,10 +254,13 @@ def test_cohort_run_writes_valid_pending_files(demo_run):
     assert len(r["rooms"]) + r["dropped"] == 25 and len(r["rooms"]) > 0
     assert f["beds"] == len(r["rooms"])
     on_any = sum(any(v for v in x["on_now"].values()) for x in r["rooms"])
-    assert f["life_support"]["now_patients"] == on_any  # the Now side is real
+    assert f["life_support"]["now_known_patients"] == on_any
     for k in ("imv", "vasopressor", "crrt"):
         n = sum(bool(x["on_now"][k]) for x in r["rooms"])
-        assert f["life_support"]["now_by"][k] == n
+        unknown = sum(x["on_now"][k] is None for x in r["rooms"])
+        assert f["life_support"]["now_known_by"][k] == n
+        assert f["life_support"]["now_unknown_by"][k] == unknown
+        assert f["life_support"]["now_by"][k] == (None if unknown else n)
     assert f["life_support"]["now_by"]["ecmo"] is None
     assert f["life_support"]["expected_new_patients"]["p50"] is None
     assert all(not v["available"] for v in f["resources"].values())

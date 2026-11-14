@@ -5,7 +5,7 @@ import json
 import threading
 import urllib.error
 import urllib.request
-from http.server import ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
@@ -71,6 +71,66 @@ def test_page_is_read_from_disk_on_every_request(stack):
     assert call(base, "/")[1] == b"<html>v2</html>"
     page.unlink()
     assert call(base, "/")[0] == 503
+
+
+def test_healthy_chat_can_reach_the_dispatcher_with_its_timeout(tmp_path):
+    from tests.test_chat_agent import Fake, text
+
+    fake = FakeCli(tmp_path)
+    disp, dbase = serve(dsp.make_handler(fake))
+    model = Fake([text("Sure.")])
+    forecast = tmp_path / "forecast.json"
+    forecast.write_text(json.dumps({"resources": {}}))
+    web, base = serve(board.make_handler(forecast, model.url, dbase))
+    try:
+        code, result = jcall(
+            base, "/api/ask", {"question": "update the unit", "role": "ICU nurse"}
+        )
+        assert code == 200
+        assert result["answer"].startswith("Started ")
+    finally:
+        web.shutdown()
+        model.close()
+        disp.shutdown()
+
+
+def test_lost_dispatch_response_is_unknown_not_not_started(tmp_path):
+    class LostReply(BaseHTTPRequestHandler):
+        def do_POST(self):
+            self.rfile.read(int(self.headers.get("Content-Length", "0")))
+            self.close_connection = True
+            self.connection.close()
+
+        def log_message(self, *args):
+            pass
+
+    disp, dbase = serve(LostReply)
+    web, base = serve(
+        board.make_handler(tmp_path / "forecast.json", "http://127.0.0.1:9", dbase)
+    )
+    try:
+        _, result = jcall(base, "/api/rerun", {"role": "ICU nurse", "scope": "unit"})
+        assert result["outcome"] == "unknown"
+        assert result["started"] is None
+    finally:
+        web.shutdown()
+        disp.shutdown()
+
+
+@pytest.mark.parametrize(
+    "path,body",
+    [
+        ("/api/rerun", {"role": "ICU team", "scope": "unit"}),
+        ("/api/capacity", {"role": "ICU team", "life_support_patients": 12}),
+    ],
+)
+def test_shared_team_attribution_does_not_require_a_professional_persona(
+    stack, path, body
+):
+    base, _, _, _ = stack
+    code, result = jcall(base, path, body)
+    assert code == 200
+    assert result.get("started", True) is not False
 
 
 def test_the_shipped_placeholder_page_exists():
@@ -171,19 +231,20 @@ def test_capacity_validates_saves_and_logs_role_only(stack, caplog):
 def test_ask_degrades_without_nemotron_and_update_asks_still_work(stack):
     base, tmp, fake, page = stack
     c, r = jcall(base, "/api/ask", {"question": "vents?", "role": "ICU nurse"})
-    assert "not answering" in r["answer"]
+    assert "2 ventilator starts (80% range 1 to 3)" in r["answer"]
     c, r = jcall(
         base, "/api/ask", {"question": "please update room 12", "role": "ICU physician"}
     )
     assert (
-        r["answer"].startswith("Started t7-forecast-room12-")
+        r["answer"].startswith("Started t7-lookahead-forecast-room12-")
         and "room 12" in r["answer"]
     )
     c, r = jcall(
         base, "/api/ask", {"question": "update the unit", "role": "ICU physician"}
     )
     assert (
-        r["answer"].startswith("Started t7-forecast-1114") and "the unit" in r["answer"]
+        r["answer"].startswith("Started t7-lookahead-forecast-unit-1114")
+        and "the unit" in r["answer"]
     )
     c, r = jcall(
         base, "/api/ask", {"question": "update the unit", "role": "ICU physician"}

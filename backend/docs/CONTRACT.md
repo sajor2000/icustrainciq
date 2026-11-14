@@ -1,5 +1,30 @@
 # Lookahead JSON contract
 
+## Selected-cohort publication
+
+The selected-25 workflow publishes one atomic `context.json`. With `board.py
+--context PATH`, `GET /api/context` returns `{schema_version: 1, snapshot_id,
+cohort_id, published_at, source, roster_size: 25, clock_mode: "research_replay",
+forecast_state, forecast, rooms, provenance}`. `source.kind` is `mimic-iv` for the
+approved private cohort; `--require-real-data` refuses a missing, invalid or
+open-demo context. Missing dataset versions remain unknown. The provenance
+records the actual model/probe fingerprints for ready forecasts; a pending
+publication has no model fingerprints or invented estimates.
+
+`forecast` and `rooms` carry matching publication/cohort identities. Existing
+`GET /api/forecast` and `/api/rooms` return those projections. `POST /api/ask`
+accepts the existing question, optional role, room and seen_made_at fields;
+the response adds `snapshot_id`, `cohort_id`, `source`, `clock_mode` and
+`forecast_state`. Every answer pins one context before any model tool calls.
+
+For CLIF current support, null means unknown rather than off. Incomplete unit
+counts are null, with `now_known_patients`, `now_unknown_patients`,
+`now_known_by` and `now_unknown_by` making the lower bound explicit. A pending
+forecast retains observed Now but every future probability/count is unavailable.
+`present: false` retains an ended stay's fixed room slot with no current patient
+or prediction. The shared display clock aligns a research replay; the stays
+retain individual clinical timelines. Details: [LOOKAHEAD_DEMO.md](LOOKAHEAD_DEMO.md).
+
 What `app/aggregate.py` writes to `forecast.json` (unit scope) and `app/rooms.py` writes to `rooms.json` (one ward: the open demo by default, or a real MIMIC-IV ward with `--real-ward`, see "ward block"). The frontend and the services build to this. Flags: `docs/LIVE_DEMO.md` section 1.5. Decisions: `docs/DECISIONS.md` D8.
 
 All times are ISO 8601 with a UTC offset (the default site zone is `America/Chicago`, so the offset in November is `-06:00`; the services pass `--tz` explicitly). All probabilities are for the same window, the next 24 h from the cut (morning cut 07:00). Five predictions: `icu_departure` (to a ward or step-down unit), `ventilator` (IMV), `vasopressor` (continuous infusion), `crrt`, `death`. Life support = IMV, vasopressor, CRRT.

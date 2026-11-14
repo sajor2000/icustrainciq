@@ -8,9 +8,8 @@ The page itself is `app/static/index.html`, read from disk on every request, so 
 page goes live without restarting the workflow. Everything else is JSON:
 
 GET  /                 the page (503 note if the file is missing)
-GET  /api/forecast     forecast.json (unit counts only), or {"resources": {}, "note": ...};
-                       the file is sent whole, so "forecast_state" ("ready" | "pending-model") passes through
-       --host 127.0.0.1 binds loopback only (a laptop run on real patients); default 0.0.0.0
+GET  /api/context      one validated published envelope when --context is configured
+GET  /api/forecast     forecast.json (unit counts only), or {"resources": {}, "note": ...}
 GET  /api/rooms        rooms.json next to the forecast (stage ward only)
 GET  /api/runs         dispatcher status: next 07:00, running update, last per scope, demo clock
 GET  /api/capacity     {"life_support_patients", "vents_free", "updated_at"} (null = not set)
@@ -24,6 +23,8 @@ the host name only). Anything else is refused: 403 {"ok": false, "reason": "requ
 Content-Length must be a whole number from 0 to 4096 (400 otherwise, 413 over the cap).
 `role` is advisory: there is no login, it labels the log and the answer, it is not authorization.
 Every response carries X-Frame-Options, Content-Security-Policy and X-Content-Type-Options.
+With --context, forecast and rooms are projections of that envelope. Invalid or absent
+configured context is unavailable; independent legacy files are never a fallback.
 """
 
 import argparse
@@ -40,26 +41,32 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 try:
     from app.chat_agent import (
+        PATIENT_ID,
+        PATIENT_ID_REFUSAL,
         ROLES,
         ChatAgent,
         ModelDown,
         ToolsUnsupported,
-        filter_answer,
         parse_update_ask,
         update_answer,
         updated_line,
     )
+    from app.demo_context import ContextUnavailable, load_context
+    from app.evidence import forecast_answer
 except ImportError:  # run as `python app/board.py`
     from chat_agent import (
+        PATIENT_ID,
+        PATIENT_ID_REFUSAL,
         ROLES,
         ChatAgent,
         ModelDown,
         ToolsUnsupported,
-        filter_answer,
         parse_update_ask,
         update_answer,
         updated_line,
     )
+    from demo_context import ContextUnavailable, load_context
+    from evidence import forecast_answer
 
 log = logging.getLogger("board")
 STATIC = pathlib.Path(__file__).with_name("static") / "index.html"
@@ -77,18 +84,6 @@ SECURITY_HEADERS = {
     ),
 }
 
-# single-shot fallback when vLLM has no tool calling (the agent in chat_agent.py is the normal path)
-SYSTEM = (
-    "You are Lookahead, the assistant on an ICU board for nurses, physicians, pharmacy, respiratory "
-    "therapy and the bed manager. Answer only from the JSON forecast you are given: the five "
-    "predictions (leaving the ICU, invasive ventilation start, vasopressor start, CRRT start, "
-    "death) for the next 24 h, 07:00 to 07:00, as unit counts with an 80% range, plus the "
-    "life-support count (IMV, vasopressor or CRRT). Quote the median then the 80% range, in one to "
-    "three plain sentences, with no disclaimers or notes about the model. Never give treatment "
-    "advice and never name or identify a patient. If the forecast cannot answer, say: That's "
-    "outside this forecast. I can tell you what the unit is likely to need in the next 24 hours."
-)
-
 
 def _int_in_range(v) -> bool:
     return isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= CAPACITY_MAX
@@ -100,6 +95,8 @@ def make_handler(
     dispatcher: str = "",
     static_path: pathlib.Path = STATIC,
     behind_proxy: bool = False,
+    context_path: pathlib.Path | None = None,
+    require_real_data: bool = False,
 ):
     rooms_path = forecast_path.with_name("rooms.json")
     capacity_path = forecast_path.with_name("capacity.json")
@@ -114,7 +111,9 @@ def make_handler(
                 "note": "no forecast yet: the 07:00 run has not finished",
             }
 
-    def call_dispatcher(path: str, body: dict | None = None) -> dict:
+    def call_dispatcher(
+        path: str, body: dict | None = None, *, timeout: float = 15.0
+    ) -> dict:
         """the forecast dispatcher service (app/dispatcher.py) inside the same workflow"""
         if not dispatcher:
             return {"started": False, "reason": "no dispatcher configured"}
@@ -125,7 +124,7 @@ def make_handler(
             method="GET" if body is None else "POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=150) as r:
+            with urllib.request.urlopen(req, timeout=min(timeout, 30.0)) as r:
                 return json.load(r)
         except urllib.error.HTTPError as e:
             try:
@@ -133,6 +132,12 @@ def make_handler(
             except ValueError:
                 return {"started": False, "reason": f"dispatcher error ({e.code})"}
         except Exception as e:
+            if path == "/run" and body is not None:
+                return {
+                    "started": None,
+                    "outcome": "unknown",
+                    "reason": "Forecast start outcome unknown. Check run status before retrying.",
+                }
             return {
                 "started": False,
                 "reason": f"dispatcher unreachable ({type(e).__name__})",
@@ -143,30 +148,10 @@ def make_handler(
         forecast_path,
         rooms_path,
         capacity_path,
-        lambda path, body=None: call_dispatcher(path, body),
+        call_dispatcher,
+        context_path=context_path,
+        require_real_data=require_real_data,
     )
-
-    def ask(question: str) -> str:
-        body = {
-            "model": "nemotron",
-            "max_tokens": 300,
-            "temperature": 0.2,
-            "chat_template_kwargs": {"enable_thinking": False},
-            "messages": [
-                {"role": "system", "content": SYSTEM},
-                {
-                    "role": "user",
-                    "content": f"Forecast: {json.dumps(load())}\nQuestion: {question[:500]}",
-                },
-            ],
-        }
-        req = urllib.request.Request(
-            f"{nemotron}/v1/chat/completions",
-            data=json.dumps(body).encode(),
-            headers={"Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(req, timeout=60) as r:
-            return filter_answer(json.load(r)["choices"][0]["message"]["content"])
 
     def read_capacity() -> dict:
         try:
@@ -265,6 +250,31 @@ def make_handler(
 
         def do_GET(self):
             path = self.path.split("?", 1)[0]
+            if path in ("/api/context", "/api/forecast", "/api/rooms") and (
+                context_path is not None or require_real_data
+            ):
+                try:
+                    if context_path is None:
+                        raise ContextUnavailable("A context is required")
+                    context = load_context(context_path)
+                    if require_real_data and context["source"]["kind"] != "mimic-iv":
+                        raise ContextUnavailable("A MIMIC-IV context is required")
+                except ContextUnavailable:
+                    return self._json(
+                        503,
+                        {
+                            "available": False,
+                            "reason": "Real-data context unavailable: a published MIMIC-IV snapshot is required."
+                            if require_real_data
+                            else "Demo context unavailable: a valid published snapshot is required.",
+                        },
+                    )
+                projection = {"/api/forecast": "forecast", "/api/rooms": "rooms"}.get(
+                    path
+                )
+                return self._json(200, context[projection] if projection else context)
+            if path == "/api/context":
+                return self._json(404, {"available": False, "context_mode": False})
             if path == "/api/forecast":
                 return self._json(200, load())
             if path == "/api/rooms":  # stage ward only (D6)
@@ -353,18 +363,15 @@ def make_handler(
             out: dict = {}
             if not q.strip():
                 out = {"answer": "Ask a question about the forecast."}
-            elif agent.available:
+            elif PATIENT_ID.search(q):
+                out = {"answer": PATIENT_ID_REFUSAL}
+            elif agent.available or context_path is not None or require_real_data:
                 try:
                     out = agent.ask(q, role, room, seen)
                 except ToolsUnsupported:  # vLLM without tool calling: single-shot below
                     out = {}
-                except ModelDown as e:
-                    # an update request still works without the model (deterministic path below)
-                    out = (
-                        {}
-                        if parse_update_ask(q, room)
-                        else {"answer": f"Nemotron is not answering yet ({e})."}
-                    )
+                except ModelDown:
+                    out = {}
             if not out:
                 update = parse_update_ask(q, room)
                 if (
@@ -378,13 +385,11 @@ def make_handler(
                         call_dispatcher("/run", body), scope, r_no, role
                     )
                 else:
-                    try:
-                        answer = ask(q)
-                    except (
-                        Exception
-                    ) as e:  # keep the board up if Nemotron is still loading
-                        answer = f"Nemotron is not answering yet ({type(e).__name__})."
-                made_at = load().get("made_at")
+                    fallback = load()
+                    answer = "Unit forecast: " + forecast_answer(fallback)
+                    made_at = fallback.get("made_at")
+                if update:
+                    made_at = load().get("made_at")
                 if line := updated_line(seen, made_at):
                     answer = f"{line}\n{answer}"
                 out = {"answer": answer, "made_at": made_at}
@@ -396,17 +401,19 @@ def make_handler(
     return H
 
 
-def serve(a) -> ThreadingHTTPServer:
-    """the bound server for parsed arguments (not yet serving)"""
-    return ThreadingHTTPServer(
-        (a.host, a.port),
-        make_handler(a.forecast, a.nemotron, a.dispatcher, a.static, a.behind_proxy),
-    )
-
-
 def parse_args(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--forecast", type=pathlib.Path, required=True)
+    ap.add_argument(
+        "--context",
+        type=pathlib.Path,
+        help="one validated, atomically published demo context",
+    )
+    ap.add_argument(
+        "--require-real-data",
+        action="store_true",
+        help="require a MIMIC-IV source context; refuse missing or open-demo snapshots",
+    )
     ap.add_argument("--nemotron", default="http://nemotron:8000")
     ap.add_argument("--dispatcher", default="", help="e.g. http://dispatcher:9000")
     ap.add_argument("--static", type=pathlib.Path, default=STATIC)
@@ -414,8 +421,7 @@ def parse_args(argv=None):
     ap.add_argument(
         "--host",
         default="0.0.0.0",
-        help="address to bind (default 0.0.0.0, as before: the Fuzzball service). "
-        "A laptop run on real patients must pass 127.0.0.1",
+        help="bind address; use 127.0.0.1 for local-only access",
     )
     ap.add_argument(
         "--behind-proxy",
@@ -423,6 +429,22 @@ def parse_args(argv=None):
         help="Fuzzball endpoint proxy in front: compare Origin and Host by host name only",
     )
     return ap.parse_args(argv)
+
+
+def serve(a) -> ThreadingHTTPServer:
+    """Bind the configured server, retaining the app's local-run interface."""
+    return ThreadingHTTPServer(
+        (a.host, a.port),
+        make_handler(
+            a.forecast,
+            a.nemotron,
+            a.dispatcher,
+            a.static,
+            a.behind_proxy,
+            a.context,
+            a.require_real_data,
+        ),
+    )
 
 
 def main() -> None:

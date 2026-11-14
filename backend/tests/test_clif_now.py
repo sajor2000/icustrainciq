@@ -216,5 +216,7 @@ def test_forecast_counts_follow_clif(tmp_path):
     df = tl.scores(4, ids=ids)
     fc = aggregate.build_forecast(df, "m", beds=4, clif_now=clif)
     assert fc["on_now_source"] == "clif"
-    assert fc["life_support"]["now_by"]["imv"] == 1
+    assert fc["life_support"]["now_by"]["imv"] is None
+    assert fc["life_support"]["now_known_by"]["imv"] == 1
+    assert fc["life_support"]["now_unknown_by"]["imv"] == 3
     assert aggregate.build_forecast(df, "m", beds=4)["on_now_source"] == "tokens"

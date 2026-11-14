@@ -25,6 +25,24 @@ Five predictions only, all for the next 24 h, 07:00 to 07:00: ICU discharge, IMV
 | `GET /api/runs` | `{next_scheduled, window, running: null / {name} / {unknown:true}, updating, last:{unit,room}, recent, demo_clock_hours, demo_clock_label, min_gap_minutes}`, or `{available:false, reason}` | `app/dispatcher.py` |
 | `GET /api/capacity` | `{life_support_patients, vents_free, updated_at}` | board server |
 
+### Coherent chat and board context
+
+With `board.py --context PATH`, `GET /api/context` returns one validated envelope
+containing `forecast` and `rooms`, with shared `snapshot_id` and `cohort_id`.
+The page reads that envelope atomically; the two existing routes still expose
+compatible projections. A legacy server's explicit context-mode 404 permits the
+old reads. An invalid configured context is a 503 and never falls back to stale
+independent files. Chat replies include the publication identity they used.
+
+`forecast_state: "pending-model"` preserves observed Now while every prediction
+has `No estimate`. `on_now` is true, false or null; null is unknown. When a unit
+count is incomplete, `now_known_patients` / `now_known_by` provide an explicit
+lower bound and `now_unknown_patients` / `now_unknown_by` report missingness.
+Unknown observations must not become off, zero, Steady or free machines.
+`present: false` keeps a stable room slot for an ended stay, with no current
+patient or forecast. The detailed envelope contract is in
+[`backend/docs/CONTRACT.md`](../backend/docs/CONTRACT.md).
+
 ### forecast.json
 
 ```json

@@ -3,6 +3,7 @@
 
 import json
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
@@ -69,6 +70,8 @@ class Fake:
                     self.wfile.write(outer.error_body)
                     return
                 msg = outer.script.pop(0) if outer.script else text("done")
+                if callable(msg):
+                    msg = msg(body)
                 data = json.dumps({"choices": [{"message": msg}]}).encode()
                 self.send_response(200)
                 self.send_header("Content-Length", str(len(data)))
@@ -120,6 +123,161 @@ def test_unit_question_calls_forecast_tool(env):
     assert '"p50":4' in tool_msgs(f)[0]["content"]
 
 
+def test_answer_without_tool_evidence_is_not_presented_as_fact(env):
+    _, agent = env([text("There are 999 ventilator starts tomorrow.")])
+    out = agent.ask("How many ventilator starts?", "ICU nurse")
+    assert "999" not in out["answer"]
+    assert "evidence" in out["answer"].lower()
+
+
+def test_unit_numbers_and_outcome_names_come_from_evidence(env):
+    _, agent = env([tc("get_unit_forecast"), text("999 deaths tomorrow.")])
+    out = agent.ask("What is the unit forecast?", "ICU nurse")
+    assert "999" not in out["answer"]
+    assert "4 ventilator starts (80% range 2 to 6)" in out["answer"]
+    assert "death: unavailable" in out["answer"]
+
+
+def test_publication_during_answer_does_not_change_its_evidence(env, tmp_path):
+    def publish_new_forecast(_):
+        newer = json.loads(json.dumps(FORECAST))
+        newer["made_at"] = "2026-11-14T08:00:00"
+        newer["resources"]["ventilator"].update(p10=98, p50=99, p90=100)
+        (tmp_path / "forecast.json").write_text(json.dumps(newer))
+        return tc("get_unit_forecast", i=2)
+
+    fake, agent = env([tc("get_unit_forecast"), publish_new_forecast, text("done")])
+    out = agent.ask("What changed?", "ICU nurse")
+    assert out["made_at"] == FORECAST["made_at"]
+    assert all('"p50":4' in m["content"] for m in tool_msgs(fake))
+
+
+@pytest.mark.parametrize(
+    "args",
+    [{"room": True}, {"room": 7.5}, {"room": "7"}, {"room": 7, "extra": "ignored?"}],
+)
+def test_room_tool_rejects_arguments_outside_its_schema(env, args):
+    fake, agent = env([tc("get_room", args), text("unavailable")])
+    agent.ask("Room 7?", "ICU nurse", room=7)
+    assert "invalid tool arguments" in tool_msgs(fake)[0]["content"]
+    assert "0.31" not in tool_msgs(fake)[0]["content"]
+
+
+@pytest.mark.parametrize(
+    "tool,args,expected",
+    [
+        ("get_room", {"room": 7}, "31%"),
+        ("get_life_support", {}, "life-support forecast"),
+        ("get_capacity", {}, "not set"),
+    ],
+)
+def test_clinical_tool_evidence_controls_the_answer(env, tool, args, expected):
+    _, agent = env([tc(tool, args), text("999 patients are on support now.")])
+    out = agent.ask("What does the evidence say?", "ICU nurse", room=7)
+    assert "999" not in out["answer"]
+    assert expected in out["answer"]
+
+
+def test_oversized_tool_result_is_a_valid_json_error(env, tmp_path):
+    rooms = json.loads(json.dumps(ROOMS))
+    rooms["rooms"][0]["past_12h"] = [{"text": "synthetic " * 1000}]
+    (tmp_path / "rooms.json").write_text(json.dumps(rooms))
+    fake, agent = env([tc("get_room", {"room": 7}), text("done")])
+    agent.ask("room 7?", "ICU nurse", room=7)
+    body = json.loads(tool_msgs(fake)[0]["content"])
+    assert "budget" in body["tool_result"]["error"]
+
+
+def test_shared_team_chat_does_not_require_a_persona(env):
+    fake, agent = env([tc("get_unit_forecast"), text("done")])
+    out = agent.ask("What is the unit forecast?")
+    assert "4 ventilator starts" in out["answer"]
+    assert "whole ICU team" in fake.requests[0]["messages"][1]["content"]
+
+
+def test_specific_question_can_return_just_the_requested_forecast(env):
+    _, agent = env(
+        [tc("get_unit_forecast", {"prediction": "ventilator"}), text("done")]
+    )
+    out = agent.ask("How many ventilator starts?", "ICU nurse")
+    assert "4 ventilator starts" in out["answer"]
+    assert "death:" not in out["answer"]
+    assert "CRRT" not in out["answer"]
+
+
+def test_comparison_keeps_each_requested_prediction(env, tmp_path):
+    forecast = json.loads(json.dumps(FORECAST))
+    forecast["resources"]["vasopressor"] = {"p10": 1, "p50": 3, "p90": 5}
+    (tmp_path / "forecast.json").write_text(json.dumps(forecast))
+    _, agent = env(
+        [
+            tc("get_unit_forecast", {"prediction": "ventilator"}),
+            tc("get_unit_forecast", {"prediction": "vasopressor"}, i=2),
+            text("done"),
+        ]
+    )
+    out = agent.ask("Compare ventilator and vasopressor starts")
+    assert "4 ventilator starts" in out["answer"]
+    assert "3 vasopressor starts" in out["answer"]
+
+
+def test_model_failure_after_room_tool_preserves_room_evidence(env):
+    def first_reply(_):
+        fake.status = 500
+        return tc("get_room", {"room": 7})
+
+    fake, agent = env([first_reply])
+    out = agent.ask("room 7?", room=7)
+    assert "Room 7" in out["answer"]
+    assert "31%" in out["answer"]
+    assert "4 ventilator starts" not in out["answer"]
+
+
+def test_support_answer_separates_observed_load_and_future_starts(env, tmp_path):
+    forecast = json.loads(json.dumps(FORECAST))
+    forecast["life_support"] = {
+        "now_patients": 9,
+        "expected_new_patients": {"p10": 1, "p50": 2, "p90": 4},
+    }
+    (tmp_path / "forecast.json").write_text(json.dumps(forecast))
+    _, agent = env([tc("get_life_support"), text("done")])
+    out = agent.ask("What support is on now and forecast?")
+    assert "Observed life-support patients: 9" in out["answer"]
+    assert "2 new life-support patients (80% range 1 to 4)" in out["answer"]
+    assert "11" not in out["answer"]
+
+
+def test_method_answer_describes_winnowing_and_last_hidden_state_probes(env):
+    _, agent = env(
+        [tc("explain_method", {"topic": "probe"}), text("Monte Carlo futures")]
+    )
+    out = agent.ask("How are these five predictions made?")
+    assert "winnowing" in out["answer"].lower()
+    assert "last hidden state" in out["answer"]
+    assert "no Monte Carlo" in out["answer"]
+
+
+@pytest.mark.parametrize("room_snapshot", [None, "different-snapshot", "unit-snapshot"])
+def test_room_unit_comparison_requires_matching_context(env, tmp_path, room_snapshot):
+    forecast = {
+        **FORECAST,
+        "snapshot_id": "unit-snapshot",
+        "cohort_id": "research-unit",
+    }
+    rooms = {**ROOMS, "snapshot_id": room_snapshot, "cohort_id": "research-unit"}
+    (tmp_path / "forecast.json").write_text(json.dumps(forecast))
+    (tmp_path / "rooms.json").write_text(json.dumps(rooms))
+    _, agent = env(
+        [tc("get_room", {"room": 7}), tc("get_unit_forecast", i=2), text("done")]
+    )
+    out = agent.ask("Compare room 7 with the unit")
+    if room_snapshot == "unit-snapshot":
+        assert "Room 7" in out["answer"] and "4 ventilator starts" in out["answer"]
+    else:
+        assert "comparison unavailable" in out["answer"].lower()
+        assert "31%" not in out["answer"]
+
+
 def test_room_question_calls_get_room_and_validates_range(env):
     f, a = env(
         [tc("get_room", {"room": 7}), tc("get_room", {"room": 99}, 2), text("ok")]
@@ -140,7 +298,7 @@ def test_missing_room_is_pending_run(env):
 def test_update_asks_both_scopes_only_on_explicit_ask(env):
     calls = []
 
-    def disp(path, body=None):
+    def disp(path, body=None, *, timeout=10):
         calls.append((path, body))
         return {"started": True, "name": "t7-forecast-1114-0700"}
 
@@ -191,14 +349,16 @@ def test_update_asks_both_scopes_only_on_explicit_ask(env):
     # "this room" uses the open room
     calls.clear()
     f, a = env(
-        [tc("request_forecast_run", {"role": "x", "scope": "unit"}), text("ok")], disp
+        [tc("request_forecast_run", {"role": "pharmacy", "scope": "unit"}), text("ok")],
+        disp,
     )
     a.ask("update this room", "ICU nurse", room=7)
     assert calls == [("/run", {"role": "ICU nurse", "scope": "room", "room": 7})]
     # no room given for "this room": no ask
     calls.clear()
     f, a = env(
-        [tc("request_forecast_run", {"role": "x", "scope": "unit"}), text("ok")], disp
+        [tc("request_forecast_run", {"role": "pharmacy", "scope": "unit"}), text("ok")],
+        disp,
     )
     a.ask("update this room", "ICU nurse")
     assert calls == []
@@ -216,6 +376,20 @@ def test_parse_update_ask():
     assert p("What is room 12 likely to need?") is None
 
 
+def test_model_cannot_supply_a_missing_server_role(env):
+    dispatched = []
+    _, agent = env(
+        [
+            tc("request_forecast_run", {"role": "ICU physician", "scope": "unit"}),
+            text("started"),
+        ],
+        lambda path, body=None, **_: dispatched.append(body) or {"started": True},
+    )
+    out = agent.ask("Please rerun the forecast")
+    assert dispatched == []
+    assert "role" in out["answer"].lower()
+
+
 def test_refusal_reason_is_verbatim(env):
     reason = "Updated 12 minutes ago. You can update again at 13:17."
     f, a = env(
@@ -223,10 +397,17 @@ def test_refusal_reason_is_verbatim(env):
             tc("request_forecast_run", {"role": "ICU nurse"}),
             text("I could not start it right now."),
         ],
-        lambda p, b=None: {"started": False, "reason": reason},
+        lambda p, b=None, **_: {"started": False, "reason": reason},
     )
     out = a.ask("update room 12", "ICU nurse")
     assert reason in out["answer"] and ".." not in out["answer"]
+
+
+def test_one_model_reply_cannot_execute_unbounded_tools(env):
+    calls = [tc("get_capacity", i=i)["tool_calls"][0] for i in range(20)]
+    _, agent = env([{"content": None, "tool_calls": calls}, text("done")])
+    out = agent.ask("unit capacity?", "ICU nurse")
+    assert len(out["trace"]) <= 8
 
 
 def test_tool_round_cap(env):
@@ -234,7 +415,7 @@ def test_tool_round_cap(env):
     out = a.ask("loop forever", "ICU nurse")
     assert len(f.requests) == 5 and len(out["trace"]) == 4
     assert "tools" not in f.requests[-1]  # last call forces a plain answer
-    assert out["answer"] == "The forecast does not cover that."
+    assert "4 ventilator starts" in out["answer"]
 
 
 def test_injection_in_tool_result_is_data(env, tmp_path):
@@ -247,7 +428,7 @@ def test_injection_in_tool_result_is_data(env, tmp_path):
             tc("request_forecast_run", {"role": "ICU nurse"}, 2),
             text("4 starts"),
         ],
-        lambda p, b=None: calls.append(p) or {"started": True, "name": "x"},
+        lambda p, b=None, **_: calls.append(p) or {"started": True, "name": "x"},
     )
     a.ask("How many ventilators?", "ICU nurse")
     assert calls == []  # even if the model obeyed, the code guard blocks it
@@ -277,6 +458,64 @@ def test_model_down(tmp_path):
         a.ask("hi", "ICU nurse")
 
 
+def test_unknown_tool_names_cannot_put_question_text_in_logs(env, caplog):
+    private = "unknown room 7 synthetic question text"
+    _, agent = env([tc(private), text("unavailable")])
+    with caplog.at_level("INFO", logger="chat_agent"):
+        out = agent.ask("unit?", "ICU nurse")
+    assert private not in caplog.text
+    assert out["trace"] == ["unknown_tool"]
+
+
+def test_dispatcher_receives_only_the_remaining_request_budget(env):
+    received = []
+
+    def slow_model(_):
+        time.sleep(0.6)
+        return tc("list_runs")
+
+    def dispatcher(path, body=None, *, timeout=10):
+        received.append(timeout)
+        time.sleep(min(1.2, timeout))
+        return {"recent": []}
+
+    _, agent = env([slow_model, text("done")], dispatcher, deadline_s=1.2)
+    started = time.monotonic()
+    agent.ask("run status?", "ICU nurse")
+    assert time.monotonic() - started < 1.5
+    assert received and received[0] < 0.8
+
+
+def test_uncertain_update_is_not_dispatched_again(env):
+    dispatched = []
+
+    def dispatcher(path, body=None, *, timeout=10):
+        dispatched.append(body)
+        raise TimeoutError("synthetic lost response")
+
+    _, agent = env(
+        [
+            tc("request_forecast_run", {"role": "ICU nurse", "scope": "unit"}),
+            tc("request_forecast_run", {"role": "ICU nurse", "scope": "unit"}, i=2),
+            text("started"),
+        ],
+        dispatcher,
+    )
+    out = agent.ask("update the unit", "ICU nurse")
+    assert len(dispatched) == 1
+    assert "unknown" in out["answer"].lower()
+
+
+def test_deterministic_update_is_included_in_the_audit(env, caplog):
+    _, agent = env(
+        [text("Sure.")],
+        lambda path, body=None, **_: {"started": True, "name": "synthetic-run"},
+    )
+    with caplog.at_level("INFO", logger="chat_agent"):
+        agent.ask("update the unit", "ICU nurse")
+    assert "request_forecast_run" in caplog.text
+
+
 def test_logs_role_and_tools_only(env, caplog):
     f, a = env([tc("explain_method", {"topic": "window"}), text("secret answer text")])
     with caplog.at_level("INFO", logger="chat_agent"):
@@ -286,7 +525,7 @@ def test_logs_role_and_tools_only(env, caplog):
     assert "private" not in msg and "secret" not in msg
 
 
-def test_board_falls_back_to_single_shot(tmp_path):
+def test_board_falls_back_to_evidence_without_another_model_call(tmp_path):
     import urllib.request
     from http.server import ThreadingHTTPServer
 
@@ -329,8 +568,8 @@ def test_board_falls_back_to_single_shot(tmp_path):
         data=json.dumps({"question": "vents?", "role": "ICU nurse"}).encode(),
         headers={"Content-Type": "application/json", "X-Lookahead": "1"},
     )
-    assert json.load(urllib.request.urlopen(req))["answer"] == "single shot"
-    assert seen == [True, False]
+    assert "4 ventilator starts" in json.load(urllib.request.urlopen(req))["answer"]
+    assert seen == [True]
     model.shutdown()
     web.shutdown()
 
@@ -376,19 +615,24 @@ def test_summarise_the_shift_is_handled_from_tools(env):
 
 
 def test_forecast_updated_line_when_made_at_changed(env):
-    f, a = env([text("4 starts")])
+    f, a = env([tc("get_unit_forecast"), text("4 starts")])
     same = a.ask("hi", "ICU nurse", seen_made_at=FORECAST["made_at"])
-    assert same["answer"] == "4 starts" and same["made_at"] == FORECAST["made_at"]
-    f, a = env([text("4 starts")])
+    assert (
+        "4 ventilator starts" in same["answer"]
+        and same["made_at"] == FORECAST["made_at"]
+    )
+    f, a = env([tc("get_unit_forecast"), text("4 starts")])
     first = a.ask("hi", "ICU nurse")  # no earlier answer in the conversation: no line
-    assert first["answer"] == "4 starts"
-    f, a = env([text("4 starts")])
+    assert "4 ventilator starts" in first["answer"]
+    f, a = env([tc("get_unit_forecast"), text("4 starts")])
     out = a.ask("hi", "ICU nurse", seen_made_at="2026-11-13T06:52:00")
     line, rest = out["answer"].split("\n", 1)
     assert line.startswith("Forecast updated at ") and line.endswith(
         ". Answers below use it."
     )
-    assert len(line.split(" at ")[1].split(".")[0]) == 5 and rest == "4 starts"
+    assert (
+        len(line.split(" at ")[1].split(".")[0]) == 5 and "4 ventilator starts" in rest
+    )
 
 
 def test_prompt_states_the_decided_wording_rules():
@@ -397,7 +641,7 @@ def test_prompt_states_the_decided_wording_rules():
     assert (
         "IMV" in p and "vasopressor" in p and "CRRT" in p and "Do not mention ECMO" in p
     )
-    assert "never use percentages" in p and "about 4 in 10" in p
+    assert "use whole percentages" in p and "<5%" in p
     assert "room page only" in p
 
 
@@ -454,11 +698,11 @@ def test_parse_update_ask_sees_the_same_truncated_text_as_the_model():
 def test_duplicate_run_calls_in_one_turn_start_once(env):
     calls = []
 
-    def disp(path, body=None):
+    def disp(path, body=None, *, timeout=10):
         calls.append((path, body))
         return {"started": True, "name": "t7-forecast-1114-1100"}
 
-    msg = tc("request_forecast_run", {"role": "x", "scope": "unit"})
+    msg = tc("request_forecast_run", {"role": "pharmacy", "scope": "unit"})
     two = {"content": None, "tool_calls": msg["tool_calls"] * 2}
     two["tool_calls"] = [
         {**two["tool_calls"][0], "id": "a"},
@@ -474,7 +718,7 @@ def test_duplicate_run_calls_in_one_turn_start_once(env):
 def test_explicit_ask_answered_without_the_tool_still_runs_the_update(env):
     calls = []
 
-    def disp(path, body=None):
+    def disp(path, body=None, *, timeout=10):
         calls.append((path, body))
         return {"started": True, "name": "t7-forecast-room12-1114-1100"}
 
@@ -486,7 +730,7 @@ def test_explicit_ask_answered_without_the_tool_still_runs_the_update(env):
     # a refusal is stated as it is
     f, a = env(
         [text("ok")],
-        lambda path, body=None: {"started": False, "reason": "A run is active."},
+        lambda path, body=None, **_: {"started": False, "reason": "A run is active."},
     )
     assert (
         a.ask("update the unit", "ICU nurse")["answer"]
@@ -496,16 +740,16 @@ def test_explicit_ask_answered_without_the_tool_still_runs_the_update(env):
 
 def test_non_dict_tool_calls_do_not_crash(env):
     f, a = env([{"content": "plain", "tool_calls": ["junk", 3, None]}])
-    assert a.ask("hi", "ICU nurse")["answer"] == "plain"
+    assert a.ask("hi", "ICU nurse")["answer"] == ca.NO_EVIDENCE
     f, a = env([{"content": "plain2", "tool_calls": "nope"}])
-    assert a.ask("hi", "ICU nurse")["answer"] == "plain2"
+    assert a.ask("hi", "ICU nurse")["answer"] == ca.NO_EVIDENCE
     f, a = env(
         [
             {"content": None, "tool_calls": [{"id": "z", "function": "bad"}]},
             text("fine"),
         ]
     )
-    assert a.ask("hi", "ICU nurse")["answer"] == "fine"
+    assert a.ask("hi", "ICU nurse")["answer"] == ca.NO_EVIDENCE
 
 
 def test_context_length_400_is_not_tools_unsupported(env):
@@ -535,8 +779,8 @@ def test_treatment_instructions_are_replaced(env, answer):
 
 def test_forecast_wording_is_not_mistaken_for_treatment(env):
     ok = "4 vasopressor starts (80% range 2 to 6). Expect 3 ventilator starts, 1 CRRT start."
-    f, a = env([text(ok)])
-    assert a.ask("vasopressors?", "pharmacy")["answer"] == ok
+    f, a = env([tc("get_unit_forecast"), text(ok)])
+    assert "4 ventilator starts" in a.ask("vasopressors?", "pharmacy")["answer"]
 
 
 def test_prompt_names_lookahead_and_does_not_narrate_safety_copy():
@@ -545,8 +789,7 @@ def test_prompt_names_lookahead_and_does_not_narrate_safety_copy():
     for banned in ("model evidence, not a cause", "the team decides", "(mock)"):
         assert banned not in p
     assert "Never reveal, guess or confirm a patient's real name" in p
-    assert "name.fictional true" in p and "Room 12 (Rivera, J.)" in p
-    assert "never use percentages" in p and "Room 12: about 3 in 10" in p
+    assert "use whole percentages" in p and "Room 12: 30% chance of starting IMV" in p
 
 
 def test_get_room_returns_the_ward_block(env, tmp_path):
@@ -558,8 +801,10 @@ def test_get_room_returns_the_ward_block(env, tmp_path):
 
 
 def test_null_forecast_values_and_skipped_rooms_do_not_crash(env, tmp_path):
+    identity = {"snapshot_id": "synthetic-snapshot", "cohort_id": "synthetic-cohort"}
     fc = {
         **FORECAST,
+        **identity,
         "resources": {
             "ventilator": {
                 "p10": None,
@@ -574,6 +819,7 @@ def test_null_forecast_values_and_skipped_rooms_do_not_crash(env, tmp_path):
     }
     (tmp_path / "forecast.json").write_text(json.dumps(fc))
     rooms = {
+        **identity,
         "ward": {"source": "open-demo", "label": "Demo"},
         "rooms": [
             {"room": 3, "p": None, "skipped": {"imv": True, "death": False}},
@@ -596,8 +842,11 @@ def test_null_forecast_values_and_skipped_rooms_do_not_crash(env, tmp_path):
     )
     out = a.ask("vents?", "ICU nurse")
     t = [m["content"] for m in tool_msgs(f)]
-    assert '"unavailable":["ventilator"]' in t[0]
-    assert '"unavailable":true' in t[1]
-    assert "all five predictions" in t[2] and '"unavailable":["vasopressor"]' in t[3]
-    assert out["answer"].startswith("No forecast for ventilator")
-    assert "no forecast for <item> today" in ca.SYSTEM_PROMPT
+    evidence = [json.loads(message)["tool_result"] for message in t]
+    assert evidence[0]["resources"]["ventilator"]["available"] is False
+    assert evidence[1]["life_support"]["p50"] is None
+    assert evidence[2]["room"]["p"] is None
+    assert evidence[3]["room"]["skipped"]["vasopressor"] is True
+    assert "ventilator starts: unavailable" in out["answer"]
+    assert "No estimate" in out["answer"]
+    assert "0 ventilator starts" not in out["answer"]

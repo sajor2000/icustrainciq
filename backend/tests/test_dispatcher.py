@@ -87,7 +87,7 @@ def test_unit_run_renders_the_template_and_passes_the_offset(tmp_path):
     start = f.started[0]
     assert start[:2] == ("workflow", "start") and start[3] == "--name"
     assert rendered(f) == "scope=unit room=0 hours=4.5\n"
-    assert r["name"] == "t7-forecast-1114-1130"
+    assert r["name"] == "t7-lookahead-forecast-unit-1114-1130"
 
 
 def test_room_run_needs_a_room_and_names_it(tmp_path):
@@ -631,6 +631,9 @@ ORDER = {  # job -> the jobs it waits for (docs/diagrams/workflow.html, backend.
     "t7-ward": {"load": [], "tokenize": ["load"]},
     "t7-forecast": {"precheck": [], "extract": ["precheck"], "score": ["extract"]},
     "t7-twin": {},  # services only
+    "t7-lookahead-prepare": {"prepare-context": []},
+    "t7-lookahead-chat": {},
+    "t7-lookahead-forecast": {"extract": [], "publish": ["extract"]},
 }
 
 
@@ -661,7 +664,10 @@ def test_every_fuzzfile_renders_to_yaml_with_pinned_images_and_no_token_left():
             assert units, name
             for unit, spec in units.items():
                 assert spec["image"]["uri"] in PINNED, (name, unit)
-                assert spec["script"].startswith("#!/bin/bash"), (name, unit)
+                assert spec["script"].startswith(("#!/bin/bash\n", "#!/bin/sh\n")), (
+                    name,
+                    unit,
+                )
                 assert "cpu" in spec["resource"] and "memory" in spec["resource"]
             for job, spec in doc.get("jobs", {}).items():
                 if name != "t7-smoke" or job != "seed":  # seed is a copy: no timeout
@@ -838,17 +844,22 @@ def test_a_forecast_that_stays_pending_is_stopped_and_no_longer_blocks(tmp_path)
     r = f.start("schedule", "unit", enforce_gap=False)
     assert not r["started"] and r["busy"] and f.stopped == []
     assert f.status()["running"] == {
-        "name": "t7-forecast-1114-0700",
+        "name": "t7-lookahead-forecast-unit-1114-0700",
         "state": "PENDING",
     }
     assert f.status()["stuck"] is None
     clock.advance(minutes=3)  # 6 minutes Pending: stopped, and the retry starts
     r = f.start("schedule", "unit", enforce_gap=False)
     assert (
-        f.stopped == ["wf-1"] and r["started"] and r["name"] == "t7-forecast-1114-0706"
+        f.stopped == ["wf-1"]
+        and r["started"]
+        and r["name"] == "t7-lookahead-forecast-unit-1114-0706"
     )
     stuck = f.status()["stuck"]
-    assert stuck["name"] == "t7-forecast-1114-0700" and stuck["minutes"] == 6
+    assert (
+        stuck["name"] == "t7-lookahead-forecast-unit-1114-0700"
+        and stuck["minutes"] == 6
+    )
     assert "waited for a GPU for 6 minutes and was stopped" in stuck["reason"]
     rows = [json.loads(x) for x in (tmp_path / "runs.jsonl").read_text().splitlines()]
     assert [x for x in rows if x.get("event") == "stopped_stuck"][0][

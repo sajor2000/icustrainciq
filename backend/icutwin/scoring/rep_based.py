@@ -384,7 +384,10 @@ def apply_probes(
         ids = pl.read_parquet(f, columns=["hospitalization_id"])
         x = pl.read_parquet(f, columns=["features"]).to_series().to_list()
         feats = pl.DataFrame(
-            {"hospitalization_id": ids.to_series(), "_x": list(range(len(x)))}
+            {
+                "hospitalization_id": ids.to_series(),
+                "_x": pl.Series(range(len(x)), dtype=pl.Int64),
+            }
         )
         labels = (
             pl.read_parquet(lab)

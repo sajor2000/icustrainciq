@@ -81,6 +81,25 @@ def test_apply_refuses_probes_from_another_model(cohorts, tmp_path):
         rep_based.apply_probes(demo, "mdl-other", probes)
 
 
+def test_selected_25_cache_with_empty_other_splits_can_be_scored_repeatedly(
+    cohorts, tmp_path
+):
+    train, demo, _ = cohorts
+    home, probes = _fit_with_weights(train, tmp_path, b"synthetic-weights")
+    features = pl.read_parquet(demo / f"features-held_out-{MODEL}.parquet")
+    labels = pl.read_parquet(demo / "held_out_for_inference.parquet")
+    for split in ("train", "tuning"):
+        features.head(0).write_parquet(demo / f"features-{split}-{MODEL}.parquet")
+        labels.head(0).write_parquet(demo / f"{split}_for_inference.parquet")
+    selected = [f"held_out{i}" for i in range(25)]
+    for _ in range(2):
+        output = rep_based.apply_probes(demo, home, probes, stay_ids=selected)
+        scored = pl.read_parquet(output)
+        assert scored.height == 25
+        assert set(scored["hospitalization_id"]) == set(selected)
+        assert np.isfinite(scored[f"{TASK}_rep_score"].to_numpy()).all()
+
+
 def _fit_with_weights(train, tmp_path, weights):
     home = tmp_path / "models" / MODEL
     home.mkdir(parents=True, exist_ok=True)

@@ -304,7 +304,7 @@ def _stage(tmp_path, ids, ended=()):
         {
             "hospitalization_id": ids,
             "tokens_past": [[1, 2, 3, 4, 5, 6]] * n,
-            "s_elapsed_past": [[0, 100, 90000, 90100, 90200, 90300]] * n,
+            "s_elapsed_past": [[0, 100, 83000, 83100, 83200, 83300]] * n,
             "cut_s": [86500.0] * n,
         }
     ).write_parquet(root / "held_out_for_inference.parquet")

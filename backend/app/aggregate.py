@@ -402,16 +402,14 @@ def _first_col(unit: pl.DataFrame, patterns: list[str], suffix: str):
 def clif_override(
     ids: list[str], run: np.ndarray, clif: dict | None, key: str
 ) -> np.ndarray:
-    """running-at-cut flags with the raw-CLIF answer (app/clif_now.py) laid over the
-    token flags; a stay CLIF cannot answer for (None: no device row) keeps the token
-    flag"""
-    if not clif:
+    """Known positive CLIF states; unknowns are tracked separately, never filled
+    from token flags when a CLIF answer was requested."""
+    if clif is None:
         return run
-    out = run.copy()
+    out = np.zeros(run.size, bool)
     for i, sid in enumerate(ids):
         v = (clif.get(sid) or {}).get(key)
-        if v is not None:
-            out[i] = bool(v)
+        out[i] = v is True
     return out
 
 
@@ -433,8 +431,8 @@ def patient_table(
     it replaces the token flags for `on` (and so for `stopped` and the exclusion).
     """
     n = unit.height
-    ids = unit["hospitalization_id"].to_list() if clif else []
-    p, on, stopped, skipped = {}, {}, {}, {}
+    ids = unit["hospitalization_id"].to_list() if clif is not None else []
+    p, on, stopped, skipped, unknown = {}, {}, {}, {}, {}
     for name, (_, patterns) in RESOURCES_REP.items():
         cols = _first_col(unit, patterns, suffix)
         pasts = [f"{c.removesuffix(suffix)}_past" for c in cols]
@@ -456,6 +454,7 @@ def patient_table(
         )
         key = next((s for s, r in SUPPORT_RESOURCE.items() if r == name), None)
         excluded = flag  # not scorable: the event already happened
+        uncertain = np.zeros(n, bool)
         if key:
             at_cut = AT_CUT_COL[key]
             if at_cut in unit.columns:  # actually running at the cut
@@ -465,13 +464,25 @@ def patient_table(
                 run = flag
                 stopped[key] = np.zeros(n, bool)
             run = clif_override(ids, run, clif, key)
-            stopped[key] = flag & ~run
+            uncertain = (
+                np.array([(clif.get(sid) or {}).get(key) is None for sid in ids], bool)
+                if clif is not None
+                else np.zeros(n, bool)
+            )
+            unknown[key] = uncertain
+            stopped[key] = flag & ~run & ~uncertain
             on[key] = run
             excluded = run
-            pr = np.where(run, np.nan, pr)
+            pr = np.where(run | uncertain, np.nan, pr)
         p[name] = pr
-        skipped[name] = none & ~excluded
-    return {"p": p, "on": on, "stopped": stopped, "skipped": skipped}
+        skipped[name] = (none & ~excluded) | uncertain
+    return {
+        "p": p,
+        "on": on,
+        "stopped": stopped,
+        "skipped": skipped,
+        "unknown": unknown,
+    }
 
 
 def p_any_life_support(p: dict[str, np.ndarray]) -> np.ndarray:
@@ -521,7 +532,10 @@ def pending_scores(root: pathlib.Path, ids: list[str] | None = None) -> pl.DataF
         cols = [
             c for c, t in pl.read_parquet_schema(f).items() if t.base_type() != pl.List
         ]
-        parts.append(pl.read_parquet(f, columns=cols))
+        part = pl.scan_parquet(f).select(cols)
+        if ids is not None:
+            part = part.filter(pl.col("hospitalization_id").is_in(ids))
+        parts.append(part.collect())
     if not parts:
         raise SystemExit(f"no *_for_inference.parquet under {root}: winnow first")
     df = pl.concat(parts, how="diagonal")
@@ -541,7 +555,7 @@ def _support_counts(tab: dict, support: str) -> dict:
     stay not already on it (no data, never 0)"""
     name = SUPPORT_RESOURCE[support]
     sk = tab["skipped"][name]
-    if sk.any() and (sk | tab["on"][support]).all():
+    if sk.any():
         return _counts_or_none(np.full(sk.size, np.nan))
     return _counts_or_none(tab["p"][name])
 
@@ -550,16 +564,20 @@ def life_support_block(tab: dict) -> dict:
     """unit life support: on now, new patients expected, new starts by support"""
     p, on = tab["p"], tab["on"]
     any_on = _on_any(on)
+    unknown = tab["unknown"]
+    unknown_patients = np.any([unknown[s] for s in SUPPORTS], axis=0) & ~any_on
     p_any = p_any_life_support(p)
     # a patient already on one support is not a *new* life-support patient, so the
     # new-patient distribution only runs over patients on none of the three
     new = unit_counts(np.where(any_on, 0.0, p_any))
     return {
-        "now_patients": int(any_on.sum()),
+        "now_patients": None if unknown_patients.any() else int(any_on.sum()),
+        "now_known_patients": int(any_on.sum()),
+        "now_unknown_patients": int(unknown_patients.sum()),
+        "now_known_by": {s: int(on[s].sum()) for s in SUPPORTS},
+        "now_unknown_by": {s: int(unknown[s].sum()) for s in SUPPORTS},
         "now_by": {
-            "imv": int(on["imv"].sum()),
-            "vasopressor": int(on["vasopressor"].sum()),
-            "crrt": int(on["crrt"].sum()),
+            **{s: None if unknown[s].any() else int(on[s].sum()) for s in SUPPORTS},
             "ecmo": None,  # no ecmo/mcs token reaches the model: "not available"
         },
         "expected_new_patients": new,
@@ -645,6 +663,8 @@ def yardstick(
     None when neither exists."""
     now = ls["now_patients"]
     new = ls["expected_new_patients"]
+    if now is None or any(new.get(k) is None for k in ("p10", "p50", "p90")):
+        return None
     load = {k: now + new[k] for k in ("p10", "p50", "p90")}
     if capacity:
         cap = capacity["life_support_patients"]
@@ -825,6 +845,9 @@ def build_forecast(
         )
     tab = patient_table(unit, clif=clif)
     probs = unit_probs(unit, "_rep_score", RESOURCES_REP)
+    if clif is not None:
+        for support, task in SUPPORT_RESOURCE.items():
+            probs[task] = np.where(tab["on"][support], 0.0, tab["p"][task])
     resources = strain(probs, rng, RESOURCES_REP)
     made = dt.datetime.now(dt.timezone.utc)
     cut = cut_time_for(made, tz, cut_time, demo_clock_hours)
@@ -851,7 +874,9 @@ def build_forecast(
         "unit_name": str(unit_name or UNIT_NAME)[:60],
         "ward": dict(ward or WARDS[False]),
         "forecast_state": forecast_state,
-        "on_now_source": "clif" if (clif_now or clif) else "tokens",
+        "on_now_source": "clif"
+        if (clif_now is not None or clif is not None)
+        else "tokens",
         "demo_clock_hours": demo_clock_hours,
         "beds": unit.height,
         "range": "80% (p10-p90)",
@@ -878,8 +903,8 @@ def build_forecast(
         "horizons": {"24h": {"label": label, "resources": resources}},
         "per_day": {},
         "already_started": {
-            "ventilator": int(tab["on"]["imv"].sum()),
-            "vasopressor": int(tab["on"]["vasopressor"].sum()),
+            "ventilator": ls["now_by"]["imv"],
+            "vasopressor": ls["now_by"]["vasopressor"],
         },
     }
     if labels is not None and not pending:

@@ -1,0 +1,66 @@
+version: v4
+# Run names: t7-lookahead-forecast-unit-<time> or t7-lookahead-forecast-roomN-<time>.
+# Dispatcher renders scope/room/hours, real-ward, CLIF directory, private IDs and names.
+# @SCOPE@ = unit|room, @ROOM@ = 0|1..25, @HOURS@ = replay hours, @WARD_FLAG@ = --real-ward.
+# A room request refreshes the whole selected-25 snapshot to keep unit and room views coherent.
+# This is ONLY the selected25 pipeline: winnow -> one forward pass -> saved logistic probes
+# -> exact Poisson-binomial counts and one atomic context.json. No refitting or MC generation.
+volumes:
+  store: {name: twin-store, use: team7}       # code, model and saved probes only
+  context: {name: demo-context, use: team7}  # RESTRICTED selected25 token/features/scores/context
+  tooling: {name: tooling, use: team7}
+
+defaults:
+  job:
+    mounts: {/store: store, /context: context, /tooling: tooling}
+    env: [TMPDIR=/tmp, "PYTHONPATH=/tooling/py:/store/code", TZ=America/Chicago, PYTHONDONTWRITEBYTECODE=1]
+
+jobs:
+  extract:
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    # GPU1 already occupies this node's only GPU. Whole-node exclusivity would block
+    # placement beside board+dispatcher; use the corrected current COMPUTE_PLAN budget.
+    resource: {cpu: {cores: 8}, memory: {size: 48GB}, devices: {nvidia.com/gpu: 1}}
+    policy: {timeout: {execute: 10m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      umask 077
+      ROOT=/context/tokenized_output
+      test -f /store/probes/mdl-icutwin/manifest.json || { echo "saved probe prerequisite missing"; exit 1; }
+      test -f /store/model/mdl-icutwin/config.json || { echo "trained forecaster prerequisite missing; context stays pending"; exit 1; }
+      test -f /context/roster.csv || { echo "private roster prerequisite missing"; exit 1; }
+      test -f "$ROOT/vocab.yaml" || { echo "selected25 cache prerequisite missing: run t7-lookahead-prepare once"; exit 1; }
+      python -c 'from icutwin.scoring.winnower import main; main()' "$ROOT" \
+        -c /store/code/examples/winnow_24h.yaml --demo-clock-hours @HOURS@
+      python -c 'from icutwin.scoring.extractor import main; main()' "$ROOT" \
+        --model /store/model/mdl-icutwin --stay-ids /context/roster.csv
+
+  publish:
+    depends-on: [{name: extract, status: FINISHED}]
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    mounts: {/store: store, /context: context, /tooling: tooling}
+    resource: {cpu: {cores: 4}, memory: {size: 16GB}}
+    policy: {timeout: {execute: 20m}}
+    # Use the same approved selected25 CLIF extract and private ID list as initial preparation.
+    env: ["CLIF_DIR=@CLIF_DIR@", "PYTHONPATH=/tooling/py:/store/code", TMPDIR=/tmp, TZ=America/Chicago, PYTHONDONTWRITEBYTECODE=1]
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      umask 077
+      ROOT=/context/tokenized_output
+      SCOPE=@SCOPE@; ROOM=@ROOM@; HOURS=@HOURS@
+      CAP=()
+      if test -f /context/capacity.json; then CAP=(--capacity /context/capacity.json); fi
+      # The replay offset moves each historical stay's own cut, rather than asserting
+      # that all historical stays occupied one ICU on the same calendar morning.
+      CUT=$(python -c 'import datetime as d,sys; from zoneinfo import ZoneInfo; from app.dispatcher import last_cut; z=ZoneInfo("America/Chicago"); n=d.datetime.now(z); print((last_cut(n).astimezone(d.UTC)+d.timedelta(hours=float(sys.argv[1]))).astimezone(z).isoformat(timespec="seconds"))' "$HOURS")
+      # --no-extract applies saved probes to the GPU features; no second CPU forward pass.
+      python /store/code/scripts/run_cohort.py "$CLIF_DIR" \
+        --ward-ids @WARD_IDS@ --tokenized-output "$ROOT" \
+        --model /store/model/mdl-icutwin --probes /store/probes/mdl-icutwin --no-extract \
+        --work /context --out /context --context-out /context/context.json \
+        --cut-time "$CUT" --tz America/Chicago --data-tz US/Eastern \
+        --demo-clock-hours "$HOURS" @WARD_FLAG@ @NAMES@ "${CAP[@]}"
+      # Metadata only: no identifiers, clinical events, probabilities or prompt bodies.
+      printf 'selected25 context published; scope=%s room=%s\n' "$SCOPE" "$ROOM"

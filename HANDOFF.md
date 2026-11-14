@@ -1,5 +1,7 @@
 # Handoff: where Lookahead stands and how to take it over
 
+Chatbot integration and Whiskey's next steps: [CHATBOT_HANDOFF.md](CHATBOT_HANDOFF.md).
+
 Last updated: 2026-11-14, afternoon. Branch `ui/strain-rooms-chat`, draft PR #3 into `main`.
 
 ## What Lookahead is

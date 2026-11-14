@@ -1,0 +1,30 @@
+version: v4
+# Run once as t7-lookahead-prepare AFTER the freeze, with the final private25 selected.
+# CPU only: reuse the current Claude cohort pipeline; no model load, fit or GPU.
+# /context/clif must already contain an approved selected25 CLIF extract. Do not point
+# this initial tokenization job at the full MIMIC source. Rerunning may replace a ready
+# context with pending, so application restarts do not automatically run this job.
+volumes:
+  store: {name: twin-store, use: team7}
+  context: {name: demo-context, use: team7}
+  tooling: {name: tooling, use: team7}
+
+jobs:
+  prepare-context:
+    image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
+    mounts: {/store: store, /context: context, /tooling: tooling}
+    env: [CLIF_DIR=/context/clif, "PYTHONPATH=/tooling/py:/store/code", TMPDIR=/tmp, TZ=America/Chicago, PYTHONDONTWRITEBYTECODE=1]
+    resource: {cpu: {cores: 4}, memory: {size: 16GB}}
+    policy: {timeout: {execute: 30m}}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      umask 077
+      test -f /context/cohort_ids.csv || { echo "private25 cohort prerequisite missing"; exit 1; }
+      test -f "$CLIF_DIR/clif_hospitalization.parquet" || { echo "selected CLIF extract prerequisite missing"; exit 1; }
+      python -c 'import json,sys; from pathlib import Path; from app.ward_check import check; r=check(Path(sys.argv[1]), Path("/context/cohort_ids.csv"), True, 25); assert r["hospitalizations"]==25, "selected CLIF extract must contain exactly25 hospitalizations"; print(json.dumps({"selected_clif_hospitalizations":r["hospitalizations"]}))' "$CLIF_DIR"
+      CUT=$(python -c 'import datetime as d; from zoneinfo import ZoneInfo; from app.dispatcher import last_cut; print(last_cut(d.datetime.now(ZoneInfo("America/Chicago"))).isoformat(timespec="seconds"))')
+      python /store/code/scripts/run_cohort.py "$CLIF_DIR" \
+        --ward-ids /context/cohort_ids.csv --real-ward --work /context --out /context \
+        --context-out /context/context.json --cut-time "$CUT" \
+        --demo-clock-hours 0 --tz America/Chicago --data-tz US/Eastern --names fake

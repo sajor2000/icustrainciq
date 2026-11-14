@@ -1,0 +1,85 @@
+version: v4
+# Run name: t7-lookahead-chat. Local drop-in definition; no cluster action is implied.
+# Existing persistent volumes, staged code/dependencies/CLI and a valid context are prerequisites.
+# One GPU serves Nemotron; the other is available for t7-lookahead-forecast.
+volumes:
+  store: {name: twin-store, use: team7}       # code, forecaster model and saved probes only
+  models: {name: hfcache, use: team7}        # persistent Nemotron weights
+  context: {name: demo-context, use: team7}  # RESTRICTED: private roster, selected cache, context
+  tooling: {name: tooling, use: team7}      # previously prepared Python dependencies
+
+services:
+  nemotron:
+    image: {uri: "docker://nvcr.io/nvidia/vllm:25.12.post1-py3"}
+    # Weights only: no /store, /context, /rows or /clif mount in the LLM service.
+    mounts: {/models: models}
+    env:
+      - HF_HUB_OFFLINE=1
+      - TRANSFORMERS_OFFLINE=1
+      - HF_HOME=/models/runtime-hf
+      - VLLM_USE_FLASHINFER_MOE_FP8=1
+    resource: {cpu: {cores: 16}, memory: {size: 100GB}, devices: {nvidia.com/gpu: 1}, exclusive: true}
+    persist: true
+    network:
+      ports: [{name: api, port: 8000}]
+    readiness-probe: {http-get: {path: /v1/models, port: 8000}, initial-delay-seconds: 60, period-seconds: 15, failure-threshold: 80}
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      MODEL=/models/nemotron-3-nano-fp8/9bee19446c0dfd01f356e10979d225b2a6621944
+      test -f "$MODEL/config.json" || { echo "persistent model prerequisite missing"; exit 1; }
+      # Conservative 8192-token starting point; no GPU acceptance test is claimed.
+      # Reasoning is disabled per request by app/chat_agent.py.
+      exec vllm serve "$MODEL" --served-model-name nemotron --trust-remote-code \
+        --max-model-len 8192 --max-num-seqs 1 --gpu-memory-utilization 0.85 --kv-cache-dtype fp8 \
+        --enable-prefix-caching --enable-auto-tool-choice --tool-call-parser qwen3_coder \
+        --no-enable-log-requests --no-enable-log-outputs --host 0.0.0.0 --port 8000
+
+  board:
+    image: {uri: "docker://python:3.12-slim"}
+    mounts: {/store: store, /context: context, /tooling: tooling}
+    env: [TZ=America/Chicago, "PYTHONPATH=/tooling/py:/store/code", PYTHONDONTWRITEBYTECODE=1]
+    resource: {cpu: {cores: 2}, memory: {size: 4GB}}
+    persist: true
+    network:
+      ports: [{name: web, port: 8080}]
+      endpoints: [{name: web, port-name: web, protocol: https, type: subdomain, scope: group}]
+    readiness-probe: {tcp-socket: {port: 8080}, initial-delay-seconds: 10, period-seconds: 10, failure-threshold: 30}
+    # No dependency on Nemotron readiness: the board remains available while it loads.
+    script: |
+      #!/bin/sh
+      set -eu
+      # Fuzzball 4.3.1 can fail the whole workflow if a service exits nonzero.
+      while true; do
+        python /store/code/app/board.py --context /context/context.json \
+          --forecast /context/forecast.json --nemotron http://nemotron:8000 \
+          --dispatcher http://dispatcher:9000 --require-real-data --behind-proxy --port 8080 || true
+        echo "board restarting in 5 seconds"; sleep 5
+      done
+
+  dispatcher:
+    image: {uri: "docker://python:3.12-slim"}
+    mounts: {/store: store, /context: context, /tooling: tooling}
+    env: [TZ=America/Chicago, "PYTHONPATH=/tooling/py:/store/code", PYTHONDONTWRITEBYTECODE=1]
+    resource: {cpu: {cores: 1}, memory: {size: 2GB}}
+    persist: true
+    network:
+      ports: [{name: api, port: 9000}]
+    readiness-probe: {tcp-socket: {port: 9000}, initial-delay-seconds: 20, period-seconds: 10, failure-threshold: 30}
+    # Internal service only. The CLI must be staged in advance; no startup download.
+    # Fuzzball injects its workflow token. Never enable shell tracing or log the token.
+    script: |
+      #!/bin/sh
+      set -eu
+      umask 077
+      while true; do
+        if test -x /store/bin/fuzzball; then
+          python /store/code/app/dispatcher.py --fuzzfile /store/code/fuzzball/t7-lookahead-forecast.fz \
+            --log /context/runs.jsonl --rooms /context/rooms.json --at 07:00 --min-gap 20 \
+            --tz America/Chicago --real-ward --clif-dir /context/clif \
+            --ward-ids /context/cohort_ids.csv --names fake --cli /store/bin/fuzzball --port 9000 || true
+        else
+          python /store/code/app/dispatcher.py --unavailable "staged CLI prerequisite missing" --port 9000 || true
+        fi
+        echo "dispatcher restarting in 5 seconds"; sleep 5
+      done

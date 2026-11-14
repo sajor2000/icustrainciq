@@ -74,7 +74,14 @@ log = logging.getLogger("dispatcher")
 # t7-smoke and t7-fit hold a GPU too; t7-ward holds none but rewrites the stage tokens an update
 # reads. t7-twin (the services) does not.
 GPU_WORKFLOW = re.compile(r"^t7-(\w+-)?(build|forecast|smoke|fit|ward)")
-ROLES = {"ICU nurse", "ICU physician", "pharmacy", "respiratory therapy", "bed manager"}
+ROLES = {
+    "ICU team",
+    "ICU nurse",
+    "ICU physician",
+    "pharmacy",
+    "respiratory therapy",
+    "bed manager",
+}
 SCOPES = ("unit", "room")
 ROOMS = range(1, 26)
 # Fuzzball 4.3 stage/workflow statuses (docs: "Checking Workflow Status"): Pending, Started, Finished,
@@ -103,7 +110,9 @@ SCHEDULE_WINDOW_S = 600  # the 07:00 run retries for 10 minutes
 # than the three jobs' timeouts together), is stopped and /status says why.
 PENDING_LIMIT_S = 300
 RUN_LIMIT_S = 45 * 60
-FORECAST_NAME = re.compile(r"^t7-forecast-(?:room\d+-)?(\d{2})(\d{2})-(\d{2})(\d{2})$")
+FORECAST_NAME = re.compile(
+    r"^t7-(?:lookahead-)?forecast-(?:(?:unit|room\d+)-)?(\d{2})(\d{2})-(\d{2})(\d{2})$"
+)
 BODY_CAP = 1024
 SOCKET_TIMEOUT_S = 10
 CA = "/run/fuzzball-substrate/trusted-certs/root-ca.crt"
@@ -608,8 +617,8 @@ class Dispatcher:
                 }
             now = self.clock()
             hours = 0.0 if trigger == "schedule" else demo_clock_hours(now, self.at)
-            tag = f"room{room}-" if scope == "room" else ""
-            name = f"t7-forecast-{tag}{now:%m%d-%H%M}"
+            tag = f"room{room}" if scope == "room" else "unit"
+            name = f"t7-lookahead-forecast-{tag}-{now:%m%d-%H%M}"
             token = f"pending:{name}"
             self.inflight[token] = {
                 "name": name,
