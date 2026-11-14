@@ -357,7 +357,7 @@ Night values carry the same names with a `night-` prefix. On the night board blu
 All sizes are rem. From 1800px the root is 120%, so every size and space on a wall screen grows together.
 
 ### Named Rules
-**The Count Rule.** A chance is a whole percentage on every screen ("23%"), "<5%" when very small, and "No estimate" when it is null (J.C., 2026-11-14 evening; this replaces the earlier natural frequencies). The room page keeps its 10-dot array as the picture beside the percentage. Thresholds are 40%, 20% and 60%.
+**The Count Rule.** A chance is a whole percentage on every screen ("23%"), "<5%" when very small, and "No estimate" when it is null (J.C., 2026-11-14 evening; this replaces the earlier natural frequencies). The room page keeps its 10-dot array as the picture beside the percentage. The lines that flag a bed are chosen by the team (default 25%, Worsening at the next step up, Leaving 60%).
 
 **The Range Rule.** Every forecast count carries its range in Caption weight 400 beside it ("+3" then "1 to 5").
 
@@ -423,7 +423,7 @@ Dema's cluster cards, one per support (IMV, Vasopressor, CRRT) and one for Leavi
 
 **Range bar** (Dema's, with the ink line for free capacity). A 6-unit rounded track in figure grey; a 10-unit rounded blue segment for the 8-in-10 range; a surface bead with a blue ring at the median; a solid ink line for what is free or what tonight's staffing covers; a dashed ink line for a typical day.
 
-**Person figure** (Dema's). A 2.5rem by 2.625rem head-and-shoulders silhouette above a room number (800) and its percentage (Label). It is two stacked SVGs of the same path: a base in figure grey and a fill in blue clipped with `clip-path: inset(calc(100% - var(--p)) 0 0 0)`, so it fills from the bottom to the bed's chance. Solid ink means the support is on now. A green fill means leaving. Each figure is a button that opens the room; hover lifts the silhouette 1px.
+**Person figure** (Dema's). A 2.5rem by 2.625rem head-and-shoulders silhouette above a room number (800) and its percentage (Label). It is two stacked SVGs of the same path: a base in figure grey and a fill in blue clipped with `clip-path: inset(calc(100% - var(--p)) 0 0 0)`, so it fills from the bottom to the bed's chance. Solid ink means the support is on now. A grey (secondary ink) fill means leaving. Each figure is a button that opens the room; hover lifts the silhouette 1px.
 
 ### Room page
 A back link and previous and next room links, underlined ink at 700 with the arrow icon. Then the room number in Room heading, the room status chip (the bed tile's five statuses as a chip at 1rem, radius .5rem), and the Now -> Next 24 h strip in its own small card with "Now" and "Next 24 h" labels. Two cards below. The first lists each event as a row: icon and name, a level chip (Low on board-2, Medium on `level-medium`, High on `level-high`, On now in ink), a ten-dot array (.75rem circles, filled blue to the count, outlined in line otherwise) and the percentage. Death is a plain row with no icon and no colour. The second card holds the last 12 hours and the two room actions.
@@ -451,6 +451,15 @@ State changes only: a .2s ease-out on the board colour swap, a .15s ease-out 1px
 ### Product title and unit chip
 The H1 is the product, "Lookahead", with the descriptor "ICU forecast · next 24 hours" beside it at 1rem / 600 in secondary ink. The unit ("Medical ICU · 25 beds") is a pill chip in the sub-line next to the data-source tag and is read from the forecast, never written into the page.
 
+### Flag line control (Dema's threshold toggle)
+"Flag beds at" in secondary ink, then a three-part segmented control (50%, 25%, 10%; surface ground, line border, radius .625rem, 2.75rem tall; the chosen part is blue with its on-colour) and an outlined "Thresholds" button. The popover under it (surface, line border, radius 1rem, floating shadow, 24rem wide) has one row per line: icon and name, a 2.75rem − and + stepper, the value at 800, and the beds it catches; then a custom field for all supports and Reset. Hidden in Now. Credit: Dema (deetherese).
+
+### Person figure, highest risk and leavers (Dema's)
+A figure at the next step above its line takes a red fill, a red-tinted base and a soft radial red halo behind it; the halo is static (no pulse, no ring animation), and its percentage is red at 800. Leavers fill in secondary ink (grey), not green. A leaver on life support carries 1.125rem round device badges at its top right. This is the one place red marks a bed; tiles never use it.
+
+### Capacity bar and labels (Dema's)
+When a machine total is set the card's bar is the whole total (in use + free): a solid run for in use now, a lighter run to in use plus flagged beds, an ink tick at each with its number, "N total" at the right end. It is blue while it fits and red when it passes the total. Labels appear only when they matter: SHORT (solid red chip, 2px red card border), AT LIMIT (amber chip, amber border). The same alert is repeated once in the header strain line. Cards grow with the beds they hold so the row stays even.
+
 ### Patient name
 The room number stays the identifier. The display name ("Rivera, J.") sits on the same line as sex and age at .8125rem / 700 in the tile's ink, followed by " · M 68" in secondary ink. Only the name shrinks: it is cut with an ellipsis and its legend gives the full name. The room page heading reads "Room 20 · James Rivera · M 68". Person figures on Unit strain keep room numbers only. Names in the demo are fictional.
 
@@ -468,6 +477,12 @@ A launcher (a 3.25rem ink circle with the chat icon in board colour, floating sh
 
 ### Figure legend (tooltip)
 One element for the whole page: ink fill, board text, .8125rem / 600, radius .5rem, at most 19rem wide, floating shadow, `pointer-events: none`. It appears 150ms after hover, at once on keyboard focus, and on touch by tap or long-press; it leaves at once. It sits above its target, or below when there is no room, and is clamped to the viewport. Text only, two short lines at most, the same wording as the key and "How this forecast was made" (one `DEF` map in the page builds all three). It adds to the visible labels and never replaces them.
+
+### Forecast not ready
+When the forecast is not ready (`pending-model`) the board is all ink: Now content only, no blue, no statuses. One sentence, "Forecast not ready yet: the model is still being prepared.", leads the sub-heading in bold; the flag control drops to 55% opacity and is disabled. No placeholder numbers are drawn.
+
+### Credits
+Cluster cards, bed figures, risk-threshold toggle and capacity model: Dema (deetherese), from the `alternative` branch.
 
 ## Do's and Don'ts
 

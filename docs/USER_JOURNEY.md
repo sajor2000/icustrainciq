@@ -7,10 +7,11 @@ Everything a user sees is a count with a likely range, or one stage-ward room's 
 ## Charge nurse: who to worry about, then staffing (06:45 to 07:15)
 
 1. **06:45, before rounds.** Opens the board on the unit workstation or the wall screen. It opens on the **Bed board**, on **Next 24 h**. To see only how sick the unit is right now she flips the switch to **Now**: each bed shows just the life support running at 07:00, and "Sickest now" lists the beds on two or more supports first. The header gives the run time ("Updated 06:58") and one line of strain ("10 on life support now · +5 new expected in 24 h · USUAL").
-2. **Reads "Worry first".** Two groups of bed tiles: **Worsening** (a new life support is likely) and **Not improving** (on life support now, unlikely to leave, nothing new flagged). Each tile leads with the room number, then the patient's name, sex and age ("Ward, M. · M 68"; names in the demo are made up), and reads left to right: what is running now, an arrow, what may start in the next 24 hours, with its chance ("43%").
+2. **Sets how sensitive the board is, if she wants.** "Flag beds at 50% · 25% · 10%" (25% unless changed, remembered on the device): a lower line flags more beds, a higher one fewer; the tiles stay where they are and the counts beside the key change.
+3. **Reads "Worry first".** Two groups of bed tiles: **Worsening** (a new life support is likely) and **Not improving** (on life support now, unlikely to leave, nothing new flagged). Each tile leads with the room number, then the patient's name, sex and age ("Ward, M. · M 68"; names in the demo are made up), and reads left to right: what is running now, an arrow, what may start in the next 24 hours, with its chance ("43%").
 3. **Opens a room** from the rail for the detail, and notes the rooms for rounds. Below the rail every room is in room order with the same tile, so Watch, Leaving and Steady rooms are one glance away.
 4. **Checks cover on the Unit strain tab** (or taps the header line). One word against tonight's staffing or a typical day, and a card per support with the beds behind each count.
-5. **Sets tonight's capacity if it is not set.** Opens "Set tonight's capacity", types how many life-support patients tonight's staffing covers (and ventilators free if she knows), saves. The word is now ON TRACK, TIGHT or SHORT against that number, and the card says "Capacity set 07:12 by ICU nurse (charge)".
+6. **Sets tonight's capacity if it is not set.** Opens "Set tonight's capacity", types the ventilators and CRRT machines on the unit (and, if she wants the staffing word, how many life-support patients tonight's staffing covers), saves. A card whose flagged beds outnumber the free machines turns red and reads SHORT, and the header says "Ventilators short by 1". The word is now ON TRACK, TIGHT or SHORT against that number, and the card says "Capacity set 07:12 by ICU nurse (charge)".
 6. **Taps Ask** (bottom right), then "Who should we worry about first?" or "Summarise the next 24 hours" if she wants it in words; Nemotron answers from the counts, and room numbers in the answer open that room. Anything she does not recognise on the board (an icon, a bar, a status mark) explains itself on hover or long-press.
 7. **Decides**: asks for a second respiratory therapist for the night, tells the bed manager.
 
@@ -31,11 +32,11 @@ Opens the **Unit strain** tab and picks "pharmacy": the Vasopressor card comes f
 
 ## Respiratory therapy (07:15)
 
-Opens **Unit strain** and picks "respiratory therapy": the IMV card comes first. With "ventilators free" saved in the capacity form, the card shows how many are free, an ink line on its range bar and its own ON TRACK, TIGHT or SHORT. Preps circuits and machines for the beds under "May start".
+Opens **Unit strain** and picks "respiratory therapy": the IMV card comes first. With the ventilator total set in the capacity form, the card shows how many are free, a bar the length of the total, SHORT or AT LIMIT when it matters, and how many ventilators may free up if likely leavers go. Preps circuits and machines for the beds under "May start".
 
 ## Bed manager (07:30 and through the day)
 
-Opens **Unit strain** and picks "bed manager": the Leaving the ICU card comes first ("10 expected to leave (7 to 13)") with the beds likely to leave. On the Bed board the same rooms have a green border and the bed-with-arrow icon. Plans ED boarding, step-down transfers and elective surgery holds.
+Opens **Unit strain** and picks "bed manager": the Leaving the ICU card comes first ("10 expected to leave (7 to 13)") with the beds likely to leave and the devices they would free ("If these beds leave, they free 2 ventilators, 1 CRRT"). On the Bed board the same rooms have a green border and the bed-with-arrow icon. Plans ED boarding, step-down transfers and elective surgery holds.
 
 ## Midday: something changed (any role)
 
