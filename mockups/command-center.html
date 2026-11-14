@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-board="day">
+<html lang="en" data-board="day" data-view="board" data-chat="closed" data-bed="closed">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -72,7 +72,10 @@ button{font:inherit;color:inherit}
 .legend i{display:inline-block;width:28px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px;border:1px solid var(--rule)}
 .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
 .grid.top3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.top3 .mag{min-height:112px}
+.top3 .mag{min-height:112px;animation:watch 2.4s ease-out infinite}
+/* watch pulse: a slow ink ring on the three highest-risk rooms; the magnet's contact shadow is kept */
+@keyframes watch{0%{box-shadow:0 1px 1px rgba(0,0,0,.18),0 2px 4px rgba(0,0,0,.06),0 0 0 0 color-mix(in srgb,var(--ink) 55%,transparent)}
+  70%,100%{box-shadow:0 1px 1px rgba(0,0,0,.18),0 2px 4px rgba(0,0,0,.06),0 0 0 8px transparent}}
 details.allrooms{margin-top:12px;border-top:1px solid var(--rule)}
 details.allrooms summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:14px;font-weight:600}
 details.allrooms summary:hover{color:var(--ink-2)}
@@ -88,6 +91,198 @@ details.allrooms[open] summary{margin-bottom:8px}
 .mag .short{display:none}
 .mag .on>span{font-size:11px;font-weight:700;letter-spacing:.04em;border:1.2px solid currentColor;border-radius:3px;padding:0 4px;line-height:16px}
 @media (max-width:560px){.grid{gap:6px}.mag{min-height:68px;padding:6px}.mag .rm{font-size:20px}.mag .top1{font-size:12px;margin-top:4px}.mag .long{display:none}.mag .short{display:inline}.mag .on{position:static;margin-top:4px;gap:3px;flex-wrap:wrap}.mag .on>span{font-size:11px;padding:0 3px;line-height:14px}}
+
+/* view tabs: Board is the reviewed board; Alternative is a working draft of the room area */
+.views{display:inline-flex;margin-bottom:12px;border:1.5px solid var(--ink);border-radius:8px;overflow:hidden}
+.views button{min-height:36px;background:transparent;border:0;border-left:1.5px solid var(--ink);padding:6px 14px;cursor:pointer;font-weight:600}
+.views button:first-child{border-left:0}
+.views button:hover{background:var(--board-2)}
+.views button[aria-pressed="true"]{background:var(--ink);color:var(--board)}
+.views button:focus-visible{outline-offset:-3px}
+@media (max-width:560px){.views button{min-height:44px}}
+[data-view="board"] #altview,[data-view="alt"] #boardview{display:none}
+/* Alternative: patient clusters. One group per event, holding the rooms at or above the chosen chance; the rest sit in a last group */
+.thr{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 4px}
+.thr .views{margin:0}
+.resttoggle{min-height:38px;padding:6px 12px;font-size:14px}
+.resttoggle[aria-pressed="true"]{background:var(--ink);color:var(--board)}
+@media (max-width:560px){.resttoggle{min-height:44px}}
+/* Alternative look: a cooler neutral ground, white cards, hairline rules and one blue. Same custom properties, new values. */
+[data-view="alt"]{--board:#F6F7F9;--board-2:#EEF0F4;--ink:#111827;--ink-2:#5B6474;--rule:rgba(17,24,39,.10);--line:#CDD3DC;
+  --magnet:#2563EB;--surface:#FFFFFF;--focus:#2563EB;--ok:#18794E;--tight:#A15C07;--short:#C0362C;--card:0 1px 2px rgba(16,24,40,.06)}
+[data-view="alt"][data-board="night"]{--board:#0E131B;--board-2:#161D29;--ink:#E6E9EF;--ink-2:#9AA4B5;--rule:rgba(230,233,239,.13);--line:#344054;
+  --magnet:#6EA8FF;--surface:#151C28;--focus:#8DBBFF;--ok:#6CC59B;--tight:#E8A85C;--short:#EE8A80;--card:none}
+[data-view="alt"] .top{border-bottom:1px solid var(--rule)}
+[data-view="alt"] :is(.brief,.margin>.panel){border-left:1px solid var(--rule)}
+[data-view="alt"] .engine{border-top:1px solid var(--rule)}
+[data-view="alt"] :is(.toggle,.views,.close,.chip,.runbox select,.ask input,.setmenu,.setmenu button,.setmenu .rolebox select){border-width:1px;border-color:var(--line)}
+[data-view="alt"] .views button{border-left:1px solid var(--line)}
+[data-view="alt"] .views button:first-child{border-left:0}
+[data-view="alt"] .synthetic{border:1px dashed var(--ink-2);color:var(--ink-2)}
+[data-view="alt"] .chat{border:1px solid var(--line)!important;border-radius:14px;box-shadow:0 12px 32px rgba(16,24,40,.16)}
+@media (max-width:960px){[data-view="alt"] .left{border-top:1px solid var(--rule)}[data-view="alt"] :is(.brief,.margin>.panel){border-left:0}}
+
+/* clusters sit in an even grid of equal cards, tops aligned: each is a white card with its unit line and its bed markers. A marker is a ring that
+   fills with the chance of the event, with the bed number inside and the percent beneath. */
+#clusters{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;padding:12px 0}
+.cl{min-width:0;padding:16px 18px;background:var(--surface);border:1px solid var(--rule);border-radius:16px;box-shadow:var(--card)}
+.cl h3{margin:0 0 6px;font-size:14px;font-weight:650;line-height:1.3}
+.cl .u{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px}
+.cl .u .n{font-size:28px;font-weight:800;line-height:1}
+.cl .u svg{display:block;width:100%;height:20px}
+.cl .who{margin:2px 0 0}
+.cl .who .status{display:inline-block;padding:0 4px;font-size:11px}
+.cl .bedline{margin:10px 0 8px;padding-top:8px;border-top:1px solid var(--rule)}
+.cl.empty .bedline{margin-bottom:0}
+.cl .bedline b{color:var(--ink)}
+.cl .lc{font-weight:600;color:var(--ink)}
+.cl .chg{background:transparent;border:0;padding:6px 4px;margin:-6px 0 -6px 4px;font:inherit;font-weight:600;color:var(--magnet);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.cl.empty .set{display:none}
+.cl[hidden]{display:none}
+.cl h3 .status{display:inline-block;margin-left:6px;vertical-align:1px}
+.cl .set{display:grid;grid-template-columns:repeat(auto-fill,52px);justify-content:start;gap:12px 8px}
+/* bed marker: a patient figure (head and shoulders) that fills from the bottom with the chance of the event; bed number and percent beneath */
+.pp{width:52px;display:flex;flex-direction:column;align-items:center;gap:1px;background:transparent;border:0;padding:0;cursor:pointer;color:var(--ink)}
+.pp .av{position:relative;width:40px;height:42px;margin-bottom:3px;border-radius:10px;transition:transform .15s ease-out}
+.pp:not(.w):hover .av{transform:translateY(-1px)}
+.pp .av svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.pp .av .base{fill:color-mix(in srgb,var(--ink) 11%,var(--surface))}
+[data-board="night"] .pp .av .base{fill:color-mix(in srgb,var(--ink) 24%,var(--surface))}
+.pp .av .fill{fill:var(--magnet);clip-path:inset(calc(100% - var(--p)) 0 0 0)}
+.pp.neutral .av .fill{fill:var(--ink-2)}
+.pp .rm{font-size:14px;font-weight:700;line-height:1.1}
+.pp .pc{font-size:12px;font-weight:600;line-height:1.15;text-align:center;color:var(--ink-2)}
+.pp[aria-pressed="true"] .av{outline:2.5px solid var(--ink);outline-offset:3px}
+.pp:focus-visible{outline:0}
+.pp:focus-visible .av{outline:3px solid var(--focus);outline-offset:3px}
+.pp.w .av{isolation:isolate}
+.pp.w .av{animation:beat 1.2s ease-in-out infinite}
+.pp.w .av::after{content:"";position:absolute;inset:-11px;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--short) 85%,transparent) 35%,transparent);animation:watchp 1.2s ease-in-out infinite}
+.pp.w .av::before{content:"";position:absolute;inset:-3px;z-index:-1;border-radius:50%;border:2.5px solid var(--short);animation:ring 1.2s ease-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}45%{transform:scale(1.12)}}
+@keyframes ring{0%{opacity:.95;transform:scale(.7)}100%{opacity:0;transform:scale(1.55)}}
+.pp.w .av .base{fill:color-mix(in srgb,var(--short) 38%,var(--surface))}
+.pp.w .av .fill{fill:var(--short)}
+.pp.w .pc{color:var(--short);font-weight:800}
+@keyframes watchp{0%,100%{opacity:.2;transform:scale(.8)}45%{opacity:1;transform:scale(1.15)}}
+/* a group pulses red when its unit forecast is TIGHT or SHORT against what is free: a red edge, a soft glow, and two
+   ripples that leave the card one after the other. SHORT ripples faster and tints the card. The status word stays in the heading. */
+.cl.hot{position:relative;border:2px solid var(--short);padding:15px 17px;background:color-mix(in srgb,var(--short) 6%,var(--surface));box-shadow:0 0 0 5px color-mix(in srgb,var(--short) 22%,transparent),var(--card,0 0 0 transparent)}
+.cl.hot h3 .status{background:var(--short);border-color:var(--short);color:var(--surface)}
+.cl.hot .u .n{color:var(--short)}
+.cl.hot::before,.cl.hot::after{content:"";position:absolute;inset:-2px;border:4px solid var(--short);border-radius:inherit;opacity:0;pointer-events:none;
+  animation:ripple 1.6s cubic-bezier(.2,.6,.3,1) infinite}
+.cl.hot::after{animation-delay:.8s}
+.cl.hot.short{background:color-mix(in srgb,var(--short) 13%,var(--surface))}
+.cl.hot.short::before,.cl.hot.short::after{animation-duration:1.3s}
+.cl.hot.short::after{animation-delay:.65s}
+@keyframes ripple{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.16)}}
+.cl.hot{animation:glow 1.6s ease-in-out infinite}
+.cl.hot.short{animation-duration:1s}
+@keyframes glow{0%,100%{box-shadow:0 0 0 3px color-mix(in srgb,var(--short) 18%,transparent),0 0 0 0 color-mix(in srgb,var(--short) 0%,transparent)}
+  50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--short) 34%,transparent),0 0 28px 6px color-mix(in srgb,var(--short) 45%,transparent)}}
+@media (max-width:560px){.cl .mag{min-width:72px;min-height:52px}}
+
+/* Alternative: the chat floats. A small "Ask the board" button sits bottom right; it opens the chat as a panel that grows with the answers */
+.fab,.chat .min{display:none}
+[data-view="alt"] .wrap{padding-bottom:88px}
+[data-view="alt"][data-chat="closed"] .fab{display:inline-flex}
+.fab{position:fixed;right:16px;bottom:16px;z-index:20;align-items:center;min-height:44px;background:var(--ink);color:var(--board);border:0;border-radius:999px;padding:8px 18px;font-weight:700;cursor:pointer}
+.fab:hover{opacity:.9}
+.fab{gap:8px}
+.fab svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+[data-view="alt"] .chat{position:fixed;right:16px;bottom:16px;z-index:20;width:min(380px,calc(100vw - 32px));margin:0!important;padding:12px 14px 14px!important;
+  background:var(--board);border:2px solid var(--ink)!important;border-radius:8px}
+[data-view="alt"][data-chat="closed"] .chat{display:none}
+[data-view="alt"] .chat h2{padding-right:96px}
+[data-view="alt"] .chat .min{display:block;position:absolute;top:8px;right:8px;min-height:36px;background:transparent;border:1.5px solid var(--ink);border-radius:6px;padding:2px 10px;cursor:pointer;font-size:13px;font-weight:600}
+[data-view="alt"] .chat .min:hover{background:var(--board-2)}
+[data-view="alt"] .chat .log{max-height:min(45vh,360px)}
+@media (max-width:560px){[data-view="alt"] .chat .min{min-height:44px}}
+
+/* Alternative: a settings button replaces the Night board switch; its menu picks the light or dark board */
+.settings{position:relative;display:none}
+[data-view="alt"] .settings{display:block}
+[data-view="alt"] #theme{display:none}
+.settings svg{width:20px;height:20px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.gear{padding:7px 10px;min-height:38px}
+.setmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;display:flex;flex-direction:column;gap:6px;min-width:216px;padding:10px;background:var(--board);border:1.5px solid var(--ink);border-radius:8px}
+.setmenu[hidden]{display:none}
+.rolebox{display:inline-flex;align-items:center;gap:8px}
+.setmenu .rolebox{display:flex;flex-direction:column;align-items:stretch;gap:4px;margin-bottom:6px}
+.setmenu .rolebox select{width:100%;min-height:44px;font:inherit;color:var(--ink);background:var(--board);border:1.5px solid var(--ink);border-radius:6px;padding:7px 8px}
+.setmenu button{display:flex;align-items:center;gap:8px;min-height:44px;background:transparent;border:1.5px solid var(--ink);border-radius:6px;padding:4px 12px;cursor:pointer;font-weight:600;text-align:left}
+.setmenu button:hover{background:var(--board-2)}
+.setmenu button[aria-pressed="true"]{background:var(--ink);color:var(--board)}
+@media (max-width:560px){.gear{min-height:44px}.setmenu{right:auto;left:0}}
+
+/* Alternative: the bed detail opens as a dialog in the middle of the screen, over a dimmed board; Close bed, Escape or a click outside closes it */
+.scrim{display:none}
+[data-view="alt"][data-bed="open"] .scrim{display:block;position:fixed;inset:0;z-index:40;background:rgba(10,15,25,.5)}
+[data-view="alt"] .drawer{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:41;width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 48px);overflow:auto;
+  margin:0!important;padding:20px 24px 16px!important;background:var(--surface);border:1px solid var(--line)!important;border-radius:16px;box-shadow:0 24px 64px rgba(10,15,25,.3)}
+[data-view="alt"] .drawer .head{position:sticky;top:-20px;margin:-20px -24px 4px;padding:16px 24px 8px;background:var(--surface);align-items:center;z-index:1}
+[data-view="alt"] :is(.fab,.chat){z-index:50}
+
+/* Alternative: each event's unit line lives inside its cluster card, so the Unit panel is gone and the page is one column: brief, then clusters */
+[data-view="alt"] #unitpanel{display:none}
+[data-view="alt"] .main{grid-template-columns:minmax(0,1fr);grid-template-areas:"brief" "left";grid-template-rows:auto}
+[data-view="alt"] .left{position:static;padding-right:0;border-top:1px solid var(--rule);padding-top:12px;margin-top:4px}
+[data-view="alt"] .brief{border-left:0;padding-left:0}
+
+/* Alternative: the run line becomes a small badge in the top strip; the full line comes back only while a run is starting or was refused */
+.runbadge{display:none}
+[data-view="alt"] .runbadge{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;font-weight:600;color:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.runbadge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.runbadge.live{color:var(--ink)}
+.runbadge.live::before{background:var(--magnet)}
+[data-view="alt"] .runstate{display:none}
+[data-view="alt"] .runstate.live{display:block}
+
+/* Alternative: the shift brief is one line; its heading stays for screen readers */
+[data-view="alt"] .brief :is(h2,.sub){position:absolute;left:-9999px}
+[data-view="alt"] .brief{padding-bottom:0}
+[data-view="alt"] .brief li:first-child{padding:2px 0 10px;font-size:17px}
+[data-view="alt"] .brief .sep{margin:0 6px;color:var(--ink-2);font-weight:400}
+[data-view="alt"] .brief .range{margin-left:8px}
+[data-view="alt"] .left{margin-top:0}
+
+/* Alternative: settings is a side panel on the right; the board stays visible beside it so line changes show at once */
+[data-view="alt"] .setmenu{position:fixed;top:0;right:0;bottom:0;left:auto;z-index:60;width:min(340px,100vw);min-width:0;gap:8px;padding:16px 20px 24px;overflow:auto;
+  background:var(--surface);border:0;border-left:1px solid var(--line);border-radius:0;box-shadow:-16px 0 40px rgba(10,15,25,.16)}
+.sethead{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.sethead h2{margin:0;font-size:18px}
+.setmenu .sethead .close{min-height:36px;padding:4px 12px}
+.seth{margin:14px 0 0;padding-top:14px;border-top:1px solid var(--rule);font-size:14px}
+.seti{margin:0 0 4px}
+.lrow{display:grid;grid-template-columns:minmax(0,1fr) 32px 44px 32px 56px;align-items:center;gap:6px;padding:6px 0;border-top:1px solid var(--rule)}
+.lrow:first-child{border-top:0}
+.lrow .nm{font-size:14px;font-weight:600}
+.lrow output{text-align:center;font-size:15px;font-weight:800}
+.lrow .cnt{text-align:right}
+.setmenu .lrow .step{display:grid;place-items:center;width:32px;height:32px;min-height:0;padding:0;border-radius:8px;font-size:17px;line-height:1}
+.setmenu .lrow .step:disabled{opacity:.35;cursor:default}
+.setmenu .views{margin:0;align-self:flex-start}
+.setmenu .views button{display:block;min-height:36px;border:0;border-left:1px solid var(--line);border-radius:0;padding:6px 14px}
+.setmenu .views button:first-child{border-left:0}
+#thr-l{margin-top:8px}
+@media (max-width:560px){.setmenu .lrow .step{width:44px;height:44px}.lrow{grid-template-columns:minmax(0,1fr) 44px 44px 44px 52px}}
+
+/* Alternative: vitals in the bed detail, as small multiples (one chart per vital) */
+#vitals{display:none}
+[data-view="alt"] #vitals{display:block}
+.vgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;margin-top:8px}
+.vc{position:relative;min-width:0;border:1px solid var(--rule);border-radius:12px;padding:10px 12px 8px}
+.vc .vh{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.vc .vn{font-size:13px;font-weight:600}
+.vc .vv{font-size:20px;font-weight:800;line-height:1;white-space:nowrap}
+.vc .vv small{font-size:12px;font-weight:600;color:var(--ink-2)}
+.vc svg{display:block;width:100%;height:auto;margin-top:6px;overflow:visible;touch-action:pan-y}
+.vc .vx{display:flex;justify-content:space-between;gap:6px;margin-top:2px;font-size:11px;color:var(--ink-2)}
+.vc .tip{position:absolute;top:34px;transform:translateX(-50%);pointer-events:none;white-space:nowrap;background:var(--ink);color:var(--surface);border-radius:6px;padding:2px 7px;font-size:12px;font-weight:600}
+.vc .tip[hidden]{display:none}
+[data-view="alt"] .drawer{width:min(640px,calc(100vw - 32px))}
+@media (max-width:560px){.vgrid{grid-template-columns:minmax(0,1fr)}}
 
 /* margin */
 .panel{padding:14px 0 18px;border-top:1px solid var(--rule)}
@@ -164,24 +359,44 @@ details.more summary:hover{color:var(--ink)}
 .pending{color:var(--ink-2);font-style:italic}
 
 ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--rule);border-radius:6px}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="views" id="views" role="group" aria-label="Board view">
+    <button type="button" data-v="board" aria-pressed="true">Board</button><button type="button" data-v="alt" aria-pressed="false">Alternative</button>
+  </div>
+
   <header class="top">
     <div class="unit">
       <h1>Medical ICU · 25 beds</h1>
       <p>For 07:00 morning rounds · <b>next 24 h, 07:00 to 07:00</b> · patients in the ICU at least 24 h</p>
     </div>
     <span class="synthetic" title="Every number on this page is made up for the mockup">SYNTHETIC DATA</span>
+    <span class="runbadge" id="runbadge" title="Ran 06:30 by schedule (mock) · next run 06:30 tomorrow">Last run 06:30 (mock)</span>
     <span class="spacer"></span>
     <button class="toggle" id="theme" aria-pressed="false" type="button">Night board</button>
+    <div class="settings" id="settings">
+      <button class="toggle gear" id="gear" type="button" aria-label="Settings" title="Settings" aria-expanded="false" aria-controls="setmenu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.6" stroke-width="3.4" stroke-dasharray="3.2 2.77" stroke-linecap="butt"/><circle cx="12" cy="12" r="5.6"/><circle cx="12" cy="12" r="2.2"/></svg></button>
+      <div class="setmenu" id="setmenu" role="dialog" aria-label="Settings" hidden>
+        <div class="sethead"><h2>Settings</h2><button type="button" class="close" id="setclose">Close</button></div>
+        <span class="label">Board appearance</span>
+        <button type="button" data-t="day" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>Light</button>
+        <button type="button" data-t="night" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.6 6.6 0 0 0 10.5 10.5Z"/></svg>Dark</button>
+        <h3 class="seth">Cluster lines</h3>
+        <p class="range seti">A bed joins a cluster when its chance of that event is at or above the cluster's line. Remembered on this device.</p>
+        <div id="linesbox"></div>
+        <span class="label" id="thr-l">Set every line to</span>
+        <div class="views" id="thr" role="group" aria-labelledby="thr-l"><button type="button" data-v="50">50%</button><button type="button" data-v="25">25%</button><button type="button" data-v="10">10%</button></div>
+      </div>
+    </div>
     <div class="runbox">
-      <label for="role" class="label">I am</label>
+      <span class="rolebox" id="rolebox"><label for="role" class="label">I am</label>
       <select id="role">
         <option value="ICU nurse">ICU nurse (charge)</option><option>ICU physician</option><option>pharmacy</option><option>respiratory therapy</option><option>bed manager</option>
-      </select>
+      </select></span>
       <button class="toggle" id="rerun" type="button">Rerun forecast</button>
     </div>
     <p class="runstate" id="runstate" aria-live="polite">Ran <b>06:30</b> by schedule (mock) · next run 06:30 tomorrow</p>
@@ -195,7 +410,7 @@ details.more summary:hover{color:var(--ink)}
     </section>
 
     <div class="left">
-      <section aria-labelledby="board-h">
+      <section aria-labelledby="board-h" id="boardview">
         <div class="boardhead">
           <h2 id="board-h">Watch first · the three highest-risk rooms</h2>
           <p class="legend">
@@ -210,12 +425,23 @@ details.more summary:hover{color:var(--ink)}
         </details>
         <p class="note">Shade: the room's highest chance of a new event in the next 24 h (leaving the ICU is not counted as a risk). Tags: already on before 07:00, so not counted as new (V, P, C on a phone). Rooms are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
       </section>
+      <section aria-labelledby="alt-h" id="altview">
+        <div class="boardhead">
+          <h2 id="alt-h">Patient clusters · chance of a new event in the next 24 h</h2>
+          <p class="legend">Big number = unit median of new starts · bar = 80% range · ink line = what is free · figure fills with a bed's chance</p>
+        </div>
+        <div class="thr">
+          <button class="toggle resttoggle" id="resttoggle" type="button" aria-pressed="false">Hide no-risk beds</button>
+        </div>
+        <div id="clusters"></div>
+        <p class="note">Each group holds the beds whose chance of that new event in the next 24 h is at or above its line; set each cluster's line in Settings (remembered on this device); a bed can sit in more than one group. Already on before 07:00 is not counted as new. The three highest-risk beds pulse red, and a whole group pulses red when the unit forecast for it is TIGHT or SHORT against what is free (faster when SHORT). Leaving the ICU is not a risk, so those figures fill grey. Beds are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
+      </section>
     </div>
 
     <div class="margin">
       <section class="panel" aria-labelledby="unit-h" id="unitpanel">
         <h2 id="unit-h">Unit · next 24 h</h2>
-        <p class="sub">New starts across all 25 rooms. Big number = median; blue bar = 80% range; ink line = what is free.</p>
+        <p class="sub" id="unit-sub">New starts across all 25 rooms. Big number = median; blue bar = 80% range; ink line = what is free.</p>
         <div id="rows"></div>
       </section>
 
@@ -225,13 +451,15 @@ details.more summary:hover{color:var(--ink)}
         <ul class="bars" id="rbars"></ul>
         <p class="onnow" id="onnow"></p>
         <p class="label">How far to trust these: held-out check (calibration, AUROC) <span class="pending">pending run</span>.</p>
+        <div id="vitals"></div>
         <h3>What the model read · last 12 h</h3>
         <ul class="past" id="past"></ul>
         <button class="linkbtn" id="pastmore" type="button"></button>
         <p class="note">Model evidence, not a cause. Decision support, not a treatment recommendation.</p>
       </section>
 
-      <section class="panel chat" aria-labelledby="chat-h">
+      <section class="panel chat" id="chatpanel" aria-labelledby="chat-h">
+        <button class="min" id="chatmin" type="button">Minimize</button>
         <h2 id="chat-h">Ask the board</h2>
         <p class="sub" id="chat-scope">Answers from this forecast only, on the local Nemotron 3 Nano. Mock replies in this file.</p>
         <div class="chips" id="chips" role="group" aria-label="Suggested questions"></div>
@@ -242,6 +470,9 @@ details.more summary:hover{color:var(--ink)}
       </section>
     </div>
   </div>
+
+  <div class="scrim" id="scrim"></div>
+  <button class="fab" id="chatfab" type="button" aria-controls="chatpanel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v10.5H10.5L6 19.8V16H4Z"/><path d="M8 9.5h8M8 12.5h5"/></svg><span id="fablabel">Ask the board</span></button>
 
   <footer class="engine" aria-labelledby="about-h">
     <h2 id="about-h">How this forecast was made</h2>
@@ -289,6 +520,8 @@ details.more summary:hover{color:var(--ink)}
     return {n:i+1, on, p, age: 40+Math.round(rnd()*45)};
   });
   let theme = "day", room = null, pastOpen = false;
+  // wording: the Board tab says "room", the Alternative tab says "bed" (same display slots, same data)
+  const tw = t => document.documentElement.dataset.view==="alt" ? t.replace(/\bRoom/g,"Bed").replace(/\broom/g,"bed") : t;
   const role = () => document.getElementById("role").value;
 
   // tile colour: mix magnet blue into the surface, then pick the ink with the higher contrast (>= 4.5:1)
@@ -353,8 +586,13 @@ details.more summary:hover{color:var(--ink)}
     const busy = EV.filter(e=>!cap[e.k]).sort((a,b)=>C[b.k].p50-C[a.k].p50).slice(0,2)
       .map((e,i)=>`${i?e.bl.toLowerCase():e.bl} ${mr(C[e.k])}`).join("; ");
     const t3 = ranked().slice(0,3);
-    document.getElementById("brief").innerHTML =
-      `<li>${l1}</li><li>${busy}</li><li>Review rooms ${t3.map(r=>`<button class="roomlink" type="button" data-room="${r.n}">${r.n}</button>`).join(", ")}</li>`;
+    const links=t3.map(r=>`<button class="roomlink" type="button" data-room="${r.n}">${r.n}</button>`).join(", ");
+    // Alternative view: one line. The verdict in words (the cluster cards carry the numbers), then the three beds to review.
+    if(document.documentElement.dataset.view==="alt") document.getElementById("brief").innerHTML =
+      `<li>${ex.length ? ex.map(e=>{const [cls,w]=status(e.k); return `${e.bl} <span class="w" style="background:var(--short);border-color:var(--short);color:var(--surface)">${w}</span>`;}).join(", ") : "Nothing short where a capacity is set"}
+        <span class="sep">·</span> Review beds ${links} <span class="range">drafted (mock)</span></li>`;
+    else document.getElementById("brief").innerHTML =
+      `<li>${l1}</li><li>${busy}</li><li>${tw("Review rooms")} ${t3.map(r=>`<button class="roomlink" type="button" data-room="${r.n}">${r.n}</button>`).join(", ")}</li>`;
     document.querySelectorAll(".roomlink").forEach(b=>b.onclick=()=>openRoom(+b.dataset.room));
   }
 
@@ -382,32 +620,143 @@ details.more summary:hover{color:var(--ink)}
       b.setAttribute("aria-label",`Room ${r.n}: highest risk ${e.name} ${pct(v)}${tags.map(x=>`, on ${x.name.toLowerCase()}`).join("")}`);
       b.innerHTML=`<span class="rm">${r.n}</span><span class="top1"><span class="long">${e.name}</span><span class="short">${e.short}</span> ${pct(v)}</span><span class="on">${tags.map(x=>`<span><span class="long">${x.tag}</span><span class="short">${x.t}</span></span>`).join("")}</span>`;
       b.onclick=()=>openRoom(r.n); (t3.children.length<3 ? t3 : g).appendChild(b); }
+    renderClusters();
   }
+  // Alternative view: patient clusters. For each event, the rooms at or above the line, highest first; rooms in no risk group come last.
+  // each cluster has its own line (the chance at or above which a bed joins it). The user sets it on the card with a slider
+  // (or the − / + buttons, or the arrow keys); it is remembered on this device. Marks above the slider show where this event's beds sit.
+  const KEYS=["death","vent","press","crrt","hypo","out"], LO=5, HI=75, STEPS=Array.from({length:(HI-LO)/5+1},(_,i)=>LO+i*5), thrBy={}; let hideRest=false;
+  for(const k of KEYS) thrBy[k]=.25;
+  try{ const saved=JSON.parse(localStorage.getItem("icu-alt-lines")||"{}"); for(const k of KEYS) if(STEPS.includes(saved[k])) thrBy[k]=saved[k]/100; }catch(e){ /* no storage: lines last for this visit */ }
+  const saveLines=()=>{ try{ localStorage.setItem("icu-alt-lines",JSON.stringify(Object.fromEntries(KEYS.map(k=>[k,Math.round(thrBy[k]*100)])))); }catch(e){} };
+  function setLines(fn){ for(const k of KEYS) thrBy[k]=fn(k); saveLines(); renderClusters(); }
+  const FIG=`<circle cx="20" cy="10.5" r="8.5"/><path d="M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z"/>`;
+  const chip=(r,e,v,label,w3)=>`<button type="button" class="pp${e.k==="out"?" neutral":""}${e.k!=="out"&&w3.includes(r.n)&&top(r)[0].k===e.k?" w":""}" data-room="${r.n}" aria-pressed="${room===r.n}" aria-label="Bed ${r.n}: ${e.name} ${pct(v)}" title="Bed ${r.n}: ${e.name} ${pct(v)}">
+      <span class="av" style="--p:${Math.round(v*100)}%" aria-hidden="true"><svg class="base" viewBox="0 0 40 42">${FIG}</svg><svg class="fill" viewBox="0 0 40 42">${FIG}</svg></span><span class="rm">${r.n}</span><span class="pc">${label}</span></button>`;
+  const live=k=>rooms.filter(r=>!Number.isNaN(r.p[k]));
+  const nbeds=n=>n?`${n} ${n===1?"bed":"beds"}`:"no beds";
+  // refresh one card for its line: value, count, slider fill, marks, beds
+  function updateCard(k){
+    const card=document.querySelector(`.cl[data-k="${k}"]`); if(!card) return; const e=EV.find(x=>x.k===k), t=Math.round(thrBy[k]*100), w3=ranked().slice(0,3).map(r=>r.n);
+    const rs=live(k).filter(r=>r.p[k]>=thrBy[k]).sort((a,b)=>b.p[k]-a.p[k]);
+    card.querySelector(".lv").textContent=`${t}%`; card.querySelector(".lc").textContent=nbeds(rs.length);
+    const row=document.querySelector(`#linesbox [data-k="${k}"]`);
+    if(row){ row.querySelector("output").textContent=`${t}%`; row.querySelector(".cnt").textContent=nbeds(rs.length); row.querySelector(".step[data-d='-5']").disabled=t<=LO; row.querySelector(".step[data-d='5']").disabled=t>=HI; }
+    card.querySelector(".set").innerHTML=rs.map(r=>chip(r,e,r.p[k],pct(r.p[k]),w3)).join(""); card.classList.toggle("empty",!rs.length);
+  }
+  // the last card: beds under every risk line, each with its top risk
+  function updateRest(){
+    const inRisk=new Set(), w3=ranked().slice(0,3).map(r=>r.n); for(const k of KEYS) if(k!=="out") live(k).forEach(r=>{ if(r.p[k]>=thrBy[k]) inRisk.add(r.n); });
+    const rest=rooms.filter(r=>!inRisk.has(r.n)), rt=document.getElementById("resttoggle"), card=document.getElementById("restcard");
+    rt.setAttribute("aria-pressed",String(hideRest)); rt.textContent = hideRest ? `Show no-risk beds (${rest.length})` : "Hide no-risk beds"; rt.hidden=!rest.length;
+    card.hidden = hideRest || !rest.length; card.querySelector(".lc").textContent=`every risk under its line · ${nbeds(rest.length)}`;
+    card.querySelector(".set").innerHTML=rest.map(r=>{const [e,v]=top(r); return chip(r,e,v,`${e.short}<br>${pct(v)}`,w3);}).join("");
+    document.querySelectorAll("#thr button").forEach(b=>b.setAttribute("aria-pressed",String(KEYS.every(k=>Math.round(thrBy[k]*100)===+b.dataset.v))));
+  }
+  function renderClusters(){
+    const mine=OWN[role()]||[], order=KEYS.slice().sort((a,b)=>(mine.includes(a)?0:1)-(mine.includes(b)?0:1)); let html="";
+    for(const k of order){ const e=EV.find(x=>x.k===k), c=C[k], st=status(k), hot=["short","tight"].includes(st[0]);
+      // a cluster card: the unit line for that event (median, 80% range bar, what is free, status), its line control, then its beds
+      html+=`<section class="cl${hot?` hot ${st[0]}`:""}" data-k="${k}"><h3>${e.row.replace(/ \(.*\)/,"")}${hot?`<span class="status ${st[0]}">${st[1]}</span>`:""}</h3>
+        <div class="u"><span class="n">${c.p50}</span><span class="ub">${bar(c,cap[k])}<span class="range">range ${c.p10} to ${c.p90}${cap[k]!=null?` · ${cap[k]} free (placeholder)`:""}</span></span></div>
+        <p class="range who">${mine.includes(k)?`<span class="own">your row</span>`:e.team}${cap[k]==null?" · no capacity set":st[0]==="ok"?` · <span class="status ok">${st[1]}</span>`:""}</p>
+        <p class="range bedline">Beds at <b class="lv"></b> or more · <span class="lc"></span> <button type="button" class="chg" data-k="${k}" aria-label="Change the line for ${e.name} in settings">Change</button></p>
+        <div class="set"></div></section>`; }
+    html+=`<section class="cl rest" id="restcard"><h3>No risk at the line</h3><p class="range bedline lc"></p><div class="set"></div></section>`;
+    // settings: one row per cluster, in the same order: name, − value +, how many beds that gives
+    document.getElementById("linesbox").innerHTML=order.map(k=>{ const e=EV.find(x=>x.k===k); return `<div class="lrow" data-k="${k}"><span class="nm">${e.bl}</span>
+      <button type="button" class="step" data-d="-5" aria-label="Lower the line for ${e.name} by 5 points">−</button><output aria-live="polite"></output><button type="button" class="step" data-d="5" aria-label="Raise the line for ${e.name} by 5 points">+</button><span class="cnt range"></span></div>`; }).join("");
+    document.getElementById("clusters").innerHTML=html; KEYS.forEach(updateCard); updateRest();
+  }
+  document.getElementById("clusters").addEventListener("click",e=>{ const b=e.target.closest(".pp"); if(b) return openRoom(+b.dataset.room);
+    const c=e.target.closest(".chg"); if(c){ e.stopPropagation(); setMenu(true); const r=document.querySelector(`#linesbox [data-k="${c.dataset.k}"]`); r.scrollIntoView({block:"nearest"}); (r.querySelector(".step:not(:disabled)")||r).focus(); } });
+  document.getElementById("linesbox").addEventListener("click",e=>{ const st=e.target.closest(".step"); if(!st) return; const k=st.closest(".lrow").dataset.k;
+    thrBy[k]=Math.max(LO,Math.min(HI,Math.round(thrBy[k]*100)+ +st.dataset.d))/100; updateCard(k); updateRest(); saveLines(); if(st.disabled) st.parentNode.querySelector(".step:not(:disabled)").focus(); });
+  document.querySelectorAll("#thr button").forEach(b=>b.onclick=()=>setLines(()=>+b.dataset.v/100));
+  document.getElementById("resttoggle").onclick=()=>{ hideRest=!hideRest; renderClusters(); document.getElementById("resttoggle").focus(); };
+  // Alternative view: floating chat. The button opens the panel and moves focus to the question box; Minimize or Escape closes it.
+  const fab=document.getElementById("chatfab"), isAlt=()=>document.documentElement.dataset.view==="alt";
+  function setChat(open, focus=true){ document.documentElement.dataset.chat=open?"open":"closed"; fab.setAttribute("aria-expanded",String(open));
+    if(focus && isAlt()) (open ? document.getElementById("q") : fab).focus(); }
+  fab.onclick=()=>setChat(true); document.getElementById("chatmin").onclick=()=>setChat(false);
+  document.getElementById("chatpanel").addEventListener("keydown",e=>{ if(e.key==="Escape" && isAlt()) setChat(false); });
+  // view tabs: Board or Alternative (also #alt)
+  function setView(v){ document.documentElement.dataset.view=v; document.querySelectorAll("#views button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v)));
+    // Alternative: the role picker lives in the settings menu, which frees the top strip; Board keeps it beside Rerun
+    const rb=document.getElementById("rolebox"); if(v==="alt") document.querySelector("#setmenu .sethead").after(rb); else document.querySelector(".runbox").prepend(rb); setGearLabel();
+    // re-word the shared parts for this view
+    document.getElementById("unit-sub").textContent=tw("New starts across all 25 rooms. Big number = median; blue bar = 80% range; ink line = what is free.");
+    document.getElementById("close").textContent=tw("Close room");
+    const dr=document.getElementById("drawer"); if(v==="alt"){ dr.setAttribute("role","dialog"); dr.setAttribute("aria-modal","true"); } else { dr.removeAttribute("role"); dr.removeAttribute("aria-modal"); }
+    if(room){ document.getElementById("room-h").textContent=tw(`Room ${room}`); document.getElementById("chat-scope").textContent=tw(`Asking about room ${room} (open demo patient) and the unit. Mock replies in this file.`); }
+    renderBrief(); renderChips(); }
+  function setGearLabel(){ const r=document.getElementById("role"), g=document.getElementById("gear"), t=`Settings: I am ${r.options[r.selectedIndex].text}`; g.setAttribute("aria-label",t); g.title=t; }
+  document.getElementById("role").addEventListener("change",setGearLabel);
+  document.querySelectorAll("#views button").forEach(b=>b.onclick=()=>setView(b.dataset.v));
 
   // room drawer: six bars sorted by risk, "on now" chips, last events capped at five
   const PAST=["Lactate 3.1 (up from 2.2)","Norepinephrine 0.08 mcg/kg/min","SpO2 91% on 6 L","Chest x-ray ordered","Heart rate 118","Urine output 20 mL/h","CBC and BMP drawn","Temperature 38.4"];
+  // synthetic vitals for the last 12 h, one value an hour (13 points), seeded by the bed so they are stable between opens.
+  // They lean on the bed's own forecast (higher hypotension risk: lower, falling MAP and a faster heart; higher ventilator risk: lower SpO2, faster breathing).
+  function vitals(n){ const r=rooms[n-1]; let q=n*7919+17; const rn=()=>(q=(q*1664525+1013904223)%4294967296)/4294967296;
+    const hy=pv(r,"hypo"), ve=pv(r,"vent"), walk=(start,drift,noise,lo,hi)=>{ let v=start; return Array.from({length:13},(_,i)=>{ v+=drift/12+(rn()-.5)*noise; return Math.round(Math.max(lo,Math.min(hi,v))); }); };
+    return [{k:"hr",name:"Heart rate",unit:"bpm",d:walk(76+hy*45,hy*22,7,45,160)},
+            {k:"map",name:"Mean arterial pressure",unit:"mmHg",d:walk(86-hy*18,-hy*22,6,45,120),ref:65,refl:"65"},
+            {k:"spo2",name:"SpO2",unit:"%",d:walk(97.5-ve*8,-ve*9,1.6,80,100)},
+            {k:"rr",name:"Respiratory rate",unit:"/min",d:walk(15+ve*12,ve*12,2.5,8,40)}]; }
+  // small multiples: one chart per vital (never two scales on one chart), 2 px line, the latest point marked, hover for any hour
+  function renderVitals(n,V){
+    const X=i=>6+i*(228/12), chart=v=>{ const lo=Math.min(...v.d,v.ref??Infinity), hi=Math.max(...v.d,v.ref??-Infinity), pad=Math.max(2,(hi-lo)*.15), Y=y=>8+(1-(y-(lo-pad))/((hi+pad)-(lo-pad)))*44, last=v.d[12];
+      return `<div class="vc" data-k="${v.k}" data-d="${v.d.join(",")}" data-u="${v.unit}"><div class="vh"><span class="vn">${v.name}</span><span class="vv">${last}<small> ${v.unit}</small></span></div>
+        <svg viewBox="0 0 240 60" role="img" aria-label="${v.name}, last 12 hours: now ${last} ${v.unit}, lowest ${Math.min(...v.d)}, highest ${Math.max(...v.d)}">
+          <line x1="6" x2="234" y1="56" y2="56" stroke="var(--rule)"/>
+          ${v.ref!=null?`<line x1="6" x2="234" y1="${Y(v.ref).toFixed(1)}" y2="${Y(v.ref).toFixed(1)}" stroke="var(--ink-2)" stroke-dasharray="3 3"/><text x="234" y="${(Y(v.ref)-3).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--ink-2)">${v.refl}</text>`:""}
+          <polyline points="${v.d.map((y,i)=>`${X(i).toFixed(1)},${Y(y).toFixed(1)}`).join(" ")}" fill="none" stroke="var(--magnet)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="${X(12)}" cy="${Y(last).toFixed(1)}" r="4" fill="var(--magnet)" stroke="var(--surface)" stroke-width="2"/>
+          <line class="ch" x1="0" x2="0" y1="6" y2="56" stroke="var(--ink-2)" visibility="hidden"/><circle class="cd" r="4" fill="var(--surface)" stroke="var(--magnet)" stroke-width="2" visibility="hidden"/>
+          <rect class="hit" x="0" y="0" width="240" height="60" fill="transparent" data-ys="${v.d.map(y=>Y(y).toFixed(1)).join(",")}"/></svg>
+        <div class="vx"><span>-12 h</span><span>low ${Math.min(...v.d)} · high ${Math.max(...v.d)}</span><span>now</span></div><div class="tip" hidden></div></div>`; };
+    document.getElementById("vitals").innerHTML=`<h3>Vitals · last 12 h <span class="range">synthetic (mock) · hourly</span></h3><div class="vgrid">${V.map(chart).join("")}</div>
+      <table class="sr"><caption>${tw(`Room ${n}`)} vitals, hourly, last 12 hours</caption><thead><tr><th scope="col">Hours ago</th>${V.map(v=>`<th scope="col">${v.name} (${v.unit})</th>`).join("")}</tr></thead>
+        <tbody>${Array.from({length:13},(_,i)=>`<tr><th scope="row">${12-i}</th>${V.map(v=>`<td>${v.d[i]}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  }
+  { const vt=document.getElementById("vitals"), off=c=>{ c.querySelector(".tip").hidden=true; c.querySelectorAll(".ch,.cd").forEach(x=>x.setAttribute("visibility","hidden")); };
+    vt.addEventListener("pointermove",e=>{ const hit=e.target.closest(".hit"); if(!hit) return; const c=hit.closest(".vc"), box=hit.getBoundingClientRect(), d=c.dataset.d.split(","), ys=hit.dataset.ys.split(",");
+      const i=Math.max(0,Math.min(12,Math.round(((e.clientX-box.left)/box.width*240-6)/(228/12)))), x=6+i*(228/12), ch=c.querySelector(".ch"), cd=c.querySelector(".cd"), tip=c.querySelector(".tip");
+      ch.setAttribute("x1",x); ch.setAttribute("x2",x); ch.setAttribute("visibility","visible"); cd.setAttribute("cx",x); cd.setAttribute("cy",ys[i]); cd.setAttribute("visibility","visible");
+      tip.hidden=false; tip.textContent=`${i===12?"now":`-${12-i} h`} · ${d[i]} ${c.dataset.u}`; tip.style.left=`${Math.max(18,Math.min(82,x/240*100))}%`; });
+    vt.addEventListener("pointerout",e=>{ const c=e.target.closest(".vc"); if(c && !c.contains(e.relatedTarget)) off(c); }); }
   function openRoom(n, opts={}){
     if(!Number.isInteger(n) || !rooms[n-1]) return;
-    const first = room!==n; room=n; if(first){ log.innerHTML=""; pastOpen=false; } /* new room: fresh chat, recent events folded */ const r=rooms[n-1]; document.getElementById("drawer").hidden=false;
-    document.getElementById("room-h").textContent=`Room ${n}`;
+    const first = room!==n; room=n; if(first){ log.innerHTML=""; pastOpen=false; } /* new room: fresh chat, recent events folded */ const r=rooms[n-1]; document.getElementById("drawer").hidden=false; document.documentElement.dataset.bed="open";
+    document.getElementById("room-h").textContent=tw(`Room ${n}`);
     document.getElementById("room-sub").textContent=`Stage ward, open demo patient · age ${r.age} · chance of each event in the next 24 h`;
     const live=EV.filter(e=>!Number.isNaN(r.p[e.k])).sort((a,b)=>r.p[b.k]-r.p[a.k]), on=EV.filter(e=>Number.isNaN(r.p[e.k]));
     document.getElementById("rbars").innerHTML = live.map(e=>`<li><span>${e.name}</span><span class="track" aria-hidden="true"><span class="fill" style="display:block;width:${Math.max(2,r.p[e.k]*100)}%"></span></span><span class="pct">${pct(r.p[e.k])}</span></li>`).join("");
     document.getElementById("onnow").innerHTML = on.length ? `On now, not forecast as new: ${on.map(e=>`<span>${e.tag}</span>`).join("")}` : "";
-    const items = pastOpen ? PAST : PAST.slice(0,5);
+    // Alternative view: vitals charts, and the two vitals in the event list read from the same series
+    const alt=document.documentElement.dataset.view==="alt", V=vitals(n); renderVitals(n,V);
+    const past = alt ? PAST.map(t=>t.startsWith("Heart rate")?`Heart rate ${V[0].d[5]}`:t.startsWith("SpO2")?`SpO2 ${V[2].d[8]}% on 6 L`:t) : PAST;
+    const items = pastOpen ? past : past.slice(0,5);
     document.getElementById("past").innerHTML=items.map((t,i)=>`<li><time>-${(i*1.5+1).toFixed(0)} h</time><span>${t}</span></li>`).join("");
     const pm=document.getElementById("pastmore"); pm.textContent = pastOpen ? "Show fewer" : `Show ${PAST.length-5} more`; pm.onclick=()=>{pastOpen=!pastOpen; openRoom(n); pm.focus();};
-    document.getElementById("chat-scope").textContent=`Asking about room ${n} (open demo patient) and the unit. Mock replies in this file.`;
+    document.getElementById("chat-scope").textContent=tw(`Asking about room ${n} (open demo patient) and the unit. Mock replies in this file.`);
     renderGrid(); renderChips();
     if(window.innerWidth<960) document.getElementById("drawer").scrollIntoView({behavior:"smooth",block:"start"});
     // move focus into the drawer when a room opens (not on in-drawer updates)
     if(first && opts.focus!==false) document.getElementById("room-h").focus({preventScroll: window.innerWidth<960});
   }
-  document.getElementById("close").onclick=()=>{const was=room; room=null; pastOpen=false; log.innerHTML=""; document.getElementById("drawer").hidden=true;
+  document.getElementById("close").onclick=()=>{const was=room; room=null; pastOpen=false; log.innerHTML=""; document.getElementById("drawer").hidden=true; document.documentElement.dataset.bed="closed";
     document.getElementById("chat-scope").textContent="Answers from this forecast only, on the local Nemotron 3 Nano. Mock replies in this file."; renderGrid(); renderChips();
     // return focus to the room's magnet
-    const back=[...document.querySelectorAll(`.mag[data-room="${was}"], .roomlink[data-room="${was}"]`)].find(el=>el.offsetParent!==null) || document.querySelector("#allrooms summary"); back.focus(); };
+    const back=[...document.querySelectorAll(`.mag[data-room="${was}"], .pp[data-room="${was}"], .roomlink[data-room="${was}"]`)].find(el=>el.offsetParent!==null) || document.querySelector(document.documentElement.dataset.view==="alt" ? "#clusters .pp" : "#allrooms summary"); back.focus(); };
   document.getElementById("drawer").addEventListener("keydown",e=>{ if(e.key==="Escape") document.getElementById("close").click(); });
+  // Alternative view: the detail is a dialog. A click on the dimmed board or Escape anywhere closes it; Tab stays inside it.
+  document.getElementById("scrim").onclick=()=>document.getElementById("close").click();
+  document.addEventListener("keydown",e=>{ const d=document.getElementById("drawer"); if(d.hidden || document.documentElement.dataset.view!=="alt") return;
+    if(e.key==="Escape" && !d.contains(e.target) && !document.getElementById("chatpanel").contains(e.target) && !document.getElementById("settings").contains(e.target)) document.getElementById("close").click();
+    if(e.key==="Tab" && d.contains(document.activeElement)){ const f=[...d.querySelectorAll("button")].filter(b=>b.offsetParent!==null), a=document.activeElement;
+      if(e.shiftKey && (a===f[0] || a===document.getElementById("room-h"))){ e.preventDefault(); f[f.length-1].focus(); } else if(!e.shiftKey && a===f[f.length-1]){ e.preventDefault(); f[0].focus(); } } });
 
   // chat (mock): suggested questions by role, room question first when a room is open
   const CHIPS = {"ICU nurse":["What will we be short of tonight?","Which rooms are highest risk?","How many vasopressor starts?"],
@@ -416,7 +765,8 @@ details.more summary:hover{color:var(--ink)}
     "respiratory therapy":["How many ventilator starts?","What will we be short of tonight?"],
     "bed manager":["How many patients leave the ICU?","What will we be short of tonight?"]};
   function renderChips(){
-    const qs = (room ? [`Room ${room}: what is most likely in the next 24 h?`] : []).concat(CHIPS[role()]).slice(0,3).concat(["Rerun the forecast"]);
+    const qs = (room ? [`Room ${room}: what is most likely in the next 24 h?`] : []).concat(CHIPS[role()]).slice(0,3).concat(["Rerun the forecast"]).map(tw);
+    document.getElementById("fablabel").textContent = room ? tw(`Ask about room ${room}`) : "Ask the board";
     const el=document.getElementById("chips"); el.innerHTML="";
     for(const q of qs){ const b=document.createElement("button"); b.type="button"; b.className="chip"; b.textContent=q; b.onclick=()=>ask(q); el.appendChild(b); }
   }
@@ -424,10 +774,12 @@ details.more summary:hover{color:var(--ink)}
   function say(who,text,cls){ const d=document.createElement("div"); d.className="msg "+cls; d.innerHTML=`<span class="who">${who}</span>`; d.append(document.createTextNode(text)); log.appendChild(d); log.scrollTop=log.scrollHeight; }
   let lastRun=0;
   function rerun(who){ if(Date.now()-lastRun<20*60*1000) return `Forecast not started: the last run was under 20 minutes ago.`;
-    lastRun=Date.now(); const now=new Date(), z=v=>String(v).padStart(2,"0"), name=`t7-forecast-${z(now.getMonth()+1)}${z(now.getDate())}-${z(now.getHours())}${z(now.getMinutes())}`;
+    lastRun=Date.now(); const now=new Date(), z=v=>String(v).padStart(2,"0"), rb=document.getElementById("runbadge");
+    rb.textContent=`Running since ${z(now.getHours())}:${z(now.getMinutes())} (mock)`; rb.classList.add("live"); document.getElementById("runstate").classList.add("live");
+    const name=`t7-forecast-${z(now.getMonth()+1)}${z(now.getDate())}-${z(now.getHours())}${z(now.getMinutes())}`;
     document.getElementById("runstate").innerHTML=`<b>Running ${name}</b> for ${who} (mock) · the board updates when it finishes · last forecast stays on screen`;
     return `Started ${name} for ${who}; the board updates when it finishes (mock).`; }
-  document.getElementById("rerun").onclick=()=>{ const m=rerun(role()); if(m.startsWith("Forecast not")) document.getElementById("runstate").textContent=m; };
+  document.getElementById("rerun").onclick=()=>{ const m=rerun(role()); if(m.startsWith("Forecast not")){ const rs=document.getElementById("runstate"); rs.textContent=m; rs.classList.add("live"); } };
   const cnt = k => `median ${C[k].p50} in the next 24 h (80% range ${C[k].p10} to ${C[k].p90})`;
   function answer(q){
     const t=q.toLowerCase();
@@ -437,7 +789,7 @@ details.more summary:hover{color:var(--ink)}
     if(room && /most likely/.test(t)){ const r=rooms[room-1], live=EV.filter(e=>!Number.isNaN(r.p[e.k])).sort((a,b)=>r.p[b.k]-r.p[a.k]).slice(0,2), on=EV.filter(e=>Number.isNaN(r.p[e.k]));
       return `Room ${room}, next 24 h: ${live.map(e=>`${e.name.toLowerCase()} ${pct(r.p[e.k])}`).join(", then ")}.${on.length?` Already on: ${on.map(e=>e.name.toLowerCase()).join(" and ")}, so not forecast as new.`:""} Model evidence, not a cause; the held-out check is pending a run.`; }
     if(/short/.test(t)){ const ex=EV.filter(e=>["short","tight"].includes(status(e.k)[0])); return ex.length ? ex.map(e=>`${e.row}: ${status(e.k)[1]}, ${cnt(e.k)}, ${cap[e.k]} free`).join("; ")+". Only ventilators have a capacity set so far." : "Nothing is short where a capacity is set; only ventilators have one so far."; }
-    if(/(highest|risk|rooms)/.test(t)) return `Highest single risks in the next 24 h: ${ranked().slice(0,3).map(r=>`room ${r.n} (${top(r)[0].name.toLowerCase()} ${pct(top(r)[1])})`).join(", ")}.`;
+    if(/(highest|risk|rooms|beds)/.test(t)) return `Highest single risks in the next 24 h: ${ranked().slice(0,3).map(r=>`room ${r.n} (${top(r)[0].name.toLowerCase()} ${pct(top(r)[1])})`).join(", ")}.`;
     if(/vent/.test(t)) return `Ventilator starts: ${cnt("vent")}; ${cap.vent} free (placeholder).`;
     if(/(pressor|norepi|drip|pharm)/.test(t)) return `Vasopressor starts: ${cnt("press")}.`;
     if(/crrt|dialys/.test(t)) return `CRRT starts: ${cnt("crrt")}.`;
@@ -446,18 +798,35 @@ details.more summary:hover{color:var(--ink)}
     if(/(leave|bed|out|transfer)/.test(t)) return `Patients leaving the ICU to ward or step-down: ${cnt("out")}. Arrivals from the ED or OR are not forecast.`;
     return `I can answer from this forecast: ventilator, vasopressor and CRRT starts, hypotension, deaths, patients leaving the ICU, the highest-risk rooms, or one stage-ward room.`;
   }
-  function ask(q){ say(role(),q,"q"); say("Nemotron 3 Nano (mock)",answer(q),"a"); }
+  function ask(q){ say(role(),q,"q"); say("Nemotron 3 Nano (mock)",tw(answer(q)),"a"); }
   document.getElementById("ask").onsubmit=e=>{ e.preventDefault(); const q=document.getElementById("q"); const v=q.value.trim(); if(!v) return; ask(v); q.value=""; };
-  document.getElementById("role").onchange=()=>{ log.innerHTML=""; renderRows(); renderChips(); }; // a new role starts a fresh chat
+  document.getElementById("role").onchange=()=>{ log.innerHTML=""; renderRows(); renderChips(); renderClusters(); }; // a new role starts a fresh chat
 
   // theme
-  const tb=document.getElementById("theme"); tb.onclick=()=>{ theme=theme==="day"?"night":"day"; document.documentElement.dataset.board=theme; tb.setAttribute("aria-pressed",String(theme==="night")); tb.textContent=theme==="day"?"Night board":"Day board"; renderGrid(); };
+  const tb=document.getElementById("theme"), gear=document.getElementById("gear"), menu=document.getElementById("setmenu");
+  function setTheme(t){ theme=t; document.documentElement.dataset.board=t; tb.setAttribute("aria-pressed",String(t==="night")); tb.textContent=t==="day"?"Night board":"Day board";
+    menu.querySelectorAll("button[data-t]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.t===t))); renderGrid(); }
+  tb.onclick=()=>setTheme(theme==="day"?"night":"day");
+  // settings menu (Alternative view): opens under the gear; outside click or Escape closes it
+  function setMenu(open){ menu.hidden=!open; gear.setAttribute("aria-expanded",String(open)); }
+  gear.onclick=()=>setMenu(menu.hidden); document.getElementById("setclose").onclick=()=>{ setMenu(false); gear.focus(); };
+  menu.querySelectorAll("button[data-t]").forEach(b=>b.onclick=()=>setTheme(b.dataset.t));
+  document.addEventListener("click",e=>{ if(!menu.hidden && !document.getElementById("settings").contains(e.target)) setMenu(false); });
+  document.getElementById("settings").addEventListener("keydown",e=>{ if(e.key==="Escape" && !menu.hidden){ setMenu(false); gear.focus(); } });
 
   renderBrief(); renderGrid(); renderRows(); renderChips(); renderAll();
   // deep links for review captures: #room=7 opens a room, #night switches the board, #role=pharmacy picks a role
   let h=location.hash; try{ h=decodeURIComponent(h); }catch(e){ /* malformed hash: use it raw */ }
-  if(/(^|[#&])night(&|$)/.test(h)) tb.click();
-  const rm=h.match(/role=([a-z ]+)/i); if(rm && Object.prototype.hasOwnProperty.call(OWN, rm[1])){ document.getElementById("role").value=rm[1]; renderRows(); renderChips(); }
+  if(/(^|[#&])alt(&|$)/.test(h)) setView("alt");
+  if(/(^|[#&])chat(&|$)/.test(h)) setChat(true,false);
+  if(/(^|[#&])hiderest(&|$)/.test(h)){ hideRest=true; renderClusters(); }
+  const tm=h.match(/thr=(50|25|10)\b/); if(tm) for(const k of KEYS) thrBy[k]=+tm[1]/100;
+  // #lines=vent:10,death:5 sets single lines for review captures (not saved)
+  const lm=h.match(/lines=([a-z0-9:,]+)/); if(lm) for(const part of lm[1].split(",")){ const [k,v]=part.split(":"); if(KEYS.includes(k)&&STEPS.includes(+v)) thrBy[k]=+v/100; }
+  if(tm||lm) renderClusters();
+  if(/(^|[#&])settings(&|$)/.test(h)) setMenu(true);
+  if(/(^|[#&])night(&|$)/.test(h)) setTheme("night");
+  const rm=h.match(/role=([a-z ]+)/i); if(rm && Object.prototype.hasOwnProperty.call(OWN, rm[1])){ document.getElementById("role").value=rm[1]; renderRows(); renderChips(); renderClusters(); setGearLabel(); }
   const m=h.match(/room=(\d+)/); if(m){ const n=+m[1]; if(n>=1 && n<=rooms.length){ document.getElementById("allrooms").open=true; openRoom(n,{focus:false}); } }
 })();
 </script>
