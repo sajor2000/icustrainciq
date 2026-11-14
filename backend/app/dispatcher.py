@@ -6,7 +6,7 @@ service gets a workflow token (FB_TOKEN, FB_API_HOST) that may start, list and s
 the owner's workflows, so this service is the clock and the on-demand trigger.
 
 Usage: python app/dispatcher.py --fuzzfile /store/code/fuzzball/t7-forecast.fz \
-         --log /store/runs.jsonl --at 07:00 --port 9000 --cli /store/bin/fuzzball
+         --log /store/runs.jsonl --at 07:00 --port 9000 --cli "$CLI"   # the CLI on container-local tmpfs, see t7-twin.fz
 
 GET  /status        next scheduled run, the running update, last run per scope,
                     recent runs, and the demo clock (hours past the 07:00 cut)

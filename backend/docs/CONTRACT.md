@@ -12,7 +12,9 @@ All times are ISO 8601 with a UTC offset (the default site zone is `America/Chic
   "cut_time": "2026-11-14T07:00:00-06:00",
   "window": {"start": "2026-11-14T07:00:00-06:00", "end": "2026-11-15T07:00:00-06:00"},
   "scope": "unit",
+  "unit_name": "Medical ICU",
   "ward": {"source": "open-demo", "label": "Open MIMIC-IV Demo"},
+  "forecast_state": "ready",
   "on_now_source": "tokens",
   "demo_clock_hours": 0,
   "beds": 25,
@@ -44,6 +46,8 @@ All times are ISO 8601 with a UTC offset (the default site zone is `America/Chic
 (Numbers are illustrative, not a result.)
 
 - `ward`: where the data comes from, `{"source": "open-demo", "label": "Open MIMIC-IV Demo"}` (default) or `{"source": "mimic-iv", "label": "Real MIMIC-IV · local only"}` (a run with `--real-ward`). The same block is in `rooms.json`. A real ward never leaves the cluster volumes; stdout and logs hold counts only in both modes. See "ward block" below.
+- `unit_name`: the unit's name for the page header (`--unit-name` on `aggregate.py`, `rooms.py --recount` and `scripts/run_cohort.py`; default "Medical ICU"; at most 60 characters).
+- `forecast_state`: `"ready"` or `"pending-model"`, in both files. See "forecast_state" below. A key missing from an older file means `"ready"`.
 - `cut_time` / `window`: the scheduled cut (`demo_clock_hours` 0) is the 07:00 nearest to the run in `--tz`. With a demo clock H the ward is replayed H hours after the morning cut, so `cut_time` is the last 07:00 at or before the run plus H hours (as the dispatcher counts `demo_clock_hours`) and `window` is the 24 h from it. An explicit `--cut-time` is taken as given (it must carry a UTC offset; a naive time is refused) and is not moved again by the demo clock.
 - `resources.<name>`: `{team, available, p10, p50, p90, expected}`, exact Poisson-binomial over the unit's patients; a patient with that support running at the cut is not a new start (one that stopped before the cut is forecastable again). `p10/p50/p90` = the smallest count whose cumulative probability reaches 10 / 50 / 90%. `icu_departure` adds the ward and step-down probabilities (they exclude each other), clipped to 1; the other resources take the largest token probability. **`available: false` means the probe for that task was skipped in training (one class): `p10`, `p50`, `p90` and `expected` are then `null`, never 0** (a consumer must show "no data"). Stays already past the event do not make a resource unavailable. `life_support.expected_by.<support>` has the same shape for a skipped probe; the any-life-support figures treat a skipped support as 0, so they are a lower bound in that case.
 - `life_support.now_patients`: patients with IMV, vasopressor or CRRT on at the cut (running at the cut: from the last record before it, see `docs/LIVE_DEMO.md` section 1.5; with `on_now_source` `tokens` CRRT uses a documented fallback, a CRRT row in the last 24 h, because the tokens have no stop signal; with `clif` see "on_now_source"). `now_by.ecmo` is always `null` = not available: no ECMO or mechanical circulatory support token reaches the model (`icutwin/config/tokens/` has none), so it is never invented.
@@ -60,11 +64,14 @@ All times are ISO 8601 with a UTC offset (the default site zone is `America/Chic
 {
   "made_at": "2026-11-14T11:30:00+00:00",
   "ward": {"source": "open-demo", "label": "Open MIMIC-IV Demo"},
+  "forecast_state": "ready",
   "on_now_source": "tokens",
+  "names": "fictional",    // only when at least one room has a name
   "dropped": 0,
   "rooms": [
     {
       "room": 7,
+      "name": {"display": "Rivera, J.", "first": "Jo", "last": "Rivera", "fictional": true},  // only with --names
       "age": "67",          // "90+" for 90 and over; null if unknown (open demo CLIF)
       "sex": "F",           // "F" | "M" | null
       "updated_at": "2026-11-14T11:30:00+00:00",
@@ -90,7 +97,48 @@ All times are ISO 8601 with a UTC offset (the default site zone is `America/Chic
 - `p.<support>` is `null` where that support is running at the cut (not a new event) or its probe was skipped. `skipped.<name>` is `true` only for the second case: no score although the stay could have a new event (the probe was skipped in training, one class). A consumer shows "no data" for it, not 0 and not "on". `icu_departure` is the ward plus step-down probability, clipped to 1; the "out" tag reads that value. `any_life_support` is the new-start chance over the supports not already on, so a room with every support running reads 0.
 - `past_12h`: at most 8 readable events from the 12 h before the cut, most recent first; `h` is hours before the cut, rounded up and at least 1 (an event 3601 s before the cut is in hour 2; 12 h exactly is hour 12; older events are not listed). Plain text mapped from the tokens (labs and vitals read "low", "normal" or "high" against the reference range, and the bin is left out when the token has no reference range); event kinds only, with no values, dates or ids.
 - Room scope (`--room N`) replaces that room only, keeps every other room and the file's `made_at`; a room whose stay ended before a moved cut is removed. It edits an existing whole-ward file and refuses when there is none (run the whole ward first) or when the file's `ward` is not the ward of this run. A full run rewrites the file.
-- Rooms hold room numbers only: no stay ids, patient ids or dates of the source data.
+- Rooms hold room numbers only: no stay ids, patient ids or dates of the source data. A `name`, when present, is invented ("names" below).
+
+### forecast_state
+
+`"ready"`: the model and the probes scored the ward. `"pending-model"`: there are no model weights or probes yet (`scripts/run_cohort.py` without `--model` / `--probes`, or with folders that lack weights or a probe manifest). The files are still valid and the Now side is real:
+
+| Field | `pending-model` |
+|---|---|
+| `rooms[].on_now`, `on_life_support`, `stopped_before_cut`, `age`, `sex`, `past_12h` | real, as in `ready` |
+| `rooms[].p.<name>` | `null` for all five |
+| `rooms[].skipped.<name>` | `true` where the support is not running at the cut (and for `icu_departure`, `death`): "no data", as for a skipped probe |
+| `rooms[].any_life_support`, `rooms[].level` | `null` (not 0, not "low") |
+| `rooms[].out` | `false` |
+| `life_support.now_patients`, `now_by` | real |
+| `resources.<name>`, `life_support.expected_new_patients`, `life_support.expected_by.<support>` | `{"available": false, "p10": null, "p50": null, "p90": null, "expected": null}` (`resources` keeps `team`) |
+| `yardstick` | `null` |
+| `check_first` | `[]` |
+| `model` | `"pending"` |
+
+A consumer shows "pending run" or "no forecast yet" for the Next 24 h side and the real counts for Now. `board.py` sends both files whole, so the key reaches the page unchanged. A room-scope run (`rooms.py --room`) refuses a `pending-model` file: run the whole ward first.
+
+### Shared demo day
+
+MIMIC-IV shifts every patient's dates by a different amount (years 2100 and later), so the stays of a ward never overlap in calendar time. The board shows them as one unit on one day. The rule:
+
+- **Each stay keeps its own clock.** Its cut is its first ICU arrival + 24 h (`--cut-after-arrival-hours`, D3) + the demo clock, in its own dates (`icutwin-winnow`, `clif_now.stay_cuts`). Everything "at the cut" (on now, last 12 h, the tokens the model reads, the 24 h outcome window) is measured from that cut. Raw timestamps of two stays are never compared.
+- **The files carry one shared cut.** `cut_time` is the same in `forecast.json` and in every room: the scheduled 07:00 in the ward time zone plus the demo clock (`scripts/run_cohort.py`: the last 07:00 at or before the run). A stay's display offset is that shared cut minus its own cut. The only times of a stay that reach the files are already relative: `past_12h[].h` is hours before the cut. `made_at` and `updated_at` are the run's wall clock. So no date of the source data is in either file, and `scripts/run_cohort.py` refuses to write a file whose strings hold a year of 2100 or later, or a stay id.
+- **The demo clock moves every stay by the same hours**, each on its own clock. A stay whose ICU stay ended before the new cut has no room entry and counts in `dropped`. `scripts/run_cohort.py` also checks presence against `clif_adt` (the cut lies inside an ICU stay) and `discharge_dttm` (still in hospital): a patient who left the ICU or died before the cut is dropped, never shown as present.
+- **Age** is `age_at_admission` from the stay's own CLIF row: the age at that admission, never worked out against today's date. 90 and over shows as "90+".
+- **Checks**, per stay, printed as counts (`checks` in the script's last line): no past token at or after the cut (`future_tokens` 0), the past is in time order (`unordered` 0), the tokenizer's cut equals the CLIF cut (`cut_clock_differs`; it can be 1 h off only when a daylight-saving change falls inside the first day), rooms present, rooms ended before the cut. A non-zero `future_tokens` or `unordered` stops the run.
+
+`forecast.json` also records `cut_after_arrival_hours` (24 unless set) when `scripts/run_cohort.py` wrote it.
+
+### names
+
+A room may carry `"name": {"display", "first", "last", "fictional": true}` and the file then has `"names": "fictional"`. **The names are invented for the demo.** MIMIC-IV has no names. They come from a names file made for one ward (`--names <file>`: `hospitalization_id`, `first_name`, `last_name`, `display_name`, `name_source` = `"fictional"`) or from the seeded generator (`--names fake`, `app/fake_names.py`, keyed by room number). Without `--names` there is no `name` key and the page shows the room number, sex and age only.
+
+- A stay with no row in the names file has no `name`. The run prints how many rooms were named and how many were not, never which.
+- Each string is at most 40 characters: letters, spaces and `. , ' -`. A file with any other string, or with a `name_source` other than `"fictional"`, stops the run (the message has counts only).
+- A names file holds real stay ids, so it stays beside the ward's data (git-ignored folder or a team volume). It is never committed.
+- Names are never written to stdout, to `runs.jsonl` or to any log. The chat may say "Room 12 (Rivera, J.)"; its log keeps the role and tool names only.
+- A real deployment would take names from the hospital's ADT feed, with the hospital's access rules. Nothing here is built for real names.
 
 ### on_now_source
 
