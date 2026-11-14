@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<!-- Design source: DESIGN.md. The custom properties below are the board's tokens (mockups/command-center.html :root and night board); do not add a colour or a font. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lookahead · the ICU's next 24 hours, on two local machines</title>
+<meta name="description" content="Lookahead is a bed board that tells a small ICU at 07:00 what the next 24 hours will need. It runs on two Lenovo ThinkStation PGX machines under CIQ Fuzzball, with NVIDIA Nemotron 3 Nano for chat and a patient model the team trained.">
+<meta name="color-scheme" content="light dark">
+<style>
+:root{
+  --board:#F3F5F9; --board-2:#E8ECF2; --surface:#FFFFFF; --ink:#111827; --ink-2:#4A5567; --rule:rgba(17,24,39,.10); --line:#7A8597;
+  --blue:#1E5BB8; --focus:#1E5BB8; --sel:rgba(30,91,184,.22);
+  --lv-medium:#D2E2F8; --on-medium:#111827;
+  --ok:#18794E; --amber:#8A4B08; --amber-bg:#FCE8C3; --amber-edge:#C27A14;
+  --card:0 1px 2px rgba(16,24,40,.06),0 4px 12px rgba(16,24,40,.04);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --board:#0E131B; --board-2:#1C2533; --surface:#151C28; --ink:#E6E9EF; --ink-2:#A3ADBD; --rule:rgba(230,233,239,.13); --line:#667286;
+    --blue:#8DBBFF; --focus:#A9CCFF; --sel:rgba(141,187,255,.3);
+    --lv-medium:#1B2E50; --on-medium:#F1F4F9;
+    --ok:#6CC59B; --amber:#F0B466; --amber-bg:#3B2D12; --amber-edge:#C58A2F;
+    --card:none;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html{font-size:100%;scroll-behavior:smooth;scroll-padding-top:4.5rem;scrollbar-color:var(--line) var(--board)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--board);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:1rem;line-height:1.55;font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%}
+::selection{background:var(--sel)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:.5rem}
+a{color:var(--ink);text-decoration-thickness:1px;text-underline-offset:.2em}
+a:hover{text-decoration-thickness:2px}
+img{display:block;max-width:100%;height:auto}
+code{font-family:inherit;font-weight:600;font-size:.9375em;overflow-wrap:anywhere}
+.wrap{max-width:72rem;margin:0 auto;padding:0 1.5rem}
+.ic{width:1.375rem;height:1.375rem;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:5;background:var(--board);border-bottom:1px solid var(--rule)}
+.top .wrap{display:flex;align-items:center;gap:1.5rem;min-height:3.5rem}
+.mark{font-weight:800;font-size:1.125rem;text-decoration:none;margin-right:auto}
+.top nav{display:flex;gap:.25rem;overflow-x:auto;scrollbar-width:none}
+.top nav a{white-space:nowrap;text-decoration:none;font-size:.875rem;font-weight:600;color:var(--ink-2);padding:.75rem .625rem;border-radius:.625rem}
+.top nav a:hover{color:var(--ink);background:var(--board-2)}
+.btn{display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem;padding:.375rem 1rem;border-radius:.625rem;font-size:.875rem;font-weight:700;text-decoration:none;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.btn:hover{background:var(--board-2)}
+.btn.primary{background:var(--ink);color:var(--board);border-color:var(--ink)}
+.btn.primary:hover{background:var(--ink-2);border-color:var(--ink-2)}
+
+/* type */
+h1{font-size:clamp(2rem,4.2vw + 1rem,2.75rem);font-weight:800;line-height:1.05;letter-spacing:-.02em;margin:0;text-wrap:balance;max-width:18ch}
+h2{font-size:clamp(1.5rem,1.6vw + 1.1rem,2rem);font-weight:800;line-height:1.1;letter-spacing:-.01em;margin:0 0 1rem;text-wrap:balance}
+h3{font-size:1.125rem;font-weight:700;line-height:1.2;margin:2.5rem 0 .5rem}
+p,li,dd{max-width:68ch}
+p{margin:0 0 1rem}
+.lede{font-size:1.125rem;color:var(--ink-2);max-width:56ch}
+section{padding:4.5rem 0 0}
+section:last-of-type{padding-bottom:4.5rem}
+
+/* hero */
+.hero{padding:3.5rem 0 0}
+.hero .cols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:3rem;align-items:center}
+.hero .lede{margin:1.25rem 0 1.5rem}
+.actions{display:flex;flex-wrap:wrap;gap:.75rem}
+.where{margin:1.5rem 0 0;font-size:.875rem;color:var(--ink-2);display:flex;gap:.5rem;align-items:flex-start;max-width:52ch}
+.shot{background:var(--surface);border:1px solid var(--rule);border-radius:1rem;box-shadow:var(--card);overflow:hidden;margin:0}
+.shot img{width:100%}
+.hero .shot{aspect-ratio:2880/2100}
+.hero .shot img{height:100%;object-fit:cover;object-position:top}
+
+/* key terms */
+.key{display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:0 2rem;margin:2rem 0 0;padding:1.25rem 0 0;border-top:1px solid var(--rule)}
+.key div{padding:.25rem 0 1rem}
+.key dt{font-weight:700;display:flex;gap:.5rem;align-items:center}
+.key dd{margin:.125rem 0 0;color:var(--ink-2);font-size:.9375rem}
+
+/* figures */
+figure{margin:1.5rem 0 0}
+.fig{background:var(--board);border:1px solid var(--rule);border-radius:1rem;overflow-x:auto}
+.fig img{width:100%;min-width:40rem}
+figcaption{font-size:.875rem;color:var(--ink-2);margin:.625rem 0 0;max-width:68ch}
+figcaption b{color:var(--ink)}
+
+/* stack list */
+.parts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 3rem;margin:2rem 0 0;padding:0;list-style:none}
+.parts li{padding:1rem 0;border-top:1px solid var(--rule);max-width:none}
+.parts b{display:block}
+.parts span{color:var(--ink-2);font-size:.9375rem}
+
+/* steps */
+.steps{margin:1.5rem 0 0;padding:0;list-style:none;counter-reset:s}
+.steps li{counter-increment:s;display:grid;grid-template-columns:2.25rem minmax(0,1fr);gap:.75rem;padding:.875rem 0;border-top:1px solid var(--rule)}
+.steps li::before{content:counter(s);font-weight:800;font-size:1.125rem;color:var(--blue)}
+.steps b{display:block}
+.steps span{color:var(--ink-2);font-size:.9375rem}
+
+/* tables */
+.scroll{overflow-x:auto;margin:1.5rem 0 0;padding:.5rem .75rem;border:1px solid var(--rule);border-radius:1rem;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9375rem;min-width:36rem}
+th,td{text-align:left;vertical-align:top;padding:.625rem 1rem;border-top:1px solid var(--rule)}
+thead th{border-top:0;font-size:.75rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2)}
+tbody th{font-weight:700;white-space:nowrap}
+td{color:var(--ink-2)}
+td.ours{color:var(--blue);font-weight:600}
+
+/* gallery */
+.gallery{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:2rem 1.5rem;margin:2rem 0 0}
+.gallery figure{margin:0;grid-column:span 6}
+.gallery .wide{grid-column:span 12}
+.gallery .third{grid-column:span 4}
+.gallery .phone{grid-column:span 3}
+
+/* status chips (the board's chip: border, fill and a word) */
+.chip{display:inline-block;font-size:.75rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:.3125rem;border:1.5px solid var(--line);padding:.0625rem .4375rem;color:var(--ink-2);background:var(--surface);white-space:nowrap}
+.chip.done{border-color:var(--ok);color:var(--ok)}
+.chip.next{border-color:var(--amber-edge);background:var(--amber-bg);color:var(--amber)}
+.run{margin:1.5rem 0 0;padding:0;list-style:none;counter-reset:r}
+.run li{counter-increment:r;display:grid;grid-template-columns:2.25rem minmax(0,1fr) auto;gap:.75rem;align-items:baseline;padding:.75rem 0;border-top:1px solid var(--rule);max-width:none}
+.run li::before{content:counter(r);font-weight:800;color:var(--ink-2)}
+pre{margin:1rem 0 0;padding:1rem 1.25rem;background:var(--surface);border:1px solid var(--rule);border-radius:.75rem;overflow-x:auto;font-family:inherit;font-weight:600;font-size:.8125rem;line-height:1.6}
+
+/* docs */
+.docs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 3rem;margin:1.5rem 0 0;padding:0;list-style:none}
+.docs li{padding:.75rem 0;border-top:1px solid var(--rule);max-width:none}
+.docs a{font-weight:700}
+.docs span{display:block;color:var(--ink-2);font-size:.9375rem}
+
+footer{border-top:1px solid var(--rule);margin-top:0;padding:2rem 0 3rem;color:var(--ink-2);font-size:.875rem}
+footer p{max-width:80ch}
+
+@media (max-width:60rem){
+  .hero .cols{grid-template-columns:1fr;gap:2rem}
+  .parts,.docs{grid-template-columns:1fr}
+  .gallery figure,.gallery .third{grid-column:span 12}
+  .gallery .phone{grid-column:span 6}
+  .top nav{display:none}
+}
+@media (max-width:35rem){
+  .wrap{padding:0 1rem}
+  section{padding-top:3.5rem}
+  .hero{padding-top:2rem}
+  .run li{grid-template-columns:1.75rem minmax(0,1fr)}
+  .run li .chip{grid-column:2;justify-self:start}
+}
+</style>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-vent" viewBox="0 0 24 24"><path d="M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8"/><path d="M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z"/><path d="M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z"/></symbol>
+  <symbol id="i-pump" viewBox="0 0 24 24"><g transform="rotate(45 12 12)"><path d="M9 1.5h6M12 1.5v4M8 5.5h8M12 15.5v2.7"/><rect x="9.2" y="5.5" width="5.6" height="10" rx="1"/><path d="M9.2 10.2h2.3"/></g><path d="M4.2 17.6c1.1 1.3 1.8 2.1 1.8 3a1.8 1.8 0 0 1-3.6 0c0-.9.7-1.7 1.8-3z"/></symbol>
+  <symbol id="i-crrt" viewBox="0 0 24 24"><rect x="8" y="2.5" width="8" height="3.4" rx="1.2"/><rect x="8" y="18.1" width="8" height="3.4" rx="1.2"/><path d="M9.5 5.9v12.2M14.5 5.9v12.2M12 8.5v7"/><path d="M9.5 16H6.5a3 3 0 0 1-3-3V9.5M1.7 11.3 3.5 9.5l1.8 1.8"/><path d="M14.5 8h3a3 3 0 0 1 3 3v3.5M18.7 12.7l1.8 1.8 1.8-1.8"/></symbol>
+  <symbol id="i-leave" viewBox="0 0 24 24"><path d="M2.5 9.5v10M2.5 16.5H18v3"/><path d="M8.5 16.5v-3.2h6.3a3.2 3.2 0 0 1 3.2 3.2"/><circle cx="5.6" cy="13.6" r="1.5"/><path d="M12.5 6h9M18.5 3l3 3-3 3"/></symbol>
+  <symbol id="i-beds" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M3.5 12h16M14 6.5l5.5 5.5-5.5 5.5" stroke-width="2.25"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="mark" href="#top">Lookahead</a>
+    <nav aria-label="Sections">
+      <a href="#problem">Problem</a>
+      <a href="#stack">Stack</a>
+      <a href="#predicts">How it predicts</a>
+      <a href="#board">The board</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#run">Run it</a>
+      <a href="#docs">Docs</a>
+      <a href="#team">Team</a>
+    </nav>
+    <a class="btn" href="https://github.com/sajor2000/icustrainciq">GitHub</a>
+  </div>
+</header>
+
+<main id="top">
+<div class="hero">
+  <div class="wrap cols">
+    <div>
+      <h1>The ICU's next 24 hours, on two local machines</h1>
+      <p class="lede">Lookahead is a bed board for one intensive care unit. At 07:00 it shows who is on life support now, who is likely to need it by tomorrow, and whether the unit has the machines and staff for that.</p>
+      <div class="actions">
+        <a class="btn primary" href="#board">See the board <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <a class="btn" href="submission/one-sheet.pdf">One-page summary (PDF)</a>
+      </div>
+      <p class="where"><svg class="ic" aria-hidden="true"><use href="#i-beds"/></svg><span>Team7 at the CIQ × NVIDIA × Lenovo Local AI Hackathon, Chicago, Nov 14–15, 2026. Built and tested on a laptop with made-up patients; not yet run end to end on the cluster.</span></p>
+    </div>
+    <figure class="shot">
+      <img src="screenshots/beds-next.png" width="2880" height="2986" alt="The bed board: 25 rooms, each showing life support running now and what may start in the next 24 hours, with the rooms to worry about first on top">
+    </figure>
+  </div>
+</div>
+
+<section id="problem">
+  <div class="wrap">
+    <h2>A small ICU finds out it is short when it already is</h2>
+    <p>A small or rural hospital has one ICU, a few ventilators and dialysis machines, no data-science team and no cloud contract for patient data. When the unit runs short of a machine or a nurse, the nearest help is a transfer hours away.</p>
+    <p>Lookahead answers one question each morning, in time to act on it: what will this unit need in the next 24 hours? It runs inside the building on two desk-size machines, so patient data never leaves.</p>
+    <dl class="key">
+      <div><dt>ICU</dt><dd>The intensive care unit: the sickest patients in the hospital, one nurse to one or two beds.</dd></div>
+      <div><dt>Life support</dt><dd>A machine or drug that does the work of a failing organ.</dd></div>
+      <div><dt><svg class="ic" aria-hidden="true"><use href="#i-vent"/></svg>Ventilator</dt><dd>Breathes for the patient through a tube.</dd></div>
+      <div><dt><svg class="ic" aria-hidden="true"><use href="#i-pump"/></svg>Vasopressor</dt><dd>A drug drip that holds blood pressure up.</dd></div>
+      <div><dt><svg class="ic" aria-hidden="true"><use href="#i-crrt"/></svg>CRRT</dt><dd>Continuous dialysis, for kidneys that have stopped working.</dd></div>
+      <div><dt><svg class="ic" aria-hidden="true"><use href="#i-leave"/></svg>Leaving</dt><dd>Well enough to move to a regular ward, which frees the bed.</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section id="stack">
+  <div class="wrap">
+    <h2>How we used the hackathon stack</h2>
+    <p class="lede">Two Lenovo machines, CIQ Fuzzball to run them, one NVIDIA model used as it is, and one model we trained.</p>
+    <figure>
+      <div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/stack.png"><img src="diagrams/stack.png" width="2400" height="1152" alt="A clinician's browser reaches two Lenovo ThinkStation PGX machines run by CIQ Fuzzball. Fuzzball services run the board server and dispatcher. GPU 1 runs NVIDIA Nemotron 3 Nano on vLLM for chat. GPU 2 runs our patient model. Fuzzball volumes hold patient data, the model and results. Patient data never leaves these two machines."></picture></div>
+    </figure>
+    <ul class="parts">
+      <li><b>Lenovo ThinkStation PGX × 2, each with an NVIDIA GB10</b><span>The whole product runs on these two desk-size machines. Nothing is in the cloud.</span></li>
+      <li><b>CIQ Fuzzball 4.3</b><span>Workflows fit the classifiers, stage the unit and run each forecast. Services keep the board server, the dispatcher and the chat model up. Volumes hold the data, the model and the results. The board's "Update the unit" button starts a Fuzzball job.</span></li>
+      <li><b>NVIDIA Nemotron 3 Nano on vLLM</b><span>Answers questions in the chat. We use it as it is; we did not train or tune it. It reads the forecast and predicts nothing.</span></li>
+      <li><b>Our patient model</b><span>Trained by us on the two machines, across both GPUs, on MIMIC-IV in CLIF format. It runs in the forecast job on the second GPU.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="predicts">
+  <div class="wrap">
+    <h2>How it predicts</h2>
+    <p class="lede">One pass over each patient's chart, then five small classifiers. Minutes on one GPU.</p>
+    <figure>
+      <div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/flow.png"><img src="diagrams/flow.png" width="2400" height="608" alt="Chart data up to 07:00 goes to our patient model, which reads each chart once and keeps the last layer. Five classifiers give the chance of a ventilator, a vasopressor, CRRT, leaving and death. The board shows now, then the next 24 hours. The chat, NVIDIA Nemotron 3 Nano, answers from the board. Update the unit runs it again."></picture></div>
+    </figure>
+    <ol class="steps">
+      <li><div><b>It learns the language of the ICU.</b><span>We trained the model to read a chart as a sequence of events (labs, vital signs, drugs, machines) and predict the next event, the way a language model predicts the next word.</span></div></li>
+      <li><div><b>We take its last layer.</b><span>At 07:00 the model runs once over each patient's chart so far. We keep the output of its last layer: one list of numbers that summarises the patient's state.</span></div></li>
+      <li><div><b>Five small classifiers read that summary.</b><span>One for each event that matters in the next 24 hours: starting a ventilator, starting a vasopressor, starting CRRT, leaving the ICU, and death. Each gives a percentage. They are fitted on past patients whose outcomes are known.</span></div></li>
+      <li><div><b>The patients are added up.</b><span>The board turns the percentages into what the unit will need, with a likely range.</span></div></li>
+    </ol>
+    <h3>Two models, two jobs</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th></th><th>Patient model</th><th>Chat model</th></tr></thead>
+        <tbody>
+          <tr><th>Who trained it</th><td class="ours">We did, on the two Lenovo machines</td><td>NVIDIA. We use Nemotron 3 Nano as it is</td></tr>
+          <tr><th>What it reads</th><td>Each patient's chart, as a sequence of events</td><td>The forecast, through tools</td></tr>
+          <tr><th>What it does</th><td>Gives the five predictions</td><td>Answers questions in plain words</td></tr>
+          <tr><th>What it never does</th><td>Talk to users</td><td>Predict anything about a patient</td></tr>
+          <tr><th>Where it runs</th><td>The forecast job, GPU 2</td><td>An always-on service on vLLM, GPU 1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="board">
+  <div class="wrap">
+    <h2>The board</h2>
+    <p class="lede">Ink means now. Blue means the next 24 hours. Every bed carries one status word, and every count carries its range.</p>
+    <div class="gallery">
+      <figure class="wide">
+        <div class="shot"><img loading="lazy" src="screenshots/beds-next.png" width="2880" height="2986" alt="Bed board, Next 24 h view"></div>
+        <figcaption><b>Bed board, Next 24 h.</b> One tile per room. Solid icons are the life support running at 07:00; outline icons with a percentage are what may start by tomorrow. "Worry first" at the top lists the rooms most likely to get sicker.</figcaption>
+      </figure>
+      <figure>
+        <div class="shot"><img loading="lazy" src="screenshots/beds-now.png" width="1440" height="1339" alt="Bed board, Now view"></div>
+        <figcaption><b>Bed board, Now.</b> Only what is running at 07:00, with the sickest rooms first. Nothing here is a forecast.</figcaption>
+      </figure>
+      <figure>
+        <div class="shot"><img loading="lazy" src="screenshots/strain-next.png" width="1440" height="1357" alt="Unit strain, Next 24 h view"></div>
+        <figcaption><b>Unit strain.</b> The patients added up: how many are on life support now, how many more are expected and the likely range, with one word that compares it with tonight's staffing or a typical day.</figcaption>
+      </figure>
+      <figure>
+        <div class="shot"><img loading="lazy" src="screenshots/strain-short.png" width="1440" height="1508" alt="Unit strain reading SHORT against tonight's capacity"></div>
+        <figcaption><b>When the unit will be short.</b> The team enters tonight's ventilators and staffing. If the forecast is over that number, the word changes to TIGHT or SHORT.</figcaption>
+      </figure>
+      <figure>
+        <div class="shot"><img loading="lazy" src="screenshots/room-page.png" width="1440" height="760" alt="A room page with five predictions"></div>
+        <figcaption><b>One room.</b> The five predictions for one patient, each as a percentage, and the last events the model read.</figcaption>
+      </figure>
+      <figure>
+        <div class="shot"><img loading="lazy" src="screenshots/chat-widget.png" width="1440" height="900" alt="The Ask Lookahead chat panel beside the board"></div>
+        <figcaption><b>Ask Lookahead.</b> NVIDIA Nemotron 3 Nano answers from the forecast on screen. It can start an update when asked; it never predicts.</figcaption>
+      </figure>
+      <figure>
+        <div class="shot"><img loading="lazy" src="screenshots/pending.png" width="1440" height="1339" alt="The board before a forecast exists"></div>
+        <figcaption><b>Before the first forecast.</b> The board shows the Now side and says the forecast is not ready. It never shows made-up numbers.</figcaption>
+      </figure>
+      <figure class="third">
+        <div class="shot"><img loading="lazy" src="screenshots/thresholds.png" width="1440" height="700" alt="The Flag beds at control"></div>
+        <figcaption><b>The team sets the line.</b> "Flag beds at 50%, 25% or 10%" decides how likely an event must be before a bed is flagged.</figcaption>
+      </figure>
+      <figure class="third">
+        <div class="shot"><img loading="lazy" src="screenshots/night.png" width="1440" height="900" alt="The night board"></div>
+        <figcaption><b>Night board.</b> The same board for a dim unit.</figcaption>
+      </figure>
+      <figure class="third">
+        <div class="shot"><img loading="lazy" src="screenshots/wall-1920.png" width="1920" height="1080" alt="The board on a 1920 pixel wall screen"></div>
+        <figcaption><b>Wall screen.</b> Everything grows together at 1920 px.</figcaption>
+      </figure>
+      <figure class="phone">
+        <div class="shot"><img loading="lazy" src="screenshots/beds-next-phone.png" width="780" height="1688" alt="Bed board on a phone"></div>
+        <figcaption><b>Phone, bed board.</b></figcaption>
+      </figure>
+      <figure class="phone">
+        <div class="shot"><img loading="lazy" src="screenshots/strain-phone.png" width="780" height="1688" alt="Unit strain on a phone"></div>
+        <figcaption><b>Phone, unit strain.</b></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section id="architecture">
+  <div class="wrap">
+    <h2>Architecture details</h2>
+    <p class="lede">One service faces the browser. Everything else stays inside the two machines.</p>
+
+    <h3>What talks to what</h3>
+    <p>The browser talks to the board server. The board server reads the forecast files, asks Nemotron for chat answers, and asks the dispatcher to start or report runs. The dispatcher starts the forecast job, which runs our patient model on the second GPU. One volume is written, <code>twin-store</code>; two are only read, <code>mimic_clif</code> (demo patients and the patient model) and <code>hfcache</code> (Nemotron weights).</p>
+    <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/architecture.png"><img loading="lazy" src="diagrams/architecture.png" width="2560" height="1200" alt="Architecture: board page, board server, Nemotron 3 Nano, dispatcher, setup workflows, the t7-forecast job, and the volumes twin-store, mimic_clif and hfcache"></picture></div></figure>
+
+    <h3>The API</h3>
+    <p>Four reads and three writes. Every POST must carry a JSON content type and the header <code>X-Lookahead: 1</code> from the same origin; anything else gets 403.</p>
+    <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/api.png"><img loading="lazy" src="diagrams/api.png" width="2560" height="1240" alt="API map: four GET calls and three POST calls on the board server, reaching twin-store, the dispatcher and Nemotron 3 Nano"></picture></div></figure>
+
+    <h3>How the board's button starts a Fuzzball job</h3>
+    <p>"Update the unit" sends one POST. The dispatcher allows one forecast at a time and 20 minutes between updates, fills a copy of the forecast workflow and starts it. The same run starts by itself at 07:00.</p>
+    <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/trigger.png"><img loading="lazy" src="diagrams/trigger.png" width="2560" height="1152" alt="Sequence: the board page posts a rerun, the board server passes it to the dispatcher, the dispatcher starts the forecast job, the job writes both files to twin-store, the page polls, the board server reads the files and the board is redrawn"></picture></div></figure>
+  </div>
+</section>
+
+<section id="run">
+  <div class="wrap">
+    <h2>Run it on the cluster</h2>
+    <p class="lede">Nothing of ours has run end to end on the cluster yet. This is the list, in order, with where each step stands.</p>
+    <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/workflow.png"><img loading="lazy" src="diagrams/workflow.png" width="2560" height="840" alt="Run order: create twin-store, then t7-code, t7-fit, t7-ward, t7-twin, the first forecast, and open the board. The demo patients and the trained model are already on the cluster."></picture></div><figcaption>The figure shows the workflow order. The list below is the handoff list, which adds two housekeeping steps, so its numbers differ.</figcaption></figure>
+    <ol class="run">
+      <li><span>The 25 demo patients and their fictional names are on the cluster, in <code>mimic_clif:/dashboard_data/</code>.</span><span class="chip done">Done</span></li>
+      <li><span>Create the one missing volume: <code>fuzzball volume create team7 twin-store --size 50GiB</code>.</span><span class="chip next">Ready to run</span></li>
+      <li><span>Merge to <code>main</code>, run <code>scripts/make_ready.sh</code> in <code>backend/</code>, and commit <code>fuzzball/ready/</code>.</span><span class="chip next">Ready to run</span></li>
+      <li><span>Publish the code and the Python packages: <code>ready/t7-code.fz</code> (CPU only).</span><span class="chip">Waits for 2 and 3</span></li>
+      <li><span>Confirm that our code loads the trained model in <code>mimic_clif:/model_output/final/</code>. <code>t7-fit</code> checks this first.</span><span class="chip">Found, not loaded yet</span></li>
+      <li><span><code>ready/t7-fit.fz</code>: features and the five classifiers, once per model (one GPU).</span><span class="chip">Waits for 4</span></li>
+      <li><span><code>ready/t7-ward.fz</code>: checks the cohort and the names, stages the 25 rooms.</span><span class="chip">Waits for 6</span></li>
+      <li><span><code>ready/t7-twin.fz</code>: board server, dispatcher, Nemotron (one GPU).</span><span class="chip">Waits for 4</span></li>
+      <li><span>First unit forecast: press "Update the unit" on the board, or start <code>ready/t7-forecast-unit.fz</code> by hand.</span><span class="chip">Waits for 7</span></li>
+      <li><span>Open the board: <code>fuzzball workflow connect --name board --endpoint web &lt;t7-twin id&gt;</code>.</span><span class="chip">Waits for 8</span></li>
+    </ol>
+    <p style="margin-top:1rem">The live list is in <a href="https://github.com/sajor2000/icustrainciq/blob/main/HANDOFF.md">HANDOFF.md</a>. Each step is <code>fuzzball workflow validate &lt;file&gt; &amp;&amp; fuzzball workflow start &lt;file&gt; --name &lt;name&gt;</code>.</p>
+    <h3>Run it on a laptop</h3>
+<pre>python3 -m http.server 8000        # then open http://localhost:8000/mockups/command-center.html#synthetic
+cd backend &amp;&amp; uv run --extra dev --extra model pytest -q
+cd backend &amp;&amp; uv run python app/board.py --forecast ../examples/forecast.json --static ../mockups/command-center.html --port 8080</pre>
+  </div>
+</section>
+
+<section id="docs">
+  <div class="wrap">
+    <h2>Decisions and docs</h2>
+    <ul class="docs">
+      <li><a href="https://github.com/sajor2000/icustrainciq/blob/main/HANDOFF.md">HANDOFF.md</a><span>Where things stand, who owns what, what to do next.</span></li>
+      <li><a href="https://github.com/sajor2000/icustrainciq/blob/main/docs/ARCHITECTURE.md">ARCHITECTURE.md</a><span>What runs where, the tech stack, endpoints, run steps.</span></li>
+      <li><a href="https://github.com/sajor2000/icustrainciq/blob/main/docs/DECISIONS.md">DECISIONS.md</a><span>Why it is built this way.</span></li>
+      <li><a href="https://github.com/sajor2000/icustrainciq/blob/main/docs/USER_JOURNEY.md">USER_JOURNEY.md</a><span>The 07:00 morning for each role: charge nurse, physician, pharmacy, respiratory therapy, bed manager.</span></li>
+      <li><a href="https://github.com/sajor2000/icustrainciq/blob/main/docs/FRONTEND_SPEC.md">FRONTEND_SPEC.md</a><span>Screens, states and the data the board reads.</span></li>
+      <li><a href="https://github.com/sajor2000/icustrainciq/blob/main/DESIGN.md">DESIGN.md</a><span>The design system for the board, the figures and this page.</span></li>
+      <li><a href="https://github.com/sajor2000/icustrainciq/blob/main/backend/README.md">backend/README.md</a><span>The backend, module by module.</span></li>
+      <li><a href="https://github.com/sajor2000/icustrainciq/blob/main/backend/docs/FUZZBALL_VALIDATION.md">FUZZBALL_VALIDATION.md</a><span>What was checked against the live cluster, and the storage map.</span></li>
+      <li><a href="https://github.com/sajor2000/icustrainciq/tree/main/docs/submission">docs/submission/</a><span>The one-sheet and the five-minute demo script.</span></li>
+      <li><a href="https://github.com/vaishvikc/ICU-Twin">vaishvikc/ICU-Twin</a><span>Model training.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="team">
+  <div class="wrap">
+    <h2>Team and credits</h2>
+    <p>Team7, CIQ × NVIDIA × Lenovo Local AI Hackathon, Chicago, Nov 14–15, 2026.</p>
+    <p>The cluster cards, bed figures, range bars, the flag-line toggle and the capacity model are Dema's (deetherese) design. Model training is Vaishvik's work in the ICU-Twin repo. Hardware: two Lenovo ThinkStation PGX with NVIDIA GB10. Orchestration: CIQ Fuzzball 4.3. Chat model: NVIDIA Nemotron 3 Nano on vLLM. Training data: MIMIC-IV in CLIF format.</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Demo data only. The mockup uses made-up patients and the names on the board are fictional. Lookahead is a research prototype, not a medical device; it supports decisions and recommends no treatment.</p>
+  </div>
+</footer>
+</body>
+</html>
