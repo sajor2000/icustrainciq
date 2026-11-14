@@ -829,6 +829,8 @@ details.more summary:hover{color:var(--blue)}
   /* ---------- validation: nothing from the server reaches the page unchecked ---------- */
   const LV = ["low","medium","high"];
   const vq = o => !!o && fin(o.p10) && fin(o.p50) && fin(o.p90);
+  const naq = o => !!o && o.available===false;   // the probe for this event was skipped: no estimate, never 0 (docs/CONTRACT.md)
+  const vqn = o => vq(o) || naq(o);
   const str = (s,n=120) => typeof s==="string" ? s.slice(0,n) : "";
   const NAME_OK = /^[\p{L}][\p{L} .,'-]{0,39}$/u, nm1 = v => typeof v==="string" && NAME_OK.test(v.trim()) ? v.trim() : null;
   function cleanName(n){ if(!n || typeof n!=="object") return null; const display=nm1(n.display); if(!display) return null;
@@ -865,7 +867,7 @@ details.more summary:hover{color:var(--blue)}
   const PEND_LINE = "Forecast not ready yet: the model is still being prepared.";
   function hasFc(){ const f=FC; if(!f||typeof f!=="object"||!f.life_support) return false;
     const ls=f.life_support, eb=ls.expected_by||{}, nb=ls.now_by||{}, rs=f.resources||{};
-    return fin(ls.now_patients) && vq(ls.expected_new_patients) && vq(eb.imv) && vq(eb.vasopressor) && vq(eb.crrt) && fin(nb.imv) && fin(nb.vasopressor) && fin(nb.crrt) && vq(rs.icu_departure) && vq(rs.death); }
+    return fin(ls.now_patients) && vq(ls.expected_new_patients) && vqn(eb.imv) && vqn(eb.vasopressor) && vqn(eb.crrt) && fin(nb.imv) && fin(nb.vasopressor) && fin(nb.crrt) && vqn(rs.icu_departure) && vqn(rs.death); }   // one skipped event does not blank the board
   function normY(y){
     if(!y || typeof y!=="object") return null;
     const kind=y.kind==="capacity"?"capacity":y.kind==="typical"?"typical":null, words=typeof y.words==="string"&&hasOwn(LEVEL_OF_WORD,y.words)?y.words:null;
@@ -1123,7 +1125,7 @@ details.more summary:hover{color:var(--blue)}
       ${bar(load, mark, typ, 0, DEF.bar("On life support now plus expected new starts",load)+(mark!=null?`\nSolid line: tonight's staffing covers ${mark}`:typ!=null?`\nDashed line: a typical day, ${typ}`:""))}
       <p class="barl">Now plus new <b>${load.p50}</b> ${rgT(load)}${mark!=null?` · staffing covers <b>${mark}</b>`:typ!=null?` · typical day <b>${typ}</b>`:""}</p>`;
     $("lead").className = "lead"+(y&&y.level!=="ok"?` lv-${y.level}`:"");
-    $("deaths").innerHTML = `<span${T(DEF.bar("Deaths expected in the unit in the next 24 h",dd))}>Deaths expected in the unit <b>${dd.p50}</b> ${rgT(dd)}</span>`;
+    $("deaths").innerHTML = vq(dd) ? `<span${T(DEF.bar("Deaths expected in the unit in the next 24 h",dd))}>Deaths expected in the unit <b>${dd.p50}</b> ${rgT(dd)}</span>` : `<span>Deaths expected in the unit <b>no data</b></span>`;
     sl.hidden=false; sl.setAttribute("aria-label",`Unit forecast: ${ls.now_patients} on life support now, ${q.p50} new expected in 24 hours${y?`, ${y.words}`:""}`);
     sl.innerHTML = `<span${T("Patients on a ventilator, vasopressor or CRRT at 07:00")}><b>${ls.now_patients}</b> on life support now</span><span class="f"${T(DEF.bar("Patients expected to start life support in the next 24 h",q))}><b>+${q.p50}</b> new expected in 24 h</span>${y?`<span class="band lv-${y.level}"${T(DEF.band[y.words])}>${y.words}</span>`:""}`;
     let cs="";
@@ -1153,7 +1155,7 @@ details.more summary:hover{color:var(--blue)}
       ${pred?`<line x1="${x(sum)}" x2="${x(sum)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3" stroke-dasharray="3 2"/>${x(sum)-x(on)>24?`<text x="${Math.min(x(sum),286)}" y="11" text-anchor="${x(sum)>280?"end":"middle"}" font-size="14" font-weight="700">${sum}*</text>`:""}`:""}
       ${tot!=null?`<text x="294" y="45" text-anchor="end" font-size="13">${tot} total</text>`:""}</svg>`; }
   /* a bed's top risk: its highest chance among death and the supports it is not on yet; the three highest in the unit pulse (Dema's rule), with ties */
-  const RISKK = ["death","imv","vasopressor","crrt"];
+  const RISKK = ["imv","vasopressor","crrt"];   // death never ranks or marks a bed (PRODUCT.md): it is a unit count and a row in the bed view
   const riskOf = (r,k) => k==="death" ? r.p.death : k==="leave" ? r.p.icu_departure : r.on_now[k] ? null : r.p[k];
   const topRisk = r => { let best=null; for(const k of RISKK){ const v=riskOf(r,k); if(v!=null && (!best || v>best[1])) best=[k,v]; } return best; };
   const topBeds = () => { const l=RM.rooms.map(r=>[r.room,topRisk(r)]).filter(x=>x[1]).sort((a,b)=>b[1][1]-a[1][1]); if(l.length<=3) return l.map(x=>x[0]);
@@ -1164,7 +1166,7 @@ details.more summary:hover{color:var(--blue)}
     const el=$("watch"); if((!hasFc() && !(isPending() && hasNow())) || !RM.rooms.length){ el.innerHTML=""; return; }
     const ls=FC.life_support, y=Y(), rs=RM.rooms, first=FIRST[role()], CARDN={imv:"Ventilator (IMV)", vasopressor:"Vasopressor", crrt:"CRRT"};
     const fig = (r,cls,p,label,name,dv) => `<button type="button" class="pp${cls?" "+cls:""}" data-room="${r.room}" aria-label="Bed ${r.room}${r.name?`, ${esc(r.name.full)}`:""}: ${name}"${T(`Bed ${r.room}${r.name?` · ${r.name.display}`:""} · ${name}`)}><span class="av"${p!=null?` style="--p:${Math.round(p*100)}%"`:""} aria-hidden="true"><svg class="base" viewBox="0 0 40 42"><use href="#i-fig"/></svg>${p!=null?`<svg class="fill" viewBox="0 0 40 42"><use href="#i-fig"/></svg>`:""}</span><span class="rm">${r.room}</span>${label?`<span class="pc">${label}</span>`:""}${dv?`<span class="dv" aria-hidden="true">${dv}</span>`:""}</button>`;
-    const top = Math.max(...SUP.map(k=>ls.expected_by[k].p90));      // the three support bars share one scale
+    const top = Math.max(...SUP.map(k=>ls.expected_by[k].p90||0));      // the three support bars share one scale
     if(nowMode()){
       el.innerHTML = SUP.map(k=>{ const on=rs.filter(r=>r.on_now[k]); return `<article class="wc" data-k="${k}" style="order:${first===k?0:1}" aria-labelledby="wc-${k}">
         <header>${ic(k,true)}<div><h3 id="wc-${k}">${CARDN[k]}</h3><p class="wsub">patients on ${START[k]} at 07:00</p></div></header>
@@ -1175,21 +1177,22 @@ details.more summary:hover{color:var(--blue)}
     const NAME={death:"Deaths", imv:"Ventilator", vasopressor:"Vasopressor", crrt:"CRRT", leave:"Leave the ICU to ward or step-down"}, EVW={death:"death in hospital", imv:"starting a ventilator", vasopressor:"starting a vasopressor", crrt:"starting CRRT", leave:"leaving the ICU"}, SHORTEV={death:"Death", imv:"Vent", vasopressor:"Press", crrt:"CRRT"};
     const w3=topBeds(), nb=n=>n?`${n} ${n===1?"bed":"beds"}`:"no beds", flagged=new Set();
     const card = k => { const sup=SUP.includes(k), c = k==="death" ? FC.resources.death : k==="leave" ? FC.resources.icu_departure : ls.expected_by[k], q = c && c.p50!=null ? c : null;
-      const may=rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), n=may.length; if(k!=="leave") for(const r of may) flagged.add(r.room);
+      const may=rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), skey = k==="leave" ? "icu_departure" : k, na = !q && (naq(c) || rs.some(r=>r.skipped && r.skipped[skey])), n = na ? 0 : may.length; if(k!=="leave" && k!=="death" && !na) for(const r of may) flagged.add(r.room);   // na: the probe was skipped, so there is no estimate (not zero)
       const mach = k==="imv"||k==="crrt", free = sup ? machFree(k) : null, onN = sup ? rs.filter(r=>r.on_now[k]).length : 0;
       const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is free
       const freeable = k==="imv"||k==="crrt" ? rs.filter(r=>r.on_now[k] && r.p.icu_departure!=null && r.p.icu_departure>=lines.leave).length : 0;
       const frees = k==="leave" ? ["imv","crrt"].map(x=>[x,may.filter(r=>r.on_now[x]).length]).filter(x=>x[1]) : [];
       return `<article class="wc${lv?` lv-${lv}`:""}" data-k="${k}" style="order:${first===k?0:1};--w:${Math.max(4,Math.min(10,n))}" aria-labelledby="wc-${k}">
         <h3 id="wc-${k}">${NAME[k]}${st?`<span class="band lv-${lv}"${T(DEF.band[st])}>${st}</span>`:""}</h3>
-        <div class="stats">${sup?`<span${T(`Patients on ${START[k]} at 07:00`)}><i>On now</i><b>${ls.now_by[k]}</b><small>beds</small></span>`:""}${mach ? (free!=null?`<span class="free"${T(`${k==="imv"?"Ventilators":"CRRT machines"} free: ${free}${machines[k]!=null?` of ${machines[k]} on the unit`:""}`)}><i>Free</i><b>${free}</b><small>${machines[k]!=null?`of ${machines[k]}`:"&nbsp;"}</small></span>`:`<span${T(`No total is set for ${k==="imv"?"ventilators":"CRRT machines"}: set it in Settings, under Capacity`)}><i>Free</i><b>–</b><small><button type="button" class="chg capset-go" aria-label="Set the total ${k==="imv"?"ventilators":"CRRT machines"} in settings">not set</button></small></span>`) : ""}<span class="exp"${T("Beds at or above this event's threshold: a flag per bed, not a certainty")}><i>Predicted new*</i><b>${n}</b></span></div>
-        ${q?`<p class="fc"${T(DEF.bar(`Unit forecast: ${EVW[k]}`,q))}>Unit forecast <b>${q.p50}</b> ${rgT(q)}</p>`:""}
+        <div class="stats">${sup?`<span${T(`Patients on ${START[k]} at 07:00`)}><i>On now</i><b>${ls.now_by[k]}</b><small>beds</small></span>`:""}${mach ? (free!=null?`<span class="free"${T(`${k==="imv"?"Ventilators":"CRRT machines"} free: ${free}${machines[k]!=null?` of ${machines[k]} on the unit`:""}`)}><i>Free</i><b>${free}</b><small>${machines[k]!=null?`of ${machines[k]}`:"&nbsp;"}</small></span>`:`<span${T(`No total is set for ${k==="imv"?"ventilators":"CRRT machines"}: set it in Settings, under Capacity`)}><i>Free</i><b>–</b><small><button type="button" class="chg capset-go" aria-label="Set the total ${k==="imv"?"ventilators":"CRRT machines"} in settings">not set</button></small></span>`) : ""}<span class="exp"${T(na ? "No estimate for this event in this forecast: no data, not zero" : "Beds at or above this event's threshold: a flag per bed, not a certainty")}><i>Predicted new*</i><b>${na?"–":n}</b>${na?"<small>no data</small>":""}</span></div>
+        ${q?`<p class="fc"${T(DEF.bar(`Unit forecast: ${EVW[k]}`,q))}>Unit forecast <b>${q.p50}</b> ${rgT(q)}</p>`:na?`<p class="fc">Unit forecast <b>not available</b></p>`:""}
         ${freeable?`<p class="frees"${T(`Beds on ${START[k]} now with ${P(lines.leave)} or more to leave the ICU`)}><i>${ic(k,true)}</i><b>${freeable}</b> may free up if likely leavers go</p>`:""}
         ${frees.length?`<p class="frees">If these beds leave, they free ${frees.map(([x,m])=>`<i>${ic(x,true)}</i><b>${m}</b> ${x==="imv"?(m===1?"ventilator":"ventilators"):"CRRT"}`).join(" ")}</p>`:""}
         ${mach ? usageBar(onN, free, n, `${onN} in use now, ${onN+n} with the ${n} flagged${free!=null?`, ${onN+free} in total`:"; no total set"}`) : ""}
-        <span class="gl">Beds to watch</span>
-        <p class="bedline"${T(DEF.flag)}>Beds at <b>${P(lines[k])}</b> or more · <b>${nb(n)}</b> <button type="button" class="chg" aria-label="Change the threshold for ${NAME[k]} in settings">Change</button></p>
-        ${n?`<div class="set">${may.map(r=>fig(r, k!=="leave" && w3.includes(r.room) && topRisk(r)[0]===k ? "w" : "", null, esc(pct(riskOf(r,k))), `${pct(riskOf(r,k))} chance of ${EVW[k]}`, k==="leave" ? SUP.filter(x=>r.on_now[x]).map(x=>`<i>${ic(x,true)}</i>`).join("") : "")).join("")}</div>`:""}</article>`; };
+        <span class="gl">${k==="death"?"Unit count only":"Beds to watch"}</span>
+        ${na?`<p class="bedline"><b>No estimate for this event</b> · not counted as zero</p>`:""}
+        <p class="bedline"${T(DEF.flag)}${na?" hidden":""}>Beds at <b>${P(lines[k])}</b> or more · <b>${nb(n)}</b> <button type="button" class="chg" aria-label="Change the threshold for ${NAME[k]} in settings">Change</button></p>
+        ${n&&k!=="death"?`<div class="set">${may.map(r=>fig(r, k!=="leave" && w3.includes(r.room) && topRisk(r)[0]===k ? "w" : "", null, esc(pct(riskOf(r,k))), `${pct(riskOf(r,k))} chance of ${EVW[k]}`, k==="leave" ? SUP.filter(x=>r.on_now[x]).map(x=>`<i>${ic(x,true)}</i>`).join("") : "")).join("")}</div>`:""}</article>`; };
     const cards=["death",...SUP,"leave"].map(card).join(""), rest=rs.filter(r=>!flagged.has(r.room));
     el.innerHTML = cards + (rest.length ? `<article class="wc rest" aria-labelledby="wc-rest"><h3 id="wc-rest">Other beds</h3><p class="bedline"><b>under every threshold · ${nb(rest.length)}</b></p>
         <div class="set">${rest.map(r=>{ const t=topRisk(r); return fig(r, "", null, t?`${SHORTEV[t[0]]}<br>${esc(pct(t[1]))}`:"–", t?`highest chance: ${EVW[t[0]]}, ${pct(t[1])}`:"no estimate"); }).join("")}</div></article>` : "");
@@ -1464,12 +1467,13 @@ details.more summary:hover{color:var(--blue)}
     log.appendChild(d); log.scrollTop=log.scrollHeight; $("chips").hidden=true; return d; }
   function noteChange(){ if(LIVE || chatpanel.hidden || !log.querySelector(".msg:not(.n)")) return; const o=log.querySelector(".msg.n"); if(o) o.remove(); say("",`Forecast updated ${hm(FC.made_at)}. Answers below use it.`,"n"); chatSeen=FC.made_at; }
 
-  const cnt = q => `median ${q.p50} in the next 24 hours (range ${q.p10} to ${q.p90})`;
+  const plus = q => vq(q) ? `+${q.p50}` : "no estimate";
+  const cnt = q => vq(q) ? `median ${q.p50} in the next 24 hours (range ${q.p10} to ${q.p90})` : "no estimate in this forecast";
   const worryRooms = () => { const rs=RM.rooms; return [rs.filter(r=>traj(r)==="worse").sort((a,b)=>anyNew(b)-anyNew(a)).map(r=>r.room), rs.filter(r=>traj(r)==="hold").map(r=>r.room)]; };
   const worryLine = () => { const [w,h]=worryRooms(); return w.length||h.length ? `Worry first: ${[w.length?`worsening, ${w.map(rn).join(", ")}`:"", h.length?`not improving, ${h.map(rn).join(", ")}`:""].filter(Boolean).join("; ")}.` : "No bed is worsening or not improving."; };
   function summary(){ if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
     const ls=FC.life_support, y=Y(), d=FC.resources.icu_departure;
-    return `${ls.now_patients} patients are on life support now and ${ls.expected_new_patients.p50} more are expected (${ls.expected_new_patients.p10} to ${ls.expected_new_patients.p90}). IMV +${ls.expected_by.imv.p50}, vasopressor +${ls.expected_by.vasopressor.p50}, CRRT +${ls.expected_by.crrt.p50}. ${d.p50} expected to leave the ICU (${d.p10} to ${d.p90}). ${y?`${y.words} ${YNAME(y)}. `:""}${worryLine()}`; }
+    return `${ls.now_patients} patients are on life support now and ${ls.expected_new_patients.p50} more are expected (${ls.expected_new_patients.p10} to ${ls.expected_new_patients.p90}). IMV ${plus(ls.expected_by.imv)}, vasopressor ${plus(ls.expected_by.vasopressor)}, CRRT ${plus(ls.expected_by.crrt)}. ${vq(d)?`${d.p50} expected to leave the ICU (${d.p10} to ${d.p90})`:"No estimate for leaving the ICU"}. ${y?`${y.words} ${YNAME(y)}. `:""}${worryLine()}`; }
   function answer(q){
     const t=q.toLowerCase(), room=chatScope;      // the chat's own context, not the page's
     if(isPending() && hasNow()){ const ls=FC.life_support, rs=RM.rooms, on=k=>rs.filter(r=>r.on_now[k]).map(r=>rn(r.room));
