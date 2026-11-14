@@ -368,7 +368,7 @@ One centred column, max 92rem, with a 1.5rem gutter (1rem on phone). The header 
 - **Bed board:** the Worry first rail, then All rooms. The room grid is five across, four below 1200px, three at 960px and below, two at 560px and below, with a .75rem gap (.5rem on phone, .625rem on wall screens). With the chat docked the grid becomes auto-fill at a 12.5rem minimum.
 - **Unit strain:** the Life support lead card (two columns, one at 960px and below), then support cards in an auto-fill grid at an 18.5rem minimum with a 1rem gap. The card for the reader's role is ordered first.
 - **Room page:** two cards, 1.2fr and 1fr, stacking at 960px and below.
-- **Chat:** a launcher fixed 1.5rem from the bottom right (3.5rem tall, radius 1rem); the page keeps 6.5rem of bottom padding so it never rests on content at the end of the page. The panel is 25rem by 37.5rem (at most 80vh) in the same corner; at 560px and below it is a bottom sheet at 85% of the height.
+- **Chat:** a launcher fixed 1.5rem from the bottom right (a 3.25rem circle); the page keeps 6.5rem of bottom padding so it never rests on content at the end of the page. The panel is 25rem by 37.5rem (at most 80vh) in the same corner; at 560px and below it is a bottom sheet at 85% of the height.
 - **Wall screens (1800px and up):** root 120%, tiles slightly shorter (5.25rem), larger room numbers and percentages.
 
 Spacing is a short rem scale: .125, .25, .375, .5, .625, .75, 1, 1.25, 1.5. Every interactive target is at least 2.75rem (44px) tall.
@@ -451,17 +451,20 @@ State changes only: a .2s ease-out on the board colour swap, a .15s ease-out 1px
 ### Product title and unit chip
 The H1 is the product, "Lookahead", with the descriptor "ICU forecast · next 24 hours" beside it at 1rem / 600 in secondary ink. The unit ("Medical ICU · 25 beds") is a pill chip in the sub-line next to the data-source tag and is read from the forecast, never written into the page.
 
+### Patient name
+The room number stays the identifier. The display name ("Rivera, J.") sits on the same line as sex and age at .8125rem / 700 in the tile's ink, followed by " · M 68" in secondary ink. Only the name shrinks: it is cut with an ellipsis and its legend gives the full name. The room page heading reads "Room 20 · James Rivera · M 68". Person figures on Unit strain keep room numbers only. Names in the demo are fictional.
+
 ### Time switch (Now | Next 24 h)
 A pill-shaped two-state switch beside the tabs and on the room page, visually lighter than the tabs (surface ground, line border, .875rem / 700, 2.75rem targets). The selected side carries the system's two time colours: **Now is ink, Next 24 h is blue**. It decides when; the tabs decide what. Now shows only what is running at 07:00; Next 24 h shows the forecast. Switching keeps the grid, the room order and the scroll position; tiles cross-fade for 180ms when motion is allowed.
 
 ### Bed tile, Now
-Room, sex and age, and 1.75rem solid icons with their names. Weight is the number of supports running: none is a white tile that reads "No life support"; one sits on the tinted ground (`board-2`); two or more adds the 3px ink border and reads "On 2 supports". No blue appears in Now.
+Room, sex and age, and 1.75rem solid icons with their names. Weight is the number of supports running: none is a white tile that reads "No life support"; one sits on the tinted ground (`board-2`); two or more adds the 3px ink border and reads "2 supports". No blue appears in Now.
 
 ### Strip captions
 In Next 24 h every tile and the room page carry two captioned columns joined by the arrow: **NOW** over the solid icons (or "no support") and **NEXT 24 H** over the forecast items (or "nothing new", or "leaving <20%" on a Not improving bed). Captions are Label size, 700, capitals, in the tile's secondary ink. On a phone the two columns become two labelled rows and the arrow is dropped. In the Worry first rail and on the room page each forecast item also shows its name ("Vasopressor 43%").
 
 ### Chat widget
-A launcher (ink fill, board text, chat icon and "Ask", floating shadow) and a non-modal panel (surface, line border, radius 1rem, the same floating shadow, no scrim). Header: "Ask Lookahead", a context pill button ("Unit" or "Room 12", `board-2` fill), and minimise and close as 2.75rem icon buttons. Suggested questions are stacked pills shown only while the conversation is empty. The team's messages sit right on `board-2`; answers sit left with a rule border, numbers at 800 and room numbers as blue underlined links. "Thinking…" carries an outlined Stop button. The input is a textarea that grows to four lines beside a 2.75rem send button that is `board-2` when disabled and ink when it can send. A blue dot on the launcher means the forecast changed since the chat was last open. On a phone the sheet has a short handle bar at its top edge.
+A launcher (a 3.25rem ink circle with the chat icon in board colour, floating shadow, accessible name "Ask Lookahead") and a non-modal panel (surface, line border, radius 1rem, the same floating shadow, no scrim). Header: "Ask Lookahead", a context pill button ("Unit" or "Room 12", `board-2` fill), and minimise and close as 2.75rem icon buttons. Suggested questions are stacked pills shown only while the conversation is empty. The team's messages sit right on `board-2`; answers sit left with a rule border, numbers at 800 and room numbers as blue underlined links. "Thinking…" carries an outlined Stop button. The input is a textarea that grows to four lines beside a 2.75rem send button that is `board-2` when disabled and ink when it can send. A blue dot on the launcher means the forecast changed since the chat was last open. On a phone the sheet has a short handle bar at its top edge.
 
 ### Figure legend (tooltip)
 One element for the whole page: ink fill, board text, .8125rem / 600, radius .5rem, at most 19rem wide, floating shadow, `pointer-events: none`. It appears 150ms after hover, at once on keyboard focus, and on touch by tap or long-press; it leaves at once. It sits above its target, or below when there is no room, and is clamped to the viewport. Text only, two short lines at most, the same wording as the key and "How this forecast was made" (one `DEF` map in the page builds all three). It adds to the visible labels and never replaces them.

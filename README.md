@@ -83,4 +83,4 @@ This repo is set up for the [Impeccable](https://impeccable.style) design skill:
 ## Rules
 
 - Synthetic or open demo data only in this repo. No patient data, credentials, internal IP addresses or personal paths.
-- Every number shows its range (8 in 10 likely outcomes); no percentages on the board; status is never shown by colour alone; decision support, never a treatment recommendation.
+- Every number shows its range (8 in 10 likely outcomes); chances are whole percentages ("23%"); status is never shown by colour alone; decision support, never a treatment recommendation.

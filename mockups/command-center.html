@@ -117,16 +117,21 @@ h1,h2,h3,p{margin:0}
 .nowl{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .75rem;margin-top:auto;min-height:1.75rem}
 .nowl .nx{display:inline-flex;align-items:center;gap:.25rem}
 .nowl .nx small{font-size:.875rem;font-weight:700}
+.nowl .mu{font-size:.8125rem;font-weight:600;color:var(--ink-2)}
 .nowl .ic{width:1.75rem;height:1.75rem}
+[data-when="now"] .rail .st{display:none}
 @keyframes swap{from{opacity:.35}}
 .grid .bed,.rail .bed,.wc{animation:swap .18s ease-out}
 .bed.t-leave{border:2px solid var(--ok);padding:calc(.625rem - 1px) calc(.75rem - 1px)}
 .bed .bt{display:flex;flex-wrap:wrap;align-items:baseline;gap:.125rem .5rem}
 .bed .rm{font-size:1.75rem;font-weight:800;line-height:1;letter-spacing:-.01em}
-.bed .who{font-size:.8125rem;font-weight:600;color:var(--t-2)}
+.bed .who{display:flex;flex:0 1 auto;min-width:0;font-size:.8125rem;font-weight:600;color:var(--t-2);white-space:nowrap}
+.bed .who .pn{flex:0 1 auto;min-width:1.25rem;overflow:hidden;text-overflow:ellipsis;color:var(--t-fg);font-weight:700}
+.bed .who .sa{flex:none;white-space:pre}
+@media (min-width:561px){.bed .bt{flex-wrap:nowrap}}
 .st{display:inline-flex;align-items:center;gap:.3125rem;font-size:.8125rem;font-weight:700;white-space:nowrap}
 .st .ic{width:.875rem;height:.875rem}
-.bed .st{margin-left:auto;align-self:center}
+.bed .st{margin-left:auto;align-self:center;flex:none}
 .bed.t-leave .st{color:var(--ok)}
 .bed.t-steady .st{color:var(--ink-2);font-weight:600}
 .flow{display:flex;align-items:flex-end;gap:.5rem;margin-top:auto}
@@ -142,7 +147,7 @@ h1,h2,h3,p{margin:0}
 .rail .flow .nm{display:inline}
 .flow .mu{font-size:.8125rem;font-weight:600;color:var(--t-2,var(--ink-2));white-space:nowrap}
 .bed .flow .ic:not(.arr){width:1.625rem;height:1.625rem}
-@media (min-width:1800px){.wrap{padding-top:.75rem}.bed{min-height:5.25rem;gap:.25rem;padding-top:.5rem;padding-bottom:.5rem}.bed .flow .nx small{font-size:1rem}.bed .st{font-size:1rem}.bed .st .ic{width:1rem;height:1rem}.bed .rm{font-size:2rem}.rail{margin-bottom:.5rem;padding-bottom:.75rem}.grid{gap:.5rem .625rem}.viewsub{margin-bottom:.375rem}}
+@media (min-width:1800px){.wrap{padding-top:.375rem}.top{padding-bottom:.25rem}.viewbar{padding:.125rem 0}.subrow{margin-bottom:.25rem}.bed{min-height:0;gap:.25rem;padding:.375rem .625rem}.bed.t-hold,.bed.s2{padding:calc(.375rem - 2px) calc(.625rem - 2px)}.bed.t-leave{padding:calc(.375rem - 1px) calc(.625rem - 1px)}.bed .flow .col{gap:0}.bed .flow .cap{font-size:.75rem;line-height:1.1}.bed .flow .its{min-height:1.5rem}.bed .flow .arr{margin-bottom:.25rem}.bed .flow .ic:not(.arr){width:1.5rem;height:1.5rem}.bed .flow .nx small{font-size:.9375rem}.bed .st{font-size:.9375rem}.bed .rm{font-size:1.75rem}.rail .bed .rm{font-size:1.75rem}.rail .rset .bed{min-height:0}.rail{margin-bottom:.375rem;padding-bottom:.5rem}.rail h3{margin-bottom:.1875rem}.rail .rgs{margin-top:.25rem;gap:.25rem 1.25rem}.grid{gap:.375rem .625rem}.bedhead{margin-bottom:.25rem}.rail h2{font-size:1rem}.nowl{min-height:1.5rem;gap:0 .75rem}.nowl .ic{width:1.5rem;height:1.5rem}[data-when="now"] .rail .grp{flex-basis:calc(var(--n,1)*12.75rem)}[data-when="now"] .rail .rset{grid-template-columns:repeat(auto-fill,minmax(12rem,1fr))}}
 .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.75rem}
 
 /* Worry first: the Worsening rooms, then the Not improving rooms */
@@ -283,11 +288,11 @@ h1,h2,h3,p{margin:0}
 .rv-acts{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
 
 /* chat: a launcher at the bottom right (the page keeps space for it) and a non-modal panel that opens above it; a bottom sheet on a phone */
-.chatbtn{position:fixed;right:1.5rem;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));z-index:20;display:inline-flex;align-items:center;gap:.5rem;height:3.5rem;padding:0 1.25rem;border:0;border-radius:1rem;background:var(--ink);color:var(--board);font-weight:700;cursor:pointer;box-shadow:0 2px 4px rgba(16,24,40,.12),0 16px 40px rgba(16,24,40,.18)}
+.chatbtn{position:fixed;right:1.5rem;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));z-index:20;display:grid;place-items:center;width:3.25rem;height:3.25rem;padding:0;border:0;border-radius:50%;background:var(--ink);color:var(--board);font-weight:700;cursor:pointer;box-shadow:0 2px 4px rgba(16,24,40,.12),0 16px 40px rgba(16,24,40,.18)}
 .chatbtn:hover{opacity:.92}
 .chatbtn .ic{width:1.5rem;height:1.5rem}
 .chatbtn[aria-expanded="true"]{visibility:hidden}
-.chatbtn .dot{position:absolute;top:-.25rem;right:-.25rem;width:.875rem;height:.875rem;border-radius:50%;background:var(--blue);border:2px solid var(--board)}
+.chatbtn .dot{position:absolute;top:0;right:0;width:.875rem;height:.875rem;border-radius:50%;background:var(--blue);border:2px solid var(--board)}
 .chatbtn .dot[hidden]{display:none}
 .chatpanel{position:fixed;right:1.5rem;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));z-index:21;width:min(25rem,calc(100vw - 2rem));height:min(37.5rem,80vh);display:flex;flex-direction:column;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:1rem;padding:.75rem 1rem 1rem;box-shadow:0 2px 4px rgba(16,24,40,.12),0 16px 40px rgba(16,24,40,.18)}
 .chatpanel[hidden]{display:none}
@@ -307,7 +312,7 @@ h1,h2,h3,p{margin:0}
 .msg.q{align-self:flex-end;background:var(--board-2);white-space:pre-wrap}
 .msg.a{align-self:flex-start;border:1px solid var(--rule)}
 .msg.a b{font-weight:800}
-.msg.a a{color:var(--blue);font-weight:800;text-decoration:underline;text-underline-offset:2px;padding:.5rem .0625rem;margin:-.5rem 0}
+.msg.a a{position:relative;display:inline-block;color:var(--blue);font-weight:800;text-decoration:underline;text-underline-offset:2px;min-width:2.75rem;text-align:center;padding:.75rem 0;margin:-.75rem -.875rem}
 .msg.n{align-self:center;max-width:100%;font-size:.75rem;color:var(--ink-2);padding:.125rem 0}
 .msg .who{display:block;font-size:.75rem;font-weight:700;color:var(--ink-2);margin-bottom:.125rem}
 .msg.t{display:flex;align-items:center;gap:.75rem;color:var(--ink-2)}
@@ -550,7 +555,7 @@ details.more summary:hover{color:var(--ink)}
   </main>
 </div>
 
-<button class="chatbtn" id="chatbtn" type="button" aria-expanded="false" aria-controls="chatpanel"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-chat"/></svg>Ask<i class="dot" id="chatdot" hidden></i><span class="sr" id="chatdot-l" hidden>, forecast updated</span></button>
+<button class="chatbtn" id="chatbtn" type="button" aria-label="Ask Lookahead" data-tip="Ask about the unit or a room" aria-expanded="false" aria-controls="chatpanel"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-chat"/></svg><i class="dot" id="chatdot" hidden></i><span class="sr" id="chatdot-l" hidden>, forecast updated</span></button>
 <section class="chatpanel" id="chatpanel" role="dialog" aria-label="Ask Lookahead" hidden>
   <div class="cp-head"><h2 id="chat-h">Ask Lookahead</h2><button class="ctx" id="chat-scope" type="button">Unit</button><span class="spacer"></span>
     <button class="cpb" id="chatmin" type="button" aria-label="Minimise chat"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-min"/></svg></button>
@@ -603,6 +608,9 @@ details.more summary:hover{color:var(--ink)}
   const AGE = Array.from({length:BEDS},(_,i)=>40+(i*37%45));
   const TYPICAL = 15;
 
+  /* made-up names for the demo board (sex-matched, fixed per room); a real deployment gets names from the hospital */
+  const FIRST_F=["Maria","Aisha","Grace","Elena","Mei","Fatima","Ruth","Ana","Priya","Hannah","Lucia","Amara","Joan"], FIRST_M=["James","Omar","Daniel","Luis","Wei","Samuel","Ivan","Kofi","Arjun","Thomas","Mateo","Henry","Tariq"];
+  const LAST_N=["Rivera","Okafor","Nguyen","Kowalski","Haddad","Lindqvist","Morales","Tanaka","Bello","Fraser","Dubois","Singh","Castillo","Novak","Mensah","Petrov","Alvarez","Kim","Osei","Bauer","Reyes","Hughes","Yilmaz","Costa","Ward"];
   function genRoom(n, rnd, cut, keepOn){
     const a = Math.pow(rnd(),1.6);
     const on = keepOn || {imv: rnd()<.08+a*.22, vasopressor: rnd()<.06+a*.2, crrt: rnd()<.01+a*.08};
@@ -616,8 +624,8 @@ details.more summary:hover{color:var(--ink)}
     const nOn = SUP.filter(k=>on[k]).length;
     const none = SUP.reduce((m,k)=>m*(p[k]==null?1:1-p[k]),1), any = r2(1-none);
     const past = Array.from({length:8},(_,i)=>({h:(i+1)+(i>3?i-3:0), text:PAST_TXT[Math.floor(rnd()*PAST_TXT.length)]}));   // hours before the cut, 1 = the last hour
-    const sex = (n*7+3)%5<2 ? "F" : "M";
-    return {room:n, age:String(AGE[n-1]), sex, updated_at:iso(cut), cut_time:iso(cut), window:{start:iso(cut),end:iso(cut+864e5)}, scope:"unit",
+    const sex = (n*7+3)%5<2 ? "F" : "M", first=(sex==="F"?FIRST_F:FIRST_M)[(n*5+1)%13], last=LAST_N[(n*11+4)%25];
+    return {room:n, age:String(AGE[n-1]), sex, name:{display:`${last}, ${first[0]}.`, first, last, full:`${first} ${last}`, fictional:true}, updated_at:iso(cut), cut_time:iso(cut), window:{start:iso(cut),end:iso(cut+864e5)}, scope:"unit",
       on_now:{...on, ecmo:null}, on_life_support:nOn>=2, stopped_before_cut:stopped, p, any_life_support:any, level:levelOf(any), out:dep>=OUT_TAG, past_12h:past};
   }
   function simulate(rooms, rnd, draws=3000){
@@ -662,6 +670,9 @@ details.more summary:hover{color:var(--ink)}
   const LV = ["low","medium","high"];
   const vq = o => !!o && fin(o.p10) && fin(o.p50) && fin(o.p90);
   const str = (s,n=120) => typeof s==="string" ? s.slice(0,n) : "";
+  const NAME_OK = /^[\p{L}][\p{L} .,'-]{0,39}$/u, nm1 = v => typeof v==="string" && NAME_OK.test(v.trim()) ? v.trim() : null;
+  function cleanName(n){ if(!n || typeof n!=="object") return null; const display=nm1(n.display); if(!display) return null;
+    const first=nm1(n.first), last=nm1(n.last); return {display, full:first&&last ? `${first} ${last}` : display}; }
   function cleanRoom(r){
     if(!r || typeof r!=="object" || !Number.isInteger(r.room) || r.room<1) return null;
     const on0=r.on_now||{}, p0=r.p||{}, sb=r.stopped_before_cut||{}, pr=v=>fin(v)&&v>=0&&v<=1?v:null;
@@ -671,6 +682,7 @@ details.more summary:hover{color:var(--ink)}
     return {room:r.room,
       age:(typeof r.age==="string"||fin(r.age)) && /^\d{1,3}\+?$/.test(String(r.age)) ? String(r.age) : null,
       sex:r.sex==="F"||r.sex==="M" ? r.sex : null,
+      name:cleanName(r.name),
       level:LV.includes(r.level) ? r.level : null,
       on_now, p, out:r.out===true,
       on_life_support:typeof r.on_life_support==="boolean" ? r.on_life_support : SUP.filter(k=>on_now[k]).length>=2,
@@ -896,7 +908,7 @@ details.more summary:hover{color:var(--ink)}
   function renderWatch(){
     const el=$("watch"); if(!hasFc() || !RM.rooms.length){ el.innerHTML=""; return; }
     const ls=FC.life_support, y=Y(), rs=RM.rooms, first=FIRST[role()], CARDN={imv:"Ventilator (IMV)", vasopressor:"Vasopressor", crrt:"CRRT"};
-    const fig = (r,cls,p,label,name) => `<button type="button" class="pp${cls?" "+cls:""}" data-room="${r.room}" aria-label="Room ${r.room}: ${name}"${T(`Room ${r.room} · ${name}`)}><span class="av"${p!=null?` style="--p:${Math.round(p*100)}%"`:""} aria-hidden="true"><svg class="base" viewBox="0 0 40 42"><use href="#i-fig"/></svg>${p!=null?`<svg class="fill" viewBox="0 0 40 42"><use href="#i-fig"/></svg>`:""}</span><span class="rm">${r.room}</span>${label?`<span class="pc">${label}</span>`:""}</button>`;
+    const fig = (r,cls,p,label,name) => `<button type="button" class="pp${cls?" "+cls:""}" data-room="${r.room}" aria-label="Room ${r.room}${r.name?`, ${esc(r.name.full)}`:""}: ${name}"${T(`Room ${r.room}${r.name?` · ${r.name.display}`:""} · ${name}`)}><span class="av"${p!=null?` style="--p:${Math.round(p*100)}%"`:""} aria-hidden="true"><svg class="base" viewBox="0 0 40 42"><use href="#i-fig"/></svg>${p!=null?`<svg class="fill" viewBox="0 0 40 42"><use href="#i-fig"/></svg>`:""}</span><span class="rm">${r.room}</span>${label?`<span class="pc">${label}</span>`:""}</button>`;
     const top = Math.max(...SUP.map(k=>ls.expected_by[k].p90));      // the three support bars share one scale
     if(when==="now"){ const vf = y && y.kind==="capacity" && y.vf!=null ? y.vf : null;
       el.innerHTML = SUP.map(k=>{ const on=rs.filter(r=>r.on_now[k]); return `<article class="wc" data-k="${k}" style="order:${first===k?0:1}" aria-labelledby="wc-${k}">
@@ -929,15 +941,19 @@ details.more summary:hover{color:var(--ink)}
   }
 
   /* ---------- Bed board: Worry first, then every room in room order ---------- */
+  /* the room number stays the identifier; the name sits beside sex and age, cut with an ellipsis, full name in the legend */
+  const whoH = r => { const sa=[r.sex,r.age].filter(Boolean).join(" "); if(!r.name && !sa) return "";
+    return `<span class="who">${r.name?`<span class="pn"${T(r.name.full)}>${esc(r.name.display)}</span>`:""}${sa?`<span class="sa">${r.name?" · ":""}${esc(sa)}</span>`:""}</span>`; };
+  const rn = n => { const r=R(n); return `room ${n}${r&&r.name?` (${r.name.display})`:""}`; };
   function bedTile(r){
     const t=traj(r), [word,shape]=TRAJ[t], who=[r.sex,r.age].filter(Boolean).join(" "), b=document.createElement("button");
     b.type="button"; b.className="bed t-"+t; b.dataset.room=r.room; b.dataset.level=r.level||"none"; b.dataset.state=t; b.dataset.ftip=DEF[t];
-    b.setAttribute("aria-label",`Room ${r.room}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${word}. ${flowWords(r)}`);
-    b.innerHTML=`<span class="bt"><span class="rm">${r.room}</span>${who?`<span class="who">${esc(who)}</span>`:""}<span class="st"${T(DEF[t])}>${svg(shape)}${word}</span></span>${flow(r)}`;
+    b.setAttribute("aria-label",`Room ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${word}. ${flowWords(r)}`);
+    b.innerHTML=`<span class="bt"><span class="rm">${r.room}</span>${whoH(r)}<span class="st"${T(DEF[t])}>${svg(shape)}${word}</span></span>${flow(r)}`;
     if(when==="now"){ const on=onList(r), n=on.length;      // Now: only what is running at 07:00; weight is the number of supports
       b.className="bed s"+Math.min(n,2); b.dataset.state="now-"+n; b.dataset.ftip = n ? `Life support running at 07:00: ${on.map(k=>SHORTN[k]).join(", ")}` : DEF.none;
-      b.setAttribute("aria-label",`Room ${r.room}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${n?`on ${on.map(k=>SHORTN[k]).join(", ")}`:"no life support"} at 07:00.`);
-      b.innerHTML=`<span class="bt"><span class="rm">${r.room}</span>${who?`<span class="who">${esc(who)}</span>`:""}<span class="st">${n>=2?`On ${n} supports`:n?"":"No life support"}</span></span><span class="nowl" aria-hidden="true">${on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}<small>${SHORTN[k]}</small></span>`).join("")}</span>`; }
+      b.setAttribute("aria-label",`Room ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${n?`on ${on.map(k=>SHORTN[k]).join(", ")}`:"no life support"} at 07:00.`);
+      b.innerHTML=`<span class="bt"><span class="rm">${r.room}</span>${whoH(r)}${n>=2?`<span class="st"${T(`On ${n} life supports at 07:00`)}>${n} supports</span>`:""}</span><span class="nowl" aria-hidden="true">${n?"":`<small class="mu"${T(DEF.none)}>No life support</small>`}${on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}<small>${SHORTN[k]}</small></span>`).join("")}</span>`; }
     b.onclick=()=>openRoom(r.room); return b; }
   function renderRail(){
     const el=$("rail"), rs=RM.rooms; el.hidden=!rs.length; if(!rs.length){ el.innerHTML=""; return; }
@@ -975,14 +991,15 @@ details.more summary:hover{color:var(--ink)}
     const n=room, r=R(n); if(!r){ route(false); return; }
     const t=traj(r), [tw,ts]=TRAJ[t];
     const nowM = when==="now";
-    $("rv-h").innerHTML=`Room ${n} <span class="rvk">${nowM?"now · life support running at 07:00":"forecast for the next 24 h"}</span>`;
+    const sa=[r.sex,r.age].filter(Boolean).join(" ");
+    $("rv-h").innerHTML=`Room ${n} <span class="rvk">${[r.name?esc(r.name.full):"", esc(sa)].filter(Boolean).map(x=>"· "+x).join(" ")}</span>`;
     $("rv-st").hidden=$("rv-flow").hidden=nowM;
     $("rv-risk-h").textContent = nowM ? "Life support running at 07:00" : "Five predictions for this patient · chance in the next 24 h";
     $("rv-st").innerHTML=`<span class="st stchip t-${t}"${T(DEF[t])}>${svg(ts)}${tw}</span>`;
     $("rv-flow").innerHTML=`${flow(r)}<span class="sr">${esc(flowWords(r))}</span>`;
     const who=[r.sex==="F"?"female":r.sex==="M"?"male":"",r.age?`age ${r.age}`:""].filter(Boolean).join(", ");
     const w0=r.window.start||r.cut_time;
-    $("rv-sub").innerHTML=`${who?esc(who)+" · ":""}${hm(w0)} to ${hm(r.window.end)}${dayWord(r.window.end, w0)} · updated ${hm(r.updated_at)} <span class="upd" id="upd-room" ${run?"":"hidden"}>updating</span>`;
+    $("rv-sub").innerHTML=`${nowM?"Now · life support running at 07:00":"Forecast for the next 24 h"} · ${hm(w0)} to ${hm(r.window.end)}${dayWord(r.window.end, w0)} · updated ${hm(r.updated_at)} <span class="upd" id="upd-room" ${run?"":"hidden"}>updating</span>`;
     const ids=RM.rooms.map(x=>x.room), i=ids.indexOf(n), pa=$("rv-prev"), na=$("rv-next");
     if(ids.length<2){ pa.hidden=na.hidden=true; } else { const pv=ids[(i-1+ids.length)%ids.length], nx=ids[(i+1)%ids.length]; pa.hidden=na.hidden=false;
       pa.href=`#room=${pv}`; pa.innerHTML=svg("arrow","","flip")+`Room ${pv}`; na.href=`#room=${nx}`; na.innerHTML=`Room ${nx}`+svg("arrow"); }
@@ -1141,7 +1158,7 @@ details.more summary:hover{color:var(--ink)}
 
   const cnt = q => `median ${q.p50} in the next 24 hours (range ${q.p10} to ${q.p90})`;
   const worryRooms = () => { const rs=RM.rooms; return [rs.filter(r=>traj(r)==="worse").sort((a,b)=>anyNew(b)-anyNew(a)).map(r=>r.room), rs.filter(r=>traj(r)==="hold").map(r=>r.room)]; };
-  const worryLine = () => { const [w,h]=worryRooms(); return w.length||h.length ? `Worry first: ${[w.length?`worsening, room${w.length>1?"s":""} ${w.join(", ")}`:"", h.length?`not improving, room${h.length>1?"s":""} ${h.join(", ")}`:""].filter(Boolean).join("; ")}.` : "No room is worsening or not improving."; };
+  const worryLine = () => { const [w,h]=worryRooms(); return w.length||h.length ? `Worry first: ${[w.length?`worsening, ${w.map(rn).join(", ")}`:"", h.length?`not improving, ${h.map(rn).join(", ")}`:""].filter(Boolean).join("; ")}.` : "No room is worsening or not improving."; };
   function summary(){ if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
     const ls=FC.life_support, y=Y(), d=FC.resources.icu_departure;
     return `${ls.now_patients} patients are on life support now and ${ls.expected_new_patients.p50} more are expected (${ls.expected_new_patients.p10} to ${ls.expected_new_patients.p90}). IMV +${ls.expected_by.imv.p50}, vasopressor +${ls.expected_by.vasopressor.p50}, CRRT +${ls.expected_by.crrt.p50}. ${d.p50} expected to leave the ICU (${d.p10} to ${d.p90}). ${y?`${y.words} ${YNAME(y)}. `:""}${worryLine()}`; }
@@ -1158,7 +1175,7 @@ details.more summary:hover{color:var(--ink)}
     if(room && R(room) && /(what changed|last 12)/.test(t)){ const ph=R(room).past_12h.slice(0,3); return ph.length ? `Room ${room}, last 12 hours: ${ph.map(x=>`${x.h!=null?x.h+" h ago, ":""}${x.text}`).join("; ")}.` : `Room ${room}: nothing recorded in the last 12 hours.`; }
     if(room && R(room) && /chance of leaving/.test(t)){ const v=R(room).p.icu_departure; return v==null ? `Room ${room}: no estimate for leaving the ICU.` : `Room ${room}: ${inTen(v)} chance of leaving the ICU in the next 24 hours.`; }
     if(/likely to leave/.test(t)){ const o=RM.rooms.filter(r=>r.out&&r.p.icu_departure!=null).sort((a,b)=>b.p.icu_departure-a.p.icu_departure);
-      return o.length ? `Most likely to leave: ${o.map(r=>`room ${r.room} (${inTen(r.p.icu_departure)})`).join(", ")}. Unit: ${cnt(FC.resources.icu_departure)}.` : "No room is at 60% or more to leave the ICU."; }
+      return o.length ? `Most likely to leave: ${o.map(r=>`${rn(r.room)} ${inTen(r.p.icu_departure)}`).join(", ")}. Unit: ${cnt(FC.resources.icu_departure)}.` : "No room is at 60% or more to leave the ICU."; }
     const rr=t.match(/room (\d+): what is most likely/), rn0=rr?+rr[1]:room, r0=rn0?R(rn0):null;
     if((rr||(room&&/most likely/.test(t)))){ if(!r0) return `Room ${rn0} is not in this forecast.`;
       const r=r0, items=[["IMV",r.p.imv],["vasopressor",r.p.vasopressor],["CRRT",r.p.crrt],["ICU discharge",r.p.icu_departure],["death",r.p.death]].filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,2);
