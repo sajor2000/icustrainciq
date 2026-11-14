@@ -455,7 +455,7 @@ details.more summary:hover{color:var(--ink)}
         <div class="custom" id="customrow" hidden><label for="customv" class="sr">Custom threshold for every event, percent</label>
           <span class="pctin"><input id="customv" type="number" min="1" max="99" step="1" inputmode="numeric" placeholder="1 to 99"><i aria-hidden="true">%</i></span><button type="button" id="customgo">Apply to all</button></div>
         <h3 class="seth">Capacity</h3>
-        <p class="range seti">Total on the unit for each resource. Free = total minus in use now. Lower a total if a machine is lost or out of service; leave it blank if not set. Remembered on this device.</p>
+        <p class="range seti">Total machines on the unit. Free = total minus in use now. Lower a total if a machine is lost or out of service; leave it blank if not set. Remembered on this device.</p>
         <div id="capbox"></div>
       </div>
     </div>
@@ -607,7 +607,9 @@ details.more summary:hover{color:var(--ink)}
   function counts(ps){ const draws=4000, out=[]; for(let d=0;d<draws;d++){let c=0;for(const q of ps) if(rnd()<q) c++; out.push(c);} out.sort((a,b)=>a-b);
     const q=f=>out[Math.floor(f*(draws-1))]; return {p10:q(.1),p50:q(.5),p90:q(.9)}; }
   const pv = (r,k) => Number.isNaN(r.p[k]) ? 0 : r.p[k];
-  const top = r => EV.filter(e=>e.k!=="out"&&!Number.isNaN(r.p[e.k])).map(e=>[e,r.p[e.k]]).sort((a,b)=>b[1]-a[1])[0];
+  // the Alternative view shows five outcomes: hypotension is left out there (cards, thresholds, highest-risk ranking, bed detail)
+  const dropped = k => k==="hypo" && document.documentElement.dataset.view==="alt";
+  const top = r => EV.filter(e=>e.k!=="out"&&!dropped(e.k)&&!Number.isNaN(r.p[e.k])).map(e=>[e,r.p[e.k]]).sort((a,b)=>b[1]-a[1])[0];
   const ranked = () => rooms.slice().sort((a,b)=>top(b)[1]-top(a)[1]);
   const pct = v => Math.round(v*100)+"%";
   const C = {}; for (const e of EV) C[e.k] = counts(rooms.map(r=>pv(r,e.k)));
@@ -697,13 +699,13 @@ details.more summary:hover{color:var(--ink)}
   // Alternative view: patient clusters. For each event, the rooms at or above the line, highest first; rooms in no risk group come last.
   // each cluster has its own line (the chance at or above which a bed joins it). The user sets it on the card with a slider
   // (or the − / + buttons, or the arrow keys); it is remembered on this device. Marks above the slider show where this event's beds sit.
-  const KEYS=["death","vent","press","crrt","hypo","out"], LO=1, HI=99, okLine=v=>Number.isInteger(v)&&v>=LO&&v<=HI, thrBy={}; let hideRest=false;
+  const KEYS=["death","vent","press","crrt","out"], LO=1, HI=99, okLine=v=>Number.isInteger(v)&&v>=LO&&v<=HI, thrBy={}; let hideRest=false;
   for(const k of KEYS) thrBy[k]=.25;
   try{ const saved=JSON.parse(localStorage.getItem("icu-alt-lines")||"{}"); for(const k of KEYS) if(okLine(saved[k])) thrBy[k]=saved[k]/100; }catch(e){ /* no storage: lines last for this visit */ }
   const saveLines=()=>{ try{ localStorage.setItem("icu-alt-lines",JSON.stringify(Object.fromEntries(KEYS.map(k=>[k,Math.round(thrBy[k]*100)])))); }catch(e){} };
   // capacity: the user sets a total per resource in Settings; what is free is the total minus what is in use now.
   // The ventilator total starts from the placeholder (in use + 3 free) until someone sets it.
-  const RES=["vent","press","crrt"], inUse=k=>rooms.filter(r=>r.on[k]).length, total={vent:inUse("vent")+cap.vent}, userCap={};
+  const RES=["vent","crrt"], inUse=k=>rooms.filter(r=>r.on[k]).length, total={vent:inUse("vent")+cap.vent}, userCap={};
   try{ const saved=JSON.parse(localStorage.getItem("icu-alt-capacity")||"{}"); for(const k of RES){ if(saved[k]===null){ delete total[k]; userCap[k]=true; } else if(Number.isInteger(saved[k])&&saved[k]>=0&&saved[k]<=99){ total[k]=saved[k]; userCap[k]=true; } } }catch(e){ /* no storage */ }
   const applyCap=()=>{ for(const k of RES){ if(total[k]==null) delete cap[k]; else cap[k]=Math.max(0,total[k]-inUse(k)); } }; applyCap();
   function renderCap(){ document.getElementById("capbox").innerHTML=RES.map(k=>{ const e=EV.find(x=>x.k===k), u=inUse(k);
@@ -723,7 +725,7 @@ details.more summary:hover{color:var(--ink)}
   const chip=(r,e,v,label,w3)=>`<button type="button" class="pp${e.k==="out"?" neutral":""}${e.k!=="out"&&w3.includes(r.n)&&top(r)[0].k===e.k?" w":""}" data-room="${r.n}" aria-pressed="${room===r.n}" aria-label="Bed ${r.n}: ${e.name} ${pct(v)}${e.k==="out"&&devs(r).length?`, on ${devs(r).map(x=>x.name.toLowerCase()).join(" and ")} now`:""}" title="Bed ${r.n}: ${e.name} ${pct(v)}">
       <span class="av" style="--p:${Math.round(v*100)}%" aria-hidden="true"><svg class="base" viewBox="0 0 40 42">${FIG}</svg><svg class="fill" viewBox="0 0 40 42">${FIG}</svg></span><span class="rm">${r.n}</span><span class="pc">${label}</span>${e.k==="out"&&devs(r).length?`<span class="dv" aria-hidden="true">${devs(r).map(x=>`<i title="${x.name}">${DICON[x.k]}</i>`).join("")}</span>`:""}</button>`;
   // devices a bed is on now, and how many of a device the likely leavers (beds on the Leave card) would hand back
-  const devs=r=>EV.filter(x=>x.tag&&r.on[x.k]);
+  const devs=r=>EV.filter(x=>RES.includes(x.k)&&r.on[x.k]);
   const DICON={vent:`<svg class="d-vent" viewBox="0 0 28 24"><path d="M11 7C6 7 2 13 2 19c0 3 3 3 6 2s4-3 4-6V8c0-.6-.4-1-1-1ZM17 7c5 0 9 6 9 12 0 3-3 3-6 2s-4-3-4-6V8c0-.6.4-1 1-1Z"/><path class="ln" d="M14 1v8.5"/></svg>`,
     crrt:`<svg class="d-crrt" viewBox="0 0 24 24"><path d="M11 3C6.5 3 4 7.5 4 12s2.500 9 7 9c3.200 0 4.600-2.400 3.400-5.400-.7-1.700-.7-3.500 0-5.200C15.600 7.400 14.200 3 11 3Z"/><path class="ln" d="M14.500 12H19v9"/></svg>`,
     press:`<svg class="d-press" viewBox="0 0 24 24"><path d="M12 3c3.500 4.500 5.500 7.500 5.500 10.500a5.500 5.500 0 0 1-11 0C6.500 10.500 8.500 7.500 12 3Z"/></svg>`};
@@ -787,10 +789,10 @@ details.more summary:hover{color:var(--ink)}
     for(const k of order){ const e=EV.find(x=>x.k===k), c=C[k], st=status(k), hot=["short","tight"].includes(st[0]);
       // a cluster card: the unit line for that event (median, 80% range bar, what is free, status), its line control, then its beds
       html+=`<section class="cl" data-k="${k}"><h3>${e.row.replace(/ \(.*\)/,"").replace(/ starts$/,"")}<span class="status" hidden></span>${mine.includes(k)?`<span class="own">your row</span>`:""}</h3>
-        <div class="stats">${k in rooms[0].on ? `<div><span class="sl">On now</span><b>${rooms.filter(r=>r.on[k]).length}</b><span class="range">beds</span></div>
-          <div><span class="sl">Free</span><b class="${cap[k]!=null?"free":""}">${cap[k]!=null?cap[k]:"–"}</b><span class="range">${cap[k]==null?"not set":userCap[k]?`of ${total[k]}`:"placeholder"}</span></div>`:""}
+        <div class="stats">${k in rooms[0].on ? `<div><span class="sl">On now</span><b>${rooms.filter(r=>r.on[k]).length}</b><span class="range">beds</span></div>${RES.includes(k)?`
+          <div><span class="sl">Free</span><b class="${cap[k]!=null?"free":""}">${cap[k]!=null?cap[k]:"–"}</b><span class="range">${cap[k]==null?"not set":userCap[k]?`of ${total[k]}`:"placeholder"}</span></div>`:""}`:""}
           <div class="exp"><span class="sl">Predicted new*</span><b>${c.p50}</b></div></div>
-        ${k in rooms[0].on?`<p class="range frees mf" hidden><span class="fr"><i>${DICON[k]}</i><b></b> may free up if likely leavers go</span></p>`:""}
+        ${RES.includes(k)?`<p class="range frees mf" hidden><span class="fr"><i>${DICON[k]}</i><b></b> may free up if likely leavers go</span></p>`:""}
         ${k==="out"?`<p class="range frees"></p>`:""}
         ${k==="vent"||k==="crrt"?`<div class="ub"></div>`:""}
         <p class="sec two">Beds to watch</p>
@@ -835,7 +837,7 @@ details.more summary:hover{color:var(--ink)}
     document.getElementById("close").textContent=tw("Close room");
     const dr=document.getElementById("drawer"); if(v==="alt"){ dr.setAttribute("role","dialog"); dr.setAttribute("aria-modal","true"); } else { dr.removeAttribute("role"); dr.removeAttribute("aria-modal"); }
     if(room){ document.getElementById("room-h").textContent=tw(`Room ${room}`); document.getElementById("chat-scope").textContent=tw(`Asking about room ${room} (open demo patient) and the unit. Mock replies in this file.`); }
-    renderBrief(); renderChips(); }
+    renderBrief(); renderChips(); renderGrid(); if(room) openRoom(room,{focus:false}); }
   function setGearLabel(){ const r=document.getElementById("role"), g=document.getElementById("gear"), t=`Settings: I am ${r.options[r.selectedIndex].text}`; g.setAttribute("aria-label",t); g.title=t; }
   document.getElementById("role").addEventListener("change",setGearLabel);
   document.querySelectorAll("#views button").forEach(b=>b.onclick=()=>setView(b.dataset.v));
@@ -877,7 +879,7 @@ details.more summary:hover{color:var(--ink)}
     const first = room!==n; room=n; if(first){ log.innerHTML=""; pastOpen=false; } /* new room: fresh chat, recent events folded */ const r=rooms[n-1]; document.getElementById("drawer").hidden=false; document.documentElement.dataset.bed="open";
     document.getElementById("room-h").textContent=tw(`Room ${n}`);
     document.getElementById("room-sub").textContent=`Stage ward, open demo patient · age ${r.age} · chance of each event in the next 24 h`;
-    const live=EV.filter(e=>!Number.isNaN(r.p[e.k])).sort((a,b)=>r.p[b.k]-r.p[a.k]), on=EV.filter(e=>Number.isNaN(r.p[e.k]));
+    const live=EV.filter(e=>!Number.isNaN(r.p[e.k])&&!dropped(e.k)).sort((a,b)=>r.p[b.k]-r.p[a.k]), on=EV.filter(e=>Number.isNaN(r.p[e.k]));
     document.getElementById("rbars").innerHTML = live.map(e=>`<li><span>${e.name}</span><span class="track" aria-hidden="true"><span class="fill" style="display:block;width:${Math.max(2,r.p[e.k]*100)}%"></span></span><span class="pct">${pct(r.p[e.k])}</span></li>`).join("");
     document.getElementById("onnow").innerHTML = on.length ? `On now, not forecast as new: ${on.map(e=>`<span>${e.tag}</span>`).join("")}` : "";
     // Alternative view: vitals charts, and the two vitals in the event list read from the same series
@@ -932,7 +934,7 @@ details.more summary:hover{color:var(--ink)}
     if(/\b(re-?run|run|start|refresh|update)\b.{0,30}\bforecast\b/.test(t)) return rerun(role());
     if(room && /(intubat|vent)/.test(t)){ const v=rooms[room-1].p.vent; if(Number.isNaN(v)) return `Room ${room} is already on a ventilator, so the forecast does not count it as a new start.`;
       return `Room ${room}: ${pct(v)} chance of a ventilator start in the next 24 h (07:00 to 07:00). This is the probe's reading of the model's summary of the stay, not a cause; the held-out check is pending a run. The team decides.`; }
-    if(room && /most likely/.test(t)){ const r=rooms[room-1], live=EV.filter(e=>!Number.isNaN(r.p[e.k])).sort((a,b)=>r.p[b.k]-r.p[a.k]).slice(0,2), on=EV.filter(e=>Number.isNaN(r.p[e.k]));
+    if(room && /most likely/.test(t)){ const r=rooms[room-1], live=EV.filter(e=>!Number.isNaN(r.p[e.k])&&!dropped(e.k)).sort((a,b)=>r.p[b.k]-r.p[a.k]).slice(0,2), on=EV.filter(e=>Number.isNaN(r.p[e.k]));
       return `Room ${room}, next 24 h: ${live.map(e=>`${e.name.toLowerCase()} ${pct(r.p[e.k])}`).join(", then ")}.${on.length?` Already on: ${on.map(e=>e.name.toLowerCase()).join(" and ")}, so not forecast as new.`:""} Model evidence, not a cause; the held-out check is pending a run.`; }
     if(/short/.test(t)){ const ex=EV.filter(e=>["short","tight"].includes(status(e.k)[0])); return ex.length ? ex.map(e=>`${e.row}: ${status(e.k)[1]}, ${cnt(e.k)}, ${cap[e.k]} free`).join("; ")+". Only ventilators have a capacity set so far." : "Nothing is short where a capacity is set; only ventilators have one so far."; }
     if(/(highest|risk|rooms|beds)/.test(t)) return `Highest single risks in the next 24 h: ${ranked().slice(0,3).map(r=>`room ${r.n} (${top(r)[0].name.toLowerCase()} ${pct(top(r)[1])})`).join(", ")}.`;
