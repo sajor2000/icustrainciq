@@ -599,3 +599,136 @@ def test_ended_slot_remains_visible_without_a_current_patient_or_forecast(tmp_pa
             assert "steady" not in reply["answer"]
     finally:
         model.close()
+
+
+# ---- CodeRabbit PR #16: the real-ward boundary (docs/DECISIONS.md D6, D19) ----
+# Every value below is a synthetic fixture; only the source label says "mimic-iv".
+
+
+def _real_labelled_context():
+    context = synthetic_context(source_kind="mimic-iv")
+    context["forecast"]["check_first"] = [
+        {"room": 7, "any_life_support": 0.62, "level": "high"}
+    ]
+    for entry in context["rooms"]["rooms"]:
+        entry.update(
+            updated_at=context["published_at"],
+            cut_time=context["published_at"],
+            window=context["forecast"]["window"],
+            name={"display": "Ada Example", "fictional": True},
+        )
+    return context
+
+
+def test_real_ward_responses_are_counts_only_unless_started_in_real_ward_mode(tmp_path):
+    context = _real_labelled_context()
+    publish(tmp_path / "context.json", context)
+    with running_board(tmp_path, context_path=tmp_path / "context.json") as base:
+        code, rooms = request(base, "/api/rooms")
+        assert code == 200 and rooms["rooms"] == [] and rooms["counts_only"] is True
+        assert rooms["ward"]["source"] == "mimic-iv"
+        code, envelope = request(base, "/api/context")
+        assert code == 200 and envelope["rooms"]["rooms"] == []
+        assert envelope["forecast"]["check_first"] == []
+        assert envelope["forecast"]["resources"] == context["forecast"]["resources"]
+        code, forecast = request(base, "/api/forecast")
+        assert forecast["resources"] == context["forecast"]["resources"]
+        assert forecast["check_first"] == []
+    for mode in ({"real_ward": True}, {"require_real_data": True}):
+        with running_board(
+            tmp_path, context_path=tmp_path / "context.json", **mode
+        ) as base:
+            assert request(base, "/api/rooms")[1] == context["rooms"]
+            assert request(base, "/api/context")[1] == context
+    # the files without a context (rooms.json next to forecast.json): the same rule
+    (tmp_path / "forecast.json").write_text(json.dumps(context["forecast"]))
+    (tmp_path / "rooms.json").write_text(json.dumps(context["rooms"]))
+    with running_board(tmp_path) as base:
+        rooms = request(base, "/api/rooms")[1]
+        assert rooms["rooms"] == [] and rooms["counts_only"] is True
+        forecast = request(base, "/api/forecast")[1]
+        assert forecast["resources"] == context["forecast"]["resources"]
+        assert forecast["check_first"] == []
+    with running_board(tmp_path, real_ward=True) as base:
+        assert request(base, "/api/rooms")[1] == context["rooms"]
+        assert request(base, "/api/forecast")[1] == context["forecast"]
+    # the open demo ward is never restricted
+    demo = synthetic_context()
+    (tmp_path / "forecast.json").write_text(json.dumps(demo["forecast"]))
+    (tmp_path / "rooms.json").write_text(json.dumps(demo["rooms"]))
+    with running_board(tmp_path) as base:
+        assert len(request(base, "/api/rooms")[1]["rooms"]) == 25
+
+
+def test_room_chat_refuses_a_real_ward_unless_started_in_real_ward_mode(tmp_path):
+    context = _real_labelled_context()
+    publish(tmp_path / "context.json", context)
+    calls = (
+        tc("get_room", {"room": 7})["tool_calls"]
+        + tc("get_unit_forecast", {"prediction": "ventilator"}, i=2)["tool_calls"]
+    )
+    model = Fake([{"content": None, "tool_calls": calls}, text("done")])
+    try:
+        with running_board(
+            tmp_path, model.url, context_path=tmp_path / "context.json"
+        ) as base:
+            _, reply = request(
+                base, "/api/ask", {"question": "Room 7 and the unit?", "room": 7}
+            )
+        room, unit = (json.loads(m["content"])["tool_result"] for m in tool_msgs(model))
+        assert room["counts_only"] is True and "room" not in room
+        assert unit["resources"] == context["forecast"]["resources"]
+        assert unit["check_first"] == []  # room numbers with a chance are room data
+        sent = json.dumps(model.requests)
+        assert "Ada Example" not in sent and '"on_now"' not in sent
+        assert "30%" not in reply["answer"] and "Ada" not in reply["answer"]
+        assert "counts only" in reply["answer"]
+        assert "2 ventilator starts (80% range 1 to 3)" in reply["answer"]
+    finally:
+        model.close()
+
+
+def test_real_ward_room_context_reaches_the_model_only_for_the_room_asked(
+    tmp_path, caplog
+):
+    context = _real_labelled_context()
+    publish(tmp_path / "context.json", context)
+    calls = (
+        tc("get_room", {"room": 7})["tool_calls"]
+        + tc("get_room", {"room": 9}, i=2)["tool_calls"]
+    )
+    model = Fake([{"content": None, "tool_calls": calls}, text("done")])
+    try:
+        with running_board(
+            tmp_path, model.url, context_path=tmp_path / "context.json", real_ward=True
+        ) as base:
+            with caplog.at_level("INFO"):
+                _, reply = request(
+                    base, "/api/ask", {"question": "How is room 7 doing today?"}
+                )
+        asked, other = (
+            json.loads(m["content"])["tool_result"] for m in tool_msgs(model)
+        )
+        assert asked["room"]["room"] == 7 and asked["room"]["p"] == {"imv": 0.3}
+        assert asked["room"]["name"] == {"display": "Ada Example", "fictional": True}
+        # no clock fields or dates in what the model reads for a real ward
+        assert not {"updated_at", "cut_time", "window"} & set(asked["room"])
+        assert "made_at" not in asked and "2026-" not in json.dumps(asked)
+        assert "error" in other and "room" not in other  # room 9 was not asked about
+        assert "Room 7 (Ada Example)" in reply["answer"]
+        assert "Room 9" not in reply["answer"]
+        assert "room 7 doing" not in caplog.text and "Ada" not in caplog.text
+        assert "30%" not in caplog.text
+    finally:
+        model.close()
+
+
+def test_board_real_ward_flag_and_workflows_agree():
+    assert board.parse_args(["--forecast", "f.json"]).real_ward is False
+    assert board.parse_args(["--forecast", "f.json", "--real-ward"]).real_ward is True
+    from app import dispatcher
+
+    twin = (pathlib.Path(board.__file__).parents[1] / "fuzzball/t7-twin.fz").read_text()
+    line = next(x for x in twin.splitlines() if "--dispatcher http://dispatcher" in x)
+    assert "--real-ward" not in dispatcher.render_ward(line)  # open demo: no flag
+    assert "--real-ward" in dispatcher.render_ward(line, real_ward=True)

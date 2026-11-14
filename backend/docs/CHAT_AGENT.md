@@ -22,7 +22,7 @@ Monte Carlo and sampled patient futures are not the board/chat prediction path. 
 | `get_unit_forecast(prediction?)` | Five forecast rows, or the selected outcome for a focused question; counts and 80% ranges |
 | `get_life_support()` | Observed support and forecast new starts, explicitly separated; unavailable fields remain unknown |
 | `get_capacity()` | Entered capacity and free ventilators; missing values are not set |
-| `get_room(room)` | Approved room evidence and its source; current support and five probabilities |
+| `get_room(room)` | Approved room evidence and its source; current support and five probabilities. For a real MIMIC-IV ward: refused ("counts only") unless the board runs with `--real-ward` or `--require-real-data`, and then only for a room the user asked about (the open room or a room number in the question), without clock fields |
 | `explain_method(topic)` | Fixed definitions, including the winnowing/last-hidden-state probe pipeline |
 | `list_runs()` | Operational status, kept separate from clinical evidence |
 | `request_forecast_run(role, scope, room?)` | Explicit update through the configured dispatcher; model arguments cannot supply missing request attribution |
@@ -45,7 +45,7 @@ The current app may attach a validated invented display name with `fictional: tr
 
 ## Data and verification limits
 
-Real-MIMIC clinical context is requested for the local application. External coding agents receive code, synthetic fixtures and aggregate verification only. This patch does not read clinical rows or establish that real room and unit files share a validated roster, cut or immutable publication manifest. That producer contract and its local real-data acceptance remain prerequisites for grounded real-MIMIC comparisons.
+Real-MIMIC room context reaches the local model only in real-ward mode and only for the room asked about (docs/DECISIONS.md D19); otherwise a real ward is counts-only. External coding agents receive code, synthetic fixtures and aggregate verification only. This patch does not read clinical rows or establish that real room and unit files share a validated roster, cut or immutable publication manifest. That producer contract and its local real-data acceptance remain prerequisites for grounded real-MIMIC comparisons.
 
 Logs contain approved role labels, allowlisted tool names, timing and operational metadata. They do not contain questions, answers, clinical tool bodies or arbitrary model tool-name text. Application logging tests do not establish model-server or proxy logging configuration.
 

@@ -261,9 +261,7 @@ def room_entries(
                     "icu_departure": dep,
                     "death": None if pending else _num(p["death"][i]),
                 },
-                "any_life_support": None
-                if pending or no_any[i]
-                else _num(any_p[i]),
+                "any_life_support": None if pending or no_any[i] else _num(any_p[i]),
                 "level": None
                 if pending
                 else "unavailable"

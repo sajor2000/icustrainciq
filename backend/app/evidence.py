@@ -64,6 +64,8 @@ def forecast_answer(forecast: dict) -> str:
 
 def tool_answer(name: str, result: dict) -> str:
     if result.get("error"):
+        if result.get("counts_only") is True:
+            return "Room details are not shown for this ward: counts only."
         return "Requested evidence is unavailable."
     if name == "get_unit_forecast":
         heading = (

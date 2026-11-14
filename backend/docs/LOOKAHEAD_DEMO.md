@@ -259,10 +259,27 @@ dispatcher still enforces one running forecast and the update cooldown.
 
 ## Prompt and data boundary
 
+The rule is docs/DECISIONS.md D6 as revised by D19: the default ward is the open
+MIMIC-IV Demo; real MIMIC-IV room views are allowed on the local cluster only,
+in an explicit real-ward mode. The code enforces it:
+
+- A real MIMIC-IV ward is **counts-only by default**. A board started without
+  `--real-ward` or `--require-real-data` returns no room records for it
+  (`/api/rooms` and the context carry `"rooms": [], "counts_only": true`, and
+  `check_first` is empty) and the chat's room tool refuses. Unit counts stay.
+- This deployment starts the board with `--require-real-data`, which is
+  real-ward mode. Then, and only then, room context may reach Nemotron, which
+  runs on the same local machines: **only for a room the request is about** (the
+  open room, or a room number in the question), never for a unit question.
+- What is sent for that room: the room number, an invented display name, age,
+  sex, observed support, the five probabilities and up to the last 12 hours of
+  event kinds. **No stay or hospitalization id, no dates and no clock fields**;
+  the payload is checked for identifier keys and source dates before it is sent.
+- Questions, answers, prompts and tool payloads are never logged.
+
 Nemotron has no filesystem access to the roster, token cache or CLIF source.
-The board retrieves bounded context through Python tools and sends only the
-requested approved room/unit fields to the local LLM. Real per-room context is
-sensitive even without hospitalization IDs: keep the HTTPS endpoint and every
+The board retrieves bounded context through Python tools. Real per-room context
+is sensitive even without hospitalization IDs: keep the HTTPS endpoint and every
 snapshot on restricted cluster storage. Never send it to external agent tools,
 Jev, public recordings, object-cache egress, Dropbox or this code archive.
 

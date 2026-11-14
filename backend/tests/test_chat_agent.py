@@ -795,9 +795,22 @@ def test_prompt_names_lookahead_and_does_not_narrate_safety_copy():
 def test_get_room_returns_the_ward_block(env, tmp_path):
     rooms = {**ROOMS, "ward": {"source": "mimic-iv", "label": "Ward A"}}
     (tmp_path / "rooms.json").write_text(json.dumps(rooms))
-    f, a = env([tc("get_room", {"room": 7}), text("ok")])
+    # a real ward's rooms reach the model only from a server started in real-ward mode
+    f, a = env([tc("get_room", {"room": 7}), text("ok")], real_ward=True)
     a.ask("room 7?", "ICU nurse")
     assert "Ward A" in tool_msgs(f)[0]["content"]
+    f, a = env([tc("get_room", {"room": 7}), text("ok")])
+    out = a.ask("room 7?", "ICU nurse")
+    assert "Ward A" not in tool_msgs(f)[0]["content"]
+    assert json.loads(tool_msgs(f)[0]["content"])["tool_result"]["counts_only"] is True
+    assert "counts only" in out["answer"]
+
+
+def test_rooms_asked_reads_the_users_own_words():
+    assert ca.rooms_asked("How is room 7?") == {7}
+    assert ca.rooms_asked("compare beds 3, 12 and 25", 4) == {3, 4, 12, 25}
+    assert ca.rooms_asked("Rm #9 vs room 40; 5 ventilators?") == {9}
+    assert ca.rooms_asked("how many ventilators tomorrow?") == set()
 
 
 def test_null_forecast_values_and_skipped_rooms_do_not_crash(env, tmp_path):

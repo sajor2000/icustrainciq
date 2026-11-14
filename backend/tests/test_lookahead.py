@@ -1364,16 +1364,15 @@ def test_unit_summaries_keep_incomplete_coverage_unknown(tmp_path):
     assert fc["yardstick"] is None
     assert "ventilator" not in (fc.get("strain") or {"tasks": []})["tasks"]
     # the same unit, fully observed, keeps every count
-    fc = aggregate.build_forecast(
-        df, "m", clif={"a": off, "b": off}, baseline=tmp_path
-    )
+    fc = aggregate.build_forecast(df, "m", clif={"a": off, "b": off}, baseline=tmp_path)
     assert fc["resources"]["ventilator"]["expected"] == 0.8
     assert fc["life_support"]["expected_new_patients"]["p50"] is not None
 
 
 def test_room_combined_forecast_is_unknown_when_a_support_is_skipped():
     """IMV unknown, the other two at 0: not any_life_support 0 and level low"""
-    df = scores(2, p={IMV: [0.4, 0.4], VASO: [0.0, 0.0], CRRT: [0.0, 0.0]}, ids=["a", "b"])
+    p = {IMV: [0.4, 0.4], VASO: [0.0, 0.0], CRRT: [0.0, 0.0]}
+    df = scores(2, p=p, ids=["a", "b"])
     off = {"imv": False, "vasopressor": False, "crrt": False}
     clif = {"a": {**off, "imv": None}, "b": off}
     cut = dt.datetime(2026, 11, 14, 7, tzinfo=dt.timezone.utc)

@@ -472,7 +472,7 @@ Check it with `t7-ward` job `load` (counts only), not by listing files by hand.
 
 1. `t7-fit` (once per model): saves the probes. It stages the open demo ward by default.
 2. `t7-ward`, rendered for the cohort: job `load` checks the folder, the table list, the 25 ids and the names file; job `tokenize` builds the room map and the tokens with the training vocabulary and swaps them into `/store/stage/`.
-3. `t7-twin` from `fuzzball/ready/t7-twin.fz` (its dispatcher line already ends in `--real-ward --clif-dir /data/dashboard_data --names /data/dashboard_data/name.parquet`).
+3. `t7-twin` from `fuzzball/ready/t7-twin.fz` (its dispatcher line already ends in `--real-ward --clif-dir /data/dashboard_data --names /data/dashboard_data/name.parquet`, and its board line in `--real-ward`: a board without it serves a real ward counts-only).
 4. The first unit forecast ("Update the unit", or 07:00). It writes `rooms.json` and `forecast.json` with `"ward": {"source": "mimic-iv", ...}`.
 
 ```bash

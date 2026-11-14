@@ -10,7 +10,7 @@ page goes live without restarting the workflow. Everything else is JSON:
 GET  /                 the page (503 note if the file is missing)
 GET  /api/context      one validated published envelope when --context is configured
 GET  /api/forecast     forecast.json (unit counts only), or {"resources": {}, "note": ...}
-GET  /api/rooms        rooms.json next to the forecast (stage ward only)
+GET  /api/rooms        rooms.json next to the forecast (open demo ward; a real ward only with --real-ward)
 GET  /api/runs         dispatcher status: next 07:00, running update, last per scope, demo clock
 GET  /api/capacity     {"life_support_patients", "vents_free", "updated_at"} (null = not set)
 POST /api/capacity     {"life_support_patients": 0..50, "vents_free": 0..50, "role"} -> capacity.json
@@ -25,6 +25,11 @@ Content-Length must be a whole number from 0 to 4096 (400 otherwise, 413 over th
 Every response carries X-Frame-Options, Content-Security-Policy and X-Content-Type-Options.
 With --context, forecast and rooms are projections of that envelope. Invalid or absent
 configured context is unavailable; independent legacy files are never a fallback.
+
+Privacy (docs/DECISIONS.md D6, D19): a real MIMIC-IV ward (`ward.source` "mimic-iv") is served
+counts-only: `/api/rooms` and the context carry no room records and `check_first` is empty,
+and the chat refuses room questions. Room views and room chat for it need the server started
+in real-ward mode: `--real-ward` (or `--require-real-data`), on the local cluster only.
 """
 
 import argparse
@@ -47,6 +52,9 @@ try:
         ChatAgent,
         ModelDown,
         ToolsUnsupported,
+        counts_only_forecast,
+        counts_only_rooms,
+        is_real_ward,
         parse_update_ask,
         update_answer,
         updated_line,
@@ -61,6 +69,9 @@ except ImportError:  # run as `python app/board.py`
         ChatAgent,
         ModelDown,
         ToolsUnsupported,
+        counts_only_forecast,
+        counts_only_rooms,
+        is_real_ward,
         parse_update_ask,
         update_answer,
         updated_line,
@@ -97,7 +108,11 @@ def make_handler(
     behind_proxy: bool = False,
     context_path: pathlib.Path | None = None,
     require_real_data: bool = False,
+    real_ward: bool = False,
 ):
+    # Real MIMIC-IV room views only when the operator started the server for them
+    # (docs/DECISIONS.md D19); otherwise a real ward is served counts-only.
+    real_ward = bool(real_ward or require_real_data)
     rooms_path = forecast_path.with_name("rooms.json")
     capacity_path = forecast_path.with_name("capacity.json")
     cap_lock = threading.Lock()
@@ -151,6 +166,7 @@ def make_handler(
         call_dispatcher,
         context_path=context_path,
         require_real_data=require_real_data,
+        real_ward=real_ward,
     )
 
     def read_capacity() -> dict:
@@ -269,6 +285,12 @@ def make_handler(
                             else "Demo context unavailable: a valid published snapshot is required.",
                         },
                     )
+                if is_real_ward(context) and not real_ward:
+                    context = {
+                        **context,
+                        "forecast": counts_only_forecast(context["forecast"]),
+                        "rooms": counts_only_rooms(context["rooms"]),
+                    }
                 projection = {"/api/forecast": "forecast", "/api/rooms": "rooms"}.get(
                     path
                 )
@@ -276,12 +298,25 @@ def make_handler(
             if path == "/api/context":
                 return self._json(404, {"available": False, "context_mode": False})
             if path == "/api/forecast":
-                return self._json(200, load())
-            if path == "/api/rooms":  # stage ward only (D6)
+                fc = load()
+                if is_real_ward(fc) and not real_ward:
+                    fc = counts_only_forecast(fc)
+                return self._json(200, fc)
+            if (
+                path == "/api/rooms"
+            ):  # open demo ward; a real ward only in real-ward mode
                 try:
                     data = rooms_path.read_bytes()
                 except OSError:
                     data = b'{"rooms": [], "note": "pending run"}'
+                if not real_ward:
+                    try:
+                        doc = json.loads(data)
+                    except ValueError:
+                        doc = None
+                    # the forecast names the ward too: either file saying real is enough
+                    if doc is None or is_real_ward(doc, load()):
+                        return self._json(200, counts_only_rooms(doc))
                 return self._send(200, "application/json", data)
             if path == "/api/runs":
                 st = call_dispatcher("/status")
@@ -414,6 +449,12 @@ def parse_args(argv=None):
         action="store_true",
         help="require a MIMIC-IV source context; refuse missing or open-demo snapshots",
     )
+    ap.add_argument(
+        "--real-ward",
+        action="store_true",
+        help="serve room views and room chat for a real MIMIC-IV ward (local cluster "
+        "only, docs/DECISIONS.md D19); without it such a ward is counts-only",
+    )
     ap.add_argument("--nemotron", default="http://nemotron:8000")
     ap.add_argument("--dispatcher", default="", help="e.g. http://dispatcher:9000")
     ap.add_argument("--static", type=pathlib.Path, default=STATIC)
@@ -443,6 +484,7 @@ def serve(a) -> ThreadingHTTPServer:
             a.behind_proxy,
             a.context,
             a.require_real_data,
+            a.real_ward,
         ),
     )
 
