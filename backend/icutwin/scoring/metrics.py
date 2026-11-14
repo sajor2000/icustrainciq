@@ -126,8 +126,14 @@ def summarize_preds(logger, df_res, target_tokens, n_samples: int = 10_000) -> d
                     .T
                 )
                 ok = y_qual.astype(bool)
-                if (nf := np.sum(~np.isfinite(y_score[ok].astype(float)))) > 0:
-                    logger.warning(f"{nf} non-finite {method} estimates for {tt}.")
+                finite = np.isfinite(y_score.astype(float))
+                if (nf := np.sum(ok & ~finite)) > 0:
+                    # no estimate is not a zero-risk estimate: leave those rows out
+                    # (a task with no fitted probe then has no rows and is skipped)
+                    logger.warning(
+                        f"{nf} non-finite {method} estimates for {tt}: left out."
+                    )
+                    ok = ok & finite
                 if len(np.unique(y_true[ok])) < 2:
                     logger.warning(
                         f"{ok.sum()} scoreable {method} rows for {tt}, "
@@ -135,7 +141,7 @@ def summarize_preds(logger, df_res, target_tokens, n_samples: int = 10_000) -> d
                     )
                     continue
                 y_true = y_true[ok].astype(int)
-                y_score = np.nan_to_num(y_score[ok].astype(float))
+                y_score = y_score[ok].astype(float)
                 v_rare = y_true.mean().item() < 0.001
                 if v_rare:
                     logger.warning("using stratified sampling due to rarity")

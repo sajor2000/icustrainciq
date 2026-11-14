@@ -91,3 +91,32 @@ def test_one_class_is_skipped_not_crashed():
         {"X_past": [False] * 4, "X_future": [False] * 4, "X_rep_score": [0.1] * 4}
     )
     assert summarize_preds(Capture(), df, ["X"], n_samples=10) == {}
+
+
+def test_unavailable_predictions_are_not_scored_as_zero_risk():
+    # a task whose probe was never fit (one class in training) scores NaN on every
+    # row; with both classes in held-out that used to be reported as AUROC 0.5
+    df = pl.DataFrame(
+        {
+            "X_past": [False] * 6,
+            "X_future": [False, True, False, True, False, True],
+            "X_rep_score": [float("nan")] * 6,
+        }
+    )
+    log = Capture()
+    out = summarize_preds(log, df, ["X"], n_samples=20)
+    assert out == {}
+    assert not any("roc_auc" in line for line in log.lines)
+
+
+def test_a_few_non_finite_predictions_are_left_out_not_zeroed():
+    df = pl.DataFrame(
+        {
+            "X_past": [False] * 7,
+            "X_future": [False, True, False, True, False, True, True],
+            "X_rep_score": [0.1, 0.9, 0.2, 0.8, 0.3, 0.7, float("nan")],
+        }
+    )
+    out = summarize_preds(Capture(), df, ["X"], n_samples=20)
+    assert out["X"]["rep"]["n"] == 6 and out["X"]["rep"]["n_pos"] == 3
+    assert out["X"]["rep"]["roc_auc"] == 1.0
