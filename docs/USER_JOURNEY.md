@@ -18,7 +18,7 @@ What the frontend must make true: the shift question (what will we be short of, 
 ## Attending physician: the room they worry about (07:00 rounds)
 
 1. **During rounds** opens room 14 (a stage-ward patient) from the board.
-2. **Reads the drawer**, which opens under the unit rows so the verdict stays in view. The room's tasks as bars, highest first (hypotension 44%, ventilator 31%, ...); tasks already on are tags ("VENT", "PRESS"), not percentages; one line says how far to trust them (held-out check).
+2. **Reads the room page** (its own page; a line at the top keeps the unit verdict in view; previous and next room for rounds). The room's tasks as bars, highest first (hypotension 44%, ventilator 31%, ...); tasks already on are tags ("VENT", "PRESS"), not percentages; one line says how far to trust them (held-out check).
 3. **Reads what the model read**: the room's last 12 hours of events (rising lactate, norepinephrine start, FiO2 at or above 0.6).
 4. **Asks the chat**: "Room 14: is intubation likely in the next 24 hours?" Nemotron answers from that room's probabilities and the counts, says it is model evidence, not a cause, and gives no treatment advice.
 5. **Decides with the team.** The board never recommends a treatment.
@@ -48,7 +48,7 @@ What the frontend must make true: one obvious way to rerun, the reason when it c
 
 ## Cognitive load
 
-The full list is in `FRONTEND_SPEC.md` under "Cognitive load". In short: the verdict comes first, the board shows exceptions only, each role's own row comes first, every row has one number with a range bar and a status word, the board names the top three rooms, the room drawer is sorted by risk, the chat offers suggested questions, the shift brief is three lines at most, and there is one time window with no tabs.
+The full list is in `FRONTEND_SPEC.md` under "Cognitive load". In short: the verdict comes first, the board shows exceptions only, each role's own row comes first, every row has one number with a range bar and a status word, the board names the top three rooms, the room page is sorted by risk, the chat offers suggested questions, the shift brief is three lines at most, and there is one time window with no tabs.
 
 ## Night shift
 

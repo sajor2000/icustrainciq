@@ -6,6 +6,12 @@ How the board fits ICU-Twin, how the team runs it on Fuzzball, and where it is h
 
 Editable source: [`diagrams/hosting.html`](diagrams/hosting.html).
 
+## How the pieces connect
+
+![Board, backend and Fuzzball](diagrams/connection.png)
+
+The page talks to one service (`app/board.py`); the service reads `forecast.json` from `twin-store`, sends counts only to Nemotron, and asks the dispatcher, which starts `t7-forecast` through the Fuzzball API at 06:30 and on request. Editable source: [`diagrams/connection.html`](diagrams/connection.html).
+
 ## Components
 
 | Part | What it is | Runs on | Reads | Writes |

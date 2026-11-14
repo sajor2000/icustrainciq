@@ -8,19 +8,25 @@ The command-center board for **ICU-Twin**, team7's project at the CIQ × NVIDIA 
 
 ## The board
 
-Synthetic data, the reviewed mockup ([`mockups/command-center.html`](mockups/command-center.html)). The verdict comes first: a three-line shift brief, then each team's row with its median and 80% range, the three highest-risk rooms, and suggested questions for the local Nemotron.
+Synthetic data, the reviewed mockup ([`mockups/command-center.html`](mockups/command-center.html)). All 25 rooms on one screen, each with its three highest risks as bars; the three rooms to check first are blue and numbered. On the right: the unit strain index ("1.3× a typical day"), a three-line shift brief, and each team's row with its median and 80% range. A room opens its own page; "Ask the board" is a chat widget that opens on demand.
 
 | Day board, 1440 px | Night board, 1440 px |
 |---|---|
 | ![Day board](docs/screenshots/board-day-1440.png) | ![Night board](docs/screenshots/board-night-1440.png) |
 
-| Room drawer open (room 20) | Phone, pharmacy |
+| Room page (room 20) | Phone, pharmacy |
 |---|---|
-| ![Room drawer](docs/screenshots/board-room-open-1440.png) | ![Phone, pharmacy](docs/screenshots/board-phone-pharmacy-390.png) |
+| ![Room page](docs/screenshots/board-room-open-1440.png) | ![Phone, pharmacy](docs/screenshots/board-phone-pharmacy-390.png) |
+
+| Ask the board (chat widget open) |
+|---|
+| ![Chat widget](docs/screenshots/board-chat-open-1440.png) |
 
 ## How it runs
 
 ![Where ICU-Twin runs](docs/diagrams/hosting.png)
+
+![How the pieces connect](docs/diagrams/connection.png)
 
 Fuzzball runs the real forecast on the team's two GB10 nodes and serves the live board; this laptop runs an offline demo; Vercel can host a public preview with synthetic numbers. Patient rows stay in the team7 volumes. Steps for the team, the data boundary and the hosting plan: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
@@ -41,6 +47,7 @@ python3 -m http.server 8000   # from this repo, then open:
 
 | Read | For |
 |---|---|
+| [`docs/NAMING_AND_WORDING.md`](docs/NAMING_AND_WORDING.md) | product name candidates and the words to use on the board (plain language, human factors) |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | architecture, data boundary, how the team runs it on Fuzzball, hosting plan (local demo, Fuzzball, Vercel), diagrams |
 | [`docs/USER_JOURNEY.md`](docs/USER_JOURNEY.md) | the 07:00 morning: charge nurse, physician, pharmacy, respiratory therapy, bed manager, midday rerun, night shift, judges |
 | [`docs/INTEGRATION.md`](docs/INTEGRATION.md) | how the board talks to the cluster: the five-operation interface, model output end to end, the chat path, request rules, what the Fuzzball team must provide |

@@ -78,7 +78,7 @@ flowchart LR
 | 1 | Create volumes `twin-store`, `tooling`, `hfcache`, `clif_work` on provisioner `team7` (all five workflows stop at a missing volume today) | lane 2 | nothing runs without them |
 | 2 | Bring up `t7-twin.fz`; send lane 4 the board URL (`fuzzball workflow endpoints list`) and how teammates and judges open it (`fuzzball workflow connect --name board --endpoint web <id>`, or an endpoint token) | lane 2 | the page has a home |
 | 3 | Confirm the cluster web UI address and set `FB_UI_URL` in `t7-twin.fz` | lane 2 | the dispatcher downloads the CLI from it; without it Rerun and the 06:30 run fail |
-| 4 | Add the stage-ward pass to `t7-forecast.fz` (step 4 above), writing `/store/rooms.json` | lane 3 with Vaishvik | room drawer and room chat |
+| 4 | Add the stage-ward pass to `t7-forecast.fz` (step 4 above), writing `/store/rooms.json` | lane 3 with Vaishvik | room page and room chat |
 | 5 | `app/board.py`: serve `app/static/index.html` at `/`, add `GET /api/rooms`, accept `room` on `/api/ask` | lane 4 (backend PR) | the five-operation interface |
 | 6 | Tell lane 4 how long one `t7-forecast` takes on one GPU | lane 3 | the page shows "running, about N min" |
 | 7 | Keep the service names `board`, `nemotron`, `dispatcher` and ports 8080, 8000, 9000 | lane 2 | the board's adapters are wired by name |

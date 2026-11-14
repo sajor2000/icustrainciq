@@ -180,7 +180,7 @@ A near-monochrome board of ink on enamel, one working blue, and three status ink
 - **Night counterparts** (`night-*`): charcoal ground, chalk ink, lifted blue and status inks; `night-focus` is a lighter blue than the night magnet so the focus ring separates from selected fills.
 
 ### Named Rules
-**The One Blue Rule.** Magnet blue is the only chromatic fill on the board. It means "risk"; controls show selection with ink, not blue. No second accent is introduced.
+**The One Blue Rule.** Magnet blue is the only chromatic fill on the board. On tiles it marks the exception (the three watch-first rooms), not a risk gradient: bar length carries the size of each risk (colour is not ordered, NN/g; Few). Controls show selection with ink, not blue. No second accent is introduced.
 
 **The Word Beside the Colour Rule.** Status is never colour alone. Every status colour appears as the ink of a word (ON TRACK, TIGHT, SHORT) with a matching outline, and the capacity line is an ink line explained in text ("ink line = what is free").
 
@@ -227,7 +227,7 @@ The board is flat. Depth is carried by ink rules and borders, not by panels. The
 ### Shadow Vocabulary
 - **Magnet contact** (`box-shadow: 0 1px 1px rgba(0,0,0,.18), 0 2px 4px rgba(0,0,0,.06)`): magnets only.
 
-**The Flat Board Rule.** Only magnets cast a shadow. Panels, controls, the chart, and chat messages stay flat on the board.
+**The Flat Board Rule.** Only magnets and the two floating chat pieces (launcher and panel, which sit above the board) cast a shadow. Panels, controls and chat messages stay flat.
 
 ## Shapes
 
@@ -242,6 +242,18 @@ The signature piece: a flat tile with an ink border, the room number large, the 
 - **Content:** room number (26px/800), risk line (13px/600, event name + percent), and top-right VENT / PRESS / CRRT tags for tasks already on before 07:00 (V / P / C on a phone).
 - **States:** hover lifts 1px; selected gets a 3px ink outline offset 2px; `aria-pressed` reflects selection; the accessible label spells the risk in words.
 - **Legend:** three swatches (under 5%, about 1 in 4, 45% or more) above the grid, readable by screen readers; a note under the grid says what the shade and tags mean.
+
+### Unit strain header
+Top of the right column (first on a phone). Title "Unit strain · next 24 h" (18px/700) with the band word (QUIET / USUAL / BUSY / VERY BUSY) outlined, Tight Amber for the two busy bands, Faded Marker otherwise; the ratio as a 48px/800 numeral ("1.3×") beside "a typical day" (18px/600) and its 80% range; a scale of four bands on Rule tracks with a dashed "typical" mark, the range as a 10px magnet-blue stroke and the median as a 3px ink tick; one 14px line naming the tasks above their usual.
+
+### Room tile (all 25 on one screen)
+Neutral surface with ink by default. Content: room number (26px/800), the three highest adverse risks as rows (name 12px/600, a 6px bar in currentColor on a 24% track, percent right-aligned), on-now tags top right. Watch-first rooms (the three highest single risks) take the full magnet fill with magnet ink, a 2.5px border and a numbered round badge (1 to 3) after the number; with two tags they switch to short tags (V, P, C). A "Watch first" line above the grid links the same three rooms.
+
+### Room page
+Its own view at `#room=N`: "← All 25 rooms" and previous / next links (44px targets), a unit-context line, the room number as a 44px/800 heading, then two columns behind a 2px ink rule: large risk bars (14px track, 24px/800 percent) with on-now tags and the trust line; the last 12 h with "Show more" and "Ask about this room".
+
+### Chat widget
+A launcher pill (ink fill, board text, 48px tall) fixed bottom right; the panel (surface, 1.5px ink border, 8px corners, up to 72% of the viewport) opens above it with a heading, Close, chips, the log and the ask form. Closed by default; Escape and Close return focus to the launcher; on a phone it spans the width and closes when the page changes.
 
 ### Margin row and range bar
 - **Row:** four tracks (name with team or "your row" beneath, median numeral (the p50, never called "most likely"), bar with "range p10 to p90" beneath, status word or "no capacity set").

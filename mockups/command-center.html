@@ -24,7 +24,37 @@ body{margin:0;background:var(--board);color:var(--ink);
 ::selection{background:var(--sel)}
 :focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
 button{font:inherit;color:inherit}
-.wrap{max-width:1440px;margin:0 auto;padding:16px 24px 32px}
+.wrap{max-width:1440px;margin:0 auto;padding:16px 24px 96px}
+/* watch row */
+.watch{margin:0 0 10px;font-size:14px;color:var(--ink-2)}
+.watch b{color:var(--ink)}
+.watch .roomlink{background:transparent;border:0;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;padding:12px 6px;margin:-12px -6px;cursor:pointer;font-weight:700;color:var(--ink);background-clip:content-box}
+.mag[data-watch]{border-width:2.5px}
+.mag .wl{display:inline-grid;place-items:center;width:20px;height:20px;margin-left:6px;vertical-align:4px;border:1.5px solid currentColor;border-radius:999px;font-size:12px;font-weight:800;line-height:1}
+/* room page */
+.roomview{padding-top:16px}
+.rv-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.rv-nav a{color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;min-height:44px;padding:0 4px}
+.rv-step{display:flex;gap:16px}
+.rv-unit{margin:4px 0 0;font-size:14px;color:var(--ink-2)}
+.roomview h1{margin:12px 0 2px;font-size:44px;line-height:1;letter-spacing:-.02em}
+.rv-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:32px;margin-top:16px;padding-top:16px;border-top:2px solid var(--ink)}
+.rv-grid h2{margin:0 0 8px;font-size:18px}
+.bars.big li{grid-template-columns:minmax(0,1fr) minmax(120px,2fr) 64px;padding:10px 0;font-size:16px}
+.bars.big .track{height:14px;border-radius:7px}
+.bars.big .pct{font-size:24px}
+.rv-ask{display:flex;margin-top:16px}
+@media (max-width:760px){.rv-grid{grid-template-columns:1fr;gap:20px}.roomview h1{font-size:36px}}
+/* chat widget */
+.chatbtn{position:fixed;right:24px;bottom:24px;z-index:20;min-height:48px;padding:0 20px;border:0;border-radius:999px;background:var(--ink);color:var(--board);font-weight:700;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.18),0 8px 20px rgba(0,0,0,.14)}
+.chatbtn[aria-expanded="true"]{visibility:hidden}
+.chatpanel{position:fixed;right:24px;bottom:24px;z-index:21;width:min(420px,calc(100vw - 32px));max-height:min(72vh,640px);display:flex;flex-direction:column;background:var(--surface);color:var(--ink);border:1.5px solid var(--ink);border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,.18),0 12px 32px rgba(0,0,0,.18)}
+.chatpanel[hidden]{display:none}
+.cp-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cp-head h2{margin:0;font-size:18px}
+.chatpanel .sub{margin:4px 0 8px;font-size:13px;color:var(--ink-2)}
+.chatpanel .chips{margin:0 0 10px}
+@media (max-width:560px){.chatbtn{right:16px;bottom:16px}.chatpanel{right:8px;left:8px;bottom:8px;width:auto;max-height:80vh}}
 @media (max-width:560px){.wrap{padding:12px 16px 24px}}
 
 /* top strip */
@@ -33,26 +63,27 @@ button{font:inherit;color:inherit}
 .unit p{margin:2px 0 0;color:var(--ink-2);font-size:13px}
 .synthetic{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--ink);border:1.5px dashed var(--ink);border-radius:4px;padding:2px 6px;white-space:nowrap}
 .spacer{flex:1}
-.toggle{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1.5px solid var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600}
+.toggle{display:inline-flex;align-items:center;gap:8px;min-height:44px;background:transparent;border:1.5px solid var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600}
 .toggle:hover{background:var(--board-2)}
 .runbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.runbox select{font:inherit;color:var(--ink);background:var(--board);border:1.5px solid var(--ink);border-radius:8px;padding:7px 8px}
+.runbox select{min-height:44px;font:inherit;color:var(--ink);background:var(--board);border:1.5px solid var(--ink);border-radius:8px;padding:7px 8px}
 .runstate{flex-basis:100%;font-size:13px;color:var(--ink-2);margin:0}
 .runstate b{color:var(--ink)}
 
-/* layout: the right column is brief, unit rows, room drawer, chat. On a phone the verdict and the
-   rows (your row first) come before the 25-room board; the chat comes last. */
+/* layout: all 25 rooms fill the left column from the top (one screen at 1440x900); the right column is
+   strain, brief, unit rows. On a phone: strain, brief, your rows, then the rooms. Chat is a floating widget. */
 .main{display:grid;grid-template-columns:minmax(0,2fr) minmax(340px,1fr);
-  grid-template-areas:"left brief" "left rows" "left drawer" "left chat";grid-template-rows:auto auto auto 1fr;margin-top:16px}
+  grid-template-areas:"left strain" "left brief" "left rows";grid-template-rows:auto auto 1fr;margin-top:16px}
 .margin{display:contents}
 .left{grid-area:left;padding-right:24px;align-self:start;position:sticky;top:12px}
-.brief{grid-area:brief} #unitpanel{grid-area:rows} #drawer{grid-area:drawer} .chat{grid-area:chat}
+.strain{grid-area:strain;padding:0 0 16px 24px;border-left:2px solid var(--ink)} .brief{grid-area:brief} #unitpanel{grid-area:rows}
 .brief,.margin>.panel{border-left:2px solid var(--ink);padding-left:24px}
+.brief{border-top:1px solid var(--rule);padding-top:12px}
 @media (max-width:960px){
-  .main{grid-template-columns:1fr;grid-template-areas:"brief" "rows" "drawer" "left" "chat";grid-template-rows:auto}
+  .main{grid-template-columns:1fr;grid-template-areas:"strain" "brief" "rows" "left";grid-template-rows:auto}
+  .strain{padding:0 0 12px;border-left:0;border-bottom:1px solid var(--rule);margin-bottom:8px}
   .left{position:static;padding-right:0;border-top:2px solid var(--ink);padding-top:12px;margin-top:4px}
   .brief,.margin>.panel{border-left:0;padding-left:0}
-  .chat{border-top:2px solid var(--ink)!important;margin-top:20px}
 }
 
 /* shift brief: three lines at most */
@@ -62,7 +93,7 @@ button{font:inherit;color:inherit}
 .brief li{padding:6px 0;border-top:1px solid var(--rule);font-size:15px}
 .brief li:first-child{border-top:0;font-size:18px;font-weight:700}
 .brief li .w{font-size:12px;font-weight:800;letter-spacing:.05em;border:1.5px solid currentColor;border-radius:4px;padding:1px 4px;vertical-align:2px}
-.brief .roomlink{background:transparent;border:0;border-bottom:1.5px solid currentColor;padding:6px 4px;margin:-6px -4px;cursor:pointer;font-weight:700;background-clip:content-box}
+.brief .roomlink{background:transparent;border:0;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;padding:12px 6px;margin:-12px -6px;cursor:pointer;font-weight:700;background-clip:content-box}
 .brief{padding-bottom:12px}
 
 /* board */
@@ -70,24 +101,35 @@ button{font:inherit;color:inherit}
 .boardhead h2{margin:0;font-size:18px}
 .legend{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);margin:0}
 .legend i{display:inline-block;width:28px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px;border:1px solid var(--rule)}
+.strain-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.strain h2{margin:0;font-size:18px}
+.band{font-size:12px;font-weight:800;letter-spacing:.05em;border:1.5px solid currentColor;border-radius:4px;padding:3px 8px;color:var(--ink-2)}
+.band.busy{color:var(--tight)}
+.strain-x{margin:4px 0 0;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.strain-x b{font-size:48px;font-weight:800;line-height:1;letter-spacing:-.02em}
+.strain-x .of{font-size:18px;font-weight:600}
+.strain-x .rg{font-size:14px;color:var(--ink-2)}
+#sscale{display:block;width:100%;max-width:640px;height:auto;margin-top:8px;overflow:visible}
+.strain-why{margin:8px 0 0;font-size:14px;color:var(--ink-2);max-width:72ch}
+.strain-why b{color:var(--ink);font-weight:600}
 .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
-.grid.top3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.top3 .mag{min-height:112px}
-details.allrooms{margin-top:12px;border-top:1px solid var(--rule)}
-details.allrooms summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:14px;font-weight:600}
-details.allrooms summary:hover{color:var(--ink-2)}
-details.allrooms[open] summary{margin-bottom:8px}
-.mag{position:relative;min-height:92px;text-align:left;border:1.5px solid var(--ink);border-radius:6px;padding:8px 10px;cursor:pointer;
+.mag .evs{display:flex;flex-direction:column;gap:4px;margin-top:10px}
+.mag .ev{display:grid;grid-template-columns:minmax(0,1fr) 44px 32px;gap:6px;align-items:center;font-size:12px;font-weight:600;line-height:1.2}
+.mag .ev .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mag .bar{height:6px;border-radius:3px;background:color-mix(in srgb,currentColor 24%,transparent)}
+.mag .bar i{display:block;height:100%;border-radius:3px;background:currentColor}
+.mag .pc{text-align:right}
+.mag{position:relative;min-height:104px;text-align:left;border:1.5px solid var(--ink);border-radius:6px;padding:8px 10px;cursor:pointer;
   background:var(--surface);color:var(--ink);box-shadow:0 1px 1px rgba(0,0,0,.18),0 2px 4px rgba(0,0,0,.06);
   transition:background-color .2s ease-out,transform .15s ease-out}
 .mag:hover{transform:translateY(-1px)}
 .mag[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
 .mag .rm{font-size:26px;font-weight:800;line-height:1}
-.mag .top1{display:block;margin-top:6px;font-size:13px;font-weight:600}
 .mag .on{position:absolute;top:8px;right:8px;display:flex;gap:4px}
 .mag .short{display:none}
+.mag.compact .on .long{display:none}.mag.compact .on .short{display:inline}
 .mag .on>span{font-size:11px;font-weight:700;letter-spacing:.04em;border:1.2px solid currentColor;border-radius:3px;padding:0 4px;line-height:16px}
-@media (max-width:560px){.grid{gap:6px}.mag{min-height:68px;padding:6px}.mag .rm{font-size:20px}.mag .top1{font-size:12px;margin-top:4px}.mag .long{display:none}.mag .short{display:inline}.mag .on{position:static;margin-top:4px;gap:3px;flex-wrap:wrap}.mag .on>span{font-size:11px;padding:0 3px;line-height:14px}}
+@media (max-width:560px){.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.mag .ev{grid-template-columns:minmax(0,1fr) 24px 30px;font-size:11px;gap:4px}.mag .evs{margin-top:6px}.mag{min-height:68px;padding:6px}.mag .rm{font-size:20px}.mag .long{display:none}.mag .short{display:inline}.mag .on{position:static;margin-top:4px;gap:3px;flex-wrap:wrap}.mag .on>span{font-size:11px;padding:0 3px;line-height:14px}}
 
 /* margin */
 .panel{padding:14px 0 18px;border-top:1px solid var(--rule)}
@@ -110,10 +152,6 @@ details.more summary:hover{color:var(--ink)}
 .note{font-size:12px;color:var(--ink-2);margin:8px 0 0}
 @media (max-width:420px){.row{grid-template-columns:minmax(0,1fr) 34px 72px 76px;gap:8px}.row .n{font-size:22px}}
 
-/* room drawer: opens under the unit rows */
-.drawer[hidden]{display:none}
-.drawer .head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-.drawer .head h2{font-size:22px}
 .close{min-height:44px;background:transparent;border:1.5px solid var(--ink);border-radius:6px;padding:4px 12px;cursor:pointer}
 .close:hover{background:var(--board-2)}
 .bars{list-style:none;margin:4px 0 0;padding:0}
@@ -123,7 +161,6 @@ details.more summary:hover{color:var(--ink)}
 .bars .pct{font-weight:800;font-size:18px;text-align:right}
 .onnow{margin:8px 0 0;font-size:13px}
 .onnow span{font-size:11px;font-weight:700;letter-spacing:.04em;border:1.2px solid currentColor;border-radius:3px;padding:0 4px;margin-right:4px}
-.drawer h3{font-size:14px;margin:14px 0 0}
 .past{margin:6px 0 0;padding:0;list-style:none;font-size:13px}
 .past li{display:grid;grid-template-columns:56px 1fr;gap:8px;padding:3px 0;border-top:1px solid var(--rule)}
 .past time{color:var(--ink-2)}
@@ -133,8 +170,8 @@ details.more summary:hover{color:var(--ink)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
 .chip{min-height:44px;background:transparent;border:1.5px solid var(--ink);border-radius:999px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:600;text-align:left}
 .chip:hover{background:var(--board-2)}
-.chat .log{max-height:300px;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:0 0 10px}
-.chat .log:empty{display:none}
+.chatpanel .log{flex:1 1 auto;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:0 0 10px}
+.chatpanel .log:empty{display:none}
 .msg{padding:8px 10px;border-radius:8px;font-size:14px;max-width:92%}
 .msg.q{align-self:flex-end;background:var(--board-2)}
 .msg.a{align-self:flex-start;border:1.5px solid var(--rule)}
@@ -187,6 +224,7 @@ details.more summary:hover{color:var(--ink)}
     <p class="runstate" id="runstate" aria-live="polite">Ran <b>06:30</b> by schedule (mock) · next run 06:30 tomorrow</p>
   </header>
 
+  <div id="boardview">
   <div class="main">
     <section class="brief" aria-labelledby="brief-h">
       <h2 id="brief-h">Shift brief (mock)</h2>
@@ -194,21 +232,22 @@ details.more summary:hover{color:var(--ink)}
       <ol id="brief"></ol>
     </section>
 
+    <section class="strain" aria-labelledby="strain-h">
+      <div class="strain-top"><h2 id="strain-h">Unit strain · next 24 h</h2><span class="band" id="band"></span></div>
+      <p class="strain-x"><b id="sx"></b><span class="of">a typical day</span><span class="rg" id="srange"></span></p>
+      <svg id="sscale" viewBox="0 0 640 52" role="img" aria-labelledby="sscale-t"><title id="sscale-t">Strain scale</title></svg>
+      <p class="strain-why" id="swhy"></p>
+    </section>
+
     <div class="left">
       <section aria-labelledby="board-h">
         <div class="boardhead">
-          <h2 id="board-h">Watch first · the three highest-risk rooms</h2>
-          <p class="legend">
-            <span><i style="background:color-mix(in srgb,var(--magnet) 8%,var(--surface))"></i>under 5%</span>
-            <span><i style="background:color-mix(in srgb,var(--magnet) 55%,var(--surface))"></i>about 1 in 4</span>
-            <span><i style="background:var(--magnet)"></i>45% or more</span>
-          </p>
+          <h2 id="board-h">All 25 rooms · next 24 h</h2>
+          <p class="legend"><span>Bar = chance in the next 24 h</span><span><i style="background:var(--magnet)"></i>watch first, in order 1 to 3</span></p>
         </div>
-        <div class="grid top3" id="top3" role="group" aria-label="The three highest-risk rooms; choose one to open its forecast"></div>
-        <details class="allrooms" id="allrooms"><summary>Show all 25 rooms</summary>
-          <div class="grid" id="grid" role="group" aria-label="Rooms 1 to 25; choose a room to open its forecast"></div>
-        </details>
-        <p class="note">Shade: the room's highest chance of a new event in the next 24 h (leaving the ICU is not counted as a risk). Tags: already on before 07:00, so not counted as new (V, P, C on a phone). Rooms are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
+        <p class="watch" id="watch"></p>
+        <div class="grid" id="grid" role="group" aria-label="Rooms 1 to 25; choose a room to open its page"></div>
+        <p class="note">Bars: each room's three highest risks of a new event in the next 24 h (leaving the ICU is on the room page). Blue tiles: the three rooms with the highest single risk (leaving the ICU is not counted as a risk). Tags: already on before 07:00, so not counted as new (V, P, C on a phone). Rooms are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
       </section>
     </div>
 
@@ -219,27 +258,6 @@ details.more summary:hover{color:var(--ink)}
         <div id="rows"></div>
       </section>
 
-      <section class="panel drawer" id="drawer" aria-labelledby="room-h" hidden>
-        <div class="head"><h2 id="room-h" tabindex="-1">Room</h2><button class="close" id="close" type="button">Close room</button></div>
-        <p class="sub" id="room-sub"></p>
-        <ul class="bars" id="rbars"></ul>
-        <p class="onnow" id="onnow"></p>
-        <p class="label">How far to trust these: held-out check (calibration, AUROC) <span class="pending">pending run</span>.</p>
-        <h3>What the model read · last 12 h</h3>
-        <ul class="past" id="past"></ul>
-        <button class="linkbtn" id="pastmore" type="button"></button>
-        <p class="note">Model evidence, not a cause. Decision support, not a treatment recommendation.</p>
-      </section>
-
-      <section class="panel chat" aria-labelledby="chat-h">
-        <h2 id="chat-h">Ask the board</h2>
-        <p class="sub" id="chat-scope">Answers from this forecast only, on the local Nemotron 3 Nano. Mock replies in this file.</p>
-        <div class="chips" id="chips" role="group" aria-label="Suggested questions"></div>
-        <div class="log" id="log" aria-live="polite"></div>
-        <form class="ask" id="ask"><label class="sr" for="q">Question</label>
-          <input id="q" autocomplete="off" placeholder="Or type a question">
-          <button type="submit">Ask</button></form>
-      </section>
     </div>
   </div>
 
@@ -261,7 +279,44 @@ details.more summary:hover{color:var(--ink)}
       </dl>
     </details>
   </footer>
+  </div>
+
+  <main id="roomview" class="roomview" hidden aria-labelledby="rv-h">
+    <nav class="rv-nav" aria-label="Rooms">
+      <a class="back" href="#board">← All 25 rooms</a>
+      <span class="rv-step"><a id="rv-prev" href="#"></a><a id="rv-next" href="#"></a></span>
+    </nav>
+    <p class="rv-unit" id="rv-unit"></p>
+    <h1 id="rv-h" tabindex="-1">Room</h1>
+    <p class="sub" id="rv-sub"></p>
+    <div class="rv-grid">
+      <section aria-labelledby="rv-risk-h">
+        <h2 id="rv-risk-h">Chance of each event in the next 24 h</h2>
+        <ul class="bars big" id="rbars"></ul>
+        <p class="onnow" id="onnow"></p>
+        <p class="label">How far to trust these: held-out check (calibration, AUROC) <span class="pending">pending run</span>.</p>
+      </section>
+      <section aria-labelledby="rv-past-h">
+        <h2 id="rv-past-h">What the model read · last 12 h</h2>
+        <ul class="past" id="past"></ul>
+        <button class="linkbtn" id="pastmore" type="button"></button>
+        <button class="toggle rv-ask" id="rv-ask" type="button">Ask about this room</button>
+      </section>
+    </div>
+    <p class="note">Model evidence, not a cause. Decision support, not a treatment recommendation. Stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
+  </main>
 </div>
+
+<button class="chatbtn" id="chatbtn" type="button" aria-expanded="false" aria-controls="chatpanel">Ask the board</button>
+<section class="chatpanel" id="chatpanel" aria-labelledby="chat-h" hidden>
+  <div class="cp-head"><h2 id="chat-h">Ask the board</h2><button class="close" id="chatclose" type="button">Close</button></div>
+  <p class="sub" id="chat-scope">Answers from this forecast only, on the local Nemotron 3 Nano. Mock replies in this file.</p>
+  <div class="chips" id="chips" role="group" aria-label="Suggested questions"></div>
+  <div class="log" id="log" aria-live="polite"></div>
+  <form class="ask" id="ask"><label class="sr" for="q">Question</label>
+    <input id="q" autocomplete="off" placeholder="Or type a question">
+    <button type="submit">Ask</button></form>
+</section>
 
 <script>
 (() => {
@@ -269,12 +324,12 @@ details.more summary:hover{color:var(--ink)}
   let s = 20261114; const rnd = () => (s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296;
   // the six board tasks (backend docs/DECISIONS.md D8), one horizon: next 24 h, 07:00 to 07:00
   const EV = [
-    {k:"vent", name:"Ventilator", row:"Ventilator starts", bl:"Ventilators", lc:"ventilator starts", short:"Vent", team:"respiratory therapy", tag:"VENT", t:"V", base:.10},
-    {k:"press",name:"Vasopressor",row:"Vasopressor starts",bl:"Vasopressors",lc:"vasopressor starts",short:"Press",team:"pharmacy", tag:"PRESS", t:"P", base:.12},
-    {k:"crrt", name:"CRRT",       row:"CRRT starts",       bl:"CRRT",       lc:"CRRT starts",       short:"CRRT", team:"ICU team", tag:"CRRT", t:"C", base:.05},
-    {k:"hypo", name:"Hypotension",row:"Hypotension (MAP < 65 or SBP < 90)",bl:"Hypotension",lc:"hypotension (MAP < 65 or SBP < 90)",short:"Hypo",team:"ICU team", base:.13},
-    {k:"death",name:"Death",      row:"Deaths",            bl:"Deaths",            lc:"deaths",            short:"Death",team:"ICU team", base:.05},
-    {k:"out",  name:"Leaves the ICU",row:"Leave the ICU to ward or step-down",bl:"Departures",lc:"leaving the ICU",short:"Out",team:"bed manager", base:.33}];
+    {k:"vent", mid:"Ventilator", name:"Ventilator", row:"Ventilator starts", bl:"Ventilators", lc:"ventilator starts", short:"Vent", team:"respiratory therapy", tag:"VENT", t:"V", base:.10},
+    {k:"press",mid:"Pressor", name:"Vasopressor",row:"Vasopressor starts",bl:"Vasopressors",lc:"vasopressor starts",short:"Press",team:"pharmacy", tag:"PRESS", t:"P", base:.12},
+    {k:"crrt", mid:"CRRT", name:"CRRT",       row:"CRRT starts",       bl:"CRRT",       lc:"CRRT starts",       short:"CRRT", team:"ICU team", tag:"CRRT", t:"C", base:.05},
+    {k:"hypo", mid:"Low BP", name:"Hypotension",row:"Hypotension (MAP < 65 or SBP < 90)",bl:"Hypotension",lc:"hypotension (MAP < 65 or SBP < 90)",short:"Hypo",team:"ICU team", base:.13},
+    {k:"death",mid:"Death", name:"Death",      row:"Deaths",            bl:"Deaths",            lc:"deaths",            short:"Death",team:"ICU team", base:.05},
+    {k:"out",  mid:"Leaves ICU", name:"Leaves the ICU",row:"Leave the ICU to ward or step-down",bl:"Departures",lc:"leaving the ICU",short:"Out",team:"bed manager", base:.33}];
   const OWN = {"ICU nurse":null, "ICU physician":["crrt","hypo","death"], "pharmacy":["press"], "respiratory therapy":["vent"], "bed manager":["out"]};
   const cap = {vent:3}; // placeholder until the clinical lead sets capacities
 
@@ -332,6 +387,27 @@ details.more summary:hover{color:var(--ink)}
       + RX.map(x=>row(x.row, x.def, C[x.k], "research")).join("");
   }
 
+  // unit strain: forecast new events (six board tasks) against this ICU's typical day.
+  // Typical day comes from the training data once a run exists; synthetic here.
+  const TYP = {vent:2, press:2, crrt:1, hypo:4, death:1, out:6}, TYPDAY = Object.values(TYP).reduce((a,b)=>a+b,0);
+  const ALL = counts(rooms.flatMap(r=>EV.map(e=>pv(r,e.k))));
+  const SX = {p10:ALL.p10/TYPDAY, p50:ALL.p50/TYPDAY, p90:ALL.p90/TYPDAY};
+  const bandOf = x => x<0.8?"QUIET":x<1.2?"USUAL":x<1.6?"BUSY":"VERY BUSY";
+  const fx = x => x.toFixed(1)+"×";
+  function renderStrain(){
+    const band=bandOf(SX.p50), el=document.getElementById("band"); el.textContent=band; el.className="band"+(band.includes("BUSY")?" busy":"");
+    document.getElementById("sx").textContent=fx(SX.p50);
+    document.getElementById("srange").textContent=`(${fx(SX.p10)} to ${fx(SX.p90)}, 80% range)`;
+    const lo=.4, hi=2.0, X=v=>8+(Math.min(hi,Math.max(lo,v))-lo)/(hi-lo)*624;
+    const bands=[[lo,.8,"Quiet"],[.8,1.2,"Usual"],[1.2,1.6,"Busy"],[1.6,hi,"Very busy"]];
+    document.getElementById("sscale").innerHTML=`<title id="sscale-t">Strain ${fx(SX.p50)} a typical day, 80% range ${fx(SX.p10)} to ${fx(SX.p90)}: ${band.toLowerCase()}</title>`
+      + bands.map(([a,b,l],i)=>`<rect x="${X(a)+1}" y="14" width="${X(b)-X(a)-2}" height="8" rx="2" fill="var(--rule)"/><text x="${(X(a)+X(b))/2}" y="44" text-anchor="middle" font-size="12" fill="var(--ink-2)" font-family="inherit">${l}</text>`).join("")
+      + `<line x1="${X(1)}" x2="${X(1)}" y1="6" y2="30" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="3 3"/><text x="${X(1)}" y="4" text-anchor="middle" font-size="11" fill="var(--ink-2)" font-family="inherit">typical</text>`
+      + `<line x1="${X(SX.p10)}" x2="${Math.max(X(SX.p90),X(SX.p10)+2)}" y1="18" y2="18" stroke="var(--magnet)" stroke-width="10" stroke-linecap="round"/>`
+      + `<line x1="${X(SX.p50)}" x2="${X(SX.p50)}" y1="8" y2="28" stroke="var(--ink)" stroke-width="3"/>`;
+    const up=EV.filter(e=>C[e.k].p50>TYP[e.k]).sort((a,b)=>C[b.k].p50/TYP[b.k]-C[a.k].p50/TYP[a.k]).slice(0,2);
+    document.getElementById("swhy").innerHTML=`${ALL.p50} new events forecast (${ALL.p10} to ${ALL.p90}) against a typical day of ${TYPDAY}${up.length?`. Above usual: ${up.map(e=>`<b>${e.lc} ${C[e.k].p50}</b> (typical ${TYP[e.k]})`).join(", ")}`:""}. Typical day is synthetic until a run supplies it.`;
+  }
   const RANK = {short:0, tight:1, ok:2, none:3};
   function status(k){ const c=C[k], free=cap[k]; if(free==null) return ["none","no capacity set"]; if(c.p50>free) return ["short","SHORT"]; if(c.p90>free) return ["tight","TIGHT"]; return ["ok","ON TRACK"]; }
   function bar(c, free){
@@ -345,7 +421,7 @@ details.more summary:hover{color:var(--ink)}
   // shift brief: three lines at most, exceptions first
   function renderBrief(){
     const ex = EV.filter(e=>["short","tight"].includes(status(e.k)[0])).sort((a,b)=>RANK[status(a.k)[0]]-RANK[status(b.k)[0]]);
-    // three short lines; full detail stays in the rows and the drawer
+    // three short lines; full detail stays in the rows and the room page
     const mr = c => `${c.p50} (${c.p10}\u2013${c.p90})`;
     const l1 = ex.length
       ? ex.map(e=>{const [cls,w]=status(e.k); return `${e.bl} <span class="w" style="color:var(--${cls==="short"?"short":"tight"})">${w}</span> ${mr(C[e.k])}; ${cap[e.k]} free`;}).join("; ")
@@ -375,39 +451,60 @@ details.more summary:hover{color:var(--ink)}
   }
 
   function renderGrid(){
-    const g=document.getElementById("grid"), t3=document.getElementById("top3"); g.innerHTML=""; t3.innerHTML="";
-    const top3=ranked().slice(0,3);
-    for(const r of top3.concat(rooms)){ const [e,v]=top(r); const b=document.createElement("button"); b.type="button"; b.className="mag"; b.dataset.room=r.n; const [bg,fg]=tile(Math.min(1,v/.45)); b.style.background=bg; b.style.color=fg; b.setAttribute("aria-pressed",String(room===r.n));
+    const g=document.getElementById("grid"); g.innerHTML="";
+    const top3=ranked().slice(0,3).map(r=>r.n);
+    document.getElementById("watch").innerHTML=`<b>Watch first:</b> ${top3.map((n,i)=>`<button class="roomlink" type="button" data-room="${n}">room ${n}</button>`).join(", ")} <span>(highest single risks; blue and numbered below)</span>`;
+    document.querySelectorAll("#watch .roomlink").forEach(b=>b.onclick=()=>openRoom(+b.dataset.room));
+    for(const r of rooms){ const [e,v]=top(r); const b=document.createElement("button"); b.type="button"; b.className="mag"; b.dataset.room=r.n; if(ranked().slice(0,3).some(x=>x.n===r.n)){ const [bg,fg]=tile(1); b.style.background=bg; b.style.color=fg; } b.setAttribute("aria-pressed",String(room===r.n));
       const tags=EV.filter(x=>x.tag&&r.on[x.k]);
-      b.setAttribute("aria-label",`Room ${r.n}: highest risk ${e.name} ${pct(v)}${tags.map(x=>`, on ${x.name.toLowerCase()}`).join("")}`);
-      b.innerHTML=`<span class="rm">${r.n}</span><span class="top1"><span class="long">${e.name}</span><span class="short">${e.short}</span> ${pct(v)}</span><span class="on">${tags.map(x=>`<span><span class="long">${x.tag}</span><span class="short">${x.t}</span></span>`).join("")}</span>`;
-      b.onclick=()=>openRoom(r.n); (t3.children.length<3 ? t3 : g).appendChild(b); }
+      const ev3=EV.filter(x=>x.k!=="out"&&!Number.isNaN(r.p[x.k])).sort((a,c)=>r.p[c.k]-r.p[a.k]).slice(0,3);
+      b.setAttribute("aria-label",`Room ${r.n}: ${ev3.map(x=>`${x.name.toLowerCase()} ${pct(r.p[x.k])}`).join(", ")}${tags.map(x=>`; on ${x.name.toLowerCase()}`).join("")}`);
+      b.innerHTML=`<span class="rm">${r.n}</span><span class="evs" aria-hidden="true">${ev3.map(x=>`<span class="ev"><span class="nm"><span class="long">${x.mid}</span><span class="short">${x.short}</span></span><span class="bar"><i style="width:${Math.max(3,Math.round(r.p[x.k]*100))}%"></i></span><span class="pc">${pct(r.p[x.k])}</span></span>`).join("")}</span><span class="on">${tags.map(x=>`<span><span class="long">${x.tag}</span><span class="short">${x.t}</span></span>`).join("")}</span>`;
+      const w=top3.indexOf(r.n); if(w>=0){ b.dataset.watch=w+1; if(tags.length>1) b.classList.add("compact"); b.querySelector(".rm").insertAdjacentHTML("beforeend",`<span class="wl" aria-hidden="true">${w+1}</span>`); b.setAttribute("aria-label",`Watch ${w+1}. `+b.getAttribute("aria-label")); }
+      b.onclick=()=>openRoom(r.n); g.appendChild(b); }
   }
 
-  // room drawer: six bars sorted by risk, "on now" chips, last events capped at five
+  // room page: its own view at #room=N (back with the browser or "All 25 rooms")
   const PAST=["Lactate 3.1 (up from 2.2)","Norepinephrine 0.08 mcg/kg/min","SpO2 91% on 6 L","Chest x-ray ordered","Heart rate 118","Urine output 20 mL/h","CBC and BMP drawn","Temperature 38.4"];
-  function openRoom(n, opts={}){
-    if(!Number.isInteger(n) || !rooms[n-1]) return;
-    const first = room!==n; room=n; if(first){ log.innerHTML=""; pastOpen=false; } /* new room: fresh chat, recent events folded */ const r=rooms[n-1]; document.getElementById("drawer").hidden=false;
-    document.getElementById("room-h").textContent=`Room ${n}`;
-    document.getElementById("room-sub").textContent=`Stage ward, open demo patient · age ${r.age} · chance of each event in the next 24 h`;
+  const boardview=document.getElementById("boardview"), roomview=document.getElementById("roomview");
+  let lastRoom=null;
+  function openRoom(n){ if(Number.isInteger(n) && rooms[n-1]) location.hash="room="+n; }
+  function showRoom(n){
+    const first = room!==n; room=n; lastRoom=n; if(first){ log.innerHTML=""; pastOpen=false; }
+    const r=rooms[n-1];
+    boardview.hidden=true; roomview.hidden=false;
+    document.getElementById("rv-h").textContent=`Room ${n}`;
+    document.getElementById("rv-sub").textContent=`Stage ward, open demo patient · age ${r.age} · next 24 h, 07:00 to 07:00`;
+    document.getElementById("rv-unit").innerHTML=`Unit: <b>${fx(SX.p50)}</b> a typical day (${bandOf(SX.p50).toLowerCase()}) · ${document.querySelector("#brief li").innerHTML}`;
+    const pv_=n-1||rooms.length, nx=n%rooms.length+1;
+    const pa=document.getElementById("rv-prev"), na=document.getElementById("rv-next");
+    pa.href=`#room=${pv_}`; pa.textContent=`← Room ${pv_}`; na.href=`#room=${nx}`; na.textContent=`Room ${nx} →`;
     const live=EV.filter(e=>!Number.isNaN(r.p[e.k])).sort((a,b)=>r.p[b.k]-r.p[a.k]), on=EV.filter(e=>Number.isNaN(r.p[e.k]));
     document.getElementById("rbars").innerHTML = live.map(e=>`<li><span>${e.name}</span><span class="track" aria-hidden="true"><span class="fill" style="display:block;width:${Math.max(2,r.p[e.k]*100)}%"></span></span><span class="pct">${pct(r.p[e.k])}</span></li>`).join("");
     document.getElementById("onnow").innerHTML = on.length ? `On now, not forecast as new: ${on.map(e=>`<span>${e.tag}</span>`).join("")}` : "";
     const items = pastOpen ? PAST : PAST.slice(0,5);
     document.getElementById("past").innerHTML=items.map((t,i)=>`<li><time>-${(i*1.5+1).toFixed(0)} h</time><span>${t}</span></li>`).join("");
-    const pm=document.getElementById("pastmore"); pm.textContent = pastOpen ? "Show fewer" : `Show ${PAST.length-5} more`; pm.onclick=()=>{pastOpen=!pastOpen; openRoom(n); pm.focus();};
+    const pm=document.getElementById("pastmore"); pm.textContent = pastOpen ? "Show fewer" : `Show ${PAST.length-5} more`; pm.onclick=()=>{pastOpen=!pastOpen; showRoom(n); pm.focus();};
     document.getElementById("chat-scope").textContent=`Asking about room ${n} (open demo patient) and the unit. Mock replies in this file.`;
-    renderGrid(); renderChips();
-    if(window.innerWidth<960) document.getElementById("drawer").scrollIntoView({behavior:"smooth",block:"start"});
-    // move focus into the drawer when a room opens (not on in-drawer updates)
-    if(first && opts.focus!==false) document.getElementById("room-h").focus({preventScroll: window.innerWidth<960});
+    renderChips();
+    if(first){ window.scrollTo(0,0); document.getElementById("rv-h").focus({preventScroll:true}); }
   }
-  document.getElementById("close").onclick=()=>{const was=room; room=null; pastOpen=false; log.innerHTML=""; document.getElementById("drawer").hidden=true;
-    document.getElementById("chat-scope").textContent="Answers from this forecast only, on the local Nemotron 3 Nano. Mock replies in this file."; renderGrid(); renderChips();
-    // return focus to the room's magnet
-    const back=[...document.querySelectorAll(`.mag[data-room="${was}"], .roomlink[data-room="${was}"]`)].find(el=>el.offsetParent!==null) || document.querySelector("#allrooms summary"); back.focus(); };
-  document.getElementById("drawer").addEventListener("keydown",e=>{ if(e.key==="Escape") document.getElementById("close").click(); });
+  function showBoard(){
+    const was=room; room=null; pastOpen=false;
+    if(was!==null) log.innerHTML="";
+    roomview.hidden=true; boardview.hidden=false;
+    document.getElementById("chat-scope").textContent="Answers from this forecast only, on the local Nemotron 3 Nano. Mock replies in this file.";
+    renderGrid(); renderChips();
+    if(was!==null){ const t=document.querySelector(`#grid .mag[data-room="${was}"]`); if(t){ t.focus({preventScroll:true}); t.scrollIntoView({block:"center"}); } }
+  }
+  function route(){
+    if(window.innerWidth<560 && !chatpanel.hidden){ chatpanel.hidden=true; chatbtn.setAttribute("aria-expanded","false"); }
+    let h=location.hash; try{ h=decodeURIComponent(h); }catch(e){ /* malformed hash: treat as the board */ }
+    const m=h.match(/room=(\d+)/), n=m?+m[1]:0;
+    if(n>=1 && n<=rooms.length) showRoom(n); else showBoard();
+  }
+  window.addEventListener("hashchange", route);
+  document.getElementById("rv-ask").onclick=()=>openChat();
 
   // chat (mock): suggested questions by role, room question first when a room is open
   const CHIPS = {"ICU nurse":["What will we be short of tonight?","Which rooms are highest risk?","How many vasopressor starts?"],
@@ -446,19 +543,25 @@ details.more summary:hover{color:var(--ink)}
     if(/(leave|bed|out|transfer)/.test(t)) return `Patients leaving the ICU to ward or step-down: ${cnt("out")}. Arrivals from the ED or OR are not forecast.`;
     return `I can answer from this forecast: ventilator, vasopressor and CRRT starts, hypotension, deaths, patients leaving the ICU, the highest-risk rooms, or one stage-ward room.`;
   }
-  function ask(q){ say(role(),q,"q"); say("Nemotron 3 Nano (mock)",answer(q),"a"); }
+  function ask(q){ openChat(false); say(role(),q,"q"); say("Nemotron 3 Nano (mock)",answer(q),"a"); }
+  const chatbtn=document.getElementById("chatbtn"), chatpanel=document.getElementById("chatpanel");
+  function openChat(focusInput=true){ if(chatpanel.hidden){ chatpanel.hidden=false; chatbtn.setAttribute("aria-expanded","true"); } if(focusInput) document.getElementById("q").focus(); }
+  function closeChat(){ chatpanel.hidden=true; chatbtn.setAttribute("aria-expanded","false"); chatbtn.focus(); }
+  chatbtn.onclick=()=>openChat();
+  document.getElementById("chatclose").onclick=closeChat;
+  chatpanel.addEventListener("keydown",e=>{ if(e.key==="Escape") closeChat(); });
   document.getElementById("ask").onsubmit=e=>{ e.preventDefault(); const q=document.getElementById("q"); const v=q.value.trim(); if(!v) return; ask(v); q.value=""; };
   document.getElementById("role").onchange=()=>{ log.innerHTML=""; renderRows(); renderChips(); }; // a new role starts a fresh chat
 
   // theme
   const tb=document.getElementById("theme"); tb.onclick=()=>{ theme=theme==="day"?"night":"day"; document.documentElement.dataset.board=theme; tb.setAttribute("aria-pressed",String(theme==="night")); tb.textContent=theme==="day"?"Night board":"Day board"; renderGrid(); };
 
-  renderBrief(); renderGrid(); renderRows(); renderChips(); renderAll();
+  renderStrain(); renderBrief(); renderGrid(); renderRows(); renderChips(); renderAll();
   // deep links for review captures: #room=7 opens a room, #night switches the board, #role=pharmacy picks a role
   let h=location.hash; try{ h=decodeURIComponent(h); }catch(e){ /* malformed hash: use it raw */ }
   if(/(^|[#&])night(&|$)/.test(h)) tb.click();
   const rm=h.match(/role=([a-z ]+)/i); if(rm && Object.prototype.hasOwnProperty.call(OWN, rm[1])){ document.getElementById("role").value=rm[1]; renderRows(); renderChips(); }
-  const m=h.match(/room=(\d+)/); if(m){ const n=+m[1]; if(n>=1 && n<=rooms.length){ document.getElementById("allrooms").open=true; openRoom(n,{focus:false}); } }
+  route();
 })();
 </script>
 </body>
