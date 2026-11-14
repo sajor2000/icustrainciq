@@ -32,7 +32,7 @@ Two models, two jobs: ours knows ICU data and makes the forecast; NVIDIA's knows
 - **Built the board**: every bed shows now, then the next 24 hours, with one status; "Worry first" lists the beds to see first; Unit strain adds the patients up with a range and compares them with tonight's machines and staff.
 - **Built the services**: a board server, a dispatcher that starts the 07:00 run and the on-request runs, and a chat agent that answers from the forecast through tools.
 - **Wrote the Fuzzball workflows**: setup (`t7-code`, `t7-fit`, `t7-ward`), services (`t7-twin`) and the forecast (`t7-forecast`), as ready-to-run files in `backend/fuzzball/ready/`. The six files on the run path passed `fuzzball workflow validate` against the live cluster, with a stand-in for the one volume still to create.
-- **Tested it**: 264 backend tests pass (`cd backend && uv run --extra dev --extra model pytest -q`).
+- **Tested it**: 274 backend tests pass (`cd backend && uv run --extra dev --extra model pytest -q`).
 - **Where it stands**: the demo patients and the trained model are on the cluster. Nothing of ours has run end to end on the cluster yet; the board runs today on a laptop with made-up data. The run list is in [`HANDOFF.md`](HANDOFF.md).
 
 ## The board
