@@ -97,6 +97,18 @@ bash scripts/launch.sh
 It runs whatever is missing, waits for the board's readiness probe (up to 20 min while
 Nemotron loads from `hfcache`), prints the HTTPS link and opens it.
 
+**After publishing new code (§2), restart the app.** A `t7-twin` that is already
+running is left alone by the plain command, and its board and dispatcher keep the
+code they loaded when they started. To make them load the new `/store/code`:
+
+```bash
+bash scripts/launch.sh --restart
+```
+
+This stops the running `t7-twin`, waits for the node to free its ports and starts it
+again (Nemotron reloads, so allow the same wait). Forecast jobs need no restart: each
+one is a new workflow and reads `/store/code` when it starts.
+
 Variants:
 
 ```bash
@@ -141,15 +153,27 @@ it runs, and what each leaves on the cluster:
 **The probe is not in this list.** It comes from `workflows/job_4_probe` (job 4, in vaishvikc/ICU-Twin), fit
 beside the model it belongs to. The forecast reads it from
 `/store/train/probe-final.joblib`; `fuzzball/t7-fit.fz` is a fallback for when
-job 4 has not run. If `twin-store` is ever recreated, stage it again:
+job 4 has not run. If `twin-store` is ever recreated, stage it again.
+
+**Where to run this: on the cluster, not on the laptop.** The two commands below
+need both volumes, `mimic_clif` at `/data` and `twin-store` at `/store`, and the
+published code (`PYTHONPATH=/store/py:/store/code`). The laptop has neither. Run
+them inside a job that mounts both: a one-line CPU job, or a shell in a running job
+that already mounts them (`fuzzball workflow exec`), as
+[`FUZZBALL_TEST_PLAN.md`](FUZZBALL_TEST_PLAN.md) section 5 does for clean-up. No
+workflow file in this repo does this step yet; job 4 in vaishvikc/ICU-Twin is the
+owner of the probe.
 
 ```bash
+mkdir -p /store/train
 cp /data/model_output/final/probe.joblib /store/train/probe-final.joblib
 ```
 
-and write its provenance sidecar (`apply_probes` refuses a probe without one):
+then, in the same job, write its provenance sidecar (`apply_probes` refuses a probe
+without one):
 
 ```python
+from pathlib import Path
 from icutwin.scoring.rep_based import write_scores_meta
 write_scores_meta(Path("/store/train/probe-final.joblib"), Path("/data/model_output/final"))
 ```
