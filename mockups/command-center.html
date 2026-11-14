@@ -104,9 +104,6 @@ details.allrooms[open] summary{margin-bottom:8px}
 /* Alternative: patient clusters. One group per event, holding the rooms at or above the chosen chance; the rest sit in a last group */
 .thr{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 4px}
 .thr .views{margin:0}
-.resttoggle{min-height:38px;padding:6px 12px;font-size:14px}
-.resttoggle[aria-pressed="true"]{background:var(--ink);color:var(--board)}
-@media (max-width:560px){.resttoggle{min-height:44px}}
 /* Alternative look: a cooler neutral ground, white cards, hairline rules and one blue. Same custom properties, new values. */
 [data-view="alt"]{--board:#F6F7F9;--board-2:#EEF0F4;--ink:#111827;--ink-2:#5B6474;--rule:rgba(17,24,39,.10);--line:#CDD3DC;
   --magnet:#2563EB;--surface:#FFFFFF;--focus:#2563EB;--ok:#18794E;--tight:#A15C07;--short:#C0362C;--card:0 1px 2px rgba(16,24,40,.06)}
@@ -124,7 +121,7 @@ details.allrooms[open] summary{margin-bottom:8px}
 
 /* clusters sit in an even grid of equal cards, tops aligned: each is a white card with its unit line and its bed markers. A marker is a ring that
    fills with the chance of the event, with the bed number inside and the percent beneath. */
-#clusters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:start;gap:14px;padding:12px 0}
+#clusters{display:grid;grid-template-columns:var(--cols5,repeat(5,minmax(0,1fr)));gap:14px;padding:12px 0}
 #clusters .rest{grid-column:1/-1}
 @media (max-width:1180px){#clusters{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:760px){#clusters{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -163,6 +160,7 @@ details.allrooms[open] summary{margin-bottom:8px}
 .cl .frees .fr{display:inline-flex;align-items:center;gap:4px;margin:4px 12px 0 0;white-space:nowrap}
 .cl .frees i{flex:none}
 .cl .ub{margin-top:6px}
+.cl .ub{max-width:270px}
 .cl .ub svg{display:block;width:100%;height:auto}
 .cl .expl{margin:4px 0 0;color:var(--ink);font-weight:600}
 .cl .bedline b{color:var(--ink)}
@@ -501,9 +499,6 @@ details.more summary:hover{color:var(--ink)}
           <h2 id="alt-h">Predicted events · next 24 h</h2>
           
         </div>
-        <div class="thr">
-          <button class="toggle resttoggle" id="resttoggle" type="button" aria-pressed="false">Hide other beds</button>
-        </div>
         <div id="clusters"></div>
         <p class="note">* Predicted counts every bed at or above the event's threshold as a start; each is a chance, not a certainty. Set each threshold in Settings (remembered on this device); a bed can appear under more than one event. Already on before 07:00 is not counted as new. The three highest-risk beds pulse red, and a card pulses red when its predicted beds are more than what is free; at exactly the limit it turns amber without pulsing. Leaving the ICU is not a risk, so those figures fill grey. Beds are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
       </section>
@@ -703,7 +698,7 @@ details.more summary:hover{color:var(--ink)}
   // Alternative view: patient clusters. For each event, the rooms at or above the line, highest first; rooms in no risk group come last.
   // each cluster has its own line (the chance at or above which a bed joins it). The user sets it on the card with a slider
   // (or the − / + buttons, or the arrow keys); it is remembered on this device. Marks above the slider show where this event's beds sit.
-  const KEYS=["death","vent","press","crrt","out"], LO=1, HI=99, okLine=v=>Number.isInteger(v)&&v>=LO&&v<=HI, thrBy={}; let hideRest=false;
+  const KEYS=["death","vent","press","crrt","out"], LO=1, HI=99, okLine=v=>Number.isInteger(v)&&v>=LO&&v<=HI, thrBy={};
   for(const k of KEYS) thrBy[k]=.25;
   try{ const saved=JSON.parse(localStorage.getItem("icu-alt-lines")||"{}"); for(const k of KEYS) if(okLine(saved[k])) thrBy[k]=saved[k]/100; }catch(e){ /* no storage: lines last for this visit */ }
   const saveLines=()=>{ try{ localStorage.setItem("icu-alt-lines",JSON.stringify(Object.fromEntries(KEYS.map(k=>[k,Math.round(thrBy[k]*100)])))); }catch(e){} };
@@ -780,14 +775,23 @@ details.more summary:hover{color:var(--ink)}
   // the last card: beds under every risk line, each with its top risk
   function updateRest(){
     const inRisk=new Set(), w3=ranked().slice(0,3).map(r=>r.n); for(const k of KEYS) if(k!=="out") live(k).forEach(r=>{ if(r.p[k]>=thrBy[k]) inRisk.add(r.n); });
-    const rest=rooms.filter(r=>!inRisk.has(r.n)), rt=document.getElementById("resttoggle"), card=document.getElementById("restcard");
-    rt.setAttribute("aria-pressed",String(hideRest)); rt.textContent = hideRest ? `Show other beds (${rest.length})` : "Hide other beds"; rt.hidden=!rest.length;
-    card.hidden = hideRest || !rest.length; card.querySelector(".lc").textContent=`under every threshold · ${nbeds(rest.length)}`;
+    const rest=rooms.filter(r=>!inRisk.has(r.n)), card=document.getElementById("restcard");
+    card.hidden = !rest.length; card.querySelector(".lc").textContent=`under every threshold · ${nbeds(rest.length)}`;
     card.querySelector(".set").innerHTML=rest.map(r=>{const [e,v]=top(r); return chip(r,e,v,`${e.short}<br>${pct(v)}`,w3);}).join("");
     const cur=KEYS.map(k=>Math.round(thrBy[k]*100)), same=cur.every(v=>v===cur[0]), preset=same&&[50,25,10].includes(cur[0]);
     if(document.documentElement.dataset.view==="alt") renderBrief();
+    sizeCols();
     document.querySelectorAll("#thr button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v==="custom" ? !preset : same&&cur[0]===+b.dataset.v)));
   }
+  // the five cards share the row by how many beds each lists, and all of them use the same number of bed rows, so the row stays even:
+  // find the fewest rows at which every card fits side by side, give each card the width its beds need at that many rows (never less than
+  // its numbers need), and let the cards share any spare width in the same proportions. Narrower screens use the fixed layouts in the CSS.
+  let clOrder=[];
+  function sizeCols(){ const el=document.getElementById("clusters"), W=el.clientWidth-14*(clOrder.length-1); if(W<=0||!clOrder.length) return;
+    const ns=clOrder.map(k=>el.querySelectorAll(`.cl[data-k="${k}"] .set .pp`).length), floor=clOrder.map(k=>RES.includes(k)?256:184); let need=floor;
+    for(let R=1;R<=6;R++){ need=ns.map((n,i)=>Math.max(floor[i], Math.ceil(n/R)*60-8+32)); if(need.reduce((a,b)=>a+b,0)<=W) break; }
+    el.style.setProperty("--cols5", need.map(v=>`minmax(0,${v}fr)`).join(" ")); }
+  new ResizeObserver(()=>sizeCols()).observe(document.getElementById("clusters"));
   function renderClusters(){
     const mine=OWN[role()]||[], order=KEYS.slice().sort((a,b)=>(mine.includes(a)?0:1)-(mine.includes(b)?0:1)); let html="";
     for(const k of order){ const e=EV.find(x=>x.k===k), c=C[k], st=status(k), hot=["short","tight"].includes(st[0]);
@@ -807,7 +811,7 @@ details.more summary:hover{color:var(--ink)}
     // settings: one row per cluster, in the same order: name, − value +, how many beds that gives
     document.getElementById("linesbox").innerHTML=order.map(k=>{ const e=EV.find(x=>x.k===k); return `<div class="lrow" data-k="${k}"><span class="nm">${e.bl}</span>
       <button type="button" class="step" data-d="-5" aria-label="Lower the threshold for ${e.name} by 5 points">−</button><span class="pctin"><input type="number" min="1" max="99" step="1" inputmode="numeric" aria-label="Threshold for ${e.name}, percent"><i aria-hidden="true">%</i></span><button type="button" class="step" data-d="5" aria-label="Raise the threshold for ${e.name} by 5 points">+</button><span class="cnt range"></span></div>`; }).join("");
-    document.getElementById("clusters").innerHTML=html; KEYS.forEach(updateCard); updateRest();
+    clOrder=order; document.getElementById("clusters").innerHTML=html; KEYS.forEach(updateCard); updateRest();
   }
   document.getElementById("clusters").addEventListener("click",e=>{ const b=e.target.closest(".pp"); if(b) return openRoom(+b.dataset.room);
     const c=e.target.closest(".chg"); if(c){ e.stopPropagation(); setMenu(true); const r=document.querySelector(`#linesbox [data-k="${c.dataset.k}"]`); r.scrollIntoView({block:"nearest"}); (r.querySelector(".step:not(:disabled)")||r).focus(); } });
@@ -823,7 +827,6 @@ details.more summary:hover{color:var(--ink)}
       const cur=KEYS.map(k=>Math.round(thrBy[k]*100)); show(true); inp.value=cur.every(v=>v===cur[0])?cur[0]:""; inp.focus(); inp.select(); });
     const go=()=>{ const v=Math.round(+inp.value); if(inp.value===""||!okLine(v)){ inp.focus(); return; } inp.value=v; setLines(()=>v/100); };
     document.getElementById("customgo").onclick=go; inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } }); }
-  document.getElementById("resttoggle").onclick=()=>{ hideRest=!hideRest; renderClusters(); document.getElementById("resttoggle").focus(); };
   // Alternative view: floating chat. The button opens the panel and moves focus to the question box; Minimize or Escape closes it.
   const fab=document.getElementById("chatfab"), isAlt=()=>document.documentElement.dataset.view==="alt";
   function setChat(open, focus=true){ document.documentElement.dataset.chat=open?"open":"closed"; fab.setAttribute("aria-expanded",String(open));
@@ -971,7 +974,6 @@ details.more summary:hover{color:var(--ink)}
   let h=location.hash; try{ h=decodeURIComponent(h); }catch(e){ /* malformed hash: use it raw */ }
   if(/(^|[#&])alt(&|$)/.test(h)) setView("alt");
   if(/(^|[#&])chat(&|$)/.test(h)) setChat(true,false);
-  if(/(^|[#&])hiderest(&|$)/.test(h)){ hideRest=true; renderClusters(); }
   const tm=h.match(/thr=(50|25|10)\b/); if(tm) for(const k of KEYS) thrBy[k]=+tm[1]/100;
   // #lines=vent:10,death:5 sets single lines for review captures (not saved)
   const lm=h.match(/lines=([a-z0-9:,]+)/); if(lm) for(const part of lm[1].split(",")){ const [k,v]=part.split(":"); if(KEYS.includes(k)&&okLine(+v)) thrBy[k]=+v/100; }
