@@ -362,20 +362,25 @@ class ChatAgent:
             out = capacity_mod.view(cap, fc)
             if not isinstance(cap, dict):
                 out["note"] = "not set"
-            if isinstance(fc, dict) and fc.get("machines"):
-                out["machines"] = fc["machines"]  # SHORT / AT LIMIT / ON TRACK
-                for s, e in list(out["machines"].items()):
+            if isinstance(fc, dict) and isinstance(fc.get("machines"), dict):
+                out["machines"] = saved = dict(
+                    fc["machines"]
+                )  # SHORT / AT LIMIT / ON TRACK
+                on = capacity_mod.in_use_now(fc)
+                for s in capacity_mod.MACHINES:
                     # the saved words used the totals of the last run: redo them
                     # against the totals as they are now (flagged is the forecast's)
-                    if not isinstance(e, dict) or s not in capacity_mod.MACHINES:
-                        continue
                     free = out.get(f"{'vents' if s == 'imv' else s}_free")
+                    e = saved.get(s) if isinstance(saved.get(s), dict) else {}
+                    if free is None and not e:
+                        continue  # no total for this machine
                     flagged = e.get("flagged")
                     e = {**e, "total": out.get(capacity_mod.MACHINES[s]), "free": free}
+                    e["in_use"] = on[s]
                     ok = free is not None and flagged is not None
                     w, lv = capacity_mod.words(flagged, free) if ok else (None, None)
                     short = max(0, flagged - free) if ok else None
-                    e.update(words=w, level=lv, short_by=short)
+                    e.update(flagged=flagged, words=w, level=lv, short_by=short)
                     out["machines"][s] = e
             return out
         if name == "get_staffing":

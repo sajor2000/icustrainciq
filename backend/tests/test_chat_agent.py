@@ -405,6 +405,20 @@ def test_get_capacity_status_follows_the_current_totals(env, tmp_path):
     assert m["words"] is None and m["level"] is None and m["free"] == 6
 
 
+def test_get_capacity_reports_a_total_with_no_saved_machine_entry(env, tmp_path):
+    fc = json.loads((tmp_path / "forecast.json").read_text())
+    fc["life_support"]["now_by"] = {"imv": 5, "vasopressor": 1, "crrt": 1}
+    fc["machines"] = {"imv": None, "crrt": None}  # saved before any total was set
+    (tmp_path / "forecast.json").write_text(json.dumps(fc))
+    (tmp_path / "capacity.json").write_text(json.dumps({"vents_total": 8}))
+    f, a = env([tc("get_capacity"), text("ok")])
+    a.ask("how many ventilators are free?", "respiratory therapy")
+    m = json.loads(tool_msgs(f)[0]["content"])["tool_result"]["machines"]
+    assert (m["imv"]["total"], m["imv"]["free"], m["imv"]["in_use"]) == (8, 3, 5)
+    assert m["imv"]["flagged"] is None and m["imv"]["words"] is None
+    assert m["crrt"] is None  # no crrt total
+
+
 def test_staffing_tool(env, tmp_path):
     f, a = env([tc("get_staffing"), text("ok")])
     a.ask("How many nurses do we need tonight?", "ICU nurse")
@@ -418,7 +432,6 @@ def test_staffing_tool(env, tmp_path):
     (tmp_path / "forecast.json").write_text(json.dumps(fc))
     f, a = env([tc("get_staffing"), text("ok")])
     out = a.ask("How many nurses do we need tonight?", "ICU nurse")
-    print(tool_msgs(f)[0]["content"])
     got = json.loads(tool_msgs(f)[0]["content"])["tool_result"]
     assert got["now"]["nurses"] == 14 and got["next_24h"]["nurses"]["p90"] == 16
     assert got["unavailable"] == ["rt"] and out["trace"] == ["get_staffing"]
