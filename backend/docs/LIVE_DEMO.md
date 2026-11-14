@@ -251,7 +251,6 @@ Why not fetch the page at build or start time: it adds a GitHub dependency at th
 | Where | Data | Chat and rerun | Use |
 |---|---|---|---|
 | Laptop, `?mock=1` or the backend against the example file (`uv run python app/board.py --forecast <example forecast.json> --port 8080`) | synthetic | mock replies / "Nemotron not answering" | **stage fallback** if the cluster is down: say plainly it is the same page on synthetic data |
-| Vercel preview of the frontend repo | synthetic only | mock | share the design; **never** point it at the cluster or put cluster output in the repo |
 | Cluster endpoint | stage-ward rooms, real counts | Nemotron, dispatcher | the demo |
 
 Keep the laptop server running during the demo (`python3 -m http.server 8000` in the frontend repo, `#night`, `#room=7` deep links) so switching is one tab.
