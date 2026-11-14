@@ -16,7 +16,7 @@ GET  /api/runs         dispatcher status: next 07:00, running update, last per s
 GET  /api/capacity     {"life_support_patients", "vents_total", "vents_free", "crrt_total", "crrt_free",
                        "updated_at", "set_by_role"} (null = not set; free = total - on now)
 POST /api/capacity     {"role", and any of "life_support_patients", "vents_total", "crrt_total",
-                       "vents_free": whole numbers 0..50} -> capacity.json (the file is replaced)
+                       "nurses_on_shift", "rt_on_shift", "vents_free": whole numbers 0..50} -> capacity.json (the file is replaced)
 POST /api/rerun        {"role", "scope": "unit" | "room", "room"?: 1..25} -> dispatcher
 POST /api/ask          {"question","role","room?","seen_made_at?"} -> {"answer","trace"?,"made_at"}
 
@@ -188,11 +188,18 @@ def make_handler(
         role = str(req.get("role", ""))
         if role not in ROLES:
             return 400, {"ok": False, "reason": "choose your role"}
-        keys = ("life_support_patients", "vents_total", "crrt_total", "vents_free")
+        keys = (
+            "life_support_patients",
+            "vents_total",
+            "crrt_total",
+            "nurses_on_shift",
+            "rt_on_shift",
+            "vents_free",
+        )
         given = {k: req.get(k) for k in keys}
-        # each number is optional; one of the first three must be there
+        # each number is optional; one of the first five must be there
         if not all(v is None or _int_in_range(v) for v in given.values()) or all(
-            given[k] is None for k in keys[:3]
+            given[k] is None for k in keys[:5]
         ):
             return 400, {
                 "ok": False,

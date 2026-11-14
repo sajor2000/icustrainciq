@@ -65,6 +65,23 @@ def test_api_takes_totals_alone_and_derives_free(stack):  # noqa: F811
     assert json.loads((tmp / "capacity.json").read_text()) == saved
 
 
+def test_api_saves_and_returns_staffing_alone(stack):  # noqa: F811
+    base, tmp, fake, page = stack
+    body = {"nurses_on_shift": 9, "rt_on_shift": 3, "role": "ICU nurse"}
+    c, r = jcall(base, "/api/capacity", body)
+    assert c == 200 and r["ok"]
+    assert r["capacity"]["nurses_on_shift"] == 9 and r["capacity"]["rt_on_shift"] == 3
+    saved = json.loads((tmp / "capacity.json").read_text())
+    assert saved["nurses_on_shift"] == 9 and saved["rt_on_shift"] == 3
+    got = jcall(base, "/api/capacity")[1]
+    assert got["nurses_on_shift"] == 9 and got["rt_on_shift"] == 3
+    # with a machine total the staffing counts are kept too, not dropped
+    c, r = jcall(base, "/api/capacity", {**body, "vents_total": 8})
+    assert c == 200 and r["capacity"]["nurses_on_shift"] == 9
+    for bad in ({**body, "nurses_on_shift": 51}, {**body, "rt_on_shift": "3"}):
+        assert jcall(base, "/api/capacity", bad)[0] == 400
+
+
 def test_api_keeps_the_old_fields_and_an_old_file_loads(stack):  # noqa: F811
     base, tmp, fake, page = stack
     old = {"life_support_patients": 12, "vents_free": 3, "updated_at": "t"}

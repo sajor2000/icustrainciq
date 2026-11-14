@@ -71,4 +71,6 @@ def view(raw, forecast) -> dict:
         "vents_free": free("imv", tot, on["imv"]),
         "crrt_total": tot["crrt_total"],
         "crrt_free": free("crrt", tot, on["crrt"]),
+        "nurses_on_shift": whole(raw.get("nurses_on_shift")),
+        "rt_on_shift": whole(raw.get("rt_on_shift")),
     }
