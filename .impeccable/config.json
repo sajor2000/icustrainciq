@@ -409,5 +409,6 @@
         "reason": "Claude triage: team diagram in the shared diagram-design skin (same as hosting/connection/lifecycle/sequence); not board UI, DESIGN.md does not govern it."
       }
     ]
-  }
+  },
+  "buildPath": "code"
 }

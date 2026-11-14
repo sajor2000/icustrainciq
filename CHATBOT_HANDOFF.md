@@ -1,5 +1,7 @@
 # Nemotron chatbot handoff for Whiskey
 
+The [Claude design-context repair](CLAUDE_FIX_HANDOFF.md) is complete and verified.
+
 Branch: `t7/ui-nemotron-chatbot`, based on the current app at `bc4c44d`.
 This branch integrates the chatbot into this app's `backend/` and preserves the
 latest threshold controls, machine capacity cards, percentages and fictional
