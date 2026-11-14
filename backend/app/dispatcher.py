@@ -30,8 +30,21 @@ timezone-aware (--tz, default $TZ or America/Chicago): daylight saving moves nei
 the demo clock. The log records time, trigger (schedule or role), scope, room and workflow id
 only: no names, no patient data. The role is advisory: there is no login.
 
+Bounded wait: a forecast run still Pending after 5 minutes, or not ended after 45, is stopped
+(`workflow stop`), its gap is cleared and /status carries "stuck" with the reason; the next ask
+or the next 07:00 retry then starts a new run. A queued build or fit is never stopped: /status
+"running" names it with its state (PENDING = waiting in the queue, not running).
+
 Ward mode: the template gets @WARD_FLAG@, empty by default (open demo ward); with --real-ward
 (set only by lane 2) it renders "--real-ward" for rooms.py and aggregate.py.
+
+Ward data: @CLIF_DIR@ is the CLIF folder of the ward (default /store/code/clif_demo, the open
+demo in the code tree; --clif-dir points it at a cohort folder on a team volume) and @WARD_IDS@
+is the stage_ward.py argument for a given list of stays (default empty: the open-demo selection;
+--ward-ids <file> renders "--ward-ids <file>", plus " --real-ward" with --real-ward). @NAMES@ is
+"--names <file | fake>" for rooms.py (made-up names on the tiles; default empty: no names). t7-fit.fz
+and t7-ward.fz use both and are started by hand:
+  python app/dispatcher.py --render-only fuzzball/t7-ward.fz [--clif-dir D --ward-ids F --real-ward] > /tmp/t7-fit.fz
 
 Demo clock: the stage ward is a replay, so each update moves its cut forward by the
 time elapsed since the 07:00 morning cut (dispatcher clock) and passes that to the
@@ -47,6 +60,7 @@ import pathlib
 import re
 import ssl
 import subprocess
+import sys
 import threading
 import time
 import urllib.request
@@ -57,23 +71,39 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 log = logging.getLogger("dispatcher")
 
 # t7-forecast also matches the burst, the per-run names and the t7-<lane>-build style names;
-# t7-smoke and t7-fit hold a GPU too. t7-twin (the services) does not.
-GPU_WORKFLOW = re.compile(r"^t7-(\w+-)?(build|forecast|smoke|fit)")
+# t7-smoke and t7-fit hold a GPU too; t7-ward holds none but rewrites the stage tokens an update
+# reads. t7-twin (the services) does not.
+GPU_WORKFLOW = re.compile(r"^t7-(\w+-)?(build|forecast|smoke|fit|ward)")
 ROLES = {"ICU nurse", "ICU physician", "pharmacy", "respiratory therapy", "bed manager"}
 SCOPES = ("unit", "room")
 ROOMS = range(1, 26)
 # Fuzzball 4.3 stage/workflow statuses (docs: "Checking Workflow Status"): Pending, Started, Finished,
-# Errored, Canceled, Down; the CLI prints them as STAGE_STATUS_<NAME>. Matched exactly after the prefix
+# Errored, Canceled, Down; `-o json` gives them as
+# STAGE_STATUS_<NAME>, with UNSPECIFIED for pending. Matched exactly after the prefix
 # is stripped; anything else (including an empty or unknown status) counts as still running.
 FAILED_STATES = frozenset(
     {"ERRORED", "FAILED", "CANCELED", "CANCELLED", "STOPPED", "DOWN"}
 )
+# waiting in the queue, not running. The CLI table says Pending; the enum `-o json` returns is
+# STAGE_STATUS_UNSPECIFIED (workflow-syntax "Workflow Status Values"); an empty status is the same.
+# DOWN stays in FAILED_STATES (review F8 left as is): the docs call it an autoscaled service scaled
+# to zero, which no t7 GPU workflow has; counting it as running could refuse updates for good.
+PENDING_STATES = frozenset({"PENDING", "UNSPECIFIED", "QUEUED", ""})
+WORKFLOW_ID = re.compile(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", re.I)
+TOKEN = re.compile(r"@[A-Z][A-Z0-9_]*@")  # a template token nobody filled
 TERMINAL = frozenset({"FINISHED", *FAILED_STATES})
 LIST_TIMEOUT_S = 20
 START_TIMEOUT_S = 60
 LIST_TTL_S = 10.0
 INFLIGHT_GRACE_S = 120  # a just-started workflow may not be in the list yet
 SCHEDULE_WINDOW_S = 600  # the 07:00 run retries for 10 minutes
+# A forecast that cannot be placed waits with no limit (Fuzzball 4.3 documents none), and an
+# unfinished forecast refuses every later update, the 07:00 run included. So the wait is bounded
+# here: a t7-forecast still Pending after PENDING_LIMIT_S, or not ended after RUN_LIMIT_S (more
+# than the three jobs' timeouts together), is stopped and /status says why.
+PENDING_LIMIT_S = 300
+RUN_LIMIT_S = 45 * 60
+FORECAST_NAME = re.compile(r"^t7-forecast-(?:room\d+-)?(\d{2})(\d{2})-(\d{2})(\d{2})$")
 BODY_CAP = 1024
 SOCKET_TIMEOUT_S = 10
 CA = "/run/fuzzball-substrate/trusted-certs/root-ca.crt"
@@ -153,7 +183,7 @@ def busy(workflows: list[dict]) -> str | None:
     """(sanitised) name of a GPU workflow that has not clearly ended.
 
     Statuses are matched exactly against Fuzzball 4.3's terminal set (FINISHED, ERRORED,
-    CANCELED, DOWN, ...); an empty or unknown status counts as running (safe side).
+    CANCELED, ...); an empty or unknown status counts as running (safe side).
     """
     for w in workflows:
         if not isinstance(w, dict):
@@ -168,6 +198,88 @@ def _at_text(t: dt.datetime) -> str:
     return f"{t:%H:%M}"
 
 
+DEFAULT_CLIF_DIR = "/store/code/clif_demo"  # the open demo, in the code tree
+
+
+def workflow_id(out: str) -> str:
+    """the id in `workflow start` output. The 4.3 docs show two forms: a bare UUID
+    (in-workflow API access) and `Workflow "<uuid>" started.` (quick start)."""
+    m = WORKFLOW_ID.search(out or "")
+    return m.group(0) if m else (out or "").strip()
+
+
+def unfilled(text: str) -> list[str]:
+    """template tokens still in a rendered Fuzzfile (sorted, unique)"""
+    return sorted(set(TOKEN.findall(text)))
+
+
+def render_template(
+    text: str,
+    *,
+    scope: str = "unit",
+    room: int | None = None,
+    hours: float = 0,
+    real_ward: bool = False,
+    clif_dir: str | None = None,
+    ward_ids: str = "",
+    names: str = "",
+    code_ref: str = "",
+    code_sha256: str = "",
+) -> str:
+    """every token of any Fuzzfile in fuzzball/, in one place: the dispatcher's
+    per-run copies and scripts/render_fz.py (people) both come through here.
+    Refuses (ValueError naming the tokens) when a token is left: a new token that
+    one path forgot would otherwise reach a job script as literal text."""
+    if scope not in SCOPES:
+        raise ValueError("scope is unit or room")
+    for label, value, pat in (
+        ("code ref", code_ref, r"[0-9a-f]{40}"),
+        ("code sha256", code_sha256, r"[0-9a-f]{64}"),
+    ):
+        if value and not re.fullmatch(pat, value):
+            raise ValueError(f"{label} must match {pat}")
+    text = (
+        text.replace("@SCOPE@", scope)
+        .replace("@ROOM@", str(int(room or 0)))
+        .replace("@HOURS@", f"{float(hours):g}")
+    )
+    if code_ref:
+        text = text.replace("@CODE_REF@", code_ref)
+    if code_sha256:
+        text = text.replace("@CODE_SHA256@", code_sha256)
+    text = render_ward(text, real_ward, clif_dir or DEFAULT_CLIF_DIR, ward_ids, names)
+    if left := unfilled(text):
+        raise ValueError(f"unfilled template token(s): {', '.join(left)}")
+    return text
+
+
+def _path_token(value: str) -> str:
+    """a path that is safe to paste into a job script (it lands inside bash)"""
+    value = str(value or "")
+    if value and not re.fullmatch(r"[A-Za-z0-9_./-]+", value):
+        raise ValueError("path may hold letters, digits and _ . / - only")
+    return value
+
+
+def render_ward(
+    text: str,
+    real_ward: bool = False,
+    clif_dir: str = DEFAULT_CLIF_DIR,
+    ward_ids: str = "",
+    names: str = "",
+) -> str:
+    """the ward tokens of a template (t7-forecast.fz, t7-fit.fz, t7-ward.fz): @WARD_FLAG@,
+    @CLIF_DIR@, @WARD_IDS@. The defaults are the open demo ward, as before."""
+    ids = _path_token(ward_ids)
+    ids_arg = f"--ward-ids {ids}" + (" --real-ward" if real_ward else "") if ids else ""
+    return (
+        text.replace("@WARD_FLAG@", "--real-ward" if real_ward else "")
+        .replace("@CLIF_DIR@", _path_token(clif_dir) or DEFAULT_CLIF_DIR)
+        .replace("@WARD_IDS@", ids_arg)
+        .replace("@NAMES@", f"--names {_path_token(names)}" if names else "")
+    )
+
+
 class Dispatcher:
     def __init__(
         self,
@@ -180,7 +292,16 @@ class Dispatcher:
         real_ward: bool = False,
         list_ttl_s: float = LIST_TTL_S,
         rooms: pathlib.Path | None = None,
+        clif_dir: str = DEFAULT_CLIF_DIR,
+        ward_ids: str = "",
+        names: str = "",
+        pending_limit_s: float = PENDING_LIMIT_S,
+        run_limit_s: float = RUN_LIMIT_S,
     ):
+        self.pending_limit_s, self.run_limit_s = pending_limit_s, run_limit_s
+        self.stuck: dict | None = None  # the last forecast stopped for waiting too long
+        self.clif_dir, self.ward_ids = _path_token(clif_dir), _path_token(ward_ids)
+        self.names = _path_token(names)
         self.fuzzfile, self.log, self.min_gap_s, self.cli = (
             pathlib.Path(fuzzfile),
             pathlib.Path(log),
@@ -335,6 +456,67 @@ class Dispatcher:
                         del self.last[info["key"]]
                     self.record(event="run_failed", workflow=wid, status=st)
 
+    def _forecast_age_s(self, name: str) -> float | None:
+        """seconds since a forecast run was started, read from its name
+        (t7-forecast-[roomN-]MMDD-HHMM, dispatcher clock), so it survives a restart"""
+        m = FORECAST_NAME.match(name)
+        if not m:
+            return None
+        now = self.clock()
+        mo, day, hh, mm = (int(x) for x in m.groups())
+        try:
+            at = now.replace(
+                month=mo, day=day, hour=hh, minute=mm, second=0, microsecond=0
+            )
+        except ValueError:
+            return None
+        if at > now:  # a name from before the new year
+            at = at.replace(year=at.year - 1)
+        return _elapsed(now, at).total_seconds()
+
+    def stop_stuck(self, wfs: list[dict]) -> list[str]:
+        """the bounded wait: stop a forecast run that is still Pending after
+        `pending_limit_s`, or has not ended after `run_limit_s`. Without this a run the
+        scheduler cannot place would refuse every update, the 07:00 one included, for
+        good. Clears that run's gap, logs it, and keeps the reason for /status. Never
+        touches a build, a fit or anything that is not a forecast run. No lock is held
+        across the CLI call."""
+        stopped = []
+        for w in wfs:
+            name, st, wid = _name_of(w), _status_of(w), _id_of(w)
+            age = self._forecast_age_s(name)
+            if age is None or st in TERMINAL or not wid:
+                continue
+            if st in PENDING_STATES and age > self.pending_limit_s:
+                why = "waited for a GPU"
+            elif age > self.run_limit_s:
+                why = "did not finish"
+            else:
+                continue
+            try:
+                self._cli("workflow", "stop", wid, timeout=LIST_TIMEOUT_S)
+            except Exception as e:
+                log.warning("could not stop %s (%s)", _safe(name), type(e).__name__)
+                continue
+            minutes = int(age // 60)
+            with self.lock:
+                info = self.inflight.pop(wid, None)
+                if info and self.last.get(info["key"]) == info["at"]:
+                    del self.last[info["key"]]
+                self.stuck = {
+                    "at": self.clock().isoformat(timespec="seconds"),
+                    "name": _safe(name),
+                    "minutes": minutes,
+                    "reason": f"The update {_safe(name)} {why} for {minutes} minutes and "
+                    "was stopped. Check what holds the GPU (fuzzball workflow why), "
+                    "then update again.",
+                }
+            self.record(event="stopped_stuck", workflow=wid, status=st, minutes=minutes)
+            stopped.append(wid)
+        if stopped:
+            self._drop_cache()
+        return stopped
+
     def _busy(self, wfs: list[dict]) -> str | None:
         """a GPU workflow is active (listed, or started by us and not listed yet)"""
         if other := busy(wfs):
@@ -355,12 +537,15 @@ class Dispatcher:
         self, scope: str, room: int | None, hours: float, name: str
     ) -> pathlib.Path:
         """a per-run copy of the template with the run's scope, room, demo clock and ward mode"""
-        text = (
-            self.fuzzfile.read_text()
-            .replace("@SCOPE@", scope)
-            .replace("@ROOM@", str(room or 0))
-            .replace("@HOURS@", f"{hours:g}")
-            .replace("@WARD_FLAG@", "--real-ward" if self.real_ward else "")
+        text = render_template(
+            self.fuzzfile.read_text(),
+            scope=scope,
+            room=room,
+            hours=hours,
+            real_ward=self.real_ward,
+            clif_dir=self.clif_dir,
+            ward_ids=self.ward_ids,
+            names=self.names,
         )
         out_dir = self.log.parent / "rendered"
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -395,6 +580,8 @@ class Dispatcher:
             }
         try:  # slow call first, outside the lock
             wfs = self.workflows()
+            if self.stop_stuck(wfs):  # a run that waited too long no longer blocks
+                wfs = self.workflows(fresh=True)
         except Exception as e:  # cluster unreachable: refuse, do not guess
             return {
                 "started": False,
@@ -432,7 +619,7 @@ class Dispatcher:
             }
         try:  # the CLI call runs without the lock; the pending entry blocks a second start
             path = self.render(scope, room, hours, name)
-            wid = self._cli("workflow", "start", str(path), "--name", name).strip()
+            wid = workflow_id(self._cli("workflow", "start", str(path), "--name", name))
         except Exception as e:
             with self.lock:
                 self.inflight.pop(token, None)
@@ -491,10 +678,15 @@ class Dispatcher:
     def active(self) -> dict | None:
         """the update (or build) that is active now; {"unknown": True} if the list fails"""
         try:
-            name = busy(self.workflows())
+            wfs = self.workflows()
+            name = busy(wfs)
         except Exception:
             return {"unknown": True}
-        return {"name": name} if name else None
+        if not name:
+            return None
+        row = next((w for w in wfs if _safe(_name_of(w)) == name), {})
+        # the state says whether it runs or only waits in the queue (Pending)
+        return {"name": name, "state": _status_of(row) or "UNKNOWN"}
 
     def scheduled_state(self) -> dict:
         """did this morning's scheduled run happen? ok | pending | failed | missed"""
@@ -550,6 +742,8 @@ class Dispatcher:
             "demo_clock_label": demo_clock_label(hours, self.at),
             "min_gap_minutes": self.min_gap_s // 60,
             "ward": "real" if self.real_ward else "demo",
+            # the last forecast run stopped for waiting too long (null: none)
+            "stuck": self.stuck,
         }
 
 
@@ -647,8 +841,10 @@ class Scheduler:
             run_scheduled(self.d, sleep=self.sleep)
             fired = True
         if time.time() - self.last_refresh > 86400:
-            self.last_refresh = time.time()
-            refresh_token()
+            if refresh_token():
+                self.last_refresh = time.time()
+            else:  # failed: try again in an hour, not tomorrow (the token lasts 7 days)
+                self.last_refresh = time.time() - 86400 + 3600
         return fired
 
 
@@ -719,11 +915,67 @@ def make_handler(d: Dispatcher, at: str = MORNING):
     return H
 
 
+def unavailable_handler(reason: str):
+    """the degraded dispatcher: no schedule, no starts; every answer says why. The
+    board turns {"started": false, "reason"} into /api/runs {"available": false}."""
+    reason = f"dispatcher unavailable: {str(reason)[:200]}"
+    body = {"started": False, "available": False, "reason": reason}
+
+    class U(BaseHTTPRequestHandler):
+        timeout = 10
+
+        def _send(self, code, obj):
+            data = json.dumps(obj).encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(data)
+
+        def do_GET(self):
+            # /health is 503 so a probe or a person can tell degraded from healthy
+            self._send(503 if self.path.split("?", 1)[0] == "/health" else 200, body)
+
+        do_HEAD = do_GET
+
+        def do_POST(self):
+            self._send(200, body)
+
+        def log_message(self, *a):
+            pass
+
+    return U
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
     ap = argparse.ArgumentParser()
-    ap.add_argument("--fuzzfile", type=pathlib.Path, required=True)
-    ap.add_argument("--log", type=pathlib.Path, required=True)
+    ap.add_argument("--fuzzfile", type=pathlib.Path)
+    ap.add_argument("--log", type=pathlib.Path)
+    ap.add_argument(
+        "--clif-dir",
+        default=DEFAULT_CLIF_DIR,
+        help="CLIF folder of the ward, rendered as @CLIF_DIR@ (default: the open demo)",
+    )
+    ap.add_argument(
+        "--ward-ids",
+        default="",
+        help="file with the ward's hospitalization_id values on a team volume, rendered "
+        "as @WARD_IDS@ for stage_ward.py (default: none, the open-demo selection)",
+    )
+    ap.add_argument(
+        "--names",
+        default="",
+        help="made-up names for the room tiles, rendered as @NAMES@: a names file on a "
+        "team volume beside the ward's data, or 'fake' (default: none, no names)",
+    )
+    ap.add_argument(
+        "--render-only",
+        type=pathlib.Path,
+        help="print this template with the ward tokens replaced and exit (t7-fit.fz, t7-ward.fz); "
+        "starts nothing",
+    )
     ap.add_argument("--at", default=MORNING, help="daily local start time, HH:MM")
     ap.add_argument("--tz", default=os.environ.get("TZ") or "America/Chicago")
     ap.add_argument(
@@ -739,7 +991,33 @@ def main() -> None:
         action="store_true",
         help="render --real-ward into the forecast runs (real MIMIC-IV rooms; lane 2 only)",
     )
+    ap.add_argument(
+        "--unavailable",
+        metavar="REASON",
+        help="start nothing: listen on --port and answer every request with this reason "
+        "(t7-twin's bootstrap uses it when the Fuzzball CLI cannot be installed or "
+        "verified, so the service stays up and the board can say why)",
+    )
     a = ap.parse_args()
+    if a.unavailable:
+        log.error("DISPATCHER UNAVAILABLE: %s", a.unavailable)
+        ThreadingHTTPServer(
+            ("0.0.0.0", a.port), unavailable_handler(a.unavailable)
+        ).serve_forever()
+        return
+    if a.render_only:
+        sys.stdout.write(
+            render_template(
+                a.render_only.read_text(),
+                real_ward=a.real_ward,
+                clif_dir=a.clif_dir,
+                ward_ids=a.ward_ids,
+                names=a.names,
+            )
+        )
+        return
+    if not (a.fuzzfile and a.log):
+        ap.error("--fuzzfile and --log are required")
     tz = zoneinfo.ZoneInfo(a.tz)
     d = Dispatcher(
         a.fuzzfile,
@@ -750,6 +1028,9 @@ def main() -> None:
         at=a.at,
         real_ward=a.real_ward,
         rooms=a.rooms,
+        clif_dir=a.clif_dir,
+        ward_ids=a.ward_ids,
+        names=a.names,
     )
     threading.Thread(target=scheduler, args=(d, a.at), daemon=True).start()
     ThreadingHTTPServer(("0.0.0.0", a.port), make_handler(d, a.at)).serve_forever()

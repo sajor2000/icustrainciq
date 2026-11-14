@@ -8,7 +8,9 @@ The page itself is `app/static/index.html`, read from disk on every request, so 
 page goes live without restarting the workflow. Everything else is JSON:
 
 GET  /                 the page (503 note if the file is missing)
-GET  /api/forecast     forecast.json (unit counts only), or {"resources": {}, "note": ...}
+GET  /api/forecast     forecast.json (unit counts only), or {"resources": {}, "note": ...};
+                       the file is sent whole, so "forecast_state" ("ready" | "pending-model") passes through
+       --host 127.0.0.1 binds loopback only (a laptop run on real patients); default 0.0.0.0
 GET  /api/rooms        rooms.json next to the forecast (stage ward only)
 GET  /api/runs         dispatcher status: next 07:00, running update, last per scope, demo clock
 GET  /api/capacity     {"life_support_patients", "vents_free", "updated_at"} (null = not set)
@@ -394,8 +396,15 @@ def make_handler(
     return H
 
 
-def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+def serve(a) -> ThreadingHTTPServer:
+    """the bound server for parsed arguments (not yet serving)"""
+    return ThreadingHTTPServer(
+        (a.host, a.port),
+        make_handler(a.forecast, a.nemotron, a.dispatcher, a.static, a.behind_proxy),
+    )
+
+
+def parse_args(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--forecast", type=pathlib.Path, required=True)
     ap.add_argument("--nemotron", default="http://nemotron:8000")
@@ -403,15 +412,22 @@ def main() -> None:
     ap.add_argument("--static", type=pathlib.Path, default=STATIC)
     ap.add_argument("--port", type=int, default=8080)
     ap.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="address to bind (default 0.0.0.0, as before: the Fuzzball service). "
+        "A laptop run on real patients must pass 127.0.0.1",
+    )
+    ap.add_argument(
         "--behind-proxy",
         action="store_true",
         help="Fuzzball endpoint proxy in front: compare Origin and Host by host name only",
     )
-    a = ap.parse_args()
-    ThreadingHTTPServer(
-        ("0.0.0.0", a.port),
-        make_handler(a.forecast, a.nemotron, a.dispatcher, a.static, a.behind_proxy),
-    ).serve_forever()
+    return ap.parse_args(argv)
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    serve(parse_args()).serve_forever()
 
 
 if __name__ == "__main__":

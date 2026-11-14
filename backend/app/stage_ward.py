@@ -22,6 +22,14 @@ Rule (docs/LIVE_DEMO.md section 1, docs/DECISIONS.md D6, D10):
 
 Prints counts and a short digest of the chosen ids only. The csv (room,
 hospitalization_id, score) goes to a cluster volume, never to git.
+
+A given ward (the final demo cohort): `--ward-ids <parquet|csv> --real-ward`
+  python app/stage_ward.py <CLIF folder> --ward-ids ids.parquet --real-ward --out ...
+skips the selection: the ward is exactly the `hospitalization_id` values of that
+file, and rooms 1..n follow a seeded shuffle of the sorted ids (stable, and not the
+order of ids or of admission). The same csv is written (score left empty). Ids
+outside the open demo are refused without --real-ward; the ids must be in the CLIF
+folder's clif_hospitalization. Prints counts only (no digest for a real ward).
 """
 
 import argparse
@@ -30,6 +38,11 @@ import pathlib
 
 import numpy as np
 import polars as pl
+
+try:  # imported as app.stage_ward (tests) or run as a script (the job)
+    from app import aggregate
+except ImportError:  # pragma: no cover
+    import aggregate
 
 SEED = 20261114
 N_ROOMS = 25
@@ -218,6 +231,71 @@ def digest(rooms: pl.DataFrame) -> str:
     return hashlib.sha256(ids).hexdigest()[:12]
 
 
+def read_ward_ids(path: pathlib.Path) -> list[str]:
+    """the `hospitalization_id` column of a parquet or csv file, as sorted unique
+    strings; refuses a file without that column or with no ids"""
+    path = pathlib.Path(path)
+    if not path.is_file():
+        raise SystemExit(f"--ward-ids: {path.name} not found")
+    if path.suffix.lower() == ".parquet":
+        if HOSP not in pl.read_parquet_schema(path):
+            raise SystemExit(f"--ward-ids: {path.name} has no {HOSP} column")
+        col = pl.read_parquet(path, columns=[HOSP])[HOSP]
+    else:
+        df = pl.read_csv(path, schema_overrides={HOSP: pl.String})
+        if HOSP not in df.columns:
+            raise SystemExit(f"--ward-ids: {path.name} has no {HOSP} column")
+        col = df[HOSP]
+    ids = sorted(set(col.cast(pl.String).drop_nulls().to_list()))
+    if not ids:
+        raise SystemExit(f"--ward-ids: {path.name} holds no ids")
+    return ids
+
+
+def rooms_from_ids(ids: list[str], seed: int = SEED) -> pl.DataFrame:
+    """a given ward -> the stage-ward csv frame (room, hospitalization_id, score).
+    Rooms 1..n follow a seeded permutation of the sorted ids: the same map on every
+    run, and a room number says nothing about the id or the admission time."""
+    ids = sorted(set(ids))
+    order = np.random.default_rng(seed).permutation(len(ids))
+    return pl.DataFrame(
+        {
+            "room": range(1, len(ids) + 1),
+            HOSP: [ids[i] for i in order],
+            "score": [None] * len(ids),
+        },
+        schema={"room": pl.Int64, HOSP: pl.String, "score": pl.Int64},
+    )
+
+
+def ward_from_ids(
+    clif_dir: pathlib.Path,
+    ward_ids: pathlib.Path,
+    real_ward: bool = False,
+    seed: int = SEED,
+) -> tuple[pl.DataFrame, dict]:
+    """the room map for a given list of stays, and counts for the log. Without
+    `real_ward` every id must be in the open demo (aggregate.check_ward refuses,
+    counts only); every id must be in `clif_dir`/clif_hospitalization.parquet."""
+    ids = read_ward_ids(ward_ids)
+    rooms = rooms_from_ids(ids, seed)
+    ward = aggregate.check_ward(dict(zip(rooms[HOSP], rooms["room"])), real_ward)
+    hosp = pathlib.Path(clif_dir) / "clif_hospitalization.parquet"
+    if not hosp.is_file():
+        raise SystemExit(f"required table {hosp.name} not found in {hosp.parent.name}/")
+    known = set(pl.read_parquet(hosp, columns=[HOSP])[HOSP].cast(pl.String))
+    missing = sum(i not in known for i in ids)
+    if missing:
+        raise SystemExit(
+            f"{missing} of {len(ids)} ward ids are not in "
+            f"{hosp.parent.name}/{hosp.name}: wrong CLIF folder for this ward"
+        )
+    info = {"selected": rooms.height, "ward": ward["source"], "seed": seed}
+    if not real_ward:  # a digest of real ids is not printed
+        info["ids_digest"] = digest(rooms)
+    return rooms, info
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument(
@@ -228,7 +306,27 @@ def main() -> None:
     )
     ap.add_argument("--seed", type=int, default=SEED)
     ap.add_argument("--n", type=int, default=N_ROOMS)
+    ap.add_argument(
+        "--ward-ids",
+        type=pathlib.Path,
+        help="parquet or csv with a hospitalization_id column: the ward is exactly "
+        "these stays (no selection); rooms follow a seeded shuffle",
+    )
+    ap.add_argument(
+        "--real-ward",
+        action="store_true",
+        help="with --ward-ids: the ids are real MIMIC-IV stays (outside the open "
+        "demo); refused without this flag. The csv stays on local or cluster storage",
+    )
     a = ap.parse_args()
+    if a.real_ward and not a.ward_ids:
+        raise SystemExit("--real-ward needs --ward-ids (the selection is open-demo)")
+    if a.ward_ids:
+        rooms, info = ward_from_ids(a.demo_dir, a.ward_ids, a.real_ward, a.seed)
+        a.out.parent.mkdir(parents=True, exist_ok=True)
+        rooms.write_csv(a.out)
+        print(info)  # counts only
+        return
     scored = score_stays(a.demo_dir, eligible_stays(a.demo_dir))
     rooms, info = select_rooms(scored, a.n, a.seed)
     a.out.parent.mkdir(parents=True, exist_ok=True)

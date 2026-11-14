@@ -5,7 +5,10 @@ version: v4
 # real model: if /store/model/mdl-icutwin exists, the seed step skips. Also downloads the Nemotron
 # weights (pinned revision) into hfcache on CPU. @CODE_REF@ and @CODE_SHA256@ are filled in by sed first
 # (see the ingress below); the setup and prefetch steps refuse a file that still has them. Uses ONE GPU at a time; t7-build's CPU steps can run alongside.
-#   fuzzball workflow validate fuzzball/t7-smoke.fz && fuzzball workflow start fuzzball/t7-smoke.fz
+#   python scripts/render_fz.py fuzzball/t7-smoke.fz --code-ref <40-hex sha> --code-sha256 <sha256> -o /tmp/t7-smoke.fz
+#   fuzzball workflow validate /tmp/t7-smoke.fz && fuzzball workflow start /tmp/t7-smoke.fz --name t7-smoke
+# No `exclusive` on the GPU jobs: in Fuzzball 4.3 it reserves the whole node (workflow-syntax); the GPU request
+# alone takes the node's only GPU (docs/COMPUTE_PLAN.md, docs/FUZZBALL_43_REVIEW.md F1).
 volumes:
   store:
     name: twin-store
@@ -76,7 +79,7 @@ jobs:
     image: {uri: "docker://nvcr.io/nvidia/pytorch:25.11-py3"}
     depends-on: [{name: setup, status: FINISHED}]
     env: [HOME=/work/home, TMPDIR=/work/tmp, HF_HOME=/work/cache/hf, PYTHONPATH=/tooling/py:/work/code]
-    resource: {cpu: {cores: 16}, memory: {size: 64GB}, devices: {nvidia.com/gpu: 1}, exclusive: true}
+    resource: {cpu: {cores: 16}, memory: {size: 64GB}, devices: {nvidia.com/gpu: 1}}
     policy: {timeout: {execute: 45m}}
     script: |
       #!/bin/bash
@@ -93,7 +96,7 @@ jobs:
     image: {uri: "docker://lmsysorg/sglang:v0.5.21"}
     depends-on: [{name: train-demo, status: FINISHED}]
     env: [HOME=/work/home, TMPDIR=/work/tmp, HF_HOME=/work/cache/hf, PYTHONPATH=/tooling/py-gen:/work/code]
-    resource: {cpu: {cores: 16}, memory: {size: 64GB}, devices: {nvidia.com/gpu: 1}, exclusive: true}
+    resource: {cpu: {cores: 16}, memory: {size: 64GB}, devices: {nvidia.com/gpu: 1}}
     policy: {timeout: {execute: 45m}}
     script: |
       #!/bin/bash
@@ -109,6 +112,7 @@ jobs:
     image: {uri: "docker://python:3.12-slim"}
     depends-on: [{name: sglang, status: FINISHED}]
     resource: {cpu: {cores: 2}, memory: {size: 8GB}}
+    policy: {timeout: {execute: 10m}}
     script: |
       #!/bin/bash
       set -euo pipefail

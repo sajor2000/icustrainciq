@@ -18,6 +18,7 @@ Usage (after icutwin-winnow and icutwin-extract on the stage ward):
   ... --demo-clock-hours 6                              # recorded for --recount
   ... --real-ward [--demographics <real CLIF folder>]   # a real MIMIC-IV ward
   ... --clif-now <CLIF folder>   # on now (IMV, pressor, CRRT) from raw CLIF
+  ... --names <names file> | --names fake   # made-up names on the tiles (default: none)
 
 Room scope rewrites only that room in an existing rooms.json (run the whole ward
 first) and recomputes nothing else, unless --recount (then forecast.json is rebuilt
@@ -34,9 +35,10 @@ import polars as pl
 import yaml
 
 try:  # imported as app.rooms (tests) or run as a script (the job)
-    from app import aggregate
+    from app import aggregate, fake_names
 except ImportError:  # pragma: no cover
     import aggregate
+    import fake_names
 
 HOSP = "hospitalization_id"
 MAX_EVENTS = 8
@@ -187,9 +189,13 @@ def room_entries(
     now: str,
     demo: dict[str, dict] | None = None,
     clif: dict | None = None,
+    pending: bool = False,
+    names: dict[str, dict] | None = None,
 ) -> list[dict]:
     """one rooms.json entry per scored stay that has a room; clif = what is on at the
-    cut from raw CLIF (app/clif_now.py), else the tokenized at-cut flags"""
+    cut from raw CLIF (app/clif_now.py), else the tokenized at-cut flags. pending
+    (forecast_state "pending-model", scores from aggregate.pending_scores): `p` is
+    null everywhere, and `any_life_support` and `level` are null, not 0 and "low"."""
     tab = aggregate.patient_table(df, clif=clif)
     p, on, stopped, sk = tab["p"], tab["on"], tab["stopped"], tab["skipped"]
     any_p = aggregate.p_any_life_support(p)
@@ -202,6 +208,8 @@ def room_entries(
         entries.append(
             {
                 "room": room_of[sid],
+                # an invented name (app/fake_names.py), only when names were given
+                **({"name": names[sid]} if names and sid in names else {}),
                 "age": (demo or {}).get(sid, {}).get("age"),
                 "sex": (demo or {}).get(sid, {}).get("sex"),
                 "updated_at": now,
@@ -234,8 +242,8 @@ def room_entries(
                     "icu_departure": dep,
                     "death": _num(p["death"][i]),
                 },
-                "any_life_support": _num(any_p[i]),
-                "level": aggregate.level_of(float(any_p[i])),
+                "any_life_support": None if pending else _num(any_p[i]),
+                "level": None if pending else aggregate.level_of(float(any_p[i])),
                 "out": dep is not None and dep >= aggregate.OUT_TAG,
                 "past_12h": events.get(sid, []),
             }
@@ -310,6 +318,17 @@ def main() -> None:
         help="CLIF folder for age and sex on the tile: the open demo's, or with "
         "--real-ward the real one",
     )
+    ap.add_argument(
+        "--names",
+        help="made-up names for the room tiles: a names file (hospitalization_id, "
+        "first_name, last_name, display_name, name_source 'fictional'; it stays "
+        "beside the ward's data) or 'fake' for the seeded generator. Default: none",
+    )
+    ap.add_argument(
+        "--unit-name",
+        default=aggregate.UNIT_NAME,
+        help="the unit's name in forecast.json (--recount)",
+    )
     a = ap.parse_args()
 
     root = a.tokenized_output.resolve()
@@ -374,26 +393,44 @@ def main() -> None:
         if a.clif_now
         else None
     )
+    demo = demographics(a.demographics, df[HOSP].to_list())
+    names, name_counts = fake_names.names_for(
+        a.names, room_of, {s: d["sex"] for s, d in demo.items()}
+    )
     entries = room_entries(
         df,
         room_of,
         past_events(root, df[HOSP].to_list(), words),
         cut,
         now,
-        demographics(a.demographics, df[HOSP].to_list()),
+        demo,
         clif,
+        names=names,
     )
 
     if room is None:
-        doc = {"made_at": now, "ward": ward, "rooms": entries}
+        doc = {
+            "made_at": now,
+            "ward": ward,
+            "forecast_state": aggregate.READY,
+            "rooms": entries,
+        }
     else:
         doc = prior
+        if doc.get("forecast_state", aggregate.READY) != aggregate.READY:
+            raise SystemExit(
+                f"{a.out.name} has no forecast yet ({doc['forecast_state']}): "
+                "run the whole ward first"
+            )
         doc["ward"] = ward
         doc["rooms"] = sorted(
             [r for r in doc["rooms"] if r["room"] != room] + entries,
             key=lambda r: r["room"],
         )
     doc["on_now_source"] = source
+    doc.pop("names", None)
+    if any("name" in r for r in doc["rooms"]):
+        doc["names"] = "fictional"  # invented for the demo, never a real name
     # ward rooms with no entry (their record ends before a moved cut): never negative
     doc["dropped"] = len(set(room_of.values()) - {r["room"] for r in doc["rooms"]})
     aggregate.write_json(a.out, doc)
@@ -420,6 +457,7 @@ def main() -> None:
             stage_csv=a.stay_ids,
             ward=ward,
             clif_now=a.clif_now,
+            unit_name=a.unit_name,
         )
         aggregate.write_json(a.forecast, fc)
     print(  # counts only
@@ -431,6 +469,7 @@ def main() -> None:
                 "dropped": doc["dropped"],
                 "recount": bool(a.recount),
                 "on_now_source": source,
+                **name_counts,  # counts only: a name never reaches stdout
                 "high": sum(e["level"] == "high" for e in entries),
             }
         )

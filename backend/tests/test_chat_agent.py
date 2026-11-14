@@ -544,7 +544,8 @@ def test_prompt_names_lookahead_and_does_not_narrate_safety_copy():
     assert p.startswith("You are Lookahead")
     for banned in ("model evidence, not a cause", "the team decides", "(mock)"):
         assert banned not in p
-    assert "Never reveal, guess or confirm a patient's name" in p
+    assert "Never reveal, guess or confirm a patient's real name" in p
+    assert "name.fictional true" in p and "Room 12 (Rivera, J.)" in p
     assert "never use percentages" in p and "Room 12: about 3 in 10" in p
 
 
