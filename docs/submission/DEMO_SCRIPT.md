@@ -68,7 +68,7 @@ Room numbers and percentages below are from the demo data (`#synthetic`). On the
 | 4:00 | Bed board | the **Ask Lookahead** button (bottom right), then the suggested question **"Who should we worry about first?"** | "Anyone on the team can ask in plain words. This answer comes from the second model, and it names the rooms. Click a room number and you are there." |
 | 4:20 | Chat open | **Close** (the X) | (no words) |
 | 4:30 | One-sheet (tab 4), the dark diagram | point at the two model boxes | "Two models, two jobs. The patient model we trained ourselves, on these two Lenovo machines. It reads a patient's chart as a sequence of events, the way a language model reads words. At 7 am we run it once per patient and keep the output of its last layer: one vector that summarises the patient. Then five small classifiers, fitted on past patients with known outcomes, turn that vector into the five percentages. One pass per patient, no simulating thousands of futures. The chat model is NVIDIA Nemotron 3 Nano, used as it is, served with vLLM. It predicts nothing. It answers by calling tools that read the forecast. One knows ICU data. The other knows language." |
-| 4:50 | One-sheet, bottom | point at "What the second machine unlocks" | "The second machine is what makes this work. Training uses both GPUs. In service, the chat keeps one GPU and each forecast takes the other, so the board never goes dark. [FILL: training time on 1 GPU against 2.] [FILL: held-out accuracy, one sentence.] Fuzzball runs all of it. Nothing leaves the building." |
+| 4:50 | One-sheet, bottom | point at "What the second machine unlocks" | "The second machine is what makes this work. Training uses both GPUs. In service, the chat keeps one GPU and each forecast takes the other, so the board never goes dark. [FILL: training time on 1 GPU against 2.] On patients it never saw, it ranks the right patient higher 77 to 93 percent of the time: 0.93 for death, 0.88 for CRRT, 0.78 for a ventilator, 0.77 for a vasopressor. Fuzzball runs all of it. Nothing leaves the building." |
 | 5:00 | One-sheet | stop | "Lookahead. Thank you." |
 
 Timing notes: the 4:30 block is 20 seconds at a steady pace; rehearse it. If you are behind at 3:15, skip the 1:55 threshold beat next time, not the Fuzzball beat.
@@ -94,14 +94,14 @@ Timing notes: the 4:30 block is 20 seconds at a steady pace; rehearse it. If you
 | Question | Answer |
 |---|---|
 | **Privacy: where does patient data go?** | "Nowhere. Patient rows live on Fuzzball volumes on the two machines. The browser and the chat model see room numbers, counts and percentages. GitHub holds code only. The names on screen are made up." |
-| **How accurate is it? Is it validated?** | "It is a research prototype trained on MIMIC-IV, a public research dataset, in CLIF format. It has not been tested prospectively and it is not a medical device. [FILL: 'On patients the model never saw, …' one measured sentence, or: 'Held-out numbers come out of the classifier fit; we will not quote one until we have measured it.']" |
+| **How accurate is it? Is it validated?** | "It is a research prototype trained on MIMIC-IV, a public research dataset, in CLIF format. It has not been tested prospectively and it is not a medical device. On patients the model never saw, AUROC is 0.93 for death, 0.88 for CRRT and leaving to step-down, 0.80 for leaving to a ward, 0.78 for a ventilator and 0.77 for a vasopressor. Full table in docs/RESULTS.md." |
 | **Why local? Why not a cloud API?** | "A rural hospital often has no cloud contract for patient data and no team to run one. Two desk-size machines it owns need no contract and no connection. And a model this small does not need more: one pass per patient on one GPU." |
 
 Also be ready for: "Did you fine-tune Nemotron?" → "No. It is used as it is. We trained only the patient model." And: "Is this trained on this hospital's patients?" → "No. Trained and run on local hardware, on MIMIC-IV in CLIF format. A hospital with CLIF data can run the same pipeline on its own records."
 
 ## What not to claim
 
-- No accuracy, AUROC, calibration, speed, speed-up or tokens-per-second figure that is not written in `FILL_IN.md` as measured.
+- No accuracy, AUROC, calibration, speed, speed-up or tokens-per-second figure beyond `docs/RESULTS.md` and what `FILL_IN.md` lists as measured.
 - Not "validated", not "clinically tested", not "a medical device", not "recommends treatment". It is for unit planning; the care team makes clinical decisions.
 - Not "trained on this hospital's patients". Say "trained and run on local hardware (MIMIC-IV in CLIF format)".
 - Not "we trained two models" and not "we fine-tuned Nemotron". One model trained by us; one NVIDIA model used as it is.

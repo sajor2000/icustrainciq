@@ -35,6 +35,10 @@ Two models, two jobs: ours knows ICU data and makes the forecast; NVIDIA's knows
 - **Tested it**: 249 backend tests pass (`cd backend && uv run --extra dev --extra model pytest -q`).
 - **Where it stands**: the demo patients and the trained model are on the cluster. Nothing of ours has run end to end on the cluster yet; the board runs today on a laptop with made-up data. The run list is in [`HANDOFF.md`](HANDOFF.md).
 
+## How well it predicts
+
+On held-out patients (cut at ICU arrival + 24 h, event in the next 24 h): AUROC **0.93** for death, **0.88** for leaving to step-down, **0.88** for CRRT start, **0.80** for leaving to a ward, **0.78** for ventilator start and **0.77** for vasopressor start. Full table with ranges, AUPRC and Brier: [`docs/RESULTS.md`](docs/RESULTS.md).
+
 ## The board
 
 ![Bed board, Next 24 h: each bed shows now, then the forecast](docs/screenshots/beds-next.png)
@@ -48,9 +52,14 @@ Two models, two jobs: ours knows ICU data and makes the forecast; NVIDIA's knows
 ## Run it
 
 ```bash
-python3 -m http.server 8000        # then open http://localhost:8000/mockups/command-center.html#synthetic
-cd backend && uv run --extra dev --extra model pytest -q
-cd backend && uv run python app/board.py --forecast ../examples/forecast.json --static ../mockups/command-center.html --port 8080
+# 1. The board with made-up data (own terminal; it keeps running)
+python3 -m http.server 8000        # open http://localhost:8000/mockups/command-center.html#synthetic
+
+# 2. Backend tests, from the repo root
+(cd backend && uv run --extra dev --extra model pytest -q)
+
+# 3. The board server on example data (own terminal; it keeps running)
+(cd backend && uv run python app/board.py --forecast ../examples/forecast.json --static ../mockups/command-center.html --port 8080)
 ```
 
 ## More

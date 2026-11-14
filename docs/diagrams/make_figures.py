@@ -294,7 +294,7 @@ def architecture():
 # =============================================================== detail: how to run it on the cluster
 def workflow():
     f = Fig("workflow", 1280, 420, "How to run it on the cluster",
-            "Seven steps in order: create the twin-store volume, then run t7-code, t7-fit, t7-ward and t7-twin, start the first forecast, and open the board. The demo patients and the trained model are already on the cluster.",
+            "Seven steps in order: create the twin-store volume, then run t7-code, t7-fit, t7-ward and t7-twin, open the board, and start the first forecast from it. The demo patients and the trained model are already on the cluster.",
             "Lookahead · run order", "One volume to create, then five workflows in order")
     xs = [24, 344, 664, 984]
     y1, y2, h = 40, 208, 112
@@ -304,8 +304,8 @@ def workflow():
     f.node(xs[2], y1, 272, h, "card", "3 · Ready · one GPU", "t7-fit", ["fits the five classifiers,", "once per model"], chip="ready")
     f.node(xs[3], y1, 272, h, "card", "4 · Ready", "t7-ward", ["checks the cohort,", "stages the 25 rooms"], chip="ready")
     f.node(xs[3], y2, 272, h, "card", "5 · Ready · GPU 1", "t7-twin", ["board server, dispatcher,", "Nemotron 3 Nano"], chip="ready")
-    f.node(xs[2], y2, 272, h, "forecast", "6 · Ready · GPU 2", "First forecast", ["press Update the unit,", "or wait for 07:00"], chip="ready")
-    f.node(xs[1], y2, 272, h, "card", "7 · Last", "Open the board", ["fuzzball workflow connect", "--name board --endpoint web"], chip="ready")
+    f.node(xs[2], y2, 272, h, "card", "6 · Ready", "Open the board", ["fuzzball workflow connect", "--name board --endpoint web"], chip="ready")
+    f.node(xs[1], y2, 272, h, "forecast", "7 · Last · GPU 2", "First forecast", ["press Update the unit on the board,", "or wait for 07:00"], chip="ready")
     f.node(xs[0], y2, 272, h, "store", "0 · Done", "Already on the cluster", ["25 demo patients, trained model,", "on mimic_clif (read only)"], chip="done")
     yc1, yc2 = y1 + h // 2, y2 + h // 2
     f.arrow([(296, yc1), (344, yc1)])
@@ -314,7 +314,7 @@ def workflow():
     f.arrow([(1120, y1 + h), (1120, y2)])
     f.arrow([(984, yc2), (936, yc2)])
     f.arrow([(664, yc2), (616, yc2)])
-    f.caption("Nothing has run end to end yet. Steps 2 to 6 are files in backend/fuzzball/ready/; each waits for the one before it.", 392)
+    f.caption("Nothing has run end to end yet. Steps 2 to 5 are files in backend/fuzzball/ready/; each waits for the one before it.", 392)
     f.write()
 
 
@@ -349,8 +349,8 @@ def api():
 
 # =============================================================== detail: Update the unit (sequence)
 def trigger():
-    f = Fig("trigger", 1280, 576, "Update the unit, from click to refreshed board",
-            "The board page posts a rerun to the board server, which passes it to the dispatcher. The dispatcher starts the forecast job through Fuzzball. The job writes rooms.json and forecast.json to twin-store. The page polls, the board server reads both files, and the board is redrawn.",
+    f = Fig("trigger", 1280, 624, "Update the unit, from click to refreshed board",
+            "The board page posts a rerun to the board server, which passes it to the dispatcher. The dispatcher starts the forecast job through Fuzzball. The job writes rooms.json and forecast.json to twin-store. The page polls the run state, then asks for the forecast and the rooms; the board server reads both files, and the board is redrawn.",
             "Lookahead · Update the unit", "One button, one POST, one Fuzzball job")
     xs = [136, 388, 640, 892, 1144]
     f.zone(272, 16, 988, 116, "2 × Lenovo PGX (GB10) · CIQ Fuzzball")
@@ -360,12 +360,13 @@ def trigger():
              ("model", "GPU 2 · job", "Forecast job", "our patient model"),
              ("store", "Volume", "twin-store", "rooms.json, forecast.json")]
     for x, (k, tag, t, s) in zip(xs, heads):
-        f.raw("zones", f'<line x1="{x}" y1="120" x2="{x}" y2="512" stroke="{LINE}" stroke-width="1" stroke-dasharray="3 4"/>')
+        f.raw("zones", f'<line x1="{x}" y1="120" x2="{x}" y2="560" stroke="{LINE}" stroke-width="1" stroke-dasharray="3 4"/>')
         f.node(x - 104, 32, 208, 88, k, tag, t, [s])
     msgs = [(0, 1, 176, "POST /api/rerun", INK), (1, 2, 224, "POST /run", INK),
             (2, 3, 272, "fuzzball workflow start", INK), (3, 4, 320, "writes both files", BLUE),
-            (0, 1, 384, "GET /api/runs, every 30 s", INK), (4, 1, 432, "reads both files", BLUE),
-            (1, 0, 480, "board redrawn", BLUE)]
+            (0, 1, 384, "GET /api/runs, every 30 s", INK),
+            (0, 1, 432, "GET /api/forecast, GET /api/rooms", INK), (4, 1, 480, "reads both files", BLUE),
+            (1, 0, 528, "board redrawn", BLUE)]
     for a, b, y, label, c in msgs:
         x1, x2 = xs[a], xs[b]
         f.lines.append(f'<path d="M {x1},{y} L {x2},{y}" fill="none" stroke="{c}" stroke-width="1.5" '

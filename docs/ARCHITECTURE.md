@@ -60,6 +60,8 @@ The trained model knows ICU data. The NVIDIA model knows language. Both run on t
 3. **Five small classifiers read that vector.** One for each event that matters to clinicians in the next 24 hours: starting a ventilator, starting a vasopressor, starting CRRT, leaving the ICU, and death. Each gives a percentage. The classifiers are fitted on past patients whose outcomes are known.
 4. **The patients are added up** into what the unit will need, with a likely range.
 
+Held-out results for each classifier (AUROC, AUPRC, Brier): [`RESULTS.md`](RESULTS.md).
+
 Why this way: one pass per patient takes minutes on one GPU, with no need to generate thousands of possible futures. The five questions were chosen because they drive beds, machines and staff.
 
 ## Architecture
@@ -110,7 +112,8 @@ Nothing has run end to end yet. The files are in `backend/fuzzball/ready/`, rend
 ```bash
 fuzzball volume create team7 twin-store --size 50GiB        # once
 cd backend
-# one at a time, in this order: t7-code, t7-fit, t7-ward, t7-twin. Wait for each to finish.
+# in this order: t7-code, t7-fit, t7-ward (wait for each to finish), then t7-twin.
+# t7-twin keeps running: wait for its services to be ready, not for it to finish. Then open the board and press Update the unit.
 fuzzball workflow validate fuzzball/ready/t7-code.fz && fuzzball workflow start fuzzball/ready/t7-code.fz --name t7-code
 fuzzball workflow connect --name board --endpoint web <t7-twin id>
 ```
