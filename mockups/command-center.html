@@ -422,12 +422,12 @@ details.more summary:hover{color:var(--ink)}
         <span class="label">Board appearance</span>
         <button type="button" data-t="day" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>Light</button>
         <button type="button" data-t="night" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.6 6.6 0 0 0 10.5 10.5Z"/></svg>Dark</button>
-        <h3 class="seth">Cluster lines</h3>
-        <p class="range seti">A bed joins a cluster when its chance of that event is at or above the cluster's line. Predicted new* on the card is the number of those beds. The TIGHT / SHORT warning compares Predicted new* with what is free, so it moves with the line too. Remembered on this device.</p>
+        <h3 class="seth">Thresholds</h3>
+        <p class="range seti">A bed is listed under an event when its chance is at or above that event's threshold. Predicted new* on the card is the number of those beds. The TIGHT / SHORT warning compares Predicted new* with what is free, so it moves with the threshold too. Remembered on this device.</p>
         <div id="linesbox"></div>
-        <span class="label" id="thr-l">Set every line to</span>
+        <span class="label" id="thr-l">Set every threshold to</span>
         <div class="views" id="thr" role="group" aria-labelledby="thr-l"><button type="button" data-v="50">50%</button><button type="button" data-v="25">25%</button><button type="button" data-v="10">10%</button><button type="button" data-v="custom" aria-controls="customrow" aria-expanded="false">Custom</button></div>
-        <div class="custom" id="customrow" hidden><label for="customv" class="sr">Custom line for every cluster, percent</label>
+        <div class="custom" id="customrow" hidden><label for="customv" class="sr">Custom threshold for every event, percent</label>
           <span class="pctin"><input id="customv" type="number" min="1" max="99" step="1" inputmode="numeric" placeholder="1 to 99"><i aria-hidden="true">%</i></span><button type="button" id="customgo">Apply to all</button></div>
       </div>
     </div>
@@ -466,14 +466,14 @@ details.more summary:hover{color:var(--ink)}
       </section>
       <section aria-labelledby="alt-h" id="altview">
         <div class="boardhead">
-          <h2 id="alt-h">Patient clusters · chance of a new event in the next 24 h</h2>
+          <h2 id="alt-h">Predicted events · next 24 h</h2>
           
         </div>
         <div class="thr">
           <button class="toggle resttoggle" id="resttoggle" type="button" aria-pressed="false">Hide other beds</button>
         </div>
         <div id="clusters"></div>
-        <p class="note">* Predicted counts every bed at or above its line as a start; each is a chance, not a certainty. Each group holds the beds whose chance of that new event in the next 24 h is at or above its line; set each cluster's line in Settings (remembered on this device); a bed can sit in more than one group. Already on before 07:00 is not counted as new. The three highest-risk beds pulse red, and a whole group pulses red when the unit forecast for it is TIGHT or SHORT against what is free (faster when SHORT). Leaving the ICU is not a risk, so those figures fill grey. Beds are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
+        <p class="note">* Predicted counts every bed at or above the event's threshold as a start; each is a chance, not a certainty. Set each threshold in Settings (remembered on this device); a bed can appear under more than one event. Already on before 07:00 is not counted as new. The three highest-risk beds pulse red, and a card pulses red when its predicted beds reach or pass what is free. Leaving the ICU is not a risk, so those figures fill grey. Beds are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
       </section>
     </div>
 
@@ -718,7 +718,7 @@ details.more summary:hover{color:var(--ink)}
     const inRisk=new Set(), w3=ranked().slice(0,3).map(r=>r.n); for(const k of KEYS) if(k!=="out") live(k).forEach(r=>{ if(r.p[k]>=thrBy[k]) inRisk.add(r.n); });
     const rest=rooms.filter(r=>!inRisk.has(r.n)), rt=document.getElementById("resttoggle"), card=document.getElementById("restcard");
     rt.setAttribute("aria-pressed",String(hideRest)); rt.textContent = hideRest ? `Show other beds (${rest.length})` : "Hide other beds"; rt.hidden=!rest.length;
-    card.hidden = hideRest || !rest.length; card.querySelector(".lc").textContent=`under every line · ${nbeds(rest.length)}`;
+    card.hidden = hideRest || !rest.length; card.querySelector(".lc").textContent=`under every threshold · ${nbeds(rest.length)}`;
     card.querySelector(".set").innerHTML=rest.map(r=>{const [e,v]=top(r); return chip(r,e,v,`${e.short}<br>${pct(v)}`,w3);}).join("");
     const cur=KEYS.map(k=>Math.round(thrBy[k]*100)), same=cur.every(v=>v===cur[0]), preset=same&&[50,25,10].includes(cur[0]);
     if(document.documentElement.dataset.view==="alt") renderBrief();
@@ -734,13 +734,13 @@ details.more summary:hover{color:var(--ink)}
           <div class="exp"><span class="sl">Predicted new*</span><b>${c.p50}</b></div></div>
         ${k==="vent"||k==="crrt"?`<div class="ub"></div>`:""}
         <p class="sec two">Beds to watch</p>
-        <p class="range bedline">Beds at <b class="lv"></b> or more · <span class="lc"></span> <button type="button" class="chg" data-k="${k}" aria-label="Change the line for ${e.name} in settings">Change</button></p>
+        <p class="range bedline">Beds at <b class="lv"></b> or more · <span class="lc"></span> <button type="button" class="chg" data-k="${k}" aria-label="Change the threshold for ${e.name} in settings">Change</button></p>
         <p class="range why" hidden></p>
         <div class="set"></div></section>`; }
     html+=`<section class="cl rest" id="restcard"><h3>Other beds</h3><p class="range bedline lc"></p><div class="set"></div></section>`;
     // settings: one row per cluster, in the same order: name, − value +, how many beds that gives
     document.getElementById("linesbox").innerHTML=order.map(k=>{ const e=EV.find(x=>x.k===k); return `<div class="lrow" data-k="${k}"><span class="nm">${e.bl}</span>
-      <button type="button" class="step" data-d="-5" aria-label="Lower the line for ${e.name} by 5 points">−</button><span class="pctin"><input type="number" min="1" max="99" step="1" inputmode="numeric" aria-label="Line for ${e.name}, percent"><i aria-hidden="true">%</i></span><button type="button" class="step" data-d="5" aria-label="Raise the line for ${e.name} by 5 points">+</button><span class="cnt range"></span></div>`; }).join("");
+      <button type="button" class="step" data-d="-5" aria-label="Lower the threshold for ${e.name} by 5 points">−</button><span class="pctin"><input type="number" min="1" max="99" step="1" inputmode="numeric" aria-label="Threshold for ${e.name}, percent"><i aria-hidden="true">%</i></span><button type="button" class="step" data-d="5" aria-label="Raise the threshold for ${e.name} by 5 points">+</button><span class="cnt range"></span></div>`; }).join("");
     document.getElementById("clusters").innerHTML=html; KEYS.forEach(updateCard); updateRest();
   }
   document.getElementById("clusters").addEventListener("click",e=>{ const b=e.target.closest(".pp"); if(b) return openRoom(+b.dataset.room);
