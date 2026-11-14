@@ -8,7 +8,7 @@ Everything a user sees is a count with an 80% range, or one stage-ward room's si
 
 1. **06:45, before rounds.** Opens the board on the unit workstation. The header says the forecast is for 07:00 rounds and when it ran. It reads **Next 24 h**.
 2. **Reads the first line of the shift brief.** "Ventilators TIGHT 3 (1–5); 3 free" (the caption says the numbers are median and 80% range). That is the answer; the rows below are the evidence.
-3. **Checks the unit rows.** As charge nurse (ICU nurse) she sees all six open, SHORT and TIGHT first. Decides to ask for a second respiratory therapist for the night shift and tells the bed manager.
+3. **Checks the unit rows.** As charge nurse (ICU nurse) she sees the rows with a verdict (TIGHT or SHORT); the rest fold. Decides to ask for a second respiratory therapist for the night shift and tells the bed manager.
 4. **Reads "Watch first"**: the three highest-risk rooms, as magnets on the board and links in the brief. Notes them for rounds; "Show all 25 rooms" opens the whole unit.
 5. **Taps a suggested question** if she wants it in words: "What will we be short of tonight?"; Nemotron answers from the counts.
 6. **Takes the three-line brief to rounds** (AI-drafted from the counts, labelled).

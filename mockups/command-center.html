@@ -25,24 +25,26 @@ body{margin:0;background:var(--board);color:var(--ink);
 :focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
 button{font:inherit;color:inherit}
 .wrap{max-width:1440px;margin:0 auto;padding:16px 24px 96px}
-/* watch row */
-.watch{margin:0 0 10px;font-size:14px;color:var(--ink-2)}
-.watch b{color:var(--ink)}
-.watch .roomlink{background:transparent;border:0;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;padding:12px 6px;margin:-12px -6px;cursor:pointer;font-weight:700;color:var(--ink);background-clip:content-box}
-.mag[data-watch]{border-width:2.5px}
-.mag .wl{display:inline-grid;place-items:center;width:20px;height:20px;margin-left:6px;vertical-align:4px;border:1.5px solid currentColor;border-radius:999px;font-size:12px;font-weight:800;line-height:1}
 /* room page */
 .roomview{padding-top:16px}
 .rv-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .rv-nav a{color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;min-height:44px;padding:0 4px}
 .rv-step{display:flex;gap:16px}
 .rv-unit{margin:4px 0 0;font-size:14px;color:var(--ink-2)}
-.roomview h1{margin:12px 0 2px;font-size:44px;line-height:1;letter-spacing:-.02em}
+.roomview h1{margin:12px 0 2px;font-size:44px;line-height:1;letter-spacing:-.02em;display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.rv-acu{display:inline-flex;align-items:flex-end;gap:10px;font-size:18px;font-weight:700;color:var(--ink-2);letter-spacing:0}
 .rv-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:32px;margin-top:16px;padding-top:16px;border-top:2px solid var(--ink)}
 .rv-grid h2{margin:0 0 8px;font-size:18px}
-.bars.big li{grid-template-columns:minmax(0,1fr) minmax(120px,2fr) 64px;padding:10px 0;font-size:16px}
-.bars.big .track{height:14px;border-radius:7px}
-.bars.big .pct{font-size:24px}
+.risks{list-style:none;margin:4px 0 0;padding:0}
+.risks li{display:grid;grid-template-columns:minmax(0,1fr) 84px auto 9.5em;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--rule);font-size:16px}
+.risks .lv{font-size:12px;font-weight:800;letter-spacing:.05em;text-align:center;border:1.5px solid currentColor;border-radius:4px;padding:2px 4px;color:var(--ink-2)}
+.risks .lv.out{border-color:transparent}
+.risks .lv.high{color:var(--ink);background:color-mix(in srgb,var(--magnet) 18%,transparent)}
+.dots{display:inline-flex;gap:4px}
+.dots i{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--ink-2)}
+.dots i.on{background:var(--magnet);border-color:var(--magnet)}
+.risks .fq{font-size:14px;color:var(--ink-2)}
+@media (max-width:560px){.risks li{grid-template-columns:minmax(0,1fr) 72px;row-gap:6px}.risks .dots{grid-column:1}.risks .fq{grid-column:2;text-align:right;font-size:13px}.dots{gap:3px}.dots i{width:10px;height:10px}}
 .rv-ask{display:flex;margin-top:16px}
 @media (max-width:760px){.rv-grid{grid-template-columns:1fr;gap:20px}.roomview h1{font-size:36px}}
 /* chat widget */
@@ -103,7 +105,7 @@ button{font:inherit;color:inherit}
 .legend i{display:inline-block;width:28px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px;border:1px solid var(--rule)}
 .strain-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .strain h2{margin:0;font-size:18px}
-.band{font-size:12px;font-weight:800;letter-spacing:.05em;border:1.5px solid currentColor;border-radius:4px;padding:3px 8px;color:var(--ink-2)}
+.band{display:inline-flex;align-items:flex-end;gap:8px;font-size:12px;font-weight:800;letter-spacing:.05em;border:1.5px solid currentColor;border-radius:4px;padding:4px 8px;color:var(--ink-2)}
 .band.busy{color:var(--tight)}
 .strain-x{margin:4px 0 0;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .strain-x b{font-size:48px;font-weight:800;line-height:1;letter-spacing:-.02em}
@@ -113,23 +115,27 @@ button{font:inherit;color:inherit}
 .strain-why{margin:8px 0 0;font-size:14px;color:var(--ink-2);max-width:72ch}
 .strain-why b{color:var(--ink);font-weight:600}
 .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
-.mag .evs{display:flex;flex-direction:column;gap:4px;margin-top:10px}
-.mag .ev{display:grid;grid-template-columns:minmax(0,1fr) 44px 32px;gap:6px;align-items:center;font-size:12px;font-weight:600;line-height:1.2}
-.mag .ev .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mag .bar{height:6px;border-radius:3px;background:color-mix(in srgb,currentColor 24%,transparent)}
-.mag .bar i{display:block;height:100%;border-radius:3px;background:currentColor}
-.mag .pc{text-align:right}
-.mag{position:relative;min-height:104px;text-align:left;border:1.5px solid var(--ink);border-radius:6px;padding:8px 10px;cursor:pointer;
+.mag{position:relative;min-height:80px;text-align:left;border:1.5px solid var(--ink);border-radius:6px;padding:8px 10px;cursor:pointer;
   background:var(--surface);color:var(--ink);box-shadow:0 1px 1px rgba(0,0,0,.18),0 2px 4px rgba(0,0,0,.06);
   transition:background-color .2s ease-out,transform .15s ease-out}
 .mag:hover{transform:translateY(-1px)}
 .mag[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
 .mag .rm{font-size:26px;font-weight:800;line-height:1}
+.mag .ac{display:flex;align-items:flex-end;gap:8px;margin-top:12px;font-size:14px;font-weight:600}
+.sig{display:inline-flex;align-items:flex-end;gap:2px;height:16px}
+.sig i{display:block;width:5px;border-radius:1px;background:currentColor;opacity:.22}
+.sig i:nth-child(1){height:6px}.sig i:nth-child(2){height:11px}.sig i:nth-child(3){height:16px}.sig i:nth-child(4){height:21px}
+.sig i.f{opacity:1}
+.sig.big{height:28px;gap:3px}.sig.big i{width:8px}.sig.big i:nth-child(1){height:8px}.sig.big i:nth-child(2){height:14px}.sig.big i:nth-child(3){height:21px}.sig.big i:nth-child(4){height:28px}
+#rv-h:focus:not(:focus-visible){outline:none}
+.mag.high .ac{font-weight:800}
+.legend>span{display:inline-flex;align-items:flex-end;gap:6px}
+.legend .sw{display:inline-block;width:16px;height:16px;border-radius:3px;border:1px solid var(--ink)}
+.legend .sw.low{background:var(--surface)}.legend .sw.med{background:color-mix(in srgb,var(--magnet) 32%,var(--surface))}.legend .sw.high{background:var(--magnet)}
 .mag .on{position:absolute;top:8px;right:8px;display:flex;gap:4px}
 .mag .short{display:none}
-.mag.compact .on .long{display:none}.mag.compact .on .short{display:inline}
 .mag .on>span{font-size:11px;font-weight:700;letter-spacing:.04em;border:1.2px solid currentColor;border-radius:3px;padding:0 4px;line-height:16px}
-@media (max-width:560px){.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.mag .ev{grid-template-columns:minmax(0,1fr) 24px 30px;font-size:11px;gap:4px}.mag .evs{margin-top:6px}.mag{min-height:68px;padding:6px}.mag .rm{font-size:20px}.mag .long{display:none}.mag .short{display:inline}.mag .on{position:static;margin-top:4px;gap:3px;flex-wrap:wrap}.mag .on>span{font-size:11px;padding:0 3px;line-height:14px}}
+@media (max-width:560px){.grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.mag{min-height:64px;padding:6px}.mag .rm{font-size:20px}.mag .ac{margin-top:6px;font-size:11px}.mag .on{position:static;margin-top:2px;gap:2px;flex-wrap:wrap}.mag .on>span{font-size:10px;padding:0 2px;line-height:13px}}
 
 /* margin */
 .panel{padding:14px 0 18px;border-top:1px solid var(--rule)}
@@ -228,14 +234,13 @@ details.more summary:hover{color:var(--ink)}
   <div class="main">
     <section class="brief" aria-labelledby="brief-h">
       <h2 id="brief-h">Shift brief (mock)</h2>
-      <p class="sub">Median (80% range) for the next 24 h. Drafted from the counts below; check before acting.</p>
+      <p class="sub">Median (80% range). Drafted from the counts; check before acting.</p>
       <ol id="brief"></ol>
     </section>
 
     <section class="strain" aria-labelledby="strain-h">
       <div class="strain-top"><h2 id="strain-h">Unit strain · next 24 h</h2><span class="band" id="band"></span></div>
       <p class="strain-x"><b id="sx"></b><span class="of">a typical day</span><span class="rg" id="srange"></span></p>
-      <svg id="sscale" viewBox="0 0 640 52" role="img" aria-labelledby="sscale-t"><title id="sscale-t">Strain scale</title></svg>
       <p class="strain-why" id="swhy"></p>
     </section>
 
@@ -243,18 +248,19 @@ details.more summary:hover{color:var(--ink)}
       <section aria-labelledby="board-h">
         <div class="boardhead">
           <h2 id="board-h">All 25 rooms · next 24 h</h2>
-          <p class="legend"><span>Bar = chance in the next 24 h</span><span><i style="background:var(--magnet)"></i>watch first, in order 1 to 3</span></p>
+          <p class="legend" aria-label="Predicted acuity, next 24 h">
+            <span><i class="sw low"></i><span class="sig"><i class="f"></i><i></i><i></i></span> Low</span><span><i class="sw med"></i><span class="sig"><i class="f"></i><i class="f"></i><i></i></span> Medium</span><span><i class="sw high"></i><span class="sig"><i class="f"></i><i class="f"></i><i class="f"></i></span> High</span>
+          </p>
         </div>
-        <p class="watch" id="watch"></p>
         <div class="grid" id="grid" role="group" aria-label="Rooms 1 to 25; choose a room to open its page"></div>
-        <p class="note">Bars: each room's three highest risks of a new event in the next 24 h (leaving the ICU is on the room page). Blue tiles: the three rooms with the highest single risk (leaving the ICU is not counted as a risk). Tags: already on before 07:00, so not counted as new (V, P, C on a phone). Rooms are the stage ward: open MIMIC-IV Demo patients, excluded from training.</p>
+        <p class="note">Predicted acuity: the room's highest chance of a new event in the next 24 h (High: 4 in 10 or more, Medium: 2 in 10 or more), raised by support already running (V ventilator, P vasopressor, C CRRT). Open a room for the details. Stage ward: open MIMIC-IV Demo patients.</p>
       </section>
     </div>
 
     <div class="margin">
       <section class="panel" aria-labelledby="unit-h" id="unitpanel">
         <h2 id="unit-h">Unit · next 24 h</h2>
-        <p class="sub">New starts across all 25 rooms. Big number = median; blue bar = 80% range; ink line = what is free.</p>
+        <p class="sub">Median and 80% range across the 25 rooms; ink line = what is free.</p>
         <div id="rows"></div>
       </section>
 
@@ -291,8 +297,8 @@ details.more summary:hover{color:var(--ink)}
     <p class="sub" id="rv-sub"></p>
     <div class="rv-grid">
       <section aria-labelledby="rv-risk-h">
-        <h2 id="rv-risk-h">Chance of each event in the next 24 h</h2>
-        <ul class="bars big" id="rbars"></ul>
+        <h2 id="rv-risk-h">Next 24 h: out of 10 patients like this, how many have each event</h2>
+        <ul class="risks" id="rbars"></ul>
         <p class="onnow" id="onnow"></p>
         <p class="label">How far to trust these: held-out check (calibration, AUROC) <span class="pending">pending run</span>.</p>
       </section>
@@ -364,6 +370,9 @@ details.more summary:hover{color:var(--ink)}
   const top = r => EV.filter(e=>e.k!=="out"&&!Number.isNaN(r.p[e.k])).map(e=>[e,r.p[e.k]]).sort((a,b)=>b[1]-a[1])[0];
   const ranked = () => rooms.slice().sort((a,b)=>top(b)[1]-top(a)[1]);
   const pct = v => Math.round(v*100)+"%";
+  // risk in words (Zipkin 2014, PMID 25133362: icon arrays and plain frequencies over bare percentages)
+  const inTen = v => { const n=Math.round(v*10); return n<1?"fewer than 1 in 10":`about ${n} in 10`; };
+  const level = v => v>=.40?["high","HIGH"]:v>=.20?["med","MEDIUM"]:["low","LOW"];
   const C = {}; for (const e of EV) C[e.k] = counts(rooms.map(r=>pv(r,e.k)));
   // the other eight probe heads (forecast.json other_tasks): research only, never staffing rows
   const RX = [
@@ -395,18 +404,19 @@ details.more summary:hover{color:var(--ink)}
   const bandOf = x => x<0.8?"QUIET":x<1.2?"USUAL":x<1.6?"BUSY":"VERY BUSY";
   const fx = x => x.toFixed(1)+"×";
   function renderStrain(){
-    const band=bandOf(SX.p50), el=document.getElementById("band"); el.textContent=band; el.className="band"+(band.includes("BUSY")?" busy":"");
+    const band=bandOf(SX.p50), el=document.getElementById("band"), bn={QUIET:1,USUAL:2,BUSY:3,"VERY BUSY":4}[band];
+    el.innerHTML=`${sig(bn,4,true)}<span>${band}</span>`; el.className="band"+(band.includes("BUSY")?" busy":"");
     document.getElementById("sx").textContent=fx(SX.p50);
     document.getElementById("srange").textContent=`(${fx(SX.p10)} to ${fx(SX.p90)}, 80% range)`;
     const lo=.4, hi=2.0, X=v=>8+(Math.min(hi,Math.max(lo,v))-lo)/(hi-lo)*624;
     const bands=[[lo,.8,"Quiet"],[.8,1.2,"Usual"],[1.2,1.6,"Busy"],[1.6,hi,"Very busy"]];
-    document.getElementById("sscale").innerHTML=`<title id="sscale-t">Strain ${fx(SX.p50)} a typical day, 80% range ${fx(SX.p10)} to ${fx(SX.p90)}: ${band.toLowerCase()}</title>`
+    if(document.getElementById("sscale")) document.getElementById("sscale").innerHTML=`<title id="sscale-t">Strain ${fx(SX.p50)} a typical day, 80% range ${fx(SX.p10)} to ${fx(SX.p90)}: ${band.toLowerCase()}</title>`
       + bands.map(([a,b,l],i)=>`<rect x="${X(a)+1}" y="14" width="${X(b)-X(a)-2}" height="8" rx="2" fill="var(--rule)"/><text x="${(X(a)+X(b))/2}" y="44" text-anchor="middle" font-size="12" fill="var(--ink-2)" font-family="inherit">${l}</text>`).join("")
       + `<line x1="${X(1)}" x2="${X(1)}" y1="6" y2="30" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="3 3"/><text x="${X(1)}" y="4" text-anchor="middle" font-size="11" fill="var(--ink-2)" font-family="inherit">typical</text>`
       + `<line x1="${X(SX.p10)}" x2="${Math.max(X(SX.p90),X(SX.p10)+2)}" y1="18" y2="18" stroke="var(--magnet)" stroke-width="10" stroke-linecap="round"/>`
       + `<line x1="${X(SX.p50)}" x2="${X(SX.p50)}" y1="8" y2="28" stroke="var(--ink)" stroke-width="3"/>`;
     const up=EV.filter(e=>C[e.k].p50>TYP[e.k]).sort((a,b)=>C[b.k].p50/TYP[b.k]-C[a.k].p50/TYP[a.k]).slice(0,2);
-    document.getElementById("swhy").innerHTML=`${ALL.p50} new events forecast (${ALL.p10} to ${ALL.p90}) against a typical day of ${TYPDAY}${up.length?`. Above usual: ${up.map(e=>`<b>${e.lc} ${C[e.k].p50}</b> (typical ${TYP[e.k]})`).join(", ")}`:""}. Typical day is synthetic until a run supplies it.`;
+    document.getElementById("swhy").innerHTML=up.length?`Above usual: ${up.map(e=>`<b>${e.lc} ${C[e.k].p50}</b> (usually ${TYP[e.k]})`).join(", ")}.`:`Close to a typical day.`;
   }
   const RANK = {short:0, tight:1, ok:2, none:3};
   function status(k){ const c=C[k], free=cap[k]; if(free==null) return ["none","no capacity set"]; if(c.p50>free) return ["short","SHORT"]; if(c.p90>free) return ["tight","TIGHT"]; return ["ok","ON TRACK"]; }
@@ -443,24 +453,30 @@ details.more summary:hover{color:var(--ink)}
       return `<div class="row"><span class="name">${e.row}<br>${own?`<span class="own">your row</span>`:`<span class="range">${e.team}</span>`}</span>
         <span class="n">${c.p50}</span><span>${bar(c,cap[e.k])}<span class="range">range ${c.p10} to ${c.p90}${cap[e.k]!=null?` · ${cap[e.k]} free (placeholder)`:""}</span></span>
         <span class="status ${cls}">${w}</span></div>`; };
-    const shown = order.filter(e=>all || (mine.includes(e.k)) || ["short","tight"].includes(status(e.k)[0]));
+    const shown = order.filter(e=>(mine && mine.includes(e.k)) || ["short","tight"].includes(status(e.k)[0]));
     const folded = order.filter(e=>!shown.includes(e));
     document.getElementById("rows").innerHTML = shown.map(row).join("")
       + (folded.length ? `<details class="more"><summary>${folded.length} more rows · ${[[folded.filter(e=>status(e.k)[0]==="ok").length,"on track"],[folded.filter(e=>status(e.k)[0]==="none").length,"capacity not assessed"]].filter(x=>x[0]).map(x=>`${x[0]} ${x[1]}`).join(", ")}</summary>${folded.map(row).join("")}</details>` : "")
       + `<p class="note">Already on before 07:00 is not counted as new. Arrivals from the ED or OR are not forecast.</p>`;
   }
 
+  // predicted acuity per room: the highest chance of a new adverse event in the next 24 h,
+  // raised by organ support already running (a ventilated patient is never "low")
+  const ACU = [{k:"low",w:"Low",t:0,n:1},{k:"med",w:"Medium",t:.32,n:2},{k:"high",w:"High",t:1,n:3}];
+  const sig = (n, of=3, big=false) => `<span class="sig${big?" big":""}" aria-hidden="true">${Array.from({length:of},(_,i)=>`<i class="${i<n?"f":""}"></i>`).join("")}</span>`;
+  function acuity(r){
+    const risk=Math.max(0,...EV.filter(e=>e.k!=="out"&&!Number.isNaN(r.p[e.k])).map(e=>r.p[e.k]));
+    const sup=EV.filter(e=>e.tag&&r.on[e.k]).length;
+    return ACU[(risk>=.40||sup>=2)?2:(risk>=.20||sup===1)?1:0];
+  }
   function renderGrid(){
     const g=document.getElementById("grid"); g.innerHTML="";
-    const top3=ranked().slice(0,3).map(r=>r.n);
-    document.getElementById("watch").innerHTML=`<b>Watch first:</b> ${top3.map((n,i)=>`<button class="roomlink" type="button" data-room="${n}">room ${n}</button>`).join(", ")} <span>(highest single risks; blue and numbered below)</span>`;
-    document.querySelectorAll("#watch .roomlink").forEach(b=>b.onclick=()=>openRoom(+b.dataset.room));
-    for(const r of rooms){ const [e,v]=top(r); const b=document.createElement("button"); b.type="button"; b.className="mag"; b.dataset.room=r.n; if(ranked().slice(0,3).some(x=>x.n===r.n)){ const [bg,fg]=tile(1); b.style.background=bg; b.style.color=fg; } b.setAttribute("aria-pressed",String(room===r.n));
-      const tags=EV.filter(x=>x.tag&&r.on[x.k]);
-      const ev3=EV.filter(x=>x.k!=="out"&&!Number.isNaN(r.p[x.k])).sort((a,c)=>r.p[c.k]-r.p[a.k]).slice(0,3);
-      b.setAttribute("aria-label",`Room ${r.n}: ${ev3.map(x=>`${x.name.toLowerCase()} ${pct(r.p[x.k])}`).join(", ")}${tags.map(x=>`; on ${x.name.toLowerCase()}`).join("")}`);
-      b.innerHTML=`<span class="rm">${r.n}</span><span class="evs" aria-hidden="true">${ev3.map(x=>`<span class="ev"><span class="nm"><span class="long">${x.mid}</span><span class="short">${x.short}</span></span><span class="bar"><i style="width:${Math.max(3,Math.round(r.p[x.k]*100))}%"></i></span><span class="pc">${pct(r.p[x.k])}</span></span>`).join("")}</span><span class="on">${tags.map(x=>`<span><span class="long">${x.tag}</span><span class="short">${x.t}</span></span>`).join("")}</span>`;
-      const w=top3.indexOf(r.n); if(w>=0){ b.dataset.watch=w+1; if(tags.length>1) b.classList.add("compact"); b.querySelector(".rm").insertAdjacentHTML("beforeend",`<span class="wl" aria-hidden="true">${w+1}</span>`); b.setAttribute("aria-label",`Watch ${w+1}. `+b.getAttribute("aria-label")); }
+    for(const r of rooms){
+      const a=acuity(r), b=document.createElement("button"); b.type="button"; b.className="mag "+a.k; b.dataset.room=r.n;
+      const [bg,fg]=tile(a.t); b.style.background=bg; b.style.color=fg;
+      const tags=EV.filter(x=>x.tag&&r.on[x.k]), [e,v]=top(r);
+      b.setAttribute("aria-label",`Room ${r.n}: ${a.w.toLowerCase()} predicted acuity; highest risk ${e.name.toLowerCase()}, ${inTen(v)}${tags.map(x=>`; on ${x.name.toLowerCase()}`).join("")}`);
+      b.innerHTML=`<span class="rm">${r.n}</span><span class="ac">${sig(a.n)}${a.w}</span><span class="on" aria-hidden="true">${tags.map(x=>`<span>${x.t}</span>`).join("")}</span>`;
       b.onclick=()=>openRoom(r.n); g.appendChild(b); }
   }
 
@@ -473,14 +489,15 @@ details.more summary:hover{color:var(--ink)}
     const first = room!==n; room=n; lastRoom=n; if(first){ log.innerHTML=""; pastOpen=false; }
     const r=rooms[n-1];
     boardview.hidden=true; roomview.hidden=false;
-    document.getElementById("rv-h").textContent=`Room ${n}`;
+    const ra=acuity(r); document.getElementById("rv-h").innerHTML=`Room ${n} <span class="rv-acu">${sig(ra.n,3,true)}${ra.w} predicted acuity</span>`;
     document.getElementById("rv-sub").textContent=`Stage ward, open demo patient · age ${r.age} · next 24 h, 07:00 to 07:00`;
     document.getElementById("rv-unit").innerHTML=`Unit: <b>${fx(SX.p50)}</b> a typical day (${bandOf(SX.p50).toLowerCase()}) · ${document.querySelector("#brief li").innerHTML}`;
     const pv_=n-1||rooms.length, nx=n%rooms.length+1;
     const pa=document.getElementById("rv-prev"), na=document.getElementById("rv-next");
     pa.href=`#room=${pv_}`; pa.textContent=`← Room ${pv_}`; na.href=`#room=${nx}`; na.textContent=`Room ${nx} →`;
     const live=EV.filter(e=>!Number.isNaN(r.p[e.k])).sort((a,b)=>r.p[b.k]-r.p[a.k]), on=EV.filter(e=>Number.isNaN(r.p[e.k]));
-    document.getElementById("rbars").innerHTML = live.map(e=>`<li><span>${e.name}</span><span class="track" aria-hidden="true"><span class="fill" style="display:block;width:${Math.max(2,r.p[e.k]*100)}%"></span></span><span class="pct">${pct(r.p[e.k])}</span></li>`).join("");
+    document.getElementById("rbars").innerHTML = live.map(e=>{ const v=r.p[e.k], n=Math.round(v*10), [lc,lw]=e.k==="out"?["out","—"]:level(v);
+      return `<li><span>${e.name}</span><span class="lv ${lc}">${lw}</span><span class="dots" role="img" aria-label="${inTen(v)}">${Array.from({length:10},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("")}</span><span class="fq">${inTen(v)}</span></li>`; }).join("");
     document.getElementById("onnow").innerHTML = on.length ? `On now, not forecast as new: ${on.map(e=>`<span>${e.tag}</span>`).join("")}` : "";
     const items = pastOpen ? PAST : PAST.slice(0,5);
     document.getElementById("past").innerHTML=items.map((t,i)=>`<li><time>-${(i*1.5+1).toFixed(0)} h</time><span>${t}</span></li>`).join("");
@@ -530,11 +547,11 @@ details.more summary:hover{color:var(--ink)}
     const t=q.toLowerCase();
     if(/\b(re-?run|run|start|refresh|update)\b.{0,30}\bforecast\b/.test(t)) return rerun(role());
     if(room && /(intubat|vent)/.test(t)){ const v=rooms[room-1].p.vent; if(Number.isNaN(v)) return `Room ${room} is already on a ventilator, so the forecast does not count it as a new start.`;
-      return `Room ${room}: ${pct(v)} chance of a ventilator start in the next 24 h (07:00 to 07:00). This is the probe's reading of the model's summary of the stay, not a cause; the held-out check is pending a run. The team decides.`; }
+      return `Room ${room}: ${inTen(v)} patients like this start a ventilator in the next 24 h (07:00 to 07:00). This is the probe's reading of the model's summary of the stay, not a cause; the held-out check is pending a run. The team decides.`; }
     if(room && /most likely/.test(t)){ const r=rooms[room-1], live=EV.filter(e=>!Number.isNaN(r.p[e.k])).sort((a,b)=>r.p[b.k]-r.p[a.k]).slice(0,2), on=EV.filter(e=>Number.isNaN(r.p[e.k]));
-      return `Room ${room}, next 24 h: ${live.map(e=>`${e.name.toLowerCase()} ${pct(r.p[e.k])}`).join(", then ")}.${on.length?` Already on: ${on.map(e=>e.name.toLowerCase()).join(" and ")}, so not forecast as new.`:""} Model evidence, not a cause; the held-out check is pending a run.`; }
+      return `Room ${room}, next 24 h: ${live.map(e=>`${e.name.toLowerCase()} (${inTen(r.p[e.k])})`).join(", then ")}.${on.length?` Already on: ${on.map(e=>e.name.toLowerCase()).join(" and ")}, so not forecast as new.`:""} Model evidence, not a cause; the held-out check is pending a run.`; }
     if(/short/.test(t)){ const ex=EV.filter(e=>["short","tight"].includes(status(e.k)[0])); return ex.length ? ex.map(e=>`${e.row}: ${status(e.k)[1]}, ${cnt(e.k)}, ${cap[e.k]} free`).join("; ")+". Only ventilators have a capacity set so far." : "Nothing is short where a capacity is set; only ventilators have one so far."; }
-    if(/(highest|risk|rooms)/.test(t)) return `Highest single risks in the next 24 h: ${ranked().slice(0,3).map(r=>`room ${r.n} (${top(r)[0].name.toLowerCase()} ${pct(top(r)[1])})`).join(", ")}.`;
+    if(/(highest|risk|rooms)/.test(t)) return `Highest single risks in the next 24 h: ${ranked().slice(0,3).map(r=>`room ${r.n} (${top(r)[0].name.toLowerCase()}, ${inTen(top(r)[1])})`).join(", ")}.`;
     if(/vent/.test(t)) return `Ventilator starts: ${cnt("vent")}; ${cap.vent} free (placeholder).`;
     if(/(pressor|norepi|drip|pharm)/.test(t)) return `Vasopressor starts: ${cnt("press")}.`;
     if(/crrt|dialys/.test(t)) return `CRRT starts: ${cnt("crrt")}.`;

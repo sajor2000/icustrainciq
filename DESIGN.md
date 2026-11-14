@@ -180,7 +180,7 @@ A near-monochrome board of ink on enamel, one working blue, and three status ink
 - **Night counterparts** (`night-*`): charcoal ground, chalk ink, lifted blue and status inks; `night-focus` is a lighter blue than the night magnet so the focus ring separates from selected fills.
 
 ### Named Rules
-**The One Blue Rule.** Magnet blue is the only chromatic fill on the board. On tiles it marks the exception (the three watch-first rooms), not a risk gradient: bar length carries the size of each risk (colour is not ordered, NN/g; Few). Controls show selection with ink, not blue. No second accent is introduced.
+**The One Blue Rule.** Magnet blue is the only chromatic fill on the board. On tiles it shades three acuity levels, always paired with the signal glyph and the word (redundant coding: shape, count and text agree). Controls show selection with ink, not blue. No second accent is introduced.
 
 **The Word Beside the Colour Rule.** Status is never colour alone. Every status colour appears as the ink of a word (ON TRACK, TIGHT, SHORT) with a matching outline, and the capacity line is an ink line explained in text ("ink line = what is free").
 
@@ -247,7 +247,13 @@ The signature piece: a flat tile with an ink border, the room number large, the 
 Top of the right column (first on a phone). Title "Unit strain · next 24 h" (18px/700) with the band word (QUIET / USUAL / BUSY / VERY BUSY) outlined, Tight Amber for the two busy bands, Faded Marker otherwise; the ratio as a 48px/800 numeral ("1.3×") beside "a typical day" (18px/600) and its 80% range; a scale of four bands on Rule tracks with a dashed "typical" mark, the range as a 10px magnet-blue stroke and the median as a 3px ink tick; one 14px line naming the tasks above their usual.
 
 ### Room tile (all 25 on one screen)
-Neutral surface with ink by default. Content: room number (26px/800), the three highest adverse risks as rows (name 12px/600, a 6px bar in currentColor on a 24% track, percent right-aligned), on-now tags top right. Watch-first rooms (the three highest single risks) take the full magnet fill with magnet ink, a 2.5px border and a numbered round badge (1 to 3) after the number; with two tags they switch to short tags (V, P, C). A "Watch first" line above the grid links the same three rooms.
+Only three things: the room number (26px/800), the predicted acuity word with a signal-strength glyph (three rising bars of 6, 11 and 16px, 5px wide; filled bars in currentColor, empty ones at 22%), and on-now tags (V, P, C) top right. Shade by level: Low on the surface, Medium at 32% magnet, High at full magnet with magnet ink (ink picked for 4.5:1). Shape, shade and word always agree, so the level never rests on colour alone.
+
+### Signal glyph
+The board's one visual language for level: three bars for room acuity, four (8px wide, up to 28px) for unit strain beside the band word. More bars means more load; the word is always beside it.
+
+### Risk on the room page
+Each event: level word (LOW / MEDIUM / HIGH, outlined; HIGH tinted 18% magnet), a 10-dot icon array (12px dots; filled magnet, empty outlined in Faded Marker), and the natural frequency ("about 4 in 10"). No percentages on screen.
 
 ### Room page
 Its own view at `#room=N`: "← All 25 rooms" and previous / next links (44px targets), a unit-context line, the room number as a 44px/800 heading, then two columns behind a 2px ink rule: large risk bars (14px track, 24px/800 percent) with on-now tags and the trust line; the last 12 h with "Show more" and "Ask about this room".

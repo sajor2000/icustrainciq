@@ -8,7 +8,7 @@ The command-center board for **ICU-Twin**, team7's project at the CIQ × NVIDIA 
 
 ## The board
 
-Synthetic data, the reviewed mockup ([`mockups/command-center.html`](mockups/command-center.html)). All 25 rooms on one screen, each with its three highest risks as bars; the three rooms to check first are blue and numbered. On the right: the unit strain index ("1.3× a typical day"), a three-line shift brief, and each team's row with its median and 80% range. A room opens its own page; "Ask the board" is a chat widget that opens on demand.
+Synthetic data, the reviewed mockup ([`mockups/command-center.html`](mockups/command-center.html)). All 25 rooms on one screen, each coded by predicted acuity (Low / Medium / High) three ways at once: a signal-strength glyph, the tile shade and the word. On the right: the unit strain index ("1.3× a typical day"), a three-line shift brief, and each team's row with its median and 80% range. A room opens its own page; "Ask the board" is a chat widget that opens on demand.
 
 | Day board, 1440 px | Night board, 1440 px |
 |---|---|
