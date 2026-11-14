@@ -253,7 +253,7 @@ details.more summary:hover{color:var(--ink)}
           </p>
         </div>
         <div class="grid" id="grid" role="group" aria-label="Rooms 1 to 25; choose a room to open its page"></div>
-        <p class="note">Predicted acuity: the room's highest chance of a new event in the next 24 h (High: 4 in 10 or more, Medium: 2 in 10 or more), raised by support already running (V ventilator, P vasopressor, C CRRT). Open a room for the details. Stage ward: open MIMIC-IV Demo patients.</p>
+        <p class="note">Predicted acuity: the room's highest chance of a new IMV, vasopressor or CRRT start, or death, in the next 24 h (High: 4 in 10 or more; Medium: 2 in 10 or more). Tags show support already running (V ventilator, P vasopressor, C CRRT). Open a room for the details. Stage ward: open MIMIC-IV Demo patients.</p>
       </section>
     </div>
 
@@ -269,11 +269,11 @@ details.more summary:hover{color:var(--ink)}
 
   <footer class="engine" aria-labelledby="about-h">
     <h2 id="about-h">How this forecast was made</h2>
-    <p class="aboutline">At 06:30, on the hospital's own servers, a small model trained on this ICU's records read each patient's history once and estimated 14 events for the next 24 h. The board shows the six that teams staff for. Patient records never leave the hospital.</p>
+    <p class="aboutline">At 06:30, on the hospital's own servers, a small model trained on this ICU's records read each patient's history once and estimated five events for the next 24 h (07:00 to 07:00). Patient records never leave the hospital.</p>
     <details class="more about">
-      <summary>All 14 forecasts, and what each one means</summary>
+      <summary>The five forecasts, and what each one means</summary>
       <table class="all">
-        <caption class="sr">All 14 forecasts for the next 24 h: median and 80% range across the 25 rooms</caption>
+        <caption class="sr">The five forecasts for the next 24 h: median and 80% range across the 25 rooms</caption>
         <thead><tr><th scope="col">Forecast</th><th scope="col" class="num">Median (80% range)</th><th scope="col">Used by</th></tr></thead>
         <tbody id="alltasks"></tbody>
       </table>
@@ -328,15 +328,14 @@ details.more summary:hover{color:var(--ink)}
 (() => {
   // deterministic synthetic data
   let s = 20261114; const rnd = () => (s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296;
-  // the six board tasks (backend docs/DECISIONS.md D8), one horizon: next 24 h, 07:00 to 07:00
+  // the five predictions (backend docs/DECISIONS.md D8), one horizon: next 24 h, 07:00 to 07:00
   const EV = [
-    {k:"vent", mid:"Ventilator", name:"Ventilator", row:"Ventilator starts", bl:"Ventilators", lc:"ventilator starts", short:"Vent", team:"respiratory therapy", tag:"VENT", t:"V", base:.10},
+    {k:"vent", mid:"IMV", name:"IMV (ventilator)", row:"IMV starts (ventilator)", bl:"IMV", lc:"IMV starts", short:"Vent", team:"respiratory therapy", tag:"VENT", t:"V", base:.10},
     {k:"press",mid:"Pressor", name:"Vasopressor",row:"Vasopressor starts",bl:"Vasopressors",lc:"vasopressor starts",short:"Press",team:"pharmacy", tag:"PRESS", t:"P", base:.12},
     {k:"crrt", mid:"CRRT", name:"CRRT",       row:"CRRT starts",       bl:"CRRT",       lc:"CRRT starts",       short:"CRRT", team:"ICU team", tag:"CRRT", t:"C", base:.05},
-    {k:"hypo", mid:"Low BP", name:"Hypotension",row:"Hypotension (MAP < 65 or SBP < 90)",bl:"Hypotension",lc:"hypotension (MAP < 65 or SBP < 90)",short:"Hypo",team:"ICU team", base:.13},
     {k:"death",mid:"Death", name:"Death",      row:"Deaths",            bl:"Deaths",            lc:"deaths",            short:"Death",team:"ICU team", base:.05},
-    {k:"out",  mid:"Leaves ICU", name:"Leaves the ICU",row:"Leave the ICU to ward or step-down",bl:"Departures",lc:"leaving the ICU",short:"Out",team:"bed manager", base:.33}];
-  const OWN = {"ICU nurse":null, "ICU physician":["crrt","hypo","death"], "pharmacy":["press"], "respiratory therapy":["vent"], "bed manager":["out"]};
+    {k:"out",  mid:"Discharge", name:"ICU discharge",row:"ICU discharges (to ward or step-down)",bl:"Discharges",lc:"ICU discharges",short:"D/C",team:"bed manager", base:.33}];
+  const OWN = {"ICU nurse":null, "ICU physician":["crrt","death"], "pharmacy":["press"], "respiratory therapy":["vent"], "bed manager":["out"]};
   const cap = {vent:3}; // placeholder until the clinical lead sets capacities
 
   const rooms = Array.from({length:25},(_,i)=>{
@@ -374,31 +373,19 @@ details.more summary:hover{color:var(--ink)}
   const inTen = v => { const n=Math.round(v*10); return n<1?"fewer than 1 in 10":`about ${n} in 10`; };
   const level = v => v>=.40?["high","HIGH"]:v>=.20?["med","MEDIUM"]:["low","LOW"];
   const C = {}; for (const e of EV) C[e.k] = counts(rooms.map(r=>pv(r,e.k)));
-  // the other eight probe heads (forecast.json other_tasks): research only, never staffing rows
-  const RX = [
-    {k:"icu_in", row:"Transfer into an ICU", def:"to another ICU, or back after leaving", base:.03},
-    {k:"hyperk", row:"High potassium", def:"6.5 mmol/L or higher", base:.03},
-    {k:"hypok",  row:"Low potassium", def:"below 2.5 mmol/L", base:.02},
-    {k:"anemia", row:"Anaemia", def:"haemoglobin below 7 g/dL", base:.12},
-    {k:"hypona", row:"Low sodium", def:"below 120 mmol/L", base:.02},
-    {k:"hyperna",row:"High sodium", def:"160 mmol/L or higher", base:.03},
-    {k:"tachy",  row:"Tachycardia", def:"heart rate 130 or higher", base:.15},
-    {k:"htn",    row:"Hypertension", def:"systolic 180+ or diastolic 120+", base:.08}];
-  for (const x of RX) C[x.k] = counts(rooms.map(()=>Math.min(.9, x.base*Math.exp((rnd()-.5)*1.6))));
-  const DEF = {vent:"invasive ventilation begins", press:"any vasopressor started", crrt:"continuous dialysis begins", hypo:"MAP below 65 or systolic below 90", death:"in-hospital death", out:"transfer to a ward or step-down unit"};
+  const DEF = {vent:"invasive ventilation begins", press:"any vasopressor started", crrt:"continuous dialysis begins", death:"in-hospital death", out:"transfer to a ward or step-down unit"};
   function renderAll(){
     const mr = c => `${c.p50} <span class="range">(${c.p10} to ${c.p90})</span>`;
     const row = (name, def, c, who) => `<tr><th scope="row">${name}<span class="range">${def}</span></th><td class="num">${mr(c)}</td><td>${who}</td></tr>`;
     document.getElementById("alltasks").innerHTML =
-      `<tr class="group"><th colspan="3" scope="colgroup">ON THE BOARD · FOR STAFFING</th></tr>`
+      ""
       + EV.map(e=>row(e.row.replace(/ \(.*\)/,""), DEF[e.k], C[e.k], e.team)).join("")
-      + `<tr class="group"><th colspan="3" scope="colgroup">RESEARCH ONLY · NOT FOR STAFFING</th></tr>`
-      + RX.map(x=>row(x.row, x.def, C[x.k], "research")).join("");
+      ;
   }
 
-  // unit strain: forecast new events (six board tasks) against this ICU's typical day.
+  // unit strain: forecast new events (five predictions) against this ICU's typical day.
   // Typical day comes from the training data once a run exists; synthetic here.
-  const TYP = {vent:2, press:2, crrt:1, hypo:4, death:1, out:6}, TYPDAY = Object.values(TYP).reduce((a,b)=>a+b,0);
+  const TYP = {vent:2, press:2, crrt:1, death:1, out:6}, TYPDAY = Object.values(TYP).reduce((a,b)=>a+b,0);
   const ALL = counts(rooms.flatMap(r=>EV.map(e=>pv(r,e.k))));
   const SX = {p10:ALL.p10/TYPDAY, p50:ALL.p50/TYPDAY, p90:ALL.p90/TYPDAY};
   const bandOf = x => x<0.8?"QUIET":x<1.2?"USUAL":x<1.6?"BUSY":"VERY BUSY";
@@ -444,7 +431,7 @@ details.more summary:hover{color:var(--ink)}
     document.querySelectorAll(".roomlink").forEach(b=>b.onclick=()=>openRoom(+b.dataset.room));
   }
 
-  // unit rows: your rows first, then SHORT and TIGHT; the rest folded (charge nurse sees all six)
+  // unit rows: your rows first, then SHORT and TIGHT; the rest folded (charge nurse sees rows with a verdict)
   function renderRows(){
     const mine = OWN[role()], all = mine===null;
     const order = EV.slice().sort((a,b)=>{ const oa = mine&&mine.includes(a.k)?0:1, ob = mine&&mine.includes(b.k)?0:1;
@@ -460,14 +447,13 @@ details.more summary:hover{color:var(--ink)}
       + `<p class="note">Already on before 07:00 is not counted as new. Arrivals from the ED or OR are not forecast.</p>`;
   }
 
-  // predicted acuity per room: the highest chance of a new adverse event in the next 24 h,
-  // raised by organ support already running (a ventilated patient is never "low")
+  // predicted acuity per room (D: forecast only): the highest chance of a new adverse event in the
+  // next 24 h. Support already running is shown by the V / P / C tags, not folded into the level.
   const ACU = [{k:"low",w:"Low",t:0,n:1},{k:"med",w:"Medium",t:.32,n:2},{k:"high",w:"High",t:1,n:3}];
   const sig = (n, of=3, big=false) => `<span class="sig${big?" big":""}" aria-hidden="true">${Array.from({length:of},(_,i)=>`<i class="${i<n?"f":""}"></i>`).join("")}</span>`;
   function acuity(r){
     const risk=Math.max(0,...EV.filter(e=>e.k!=="out"&&!Number.isNaN(r.p[e.k])).map(e=>r.p[e.k]));
-    const sup=EV.filter(e=>e.tag&&r.on[e.k]).length;
-    return ACU[(risk>=.40||sup>=2)?2:(risk>=.20||sup===1)?1:0];
+    return ACU[risk>=.40?2:risk>=.20?1:0];
   }
   function renderGrid(){
     const g=document.getElementById("grid"); g.innerHTML="";
@@ -555,10 +541,9 @@ details.more summary:hover{color:var(--ink)}
     if(/vent/.test(t)) return `Ventilator starts: ${cnt("vent")}; ${cap.vent} free (placeholder).`;
     if(/(pressor|norepi|drip|pharm)/.test(t)) return `Vasopressor starts: ${cnt("press")}.`;
     if(/crrt|dialys/.test(t)) return `CRRT starts: ${cnt("crrt")}.`;
-    if(/hypot|map/.test(t)) return `Hypotension (MAP < 65 or SBP < 90): ${cnt("hypo")}.`;
     if(/death|die/.test(t)) return `Deaths: ${cnt("death")}.`;
-    if(/(leave|bed|out|transfer)/.test(t)) return `Patients leaving the ICU to ward or step-down: ${cnt("out")}. Arrivals from the ED or OR are not forecast.`;
-    return `I can answer from this forecast: ventilator, vasopressor and CRRT starts, hypotension, deaths, patients leaving the ICU, the highest-risk rooms, or one stage-ward room.`;
+    if(/(leave|bed|out|transfer)/.test(t)) return `ICU discharges (to ward or step-down): ${cnt("out")}. Arrivals from the ED or OR are not forecast.`;
+    return `I can answer from this forecast's five predictions: ICU discharges, IMV, vasopressor and CRRT starts, deaths, the highest-risk rooms, or one stage-ward room.`;
   }
   function ask(q){ openChat(false); say(role(),q,"q"); say("Nemotron 3 Nano (mock)",answer(q),"a"); }
   const chatbtn=document.getElementById("chatbtn"), chatpanel=document.getElementById("chatpanel");

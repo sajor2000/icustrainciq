@@ -2,7 +2,7 @@
 
 The board exists for one moment: **07:00 morning rounds**, when the ICU team plans the day. The forecast is ready before rounds (the dispatcher starts it at 06:30) and covers every patient who has been in the ICU at least 24 hours. The one horizon is "Next 24 h": 07:00 today to 07:00 tomorrow.
 
-Everything a user sees is a count with an 80% range, or one stage-ward room's six probabilities. No real patient rows ever reach the board (see `docs/DECISIONS.md` D6).
+Everything a user sees is a count with an 80% range, or one stage-ward room's five predictions. No real patient rows ever reach the board (see `docs/DECISIONS.md` D6).
 
 ## Charge nurse: staffing for the day (06:45 to 07:15)
 
@@ -18,7 +18,7 @@ What the frontend must make true: the shift question (what will we be short of, 
 ## Attending physician: the room they worry about (07:00 rounds)
 
 1. **During rounds** opens room 14 (a stage-ward patient) from the board.
-2. **Reads the room page** (its own page; a line at the top keeps the unit verdict in view; previous and next room for rounds). The room's tasks as bars, highest first (hypotension 44%, ventilator 31%, ...); tasks already on are tags ("VENT", "PRESS"), not percentages; one line says how far to trust them (held-out check).
+2. **Reads the room page** (its own page; a line at the top keeps the unit verdict in view; previous and next room for rounds). The room's five predictions for the next 24 h, highest first, each as a level word and "about N in 10" (ventilator: about 3 in 10, ...); tasks already on are tags ("VENT", "PRESS"), not percentages; one line says how far to trust them (held-out check).
 3. **Reads what the model read**: the room's last 12 hours of events (rising lactate, norepinephrine start, FiO2 at or above 0.6).
 4. **Asks the chat**: "Room 14: is intubation likely in the next 24 hours?" Nemotron answers from that room's probabilities and the counts, says it is model evidence, not a cause, and gives no treatment advice.
 5. **Decides with the team.** The board never recommends a treatment.
@@ -56,4 +56,4 @@ Switches to the **Night board** (charcoal ground, chalk ink) for a dim unit. Sam
 
 ## Judges (five-minute demo)
 
-See the board at 07:00 framing, open a room, ask the chat, watch the agent or a nurse start a forecast, then open **All 14 forecasts** at the foot of the page: every event the model estimates (six for staffing, eight research only), each with its definition and range, and how the forecast was made (model, method, where it ran; "pending run" until a real run supplies numbers).
+See the board at 07:00 framing, open a room, ask the chat, watch the agent or a nurse start a forecast, then open **The five forecasts** at the foot of the page: every event the model estimates (six for staffing, eight research only), each with its definition and range, and how the forecast was made (model, method, where it ran; "pending run" until a real run supplies numbers).

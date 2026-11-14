@@ -22,7 +22,7 @@ The page talks to one service (`app/board.py`); the service reads `forecast.json
 | Twin (`t7-twin.fz`) | Nemotron 3 Nano (vLLM), the board server `app/board.py` (port 8080, team HTTPS endpoint), the dispatcher (06:30 daily and Rerun) | 1 GPU + CPU, always on | `forecast.json`, later `rooms.json` | run log: time, role, workflow id |
 | Board (this repo) | static HTML, CSS and vanilla JS; no build step | inside the twin, on a laptop, or on Vercel | `/api/forecast`, `/api/runs`, `/api/rooms`; or `examples/forecast.json` | `/api/ask`, `/api/rerun` |
 
-What the board shows: the six tasks in `forecast.json` `resources`. The other eight probe heads arrive in `other_tasks`: they appear only in the folded "All 14 forecasts" table at the foot of the board, labelled research only (D8).
+What the board shows: the five predictions in `forecast.json` `resources` (D8: ICU discharge, IMV, vasopressor, CRRT, death; next 24 h, 07:00 to 07:00).
 
 ## Data boundary
 

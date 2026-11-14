@@ -149,7 +149,7 @@ components:
 
 The board is the whiteboard an ICU team already reads at shift change, made to forecast. An enamel-white ground carries marker-navy ink, rooms are flat magnets with ink borders, and one blue (the magnet) means risk: magnet shading and range bars. Everything else is ink, rules, and words. It refuses the KPI-tile dashboard and the departure board: no hero numbers floating in cards, no flipping split-flap rows.
 
-Density is operational, and the answer comes first. The first viewport holds a three-line shift brief (the verdict on top) and the six task rows in a ruled right column, and on the left the three highest-risk rooms as magnets with the full 25-room board one tap away ("Show all 25 rooms"), so a charge nurse and an attending can answer "what will we be short of, when, and how sure are we" from across a room or on a projector. Numerals are large, tabular, and heavy; prose is short, plain, and honest about what is mock, synthetic, or not yet run.
+Density is operational, and the answer comes first. The first viewport holds a three-line shift brief (the verdict on top) and the five prediction rows in a ruled right column, and on the left all 25 rooms coded by predicted acuity, so a charge nurse and an attending can answer "what will we be short of, when, and how sure are we" from across a room or on a projector. Numerals are large, tabular, and heavy; prose is short, plain, and honest about what is mock, synthetic, or not yet run.
 
 A night board (charcoal ground, chalk ink) is the same grammar with lifted colours, chosen by the user, not by the OS.
 

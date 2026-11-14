@@ -18,7 +18,7 @@ The browser talks to exactly one module: the **board** service (`app/board.py`, 
 
 That is the whole contract. The page never calls Nemotron, the dispatcher or Fuzzball directly, never holds a token, and never sees a file path. **Two adapters fill this seam**: the live board on the cluster, and the page's own mock mode (`?mock=1` reads `examples/forecast.json`, `examples/rooms.json`, and answers ask/rerun locally). Two adapters make the seam real: lane 4 builds and tests against mock mode while the cluster is busy, and switches by URL.
 
-New over today's backend: `GET /api/rooms` and the optional `room` field on `/api/ask` (the board puts that room's six probabilities and recent events into Nemotron's context, stage ward only). Everything else already exists in `app/board.py`.
+New over today's backend: `GET /api/rooms` and the optional `room` field on `/api/ask` (the board puts that room's five predictions and recent events into Nemotron's context, stage ward only). Everything else already exists in `app/board.py`.
 
 ## Behind the seam (the board's internal seams)
 
@@ -46,13 +46,13 @@ flowchart LR
 ## The model output, end to end
 
 1. **06:30** the dispatcher starts `t7-forecast.fz` (or a nurse or physician presses Rerun, or asks the chat). The job runs on one GPU while Nemotron holds the other.
-2. **Score.** Job `extract` (one GPU) runs `icutwin-extract`: one forward pass per patient, cut 24 h after ICU arrival, keeps the last hidden state. Job `probe` (CPU) runs `icutwin-rep-score`: a logistic probe per task, fit on training patients, gives each patient's probability of each of the six tasks in the next 24 h. No sampled futures.
+2. **Score.** Job `extract` (one GPU) runs `icutwin-extract`: one forward pass per patient, cut 24 h after ICU arrival, keeps the last hidden state. Job `probe` (CPU) runs `icutwin-rep-score`: a logistic probe per task, fit on training patients, gives each patient's probability of each of the five predictions in the next 24 h. No sampled futures.
 3. **Unit counts.** `app/aggregate.py --score rep` adds per-patient probabilities (Poisson-binomial, tasks already on are not counted as new) into `forecast.json` (counts only) on `twin-store`.
 4. **Stage-ward rooms (to build).** Today nothing scores the stage ward: the build removes the open MIMIC-IV Demo patients from every split. So `t7-forecast.fz` needs a second, small pass:
    - tokenize `clif_demo` (as `t7-smoke.fz` already does) and cut at 24 h after ICU arrival;
    - `icutwin-extract` on those patients with the same model (seconds on the GPU already held by `extract`);
    - apply the probe fit on MIMIC-IV training patients (save it in the `probe` job; do not refit on demo patients);
-   - per room: the six probabilities, tasks already on, the last 12 h of events read; write `rooms.json` to `twin-store` (open data, no identifiers).
+   - per room: the five predictions, tasks already on, the last 12 h of events read; write `rooms.json` to `twin-store` (open data, no identifiers).
 5. **The page** polls `GET /api/runs` every 30 s while a run is active and every 5 min otherwise; when `made_at` changes it reloads `/api/forecast` and `/api/rooms`.
 
 **Open decision for the team (raise at the next stand-up):** on stage, should the margin's unit strain come from the same 25 stage-ward rooms as the magnets (one coherent unit, all open data), with real MIMIC-IV used for training and the backtest numbers only? Mixing a real held-out unit in the margin with demo rooms on the board shows two different populations on one screen.
@@ -61,7 +61,7 @@ flowchart LR
 
 1. The page posts `{question, role, room?}`. The page never builds prompts.
 2. The board checks for the rerun intent first; if it matches, it calls the dispatcher and answers with the outcome.
-3. Otherwise it builds Nemotron's context: the counts from `forecast.json`; if `room` is set and the room is in `rooms.json`, that room's six probabilities and recent events (never real MIMIC-IV rows). System prompt: answer only from that context, name the horizon, quote the 80% range, evidence not cause, no treatment advice.
+3. Otherwise it builds Nemotron's context: the counts from `forecast.json`; if `room` is set and the room is in `rooms.json`, that room's five predictions and recent events (never real MIMIC-IV rows). System prompt: answer only from that context, name the horizon, quote the 80% range, evidence not cause, no treatment advice.
 4. Nemotron answers; the board returns `{answer}`. Questions are never logged.
 
 ## Requests from the page: rules
