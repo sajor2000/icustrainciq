@@ -2,6 +2,8 @@
 
 > **Bed status removed (2026-11-14).** The Bed board no longer has Worsening / Watch / Still on support / Leaving statuses, status colours on tiles, or the "Bed colours" settings. An event (a new ventilator, vasopressor or CRRT, death, discharge) shows on a bed's card as a circle icon with its chance when it is at or above that event's threshold in Settings. When a new life support or death is at its threshold, the person icon on the bed's tile turns red and pulses (the circle icons keep their own colours and do not pulse); discharge alone does not. The plus-in-a-ring combined chance is gone from the board. Where the text below still describes statuses or tile colours, this note wins.
 
+> **Pulse subdued (2026-11-14, integration PR).** The pulse on bed tiles and Unit strain beds is limited to the three highest-risk beds, uses a neutral ink ring (not red; red stays for High), breathes slowly (4s, opacity only, nothing scales) and runs only under `prefers-reduced-motion: no-preference`, with Settings > Pulse on, and not on the night board (a still ring stays). The word, the circle icons and the fill carry the status; the ring never does alone. Where the text above says red and pulsing, this note wins.
+
 
 Lookahead ("The next 24 hours, in one place.") is the ICU team's board for 07:00 morning rounds. The unit name stays the big title. The backend (forecaster, workflows, dispatcher, `app/board.py`) lives in [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin); this repo holds the frontend design, the mockup, and the contract it must meet. Journeys: [`USER_JOURNEY.md`](USER_JOURNEY.md). Decisions: [`DECISIONS.md`](DECISIONS.md). Words: [`NAMING_AND_WORDING.md`](NAMING_AND_WORDING.md). Visual system: [`../DESIGN.md`](../DESIGN.md).
 
@@ -158,6 +160,9 @@ The board is read at 07:00 by a tired team at a workstation or a wall screen, of
 
 ## Capacity fields (`/api/capacity`)
 
+> **Status (2026-11-14, after merging the team's board):** the current page (`backend/app/static/index.html`, Dema's) does not draw this. It has no Staffing card, no 1:1 tags, no nurses or respiratory-therapist fields and no Check first row. The API and the chat described here are shipped and tested; the page part is a design for a later change. Its Settings capacity form sends `vents_total` and `crrt_total` (with `life_support_patients`), never `vents_free`.
+
+
 "Set tonight's capacity" sends `POST /api/capacity` with `role` and **only the fields the user filled in**; an empty field is left out, never sent as `null`:
 
 | Field | Meaning |
@@ -172,6 +177,9 @@ The board is read at 07:00 by a tired team at a workstation or a wall screen, of
 The response is `{"ok": true, "capacity": {...}}` (or `{"ok": false, "reason"}`, shown). On load and on every refresh the page reads `GET /api/capacity` (either the object itself or `{"capacity": {...}}`) and the forecast's `yardstick.capacity` block. For each of `vents_total`, `crrt_total`, `nurses_on_shift`, `rt_on_shift`: **when the server returns the key, its value wins** (even `null`); when the key is absent (an older backend) or in `#synthetic` mode the copy kept on the device (`lookahead-machines`) is used. A saved `life_support_patients` from `GET /api/capacity` recomputes the yardstick on load when the forecast does not carry it yet, so a saved shortage survives a reload. The line "Capacity set 07:12 by ICU nurse (charge)" comes from the server's `set_at` (or `updated_at`) and `set_by_role`. An older server that refuses a save without `life_support_patients` leaves the numbers on the device and says so.
 
 ## Staffing (D23)
+
+> **Status (2026-11-14, after merging the team's board):** the current page (`backend/app/static/index.html`, Dema's) does not draw this. It has no Staffing card, no 1:1 tags, no nurses or respiratory-therapist fields and no Check first row. The API and the chat described here are shipped and tested; the page part is a design for a later change. Its Settings capacity form sends `vents_total` and `crrt_total` (with `life_support_patients`), never `vents_free`.
+
 
 Rules: a nurse is **1:1** for a patient on CRRT or on **two or more vasoactive infusions**, **1:2** for everyone else; one **respiratory therapist per six ventilated patients**, rounded up.
 
