@@ -1,5 +1,12 @@
 # First run on real Fuzzball: test plan
 
+> **Updated 2026-11-14 (storage change).** Paths in this file were brought in line with the workflow files; where an older paragraph still disagrees, `FUZZBALL_VALIDATION.md` and `../../HANDOFF.md` ("To run it on the cluster") win.
+> - One volume to create, `twin-store`, not three: `clif_work` and `tooling` are gone. Packages are at `/store/py`, the stage ward at `/store/stage`, training features at `/store/train`.
+> - `mimic_clif` is mounted at `/data` and only read: the model is `/data/model_output/final`, the training tokens `/data/tokenized_output`, the cohort `/data/dashboard_data`.
+> - The cohort is **already on the cluster**; there is no copy step.
+> - Code is published by `t7-code` from this repo (`backend/`), not by `t7-build` or `t7-smoke`. There is no `t7-build` in this repo: read it as "training" (ICU-Twin repo, workflows `job-3-*`).
+> - Do not render by hand or with `sed`: start the files in `fuzzball/ready/` (`scripts/make_ready.sh`).
+
 For the team, to run **only after training (`t7-build`) has finished**. Written 2026-11-14 from the files in this repo and the Fuzzball 4.3 documentation. **Nothing in this plan has been run on the cluster.** No `fuzzball` command and no MCP call was made while writing it, because the model was training.
 
 Read with: `LIVE_DEMO.md` (runbook), `COMPUTE_PLAN.md` (who gets which GPU), `FUZZBALL_43_REVIEW.md` (the docs review; its finding numbers F1 to F14 and U1 to U14 are used below).
@@ -45,14 +52,14 @@ If `extract` is still Pending after 2 minutes:
 |---|---|---|
 | Training has ended | `fuzzball workflow list --order-by -created` | `t7-build` Finished. No other `t7-*` workflow Pending or Started |
 | Our two nodes | `fuzzball node list` | both healthy, 20 cores, about 128 GB, `nvidia.com/gpu: 1` each |
-| Volumes | `fuzzball volume list` | `twin-store`, `clif_work`, `tooling`, `hfcache` exist |
-| Model and code published | job logs of `t7-build` | `/store/model/mdl-icutwin`, `/store/code`, `/rows/tokenized_output/vocab.yaml`, `/tooling/py` |
+| Volumes | `fuzzball volume list` | `mimic_clif`, `hfcache` and `twin-store` exist (`twin-store` is the one to create: `FUZZBALL_VALIDATION.md`) |
+| Model and code published | job log of `t7-code`; `FUZZBALL_VALIDATION.md` for the model | `t7-code` prints the commit and the file count for `/store/code` and the size of `/store/py`; the model is `/data/model_output/final` |
 | The code on `twin-store` is this commit | whoever publishes code | `/store/code/fuzzball/t7-ward.fz` and `/store/code/app/ward_check.py` exist (they are new) |
 | `--name` exists | `fuzzball workflow start --help` | the flag is listed |
-| The cohort is on the volume (only for the final cohort) | decided by the team, `LIVE_DEMO.md` 9.5a | `/rows/stage/unit25/` holds the tables, the id file and `name.parquet`; `t7-ward` job `load` checks it |
+| The cohort is on the volume (only for the final cohort) | done 2026-11-14 | `/data/dashboard_data/` (volume `mimic_clif`) holds the tables, the id file and `name.parquet`; `t7-ward` job `load` checks it |
 | Local tests | `cd backend && uv run --extra dev --extra model pytest -q` | all pass; they cover every Fuzzfile's rendering, YAML, images, job order |
 
-**How `/store/code` gets updated is open.** `t7-build` (ICU-Twin repo) publishes it; this repo has no workflow that syncs code to `twin-store` (`LIVE_DEMO.md` gap G9, `t7-sync`). Decide this first: every workflow below runs the code on the volume, not your checkout.
+**How `/store/code` gets updated:** `t7-code` (`fuzzball/ready/t7-code.fz`) publishes `backend/` of one pinned commit of this repo and the hash-locked packages. Run it first and after every merge (`scripts/make_ready.sh`, then start it): every workflow below runs the code on the volume, not your checkout.
 
 ## 2. Fill the tokens
 
@@ -65,10 +72,10 @@ python scripts/render_fz.py --check fuzzball/*.fz        # which tokens each fil
 
 | File | Tokens | Render |
 |---|---|---|
-| `t7-smoke.fz` | `@CODE_REF@`, `@CODE_SHA256@` | `python scripts/render_fz.py fuzzball/t7-smoke.fz --code-ref $REF --code-sha256 $SHA -o /tmp/t7-smoke.fz` |
-| `t7-fit.fz` | `@CLIF_DIR@`, `@WARD_IDS@` | `python scripts/render_fz.py fuzzball/t7-fit.fz -o /tmp/t7-fit.fz` (open demo ward) |
-| `t7-ward.fz` | `@CLIF_DIR@`, `@WARD_IDS@`, `@NAMES@` | see step 3 |
-| `t7-twin.fz` | none | start it as it is, after editing the dispatcher line for the cohort (step 4) |
+| `t7-code.fz` | `@CODE_REF@`, `@CODE_SHA256@` | `scripts/make_ready.sh` writes all of these to `fuzzball/ready/`; start those files |
+| `t7-fit.fz` | `@CLIF_DIR@`, `@WARD_IDS@` | `fuzzball/ready/t7-fit.fz` (final cohort); `python scripts/render_fz.py fuzzball/t7-fit.fz -o /tmp/t7-fit.fz` for the open demo ward |
+| `t7-ward.fz` | `@CLIF_DIR@`, `@WARD_IDS@`, `@NAMES@` | `fuzzball/ready/t7-ward.fz` |
+| `t7-twin.fz` | `@DISPATCH_WARD@` | `fuzzball/ready/t7-twin.fz` (the dispatcher line already carries the cohort) |
 | `t7-forecast.fz` | `@SCOPE@`, `@ROOM@`, `@HOURS@`, `@WARD_FLAG@`, `@CLIF_DIR@`, `@NAMES@` | the dispatcher renders it; by hand only as a fallback (`LIVE_DEMO.md` 9.5) |
 
 Code ref and checksum (only `t7-smoke` and the ICU-Twin `t7-build` need them):
@@ -113,7 +120,7 @@ Run it **before** `t7-twin` is up: its `stage` and `extract` jobs together ask f
 | Start | `fuzzball workflow start /tmp/t7-fit.fz --name t7-fit` |
 | Jobs | `stage` (CPU) and `extract` (one GPU) side by side, then `fit` (CPU) |
 | Success | all Finished. `stage` log: counts, "vocab: identical", "stage rooms: 25". `extract` log: a count of `features-*.parquet`. `fit` log: "probes saved: N" |
-| On the volumes | `/store/probes/mdl-icutwin/manifest.json`; `/rows/stage/stage_ward.csv`; `/rows/stage/tokenized_output/` |
+| On the volumes | `/store/probes/mdl-icutwin/manifest.json`; `/store/stage/stage_ward.csv`; `/store/stage/tokenized_output/` |
 | If `cmp` fails in `stage` | the stage vocabulary differs from the training one: the code on `/store/code` is not the code that tokenized the training data. Stop |
 
 ### Step 3: `t7-ward` (the final cohort; skip to keep the open demo ward)
@@ -121,24 +128,21 @@ Run it **before** `t7-twin` is up: its `stage` and `extract` jobs together ask f
 CPU only. Start it only when no forecast is running: it replaces the tokens a forecast reads. The dispatcher refuses updates while a `t7-ward` is active.
 
 ```bash
-python scripts/render_fz.py fuzzball/t7-ward.fz --real-ward --clif-dir /rows/stage/unit25 \
-  --ward-ids /rows/stage/unit25/dashboard_patients_unit25.parquet \
-  --names /rows/stage/unit25/name.parquet -o /tmp/t7-ward.fz
-fuzzball workflow validate /tmp/t7-ward.fz && fuzzball workflow start /tmp/t7-ward.fz --name t7-ward
+fuzzball workflow validate fuzzball/ready/t7-ward.fz && fuzzball workflow start fuzzball/ready/t7-ward.fz --name t7-ward
 ```
 
 | | |
 |---|---|
 | Jobs | `load`, then `tokenize` |
 | `load` success | one JSON line: `"ward_ids": 25`, `"ward": "mimic-iv"`, `"named": 25`, `"unnamed": 0`, `"missing_optional": []`, and `"ignored"` listing the tables no token is made from (`ecmo_mcs`, `input`, `output`, `microbiology_culture`, `patient_assessments_raw_gcs`, `patient_procedures`, `position`). Then "parquet files: 21" |
-| `load` fails | "no ward CLIF folder": the copy has not been done (`LIVE_DEMO.md` 9.5a). "required CLIF table(s) not found": the copy is incomplete. "holds N stays, expected 25": wrong id file |
+| `load` fails | "no ward CLIF folder": `/data/dashboard_data` is not there (is `mimic_clif` the volume?). "required CLIF table(s) not found": the folder is incomplete. "holds N stays, expected 25": wrong id file |
 | `tokenize` success | counts from the tokenizer, "vocab: identical", "stage rooms: 25" |
-| On the volume | `/rows/stage/stage_ward.csv` (25 rooms), `/rows/stage/tokenized_output/` replaced whole |
+| On the volume | `/store/stage/stage_ward.csv` (25 rooms), `/store/stage/tokenized_output/` replaced whole |
 | Compare with the laptop | the laptop run (`README.md`) and this job use the same seed, so the room map is the same. At the 24 h cut the laptop shows 25 rooms present |
 
 ### Step 4: `t7-twin`
 
-For the cohort, first change the last line of the dispatcher script in `t7-twin.fz` so it ends with `--real-ward --clif-dir /rows/stage/unit25 --names /rows/stage/unit25/name.parquet` (the comment above that line says so). Validate the edited file.
+For the cohort use `fuzzball/ready/t7-twin.fz`: its dispatcher line already ends with `--real-ward --clif-dir /data/dashboard_data --names /data/dashboard_data/name.parquet`. No hand edit.
 
 ```bash
 fuzzball workflow validate fuzzball/t7-twin.fz
@@ -197,7 +201,7 @@ Open a room, press "Update this room" (needs the unit run first). A new `t7-fore
 | Stop one workflow | `fuzzball workflow stop <id>` (asynchronous: it reads Started for a moment, then Canceled) |
 | A forecast that hangs | the dispatcher stops it after 5 minutes pending or 45 minutes in all; by hand: `workflow stop` |
 | Back to the open demo ward | render `t7-ward.fz` with no options, start it, remove `--real-ward --clif-dir ... --names ...` from the dispatcher line, restart `t7-twin`, update the unit |
-| Take the cohort off the cluster | delete `/rows/stage/unit25/`, `/rows/stage/tokenized_output/`, `/rows/stage/stage_ward.csv`, then `/store/rooms.json` and `/store/forecast.json` (they hold the cohort's room entries), from a one-line CPU job or `fuzzball workflow exec` in a running job that mounts both volumes. Then restage the open demo ward |
+| Take the cohort off the cluster | delete `/data/dashboard_data/`, `/store/stage/tokenized_output/`, `/store/stage/stage_ward.csv`, then `/store/rooms.json` and `/store/forecast.json` (they hold the cohort's room entries), from a one-line CPU job or `fuzzball workflow exec` in a running job that mounts both volumes. Then restage the open demo ward |
 | Rendered copies | `/store/rendered/` keeps the last 30; `/tmp/*.fz` on the laptop can go |
 | Old probes | `t7-fit` overwrites `/store/probes/mdl-icutwin`; probes are tied to the weights by checksum, so a new model needs a new `t7-fit` |
 | Never | `fuzzball workflow stop` on `t7-build` while it trains; start a forecast by hand while `t7-twin` is up (only the dispatcher starts them) |
@@ -211,7 +215,7 @@ Nobody should assume any of this was tested. As of 2026-11-14:
 - `scripts/render_fz.py`, `app/ward_check.py`, `app/fake_names.py`, `stage_ward.py --ward-ids`: run on a laptop and in tests only.
 - The dispatcher's bounded wait (`workflow stop` after 5 minutes pending) and its degraded `--unavailable` mode: tested against a fake CLI only.
 - The cohort with a real model: `scripts/run_cohort.py --model --probes` is covered by a test with synthetic features and synthetic probes. No real weights have scored these 25 stays, on a laptop or on the cluster.
-- The copy of the cohort to `clif_work`: not done, method not chosen.
+- The cohort is on `mimic_clif:/dashboard_data/` (done 2026-11-14); `t7-ward` job `load` has not yet checked it.
 - A unit or room forecast for a real ward (`--real-ward`) on the cluster.
 
 ## 7. Live checks nobody could do from the docs

@@ -14,11 +14,12 @@ Everything the Lookahead board needs at run time, copied from the ICU-Twin repo
 | `app/fake_names.py` | Made-up names for the room tiles (`--names`); never real names |
 | `scripts/run_cohort.py` | A given ward end to end on a laptop: no GPU, no cluster, no model needed |
 | `scripts/render_fz.py` | Fills a Fuzzfile template's tokens; refuses one left unfilled |
+| `scripts/make_ready.sh` | Writes `fuzzball/ready/`: every workflow rendered for the final cohort, with the code commit and its checksum |
 | `app/static/index.html` | The page the board serves (copy of `mockups/command-center.html`) |
 | `icutwin/` | Tokenizer, model definition and probe scoring used to score patients |
-| `fuzzball/` | `t7-smoke`, `t7-fit`, `t7-ward`, `t7-forecast`, `t7-twin` workflows (Fuzzball 4.3) |
+| `fuzzball/` | Workflow templates (Fuzzball 4.3): `t7-code` (publishes this folder to the cluster), `t7-fit`, `t7-ward`, `t7-forecast`, `t7-twin`; `ready/` holds them rendered for the final cohort. `t7-smoke` is no longer on the run path |
 | `clif_demo/` | Open MIMIC-IV Demo in CLIF format (the default stage ward) |
-| `docs/` | `CONTRACT.md` (JSON shapes), `LIVE_DEMO.md` (runbook), `FUZZBALL_TEST_PLAN.md` (first run on the cluster), `COMPUTE_PLAN.md`, `FUZZBALL_43_REVIEW.md`, `CHAT_AGENT.md` |
+| `docs/` | `CONTRACT.md` (JSON shapes), `LIVE_DEMO.md` (runbook), `FUZZBALL_VALIDATION.md` (checked against the live cluster, storage map), `FUZZBALL_TEST_PLAN.md` (first run on the cluster), `COMPUTE_PLAN.md`, `FUZZBALL_43_REVIEW.md`, `CHAT_AGENT.md` |
 
 ## Architecture
 
@@ -34,6 +35,10 @@ uv run python app/board.py --forecast ../examples/forecast.json --static ../mock
 ```
 
 Open http://localhost:8080. Every POST needs `Content-Type: application/json` and `X-Lookahead: 1`.
+
+## Run on the cluster
+
+The steps and their state: `../HANDOFF.md` "To run it on the cluster". The cohort is already on the cluster (`mimic_clif:/dashboard_data/`, only read); the model is read at `mimic_clif:/model_output/final/`; everything written goes to one volume, `twin-store`. Start the files in `fuzzball/ready/`; do not render by hand.
 
 ## Run the final cohort on a laptop
 
