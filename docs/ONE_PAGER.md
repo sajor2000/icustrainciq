@@ -1,6 +1,6 @@
 # Lookahead in one page
 
-*CIQ x NVIDIA Local AI Hackathon, team7. For judges. Decision support only; research prototype on retrospective data.*
+*CIQ x NVIDIA Local AI Hackathon, team7. For judges from NVIDIA, CIQ and VAST. Decision support only; research prototype on retrospective data.*
 
 **What it does.** For 07:00 morning rounds, every patient who has been in the ICU at least 24 hours gets five predictions for the next 24 hours: leaves the ICU, starts a ventilator (IMV), starts a vasopressor, starts CRRT, dies in hospital. The board adds patients up into unit counts with a likely range (8 in 10 outcomes) and shows chances as natural frequencies, for example "3 in 10".
 
