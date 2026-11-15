@@ -7,10 +7,11 @@
         "rule": "cramped-padding",
         "value": "*",
         "files": [
-          "mockups/command-center.html"
+          "mockups/command-center.html",
+          "backend/app/static/index.html"
         ],
-        "createdAt": "2026-11-14T17:01:29.719Z",
-        "reason": "Claude triage: .brief has a 2px left rule with 24px padding-left on desktop; under 960px both are 0 (no rule). Verified in browser at 1440 and 390 px; nothing sits flush against a visible edge."
+        "createdAt": "2026-11-15T06:30:00.000Z",
+        "reason": "Claude triage: the flagged element is .seg, the segmented tab and Now/Next control. Its buttons fill the bordered track edge to edge by design (a segmented control); each button is 2.75rem tall with 1.125rem side padding, so the label text is inset from every visible edge. Checked in the board at 1440 and 390 px. The served page is a byte-identical copy of the mockup, so the same exception covers both."
       },
       {
         "rule": "design-system-font",
