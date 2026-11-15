@@ -1,7 +1,0 @@
-# icutwin-train overrides for the Fuzzball run (2 GB10 nodes, DDP, one GPU each);
-# everything else (size m, 3 epochs, lr, losses, seed) stays at icutwin/config/decoder.yaml
-port: !!int 0 # no live page on the cluster
-training_args:
-  per_device_train_batch_size: !!int 16 # GB10 has 128 GB unified; global 32 rows x 4096 tokens
-  per_device_eval_batch_size: !!int 32
-  dataloader_num_workers: !!int 4

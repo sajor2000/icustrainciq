@@ -1,4 +1,4 @@
-# Guide for coding agents: Lookahead
+# Guide for coding agents: ICU Lookahead
 
 Read `HANDOFF.md` first, then `README.md`, `docs/ARCHITECTURE.md` (what runs where), `docs/FRONTEND_SPEC.md` (board contract, screens, states) and `docs/USER_JOURNEY.md`. Decisions: `docs/DECISIONS.md`. Backend: `backend/README.md`. Model training: github.com/vaishvikc/ICU-Twin.
 

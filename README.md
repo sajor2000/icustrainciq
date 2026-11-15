@@ -1,4 +1,4 @@
-# Lookahead: the ICU's next 24 hours, on two local machines
+# ICU Lookahead: see the next 24 hours of your ICU, on machines you own
 
 A bed board that tells a small ICU at 07:00 what the next 24 hours will need. Team7, CIQ × NVIDIA × Lenovo Local AI Hackathon, Chicago, Nov 14–15, 2026.
 
@@ -8,7 +8,7 @@ A bed board that tells a small ICU at 07:00 what the next 24 hours will need. Te
 
 A small or rural hospital has one ICU, a few ventilators and dialysis machines, no data-science team and no cloud contract for patient data. When the unit runs short, the nearest help is a transfer hours away. The team learns it is short when it already is.
 
-Lookahead answers one question each morning: who is on life support now, who is likely to need it by tomorrow, and does the unit have the machines and staff for that. It runs in the building, so patient data never leaves.
+ICU Lookahead answers one question each morning: who is on life support now, who is likely to need it by tomorrow, and does the unit have the machines and staff for that. It runs in the building, so patient data never leaves.
 
 > **Key.** ICU: the intensive care unit. Life support: a machine or drug that does the work of a failing organ. Ventilator: breathes for the patient. Vasopressor: a drug drip that holds blood pressure up. CRRT: continuous dialysis, for failed kidneys.
 
@@ -47,7 +47,7 @@ On held-out patients (cut at ICU arrival + 24 h, event in the next 24 h): AUROC 
 |---|---|
 | ![Bed board, Now](docs/screenshots/beds-now.png) | ![Unit strain, Next 24 h](docs/screenshots/strain-next.png) |
 
-![Ask Lookahead: the chat answers from the forecast](docs/screenshots/chat-widget.png)
+![Ask ICU Lookahead: the chat answers from the forecast](docs/screenshots/chat-widget.png)
 
 ## Run it
 
@@ -84,4 +84,4 @@ All four are members of the [CLIF Consortium](https://clif-icu.com/team); the ro
 | Vaishvik Chaudhari, MS | Vice-chair and Technical Lead, Steering Committee · Rush University | The patient model: tokenizer, training, the ICU + 24 h cut, probes ([vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin)) |
 | Dema Therese, MS | UChicago Medicine | Board design: bed tiles coloured by status, event cards, bed pop-up with vitals, settings, the capacity model |
 
-Demo data only: the mockup uses made-up patients, and names on the board are fictional. Lookahead is a research prototype, not a medical device; it supports decisions and recommends no treatment.
+Demo data only: the mockup uses made-up patients, and names on the board are fictional. ICU Lookahead is a research prototype, not a medical device; it supports decisions and recommends no treatment.

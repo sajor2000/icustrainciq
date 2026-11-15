@@ -1,6 +1,6 @@
 # User journeys: the 07:00 ICU morning
 
-Lookahead exists for one moment: **07:00 morning rounds**, when the ICU team plans the day. The forecast is ready before rounds (the morning run) and covers every patient who has been in the ICU at least 24 hours. The one horizon is the next 24 hours, 07:00 to 07:00. "Now" means what is running at the 07:00 cut.
+ICU Lookahead exists for one moment: **07:00 morning rounds**, when the ICU team plans the day. The forecast is ready before rounds (the morning run) and covers every patient who has been in the ICU at least 24 hours. The one horizon is the next 24 hours, 07:00 to 07:00. "Now" means what is running at the 07:00 cut.
 
 Everything a user sees is a count with a likely range, or one stage-ward room's five predictions. No real patient rows ever reach the board (see `docs/DECISIONS.md` D6).
 

@@ -26,6 +26,7 @@ the winnower sets it, `stay_cuts`), not the site's wall-clock 07:00.
 """
 
 import datetime as dt
+import math
 import pathlib
 
 import polars as pl
@@ -251,7 +252,11 @@ def vitals_before_cut(clif_dir, stays: dict) -> dict[str, dict]:
         return {}
     cols = [HOSP, "recorded_dttm", "vital_category", "vital_value"]
     lf = _read(clif_dir, "vitals", cols, ["recorded_dttm"]).filter(
-        pl.col("vital_category").is_in(VITALS) & pl.col("vital_value").is_not_null()
+        pl.col("vital_category").is_in(VITALS)
+        & pl.col("vital_value").is_not_null()
+        # an infinite or NaN reading would make the hourly median non-finite, and
+        # rooms.json would then not be JSON
+        & pl.col("vital_value").cast(pl.Float64, strict=False).is_finite()
     )
     span = dt.timedelta(hours=VITALS_HOURS)
     ago = (pl.col("cut") - pl.col("recorded_dttm")).dt.total_seconds()
@@ -267,6 +272,8 @@ def vitals_before_cut(clif_dir, stays: dict) -> dict[str, dict]:
     )
     out: dict[str, dict] = {}
     for sid, cat, hh, v in rows.iter_rows():
+        if v is None or not math.isfinite(v):
+            continue
         series = out.setdefault(sid, {}).setdefault(cat, [])
         series.append({"h": int(hh), "v": round(float(v), 1)})
     return out

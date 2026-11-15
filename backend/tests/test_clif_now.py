@@ -283,3 +283,37 @@ def test_vitals_before_cut_hourly_median_relative_hours(tmp_path):
 
 def test_vitals_before_cut_without_a_vitals_table(tmp_path):
     assert clif_now.vitals_before_cut(_clif(tmp_path), {"s1": CUT}) == {}
+
+
+def test_vitals_before_cut_leaves_out_non_finite_readings(tmp_path):
+    """an infinite or NaN reading would make the hourly median non-finite, and
+    rooms.json would then hold `Infinity`, which no browser can parse"""
+    import json
+    import math
+
+    d = _clif(tmp_path, ids=("s1",))
+    rows = [
+        ("s1", h(0.5), "heart_rate", 100.0),
+        ("s1", h(0.25), "heart_rate", math.inf),  # same hour as a real reading
+        ("s1", h(1.5), "map", math.nan),  # the only reading of its hour
+        ("s1", h(2.5), "spo2", -math.inf),
+        ("s1", h(3.5), "spo2", 96.0),
+    ]
+    pl.DataFrame(
+        rows,
+        schema={
+            "hospitalization_id": pl.String,
+            "recorded_dttm": pl.Datetime("us", "UTC"),
+            "vital_category": pl.String,
+            "vital_value": pl.Float64,
+        },
+        orient="row",
+    ).write_parquet(d / "clif_vitals.parquet")
+    got = clif_now.vitals_before_cut(d, {"s1": CUT})
+    assert got == {
+        "s1": {
+            "heart_rate": [{"h": 1, "v": 100.0}],
+            "spo2": [{"h": 4, "v": 96.0}],
+        }
+    }
+    json.dumps(got, allow_nan=False)  # strict JSON
