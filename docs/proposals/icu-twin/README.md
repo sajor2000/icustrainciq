@@ -26,7 +26,7 @@ Six classifiers, five predictions: leaving the ICU adds the ward and step-down c
 2. **Represent.** The decoder (Nemotron 3.5 Bolt E4B layer design, Gemma 4 text; 16 layers, hidden size 384, 36.2M parameters, trained from scratch) reads the timeline once. Its last hidden state is the patient's state.
 3. **Predict.** One logistic classifier per task on that state gives the probability. Adding a task needs a new classifier, not a new model.
 4. **Add up.** `app/aggregate.py` sums the patients into unit counts with an 80% range, against the unit's ventilators and CRRT machines.
-5. **Explain.** NVIDIA Nemotron 3 Nano answers questions about the board by calling read-only tools. It predicts nothing.
+5. **Explain.** NVIDIA Nemotron 3.5 Bolt E4B (4-bit, on llama.cpp) answers questions about the board by calling read-only tools. It predicts nothing.
 
 ## How we used the CIQ, NVIDIA and Lenovo stack
 
@@ -36,7 +36,7 @@ Six classifiers, five predictions: leaving the ICU adds the ward and step-down c
 | CIQ Fuzzball 4.3 | Five workflows (below). Orchestrate schedules jobs, images and volumes; Substrate runs the containers on the GB10s. Driven through the Fuzzball MCP server and CLI |
 | VAST storage | Backs the persistent Fuzzball volumes below; the object cache is the only way in or out |
 | NGC `pytorch:25.11-py3` | Training, packaging, probe fitting and inference |
-| NGC `vllm:25.12.post1-py3` + Nemotron 3 Nano 30B-A3B FP8 | The chat, served on one GPU with tool calling |
+| llama.cpp server (`ghcr.io/ggml-org/llama.cpp:server-cuda13`) + NVIDIA Nemotron 3.5 Bolt E4B, 4-bit GGUF | The chat, served on one GPU (8 cores, 32 GB) with tool calling |
 
 | Workflow | What it does | Compute |
 |---|---|---|

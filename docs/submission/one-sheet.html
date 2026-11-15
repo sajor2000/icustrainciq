@@ -32,7 +32,6 @@ b{font-weight:700}
 h2{font-size:15px;line-height:1.3;font-weight:800;letter-spacing:-.01em;margin-bottom:3px}
 .cap{display:block;font-size:11px;line-height:1.3;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--blue);margin-bottom:5px}
 .cap em{font-style:normal;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink-2);margin-left:5px}
-.dim{color:var(--ink-2)}
 section{margin-top:6px}
 
 /* masthead */
@@ -51,11 +50,10 @@ section{margin-top:6px}
 .new li{padding-left:9px;position:relative;margin-bottom:1px}
 .new li::before{content:'';position:absolute;left:0;top:.55em;width:4px;height:4px;border-radius:50%;background:var(--blue)}
 .lead span{color:var(--blue)}
-.two{display:grid;grid-template-columns:1fr 1fr;column-gap:26px}
 
 /* the five predictions */
 .five{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-.p{border:1px solid var(--rule);border-radius:9px;padding:6px 9px 6px;display:flex;flex-direction:column;background:var(--surface)}
+.p{border:1px solid var(--rule);border-radius:.625rem;padding:6px 9px 6px;display:flex;flex-direction:column;background:var(--surface)}
 .p>.ic{font-size:20px;color:var(--blue)}
 .p .t{font-size:12.5px;line-height:1.25;margin-top:4px;white-space:nowrap}
 .p .t b{font-weight:800}
@@ -66,11 +64,6 @@ section{margin-top:6px}
 .note{margin-top:4px;font-size:11px;line-height:1.35;color:var(--ink-2)}
 
 /* screens */
-.frame{padding:0}
-.frame img{display:block;width:100%;height:auto}
-.frame img.beds{width:62%;margin-left:auto;margin-right:auto}
-.frame .cap{margin-left:2px}
-.frame .cap+img{margin-bottom:6px}
 
 /* how it works */
 .steps{display:grid;grid-template-columns:repeat(3,1fr);column-gap:18px}
@@ -79,37 +72,17 @@ section{margin-top:6px}
 .steps b i{font-style:normal;color:var(--blue);margin-right:4px}
 
 /* the stack: ink band */
-.stack{background:var(--ink);color:var(--n-ink);padding-top:9px;padding-bottom:9px;margin-top:12px}
-.stack ::selection{background:rgba(141,187,255,.3)}
-.stack .head{display:flex;align-items:baseline;gap:12px}
-.stack h2{font-size:14px;margin:0;color:#fff;white-space:nowrap}
-.stack .head p{color:var(--n-ink-2);font-size:11px}
-.lane{display:grid;grid-template-columns:84px 1fr;column-gap:10px;align-items:center;margin-top:7px}
-.lane .name{font-size:11px;line-height:1.3;color:var(--n-ink-2)}
-.lane .name b{display:block;font-size:12px;color:#fff;font-weight:800}
-.chain{display:flex;align-items:stretch;gap:5px}
-.chain .s{flex:1;min-width:0;white-space:nowrap;border:1px solid var(--n-rule);background:var(--n-surface);border-radius:8px;padding:5px 8px;font-size:11px;line-height:1.3;color:var(--n-ink)}
-.chain .s b{white-space:nowrap;display:block;font-size:11.5px;color:#fff;font-weight:800}
-.chain .s .c{white-space:nowrap;display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--n-ink-2)}
-.chain .s.gpu{border-color:var(--n-blue)}
-.chain .s.gpu .c{color:var(--n-blue)}
-.chain .ar{align-self:center;color:var(--n-ink-2);font-size:13px}
-.arch img{display:block;width:100%;height:auto;border-radius:8px}
+.arch img{display:block;width:85%;margin:0 auto;height:auto;border-radius:8px}
 .arch-note{margin-top:4px;font-size:11px;line-height:1.38;color:var(--ink-2)}
 .arch-note b{color:var(--ink)}
-.vols.tracks{margin-top:2px;padding-top:0;border-top:0}
-.vols{margin-top:7px;padding-top:5px;border-top:1px solid var(--n-rule);font-size:11px;line-height:1.4;color:var(--n-ink-2)}
-.vols b{color:#fff;font-weight:700}
 
 /* facts */
-.facts{display:grid;grid-template-columns:repeat(4,1fr);column-gap:18px;border-top:1px solid var(--rule);padding-top:7px}
-.facts dt{font-size:11px;color:var(--ink-2)}
-.facts dd{font-size:15px;font-weight:800;letter-spacing:-.01em}
 
 /* footer */
 .foot{margin-top:auto;padding-bottom:.08in}
 .foot .in{display:flex;align-items:baseline;gap:14px;border-top:1.5px solid var(--ink);padding-top:6px;font-size:11px;line-height:1.4;color:var(--ink-2)}
 .foot b{color:var(--ink)}
+.foot a{color:inherit;text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--rule)}
 .foot .last{margin-left:auto;font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.01em;white-space:nowrap}
 </style>
 </head>
@@ -141,11 +114,11 @@ section{margin-top:6px}
     </div>
     <div>
       <h2>What we built</h2>
-      <p>A bed board the ICU nurse and doctor read at 7 am, before rounds: each patient's life support now, the probability of each event in the next 24 h, and unit totals against the machines on hand. It refreshes every hour; one forecast takes about 78 s. An LLM chat answers questions.</p>
+      <p>A bed board the ICU nurse and doctor read at 7 am, before rounds (the daily team review): life support now, each event's 24-h probability, and unit totals against the machines. Refreshed hourly (78 s per run). A large language model (LLM) chat answers questions.</p>
     </div>
     <div>
       <h2>What is new for healthcare AI</h2>
-      <ul class="new"><li><b>A GEM for ICU records:</b> a generative event model, Nemotron E4B design, trained from scratch on a custom clinical vocabulary.</li><li><b>One pass, many outcomes:</b> linear probes on the last hidden state; no retraining.</li><li><b>Patient to unit:</b> probabilities sum into machine demand a day ahead.</li><li><b>On-prem:</b> trains and runs on the hospital's own hardware.</li></ul>
+      <ul class="new"><li><b>GEM (generative event model):</b> our own model of ICU records, trained from scratch with the NVIDIA Nemotron E4B layer design.</li><li><b>One pass, many outcomes:</b> linear probes on the last hidden state; no retraining.</li><li><b>Patient to unit:</b> probabilities sum into machine demand a day ahead.</li><li><b>On-premises:</b> runs on the hospital's own hardware.</li></ul>
     </div>
   </section>
 
@@ -153,32 +126,32 @@ section{margin-top:6px}
     <span class="cap">The five predictions <em>the chance each happens in the next 24 hours, on every bed</em></span>
     <div class="five">
       <div class="p"><svg class="ic" style="color:var(--vent)"><use href="#i-vent"/></svg><p class="t"><b>Ventilator start</b></p><p class="what">a machine breathes for the patient</p><p class="score">AUROC <b>0.78</b></p></div>
-      <div class="p"><svg class="ic" style="color:var(--press)"><use href="#i-pump"/></svg><p class="t"><b>Vasopressor start</b></p><p class="what">an IV drug that raises blood pressure</p><p class="score">AUROC <b>0.77</b></p></div>
-      <div class="p"><svg class="ic" style="color:var(--crrt)"><use href="#i-crrt"/></svg><p class="t"><b>CRRT start</b></p><p class="what">a machine does the kidneys' work</p><p class="score">AUROC <b>0.88</b></p></div>
+      <div class="p"><svg class="ic" style="color:var(--press)"><use href="#i-pump"/></svg><p class="t"><b>Vasopressor start</b></p><p class="what">a drug given into a vein that raises blood pressure</p><p class="score">AUROC <b>0.77</b></p></div>
+      <div class="p"><svg class="ic" style="color:var(--crrt)"><use href="#i-crrt"/></svg><p class="t"><b>CRRT start</b></p><p class="what">continuous renal replacement therapy (dialysis)</p><p class="score">AUROC <b>0.88</b></p></div>
       <div class="p"><svg class="ic"><use href="#i-leave"/></svg><p class="t"><b>Transfer to ward</b></p><p class="what">leaves the ICU for a regular ward, freeing the bed</p><p class="score">AUROC <b>0.80</b></p></div>
       <div class="p unit"><svg class="ic" style="color:var(--ink-2)"><use href="#i-person"/></svg><p class="t"><b>Death</b></p><p class="what">shown as a unit count only</p><p class="score">AUROC <b>0.93</b></p></div>
     </div>
-    <p class="note" style="white-space:nowrap">Held-out test AUROC: patients never seen in training.</p>
+    <p class="note">AUROC: area under the receiver operating characteristic curve, on held-out patients never seen in training; 1.0 is perfect.</p>
   </section>
 
   <section class="pad" aria-label="The model">
     <span class="cap">The model we trained, and how it predicts</span>
     <ol class="steps">
-      <li><b><i>1</i>Train the GEM</b>A generative event model: decoder-only transformer, NVIDIA Nemotron 3.5 Bolt E4B layer design, 36M parameters, from scratch. Custom vocabulary of 1,231 ICU event tokens; next-token objective.</li>
-      <li><b><i>2</i>Read its hidden layer</b>One forward pass over the patient's first 24 h in the ICU. The last hidden state at the final token (384-d) is the patient embedding.</li>
-      <li><b><i>3</i>Probe, then explain</b>One logistic-regression probe per event turns the embedding into a 24-h probability. Nemotron 3 Nano explains them via tool calls; it predicts nothing.</li>
+      <li><b><i>1</i>Train the GEM</b>Decoder-only transformer, 36M parameters, from scratch on CLIF-MIMIC (see Data, below), using the NVIDIA Nemotron 3.5 Bolt E4B layer design (not its weights). 1,231 ICU event tokens.</li>
+      <li><b><i>2</i>Read its hidden layer</b>One forward pass over a patient's first 24 h in the ICU; the last hidden state, a 384-dimensional vector, is the patient embedding.</li>
+      <li><b><i>3</i>Probe, then explain</b>One logistic-regression probe per event gives a 24-h probability. The chat, Nemotron 3.5 Bolt E4B on llama.cpp (an open-source LLM server), explains via tool calls and predicts nothing.</li>
     </ol>
   </section>
 
   <section class="pad arch" aria-label="Architecture">
-    <span class="cap">How we used the CIQ stack <em>every Fuzzball job, CPU and GPU, on two local Lenovo ThinkStation PGX machines</em></span>
-    <img src="../diagrams/architecture-print.png" alt="Every Fuzzball job on two Lenovo PGX machines. Train once: job 1 moves data in (CPU), job 2 tokenizes (CPU), job 3 trains the GEM on two GPUs, job 3.1 packages it (CPU), job 4 fits six probes (two GPUs, then CPU), saved to the mimic_clif VAST volume. Job 5: load (CPU), infer with the GEM and probes (one GPU), score (CPU) to the twin-store VAST volume; the bed board service (CPU) reads it and NVIDIA Nemotron 3 Nano (one GPU, weights on hfcache) answers chat.">
-    <p class="arch-note"><b>Fuzzball:</b> Orchestrate schedules every job, image and VAST volume; Substrate runs the NVIDIA containers; we drove it with the Fuzzball MCP server and CLI. <b>All four tracks:</b> multi-node training (job 3) · inference (job 5, Nemotron) · scientific AI (the GEM) · cluster scheduling (five workflows).</p>
+    <span class="cap">How we used the CIQ stack <em>every Fuzzball job on two Lenovo PGX workstations, each one NVIDIA GB10 (Arm CPU + GPU)</em></span>
+    <img src="../diagrams/architecture-print.png" alt="Every Fuzzball job on two Lenovo PGX machines. Train once: job 1 moves data in (CPU), job 2 tokenizes (CPU), job 3 trains the GEM on two GPUs, job 3.1 packages it (CPU), job 4 fits six probes (two GPUs, then CPU), saved to the mimic_clif VAST volume. Job 5: load (CPU), infer with the GEM and probes (one GPU), score (CPU) to the twin-store VAST volume; the bed board service (CPU) reads it and NVIDIA Nemotron 3.5 Bolt E4B on llama.cpp (one GPU, weights on hfcache) answers chat.">
+    <p class="arch-note"><b>Fuzzball:</b> Orchestrate schedules jobs, images and VAST Data storage volumes; Substrate runs the containers (NVIDIA NGC PyTorch, llama.cpp); we drove it with the Fuzzball MCP (Model Context Protocol) server and command line. <b>Tracks:</b> multi-node training (job 3, PyTorch DDP: distributed data parallel) · inference · scientific AI · cluster scheduling.</p>
   </section>
 
   <footer class="foot pad">
     <div class="in">
-      <span>Code: <b>github.com/vaishvikc/ICU-Twin</b><br>A research prototype built on past, de-identified ICU records. Not a medical device.</span>
+      <span><b>Data:</b> CLIF-MIMIC, our electronic health record (EHR) dataset: MIMIC-IV, a public de-identified ICU database, in CLIF (Common Longitudinal ICU data Format), <a href="https://clif-icu.com"><b>clif-icu.com</b></a>. Code: <a href="https://github.com/vaishvikc/ICU-Twin"><b>github.com/vaishvikc/ICU-Twin</b></a>. Research prototype; not a medical device.</span>
       <span class="last">Nothing leaves the building.</span>
     </div>
   </footer>

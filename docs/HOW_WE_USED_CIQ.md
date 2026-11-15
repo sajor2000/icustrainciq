@@ -4,7 +4,7 @@ Read this to see exactly what ICU Horizon ran on, and how. Every fact here comes
 
 ## In one paragraph
 
-Two Lenovo ThinkStation PGX machines, each with one NVIDIA GB10, run CIQ Fuzzball 4.3. Five Fuzzball workflows do all the work. Jobs 1 to 4 run once: they move the CLIF data onto the cluster, turn it into event tokens, train our patient model across both GPUs and fit six small classifiers on it. Job 5 is the only workflow the demo runs. It infers the 25-patient ward on one GPU, writes the forecast, then keeps two services up: the bed board, and NVIDIA Nemotron 3 Nano on vLLM for the chat, on the other GPU. Patient data stays on Fuzzball volumes. The object cache is the only way in or out: our code goes in, logs and counts come out.
+Two Lenovo ThinkStation PGX machines, each with one NVIDIA GB10, run CIQ Fuzzball 4.3. Five Fuzzball workflows do all the work. Jobs 1 to 4 run once: they move the CLIF data onto the cluster, turn it into event tokens, train our patient model across both GPUs and fit six small classifiers on it. Job 5 is the only workflow the demo runs. It infers the 25-patient ward on one GPU, writes the forecast, then keeps two services up: the bed board, and NVIDIA Nemotron 3.5 Bolt E4B on llama.cpp for the chat, on one GPU. Patient data stays on Fuzzball volumes. The object cache is the only way in or out: our code goes in, logs and counts come out.
 
 ## The hardware
 
@@ -23,7 +23,7 @@ Two Lenovo ThinkStation PGX machines, each with one NVIDIA GB10, run CIQ Fuzzbal
 | Scheduler | CIQ Fuzzball 4.3, Fuzzfile `version: v4` | every `workflows/job_*/workflow.fz` |
 | GPU image | `nvcr.io/nvidia/pytorch:25.11-py3` (NGC). Newer tags need a newer driver than the cluster's 580 | jobs 3, 3.1, 4, 5 |
 | Chat serving | The running job 5 (`t7-launch`, started 2026-11-15) serves Nemotron with the llama.cpp server image `ghcr.io/ggml-org/llama.cpp:server-cuda13-b11459`. The workflow file at commit `875358a` names `nvcr.io/nvidia/vllm:25.12.post1-py3`; the team switched after that commit | job 5, service `nemotron` |
-| Chat model | NVIDIA Nemotron 3 Nano 30B-A3B FP8, pinned revision `9bee194…`, used as is, not trained by us | job 5 |
+| Chat model | NVIDIA Nemotron 3.5 Bolt E4B, 4-bit GGUF (`nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-4GB`, `Nemotron-3.5-Bolt-E4B-Q4_K_M.gguf`, revision `1db54d5`), 65,536-token context, used as is, not trained by us. The workflow file at commit `875358a` named Nemotron 3 Nano 30B-A3B FP8 on vLLM; the running workflow uses this model | job 5, service `nemotron` (1 GPU, 8 cores, 32 GB) |
 | Our patient model | A decoder with the layer design of NVIDIA Nemotron 3.5 Bolt E4B (Gemma 4 text), trained from scratch: 16 layers, hidden size 384, 1,231 event tokens, 36,232,032 parameters | `icutwin/model/decoder.py`, job 3.1 load test |
 | Python packages | `uv`, one persistent virtual environment on the volume, `mimic_clif:/.tooling/venv-ngc2511`, rebuilt only when `uv.lock` changes | job 3 `setup`; jobs 4 and 5 refuse a venv built for another `uv.lock` |
 | Data format | CLIF (Common Longitudinal ICU data Format), MIMIC-IV in CLIF | `icutwin/tokenizer/` |
@@ -55,7 +55,7 @@ Two Lenovo ThinkStation PGX machines, each with one NVIDIA GB10, run CIQ Fuzzbal
 | **3 · Train** | `setup` (1 GPU), `train` (`multinode` 2 × 1 GPU, 20 cores, 110 GiB) | 2 GPUs, DDP, up to 12 h | tokens | `mimic_clif:/model_output/<Run>/` checkpoints |
 | **3.1 · Package** | `package` (CPU), `loadtest` (CPU) | CPU | the newest checkpoint | `mimic_clif:/model_output/final/` (weights, `vocab.yaml`, `MANIFEST.json`); prints `LOADTEST OK` |
 | **4 · Probe** | `winnow` (CPU), `extract` (`multinode` 2 × 1 GPU), `probe` (CPU) | 2 GPUs | `final/`, tokens | `final/probe.joblib`, `final/probe_metrics.json` (held-out AUROC, AUPRC, Brier) |
-| **5 · Launch** (`t7-launch`) | `load` (CPU), `infer` (1 GPU), `score` (CPU), services `nemotron` (1 GPU) and `board` (CPU) | 1 GPU at a time | `mimic_clif:/dashboard_data/` (25 stays, read only), `final/`, `twin-store:/train/probe-final.joblib` | `twin-store:/rooms.json`, `twin-store:/forecast.json`, object cache `launch/<Tag>/summary.txt` |
+| **5 · Launch** (`t7-launch`) | `load` (2 cores, 8 GB), `infer` (1 GPU, 8 cores, 48 GB), `score` (4 cores, 16 GB), services `nemotron` (1 GPU, 8 cores, 32 GB) and `board` (2 cores, 4 GB) | 1 GPU at a time | `mimic_clif:/dashboard_data/` (25 stays, read only), `final/`, `twin-store:/train/probe-final.joblib` | `twin-store:/rooms.json`, `twin-store:/forecast.json`, object cache `launch/<Tag>/summary.txt` |
 
 ## What job 5 does, step by step
 

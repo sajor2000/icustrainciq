@@ -55,7 +55,7 @@ Six probes, one per event (`examples/probe_tasks.yaml`), each a logistic regress
 
 `app/aggregate.py` adds the patients' chances into unit counts: the expected number of new ventilators, vasopressors and CRRT starts, departures and deaths, each with an 80% range from the exact Poisson-binomial distribution (patients treated as independent). The board sets them against the machines the unit has.
 
-NVIDIA Nemotron 3 Nano answers questions about these numbers by calling read-only tools. It does not predict anything.
+NVIDIA Nemotron 3.5 Bolt E4B (4-bit, on the llama.cpp server) answers questions about these numbers by calling read-only tools. It does not predict anything.
 
 ## 6. Why this design
 
