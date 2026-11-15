@@ -144,7 +144,7 @@ We built ICU Lookahead together, as one team. Names and affiliations as listed b
 
 | Name | Affiliation |
 |---|---|
-| J.C. Rojas, MD | Rush University |
+| J.C. Rojas, MD, MS | Rush University |
 | Kaveri Chhikara, MS | UChicago Medicine |
 | Vaishvik Chaudhari, MS | Rush University |
 | Dema Therese, MS | UChicago Medicine |

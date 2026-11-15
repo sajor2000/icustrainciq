@@ -39,7 +39,7 @@ Names and affiliations as listed by the [CLIF Consortium](https://clif-icu.com/t
 
 | Name | Affiliation |
 |---|---|
-| J.C. Rojas, MD | Rush University |
+| J.C. Rojas, MD, MS | Rush University |
 | Kaveri Chhikara, MS | UChicago Medicine |
 | Vaishvik Chaudhari, MS | Rush University |
 | Dema Therese, MS | UChicago Medicine |
