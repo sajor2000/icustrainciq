@@ -16,7 +16,10 @@ POST /run           {"role": ..., "scope": "unit" | "room", "room": 1..25 (room 
 Two scopes (docs/DECISIONS.md D9): "unit" refreshes the unit counts and every room,
 "room" refreshes one stage-ward room. Fuzzball 4.3 Fuzzfiles have no parameters and
 `workflow start` has no --set, so the dispatcher renders a copy of the template for
-each run (@SCOPE@, @ROOM@, @HOURS@) and starts that copy.
+each run (@SCOPE@, @ROOM@, @HOURS@, @CUT@) and starts that copy. @CUT@ is the replay
+cut itself (the last 07:00 at dispatch plus the demo-clock hours): it is fixed here, with
+@HOURS@, so a job that ends after the next 07:00 cannot pair this request's offset with
+the next day's morning.
 
 Guards, because the team has exactly two GPUs: one run at a time (any scope, plus
 t7-build, t7-smoke and t7-fit; two requests at once cannot both start, because a started
@@ -98,6 +101,7 @@ FAILED_STATES = frozenset(
 PENDING_STATES = frozenset({"PENDING", "UNSPECIFIED", "QUEUED", ""})
 WORKFLOW_ID = re.compile(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", re.I)
 TOKEN = re.compile(r"@[A-Z][A-Z0-9_]*@")  # a template token nobody filled
+CUT_TOKEN = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}")
 TERMINAL = frozenset({"FINISHED", *FAILED_STATES})
 LIST_TIMEOUT_S = 20
 START_TIMEOUT_S = 60
@@ -157,6 +161,17 @@ def last_cut(now: dt.datetime, at: str = MORNING) -> dt.datetime:
 def demo_clock_hours(now: dt.datetime, at: str = MORNING) -> float:
     """hours elapsed since the morning cut, to 0.1 h; this offset moves the ward's cut"""
     return round(_elapsed(now, last_cut(now, at)).total_seconds() / 360) / 10
+
+
+def replay_cut(now: dt.datetime, hours: float, at: str = MORNING) -> str:
+    """the replay cut of a run dispatched at `now`: the morning cut at or before `now`
+    plus the demo-clock hours, as an ISO time with its UTC offset. Worked out once, at
+    dispatch; the job receives it and never asks the clock again."""
+    cut = last_cut(now, at)
+    if cut.tzinfo is None:  # a naive clock (tests): the machine's own zone
+        cut = cut.astimezone()
+    moved = cut.astimezone(dt.timezone.utc) + dt.timedelta(hours=float(hours))
+    return moved.astimezone(cut.tzinfo).isoformat(timespec="seconds")
 
 
 def demo_clock_label(hours: float, at: str = MORNING) -> str:
@@ -239,6 +254,7 @@ def render_template(
     names: str = "",
     code_ref: str = "",
     code_sha256: str = "",
+    cut: str = "",
 ) -> str:
     """every token of any Fuzzfile in fuzzball/, in one place: the dispatcher's
     per-run copies and scripts/render_fz.py (people) both come through here.
@@ -257,6 +273,13 @@ def render_template(
         .replace("@ROOM@", str(int(room or 0)))
         .replace("@HOURS@", f"{float(hours):g}")
     )
+    if "@CUT@" in text:  # the replay cut, fixed when the run is dispatched
+        if not CUT_TOKEN.fullmatch(str(cut)):
+            raise ValueError(
+                "cut must be an ISO time with a UTC offset, e.g. "
+                "2026-11-14T07:00:00-06:00"
+            )
+        text = text.replace("@CUT@", cut)
     if code_ref:
         text = text.replace("@CODE_REF@", code_ref)
     if code_sha256:
@@ -558,14 +581,16 @@ class Dispatcher:
 
     # ---- starting a run ----------------------------------------------------------
     def render(
-        self, scope: str, room: int | None, hours: float, name: str
+        self, scope: str, room: int | None, hours: float, name: str, cut: str = ""
     ) -> pathlib.Path:
-        """a per-run copy of the template with the run's scope, room, demo clock and ward mode"""
+        """a per-run copy of the template with the run's scope, room, demo clock, replay
+        cut and ward mode"""
         text = render_template(
             self.fuzzfile.read_text(),
             scope=scope,
             room=room,
             hours=hours,
+            cut=cut,
             real_ward=self.real_ward,
             clif_dir=self.clif_dir,
             ward_ids=self.ward_ids,
@@ -632,6 +657,7 @@ class Dispatcher:
                 }
             now = self.clock()
             hours = 0.0 if trigger == "schedule" else demo_clock_hours(now, self.at)
+            cut = replay_cut(now, hours, self.at)  # with the hours: one anchor day
             tag = f"room{room}" if scope == "room" else "unit"
             name = f"t7-lookahead-forecast-{tag}-{now:%m%d-%H%M}"
             token = f"pending:{name}"
@@ -642,7 +668,7 @@ class Dispatcher:
                 "pending": True,
             }
         try:  # the CLI call runs without the lock; the pending entry blocks a second start
-            path = self.render(scope, room, hours, name)
+            path = self.render(scope, room, hours, name, cut)
             wid = workflow_id(self._cli("workflow", "start", str(path), "--name", name))
         except Exception as e:
             with self.lock:
@@ -1033,6 +1059,8 @@ def main() -> None:
         sys.stdout.write(
             render_template(
                 a.render_only.read_text(),
+                # rendered by hand at hour 0: this morning's cut, fixed now
+                cut=replay_cut(dt.datetime.now(zoneinfo.ZoneInfo(a.tz)), 0, a.at),
                 real_ward=a.real_ward,
                 clif_dir=a.clif_dir,
                 ward_ids=a.ward_ids,

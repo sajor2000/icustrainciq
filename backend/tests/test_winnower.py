@@ -169,3 +169,54 @@ def test_offset_cannot_put_the_cut_before_icu_arrival(tmp_path):
     ok = Winnower(tmp_path, _after_icu_cfg(-82800), lookup)  # cut 1 h after arrival
     df = ok.prepare_winnowed_frame().collect()
     assert df["cut_s"].to_list() == [2 * 3600 + 3600]
+
+
+def test_counts_only_keeps_outcome_rates_out_of_the_log(tmp_path, caplog):
+    """CodeRabbit PR #16: a small ward's outcome rates are clinical values; the
+    workflows that winnow one ask for counts only"""
+    import yaml
+    from typer.testing import CliRunner
+
+    from icutwin.common import logger
+    from icutwin.scoring import winnower
+
+    lookup = {"BOS": 1, "RESP//device_category//imv": 2, "EOS": 3}
+    pl.DataFrame(
+        {
+            "hospitalization_id": ["a", "a", "a", "b", "b"],
+            "token_id": [1, 2, 3, 1, 3],
+            "event_time": [0, 100000, 200000, 0, 200000],
+            "value": [None] * 5,
+            "position_id": [0, 1, 2, 0, 1],
+        },
+        schema_overrides={"event_time": pl.Datetime("us"), "value": pl.Float64},
+    ).write_parquet(tmp_path / "tokens_held_out.parquet")
+    for split in ("train", "tuning"):
+        pl.DataFrame({"x": [1]}).write_parquet(tmp_path / f"tokens_{split}.parquet")
+    (tmp_path / "vocab.yaml").write_text(yaml.safe_dump({"lookup": lookup}))
+    cfg = tmp_path / "w.yaml"
+    cfg.write_text(
+        yaml.safe_dump(
+            {
+                "outcome_tokens": ["RESP//device_category//imv"],
+                "threshold": {"duration_s": 1},
+                "horizon_after_threshold_s": 86400,
+                "splits": ["held_out"],
+            }
+        )
+    )
+    level = logger.level  # another test may have quietened the shared logger
+    logger.setLevel("INFO")
+    logger.addHandler(caplog.handler)
+    try:
+        for flag, rates in (([], True), (["--counts-only"], False)):
+            caplog.clear()
+            args = [str(tmp_path), "-c", str(cfg), *flag]
+            done = CliRunner().invoke(winnower.app, args)
+            assert done.exit_code == 0, done.output
+            assert "held_out: " in caplog.text and "stays" in caplog.text
+            assert ("_future" in caplog.text) == rates
+            assert ("_past" in caplog.text) == rates
+    finally:
+        logger.removeHandler(caplog.handler)
+        logger.setLevel(level)

@@ -2,6 +2,9 @@ version: v4
 # Run names: t7-lookahead-forecast-unit-<time> or t7-lookahead-forecast-roomN-<time>.
 # Dispatcher renders scope/room/hours, real-ward, CLIF directory, private IDs and names.
 # @SCOPE@ = unit|room, @ROOM@ = 0|1..25, @HOURS@ = replay hours, @WARD_FLAG@ = --real-ward.
+# @CUT@ = the replay cut, fixed by the dispatcher when it starts the run (last 07:00 + @HOURS@,
+# with its UTC offset). The jobs never read the clock: a run asked at 06:59 that reaches its last
+# step after 07:00 still publishes the day it was asked for.
 # A room request refreshes the whole selected-25 snapshot to keep unit and room views coherent.
 # This is ONLY the selected25 pipeline: winnow -> one forward pass -> saved logistic probes
 # -> exact Poisson-binomial counts and one atomic context.json. No refitting or MC generation.
@@ -30,8 +33,9 @@ jobs:
       test -f /store/model/mdl-icutwin/config.json || { echo "trained forecaster prerequisite missing; context stays pending"; exit 1; }
       test -f /context/roster.csv || { echo "private roster prerequisite missing"; exit 1; }
       test -f "$ROOT/vocab.yaml" || { echo "selected25 cache prerequisite missing: run t7-lookahead-prepare once"; exit 1; }
+      # --counts-only: 25 stays, so an outcome rate is a clinical value; the log gets stay counts only
       python -c 'from icutwin.scoring.winnower import main; main()' "$ROOT" \
-        -c /store/code/examples/winnow_24h.yaml --demo-clock-hours @HOURS@
+        -c /store/code/examples/winnow_24h.yaml --demo-clock-hours @HOURS@ --counts-only
       python -c 'from icutwin.scoring.extractor import main; main()' "$ROOT" \
         --model /store/model/mdl-icutwin --stay-ids /context/roster.csv
 
@@ -53,7 +57,8 @@ jobs:
       if test -f /context/capacity.json; then CAP=(--capacity /context/capacity.json); fi
       # The replay offset moves each historical stay's own cut, rather than asserting
       # that all historical stays occupied one ICU on the same calendar morning.
-      CUT=$(python -c 'import datetime as d,sys; from zoneinfo import ZoneInfo; from app.dispatcher import last_cut; z=ZoneInfo("America/Chicago"); n=d.datetime.now(z); print((last_cut(n).astimezone(d.UTC)+d.timedelta(hours=float(sys.argv[1]))).astimezone(z).isoformat(timespec="seconds"))' "$HOURS")
+      # The display cut comes from the dispatcher (dispatch time), not from the clock here.
+      CUT=@CUT@
       # --no-extract applies saved probes to the GPU features; no second CPU forward pass.
       python /store/code/scripts/run_cohort.py "$CLIF_DIR" \
         --ward-ids @WARD_IDS@ --tokenized-output "$ROOT" \

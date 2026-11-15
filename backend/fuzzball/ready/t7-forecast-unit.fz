@@ -69,7 +69,7 @@ jobs:
       HOURS=0
       # re-winnow the stage ward at the demo-clock cut (07:00 run: 0 h); writes the at-cut flags too
       python -c "from icutwin.scoring.winnower import main; main()" /store/stage/tokenized_output \
-        -c /store/code/examples/winnow_24h.yaml --demo-clock-hours "$HOURS"
+        -c /store/code/examples/winnow_24h.yaml --demo-clock-hours "$HOURS" --counts-only   # a ward of 25: no outcome rates in the log
       # every cut moved, so the whole ward is re-extracted (about 100 short passes)
       python -c "from icutwin.scoring.extractor import main; main()" /store/stage/tokenized_output -m /data/model_output/final
       ls /store/stage/tokenized_output/features-*.parquet | wc -l

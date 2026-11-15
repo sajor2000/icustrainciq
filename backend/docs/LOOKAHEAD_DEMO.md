@@ -196,7 +196,12 @@ python /store/code/scripts/run_cohort.py /context/clif \
 
 `--no-extract` prevents a second CPU forward pass: it applies saved logistic
 probes to the GPU features, verifies model/cut consistency, and publishes both
-views from the same cohort. The workflow never refits probes. If model/probe
+views from the same cohort. The features must have been extracted with the
+weights now in `--model`: `icutwin-extract` writes the weights digest beside
+each features file (`features-<split>-<model>.meta.json`), and a file with
+another digest, or with none (made before the digest was recorded), is refused
+with "run icutwin-extract again". The winnow step logs stay counts only
+(`--counts-only`): for 25 stays an outcome rate is a clinical value. The workflow never refits probes. If model/probe
 prerequisites are unavailable, keep the existing real current-state snapshot and
 its explicit pending forecast state; launch the GPU forecast only when ready.
 
@@ -226,9 +231,12 @@ to existing running workflows.
    saved probes are prerequisites for later GPU forecasting, not CPU current
    state. Verify access controls and retention for source volumes, endpoint proxy
    logs and service logs.
-2. Render `t7-lookahead-forecast.fz` through the dispatcher or substitute all four
-   tokens (`@SCOPE@`, `@ROOM@`, `@HOURS@`, `@WARD_FLAG@`, `@CLIF_DIR@`,
-   `@WARD_IDS@`, `@NAMES@`) in a private copy. Validate
+2. Render `t7-lookahead-forecast.fz` through the dispatcher, or with
+   `scripts/render_fz.py`, which fills every token (`@SCOPE@`, `@ROOM@`,
+   `@HOURS@`, `@CUT@`, `@WARD_FLAG@`, `@CLIF_DIR@`, `@WARD_IDS@`, `@NAMES@`) in
+   a private copy. `@CUT@` is the replay cut (the last 07:00 at dispatch plus
+   `@HOURS@`, with its UTC offset): it is fixed when the run is started and the
+   jobs never read the clock, so a run that crosses 07:00 keeps its day. Validate
    that rendered file and `t7-lookahead-chat.fz` with the live CLI. Offline YAML
    parsing is not Fuzzball server validation.
 3. Start the chat workflow with the name `t7-lookahead-chat`. Services retain DNS

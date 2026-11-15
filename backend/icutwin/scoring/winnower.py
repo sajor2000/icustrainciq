@@ -301,14 +301,20 @@ class Winnower:
             .pipe(self.add_at_cut_flags, split)
         )
 
-    def save_all(self):
-        """saves each split and logs outcome rates (aggregates only)"""
+    def save_all(self, counts_only: bool = False):
+        """saves each split and logs outcome rates (aggregates only). counts_only: log
+        the number of stays and nothing else; for a small ward (25 stays) a rate is a
+        clinical value about a few patients, and workflow logs hold counts only."""
         for split in self.cfg.splits:
             out = self.root / f"{split}_for_inference.parquet"
             self.prepare_winnowed_frame(split=split).drop("times").sink_parquet(
                 out, engine="streaming"
             )
             df = pl.scan_parquet(out)
+            if counts_only:
+                n = df.select(pl.len()).collect().item()
+                logger.info(f"{split}: {n} stays")
+                continue
             rates = df.select(
                 pl.len().alias("stays"),
                 *(
@@ -320,7 +326,7 @@ class Winnower:
             logger.info(f"{split}: {rates.to_dicts()[0]}")
 
 
-def winnow(tokenized_output, config=None, demo_clock_hours=None):
+def winnow(tokenized_output, config=None, demo_clock_hours=None, counts_only=False):
     cfg = merge_config("winnowing.yaml", config)
     if demo_clock_hours:  # demo pivot: move the cut later (or earlier) by N hours
         spec = cfg.threshold.get("after_first_occurrence")
@@ -330,7 +336,7 @@ def winnow(tokenized_output, config=None, demo_clock_hours=None):
             )
         spec.offset_s = int(round(float(demo_clock_hours) * 3600))
     root = pathlib.Path(tokenized_output).expanduser().resolve()
-    Winnower(root, cfg, load_vocab(root)["lookup"]).save_all()
+    Winnower(root, cfg, load_vocab(root)["lookup"]).save_all(counts_only)
 
 
 app = typer.Typer(add_completion=False)
@@ -352,9 +358,17 @@ def cli(
             help="demo pivot: hours added to the 24 h after ICU arrival (the cut)",
         ),
     ] = None,
+    counts_only: Annotated[
+        bool,
+        typer.Option(
+            "--counts-only",
+            help="log the number of stays per split, not the outcome rates "
+            "(a small ward: rates are clinical values, logs hold counts only)",
+        ),
+    ] = False,
 ):
     """Cut the stays at the prediction time and flag outcomes."""
-    winnow(tokenized_output, config, demo_clock_hours)
+    winnow(tokenized_output, config, demo_clock_hours, counts_only)
 
 
 def main():

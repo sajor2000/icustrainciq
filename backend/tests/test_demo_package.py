@@ -169,6 +169,7 @@ def test_workflow_board_cli_enables_https_proxy_and_publish_env_is_self_containe
     forecast = yaml.safe_load(
         render_template(
             (root / "fuzzball/t7-lookahead-forecast.fz").read_text(),
+            cut="2026-11-14T07:00:00-06:00",
             real_ward=True,
             clif_dir="/context/clif",
             ward_ids="/context/cohort_ids.csv",

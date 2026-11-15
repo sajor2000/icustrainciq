@@ -670,7 +670,7 @@ def render_any(name: str, **ward) -> str:
     text = text.replace("@CODE_REF@", "0" * 40).replace("@CODE_SHA256@", "1" * 64)
     text = (
         text.replace("@SCOPE@", "unit").replace("@ROOM@", "0").replace("@HOURS@", "0")
-    )
+    ).replace("@CUT@", "2026-11-14T07:00:00-06:00")
     return d.render_ward(text, **ward)
 
 
@@ -1158,3 +1158,65 @@ def test_a_failed_token_refresh_is_retried_within_the_hour(tmp_path, monkeypatch
     monkeypatch.setattr(d, "refresh_token", lambda: calls.append(2) or True)
     s.tick()
     assert calls == [1, 2] and s.last_refresh == t0 + 3601
+
+
+# ---- CodeRabbit PR #16: the replay cut is fixed when the run is dispatched ----
+
+
+def test_the_cut_is_captured_at_dispatch_and_not_read_again_in_the_job(tmp_path):
+    import zoneinfo
+
+    import yaml
+
+    tz = zoneinfo.ZoneInfo("America/Chicago")
+    f = FakeCli(tmp_path, clock=Clock(dt.datetime(2026, 11, 15, 6, 59, tzinfo=tz)))
+    f.fuzzfile.write_text("h=@HOURS@ cut=@CUT@\n")
+    assert f.start("ICU nurse")["started"]
+    # asked one minute before 07:00: the offset and the cut both belong to the day
+    # that began on Nov 14 at 07:00, whenever the job reaches its last step
+    assert rendered(f) == "h=24 cut=2026-11-15T07:00:00-06:00\n"
+    f.clock.advance(hours=1)  # the scheduled run: no offset, this morning's cut
+    assert f.start("schedule", enforce_gap=False)["started"]
+    assert rendered(f) == "h=0 cut=2026-11-15T07:00:00-06:00\n"
+    # the forecast workflow uses that value and never works the day out again
+    job = yaml.safe_load(
+        d.render_template(
+            (FUZZ / "t7-lookahead-forecast.fz").read_text(),
+            hours=24,
+            cut="2026-11-15T07:00:00-06:00",
+            **LOOKAHEAD_WARD,
+        )
+    )["jobs"]["publish"]["script"]
+    assert "CUT=2026-11-15T07:00:00-06:00" in job and '--cut-time "$CUT"' in job
+    assert "last_cut" not in job and "datetime.now" not in job
+    for bad in ("", "2026-11-15T07:00:00", "2026-11-15 07:00; rm -rf /"):
+        try:
+            d.render_template("@CUT@", cut=bad)
+        except ValueError:
+            continue
+        raise AssertionError(f"accepted cut {bad!r}")
+
+
+def test_ward_winnows_log_counts_only():
+    """CodeRabbit PR #16: every workflow step that winnows a 25-stay ward asks the
+    winnower for counts only; the training cohort (thousands of stays) keeps its rates"""
+    ward = {
+        "t7-lookahead-forecast": ["$ROOT"],
+        "t7-forecast": ["/store/stage/tokenized_output"],
+        "t7-fit": ["tokenized_output"],
+        "t7-ward": ["tokenized_output"],
+    }
+    for name, roots in ward.items():
+        lines = (FUZZ / f"{name}.fz").read_text().replace("\\\n", " ").splitlines()
+        calls = [x for x in lines if "winnower import main" in x]
+        for root in roots:
+            hit = [
+                x for x in calls if f'main()" {root} ' in x or f'main()\' "{root}"' in x
+            ]
+            assert hit and all("--counts-only" in x for x in hit), (name, root)
+    train = [
+        x
+        for x in (FUZZ / "t7-fit.fz").read_text().splitlines()
+        if "winnower import main" in x and "/store/train" in x
+    ]
+    assert train and "--counts-only" not in train[0]
