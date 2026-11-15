@@ -152,7 +152,7 @@ fuzzball workflow validate fuzzball/ready/t7-ward.fz && fuzzball workflow start 
 
 ### Step 4: `t7-twin`
 
-For the cohort use `fuzzball/ready/t7-twin.fz`: its dispatcher line already ends with `--real-ward --clif-dir /data/dashboard_data --names fake` (generated names keyed by room number, so every staged room has one; `name.parquet` is no longer read). No hand edit.
+For the cohort use `fuzzball/ready/t7-twin.fz`: its dispatcher line already ends with `--real-ward --clif-dir /data/dashboard_data --names fake` (generated names keyed by room number, so every staged room has one; `name.parquet` is no longer read), and its board line with `--real-ward` (without it the board serves a real ward counts-only: no rooms, no room chat). No hand edit.
 
 ```bash
 fuzzball workflow validate fuzzball/t7-twin.fz
@@ -210,7 +210,7 @@ Open a room, press "Update this room" (needs the unit run first). A new `t7-fore
 |---|---|
 | Stop one workflow | `fuzzball workflow stop <id>` (asynchronous: it reads Started for a moment, then Canceled) |
 | A forecast that hangs | the dispatcher stops it after 5 minutes pending or 45 minutes in all; by hand: `workflow stop` |
-| Back to the open demo ward | render `t7-ward.fz` with no options, start it, remove `--real-ward --clif-dir ... --names ...` from the dispatcher line, restart `t7-twin`, update the unit |
+| Back to the open demo ward | render `t7-ward.fz` with no options, start it, remove `--real-ward --clif-dir ... --names ...` from the dispatcher line and `--real-ward` from the board line, restart `t7-twin`, update the unit |
 | Take the cohort off the cluster | delete `/data/dashboard_data/`, `/store/stage/tokenized_output/`, `/store/stage/stage_ward.csv`, then `/store/rooms.json` and `/store/forecast.json` (they hold the cohort's room entries), from a one-line CPU job or `fuzzball workflow exec` in a running job that mounts both volumes. Then restage the open demo ward |
 | Rendered copies | `/store/rendered/` keeps the last 30; `/tmp/*.fz` on the laptop can go |
 | Old probes | `t7-fit` overwrites `/store/train/probe-final.joblib`; probes are tied to the weights by checksum, so a new model needs a new `t7-fit` |

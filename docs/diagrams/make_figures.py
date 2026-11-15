@@ -302,7 +302,7 @@ def architecture():
     f.node(328, 392, 240, 96, "card", "CPU · service", "Dispatcher", ["07:00 clock, one run at once"])
     f.node(656, 72, 240, 96, "store", "Volume · read only", "hfcache", ["Nemotron weights"])
     f.node(656, 392, 240, 96, "model", "GPU 2 · job", "t7-forecast", ["our model + job 4's probe"])
-    f.node(992, 72, 240, 96, "store", "Volume · with PR #16", "demo-context", ["the chat's ICU snapshot"])
+    f.node(992, 72, 240, 96, "store", "Volume · restricted", "demo-context", ["the chat's ICU snapshot"])
     f.node(992, 232, 240, 96, "store", "Volume · written", "twin-store", ["code, probe, forecast files"])
     f.node(992, 392, 240, 96, "store", "Volume · read only", "mimic_clif", ["25-patient ward, our model"])
     f.arrow([(240, 280), (328, 280)])

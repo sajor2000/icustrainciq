@@ -2,7 +2,7 @@
 
 Read this if you are taking over ICU Lookahead and need its state, its owners and the next steps.
 
-Last updated: 2026-11-14. `main` holds the team's merged work (PR #19) and the name ICU Lookahead (D24). Two pull requests are open: #16 (chat grounded in a shared ICU snapshot, draft) and #20 (staffing and capacity in the backend, final board page).
+Last updated: 2026-11-14. `main` holds the team's merged work (PR #19), the name ICU Lookahead (D24) and the chat grounded in a shared ICU snapshot (PR #16). One pull request is open: #20 (staffing and capacity in the backend, final board page).
 
 ## What it is
 
@@ -17,6 +17,7 @@ A bed board for one ICU. It shows the life support each patient is on now and fo
 | [`docs/RESULTS.md`](docs/RESULTS.md) | held-out results per task |
 | [`backend/docs/RUNBOOK.md`](backend/docs/RUNBOOK.md) | set up, publish code and relaunch on the cluster |
 | [`backend/README.md`](backend/README.md), [`backend/docs/CONTRACT.md`](backend/docs/CONTRACT.md) | the backend and the JSON shapes |
+| [`backend/docs/CHAT_AGENT.md`](backend/docs/CHAT_AGENT.md), [`backend/docs/LOOKAHEAD_DEMO.md`](backend/docs/LOOKAHEAD_DEMO.md), [`CHATBOT_HANDOFF.md`](CHATBOT_HANDOFF.md) | the chat: its tools, the shared ICU snapshot, its workflows and next steps |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | why it is built this way |
 | [`docs/FRONTEND_SPEC.md`](docs/FRONTEND_SPEC.md), [`DESIGN.md`](DESIGN.md) | the board: screens, states, look |
 
@@ -38,6 +39,7 @@ Names and affiliations as listed by the [CLIF Consortium](https://clif-icu.com/t
 |---|---|
 | Board page (one HTML file, no build step) | `mockups/command-center.html`; served copy `backend/app/static/index.html` |
 | Board server, dispatcher, chat agent | `backend/app/board.py`, `dispatcher.py`, `chat_agent.py` |
+| Chat grounding: the shared ICU snapshot and the evidence answers are rendered from | `backend/app/demo_context.py`, `evidence.py`; workflows `backend/fuzzball/t7-lookahead-prepare.fz`, `-forecast.fz`, `-chat.fz`; volume `demo-context` |
 | Forecast builders, life support now, generated names | `backend/app/rooms.py`, `aggregate.py`, `clif_now.py`, `stage_ward.py`, `fake_names.py` |
 | Tokenizer, model definition, probe scoring | `backend/icutwin/` |
 | Fuzzball workflows | `backend/fuzzball/*.fz`; rendered for a pinned commit in `backend/fuzzball/ready/` |
@@ -65,14 +67,14 @@ The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball 
 | Probes | Fitted by job 4 beside the model; held-out results in `docs/RESULTS.md`. The forecast reads the staged copy at `/store/train/probe-final.joblib` with its `probe-final.meta.json` |
 | Board page, served by the backend | On `main`. The final page with staffing lands with PR #20 |
 | Board server, dispatcher, chat agent, life support now, generated names | On `main`, with tests |
-| Chat grounded in a shared ICU snapshot (`demo_context.py`, `evidence.py`, `t7-lookahead-*.fz`, volume `demo-context`) | PR #16, draft. Its workflows have not been run on the cluster |
+| Chat grounded in a shared ICU snapshot (`demo_context.py`, `evidence.py`, `t7-lookahead-*.fz`, volume `demo-context`) | On `main`, with tests on synthetic data. Its workflows have not been run on the cluster |
 | `t7-twin` without Nemotron (the no-chat fallback) | Not run |
 | Launch path (`launch.sh`, `RUNBOOK.md`) | On `main`; the path the team ran |
 | `backend/fuzzball/ready/` | Pins commit `617edc0`, older than the templates. Render again before publishing from this repo |
 
 ## Next steps on the cluster
 
-1. Merge the open pull requests, then `cd backend && scripts/make_ready.sh $(git rev-parse HEAD)` and commit `fuzzball/ready/`.
+1. Merge the open pull request, then `cd backend && scripts/make_ready.sh $(git rev-parse HEAD)` and commit `fuzzball/ready/`.
 2. Check the ingress line names this repo: `grep -h "uri:.*http" fuzzball/ready/*.fz | sort -u`.
 3. If `twin-store` was recreated, stage job 4's probe again (`RUNBOOK.md` section 4).
 4. `bash scripts/launch.sh --all`, then `--restart` after any later code publish.
@@ -90,7 +92,7 @@ The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball 
 
 | # | Question |
 |---|---|
-| 1 | `twin-store` holds the board's files and the staged patient tokens. Keep one restricted volume and clear it after judging, or adopt the separate `demo-context` volume of PR #16? |
+| 1 | `twin-store` holds the board's files and the staged patient tokens. Keep one restricted volume and clear it after judging, or adopt the separate `demo-context` volume the `t7-lookahead-*` workflows use? |
 | 2 | Is checkpoint 2616 (60% of one epoch) the model to demo? A new model means job 4 again and a newly staged probe |
 | 3 | The demo clock: at 24 h after ICU arrival no patient in the cohort is on CRRT. Pick the clock setting for the demo |
 | 4 | ECMO: one cohort patient has ECMO records; the board leaves ECMO out |

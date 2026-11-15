@@ -276,7 +276,7 @@ def test_names_token_renders_off_by_default_and_never_reaches_the_run_log(tmp_pa
         "ward",
     }
     assert row["name"].startswith(
-        "t7-forecast-room3-"
+        "t7-lookahead-forecast-room3-"
     )  # the run's name, not a person's
 
 

@@ -2,7 +2,7 @@
 
 Read this if you want the demo-day design: what is real on stage, the minute-by-minute plan, the fallbacks and the forecast CLI flags. To start or relaunch the app, use [`RUNBOOK.md`](RUNBOOK.md).
 
-**Status:** The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Not run: PR #16's `t7-lookahead-*` workflows and `t7-twin` without Nemotron.
+**Status:** The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Not run: the chat-grounding workflows `t7-lookahead-prepare`, `-forecast` and `-chat`, and `t7-twin` without Nemotron.
 
 Sections 0 to 8 are the design as written on 2026-11-14; section 9 holds the later decisions and wins where they differ. Where a paragraph disagrees with this table, the table wins.
 
@@ -78,7 +78,7 @@ While doing this, one bug on `main` surfaced and is **fixed on this branch** (fl
 Today `rep_based.py` fits probes and scores held-out in one go and keeps nothing. Implemented on this branch (`icutwin/scoring/rep_based.py`, tests in `tests/test_rep_probes.py`):
 
 - `icutwin-rep-score <tokenized_output> -m <model> -c examples/probe_tasks.yaml` saves every fitted probe in one `probe-<model>.joblib` (task -> probe; a task with one class in training has no probe and scores NaN), `probe-<model>.meta.json` (weights sha256) and `metrics-rep-based-<model>.json` (training counts and held-out metrics).
-- `icutwin-rep-score <stage tokenized_output> -m <model> --apply-probes /store/train/probe-final.joblib --stay-ids /store/stage/stage_ward.csv` **never fits**: it reads `features-<split>-<model>.parquet` and `<split>_for_inference.parquet` for every split present, keeps the 25 ids, applies each probe with the same `_past` mask (a task that already happened before the cut is NaN, not a new event), and writes `scores-rep-based-<model>.parquet` in the layout `app/aggregate.py` already reads. It refuses probes saved for a different model name. The test checks the scores equal a direct `predict_proba` of the loaded probe.
+- `icutwin-rep-score <stage tokenized_output> -m <model> --apply-probes /store/train/probe-final.joblib --stay-ids /store/stage/stage_ward.csv` **never fits**: it reads `features-<split>-<model>.parquet` and `<split>_for_inference.parquet` for every split present, keeps the 25 ids, applies each probe with the same `_past` mask (a task that already happened before the cut is NaN, not a new event), and writes `scores-rep-based-<model>.parquet` in the layout `app/aggregate.py` already reads. It refuses probes saved for a different model name or other weights, and features that were not extracted with the weights now in the model folder (`icutwin-extract` records the weights digest in `features-<split>-<model>.meta.json`; a features file without it is refused: extract again). The test checks the scores equal a direct `predict_proba` of the loaded probe.
 - joblib pickles tie the probes to the scikit-learn in `/store/py`; keep `fit` and `apply` on the same packages (`/store/py`).
 
 Pipeline on the day (all inside the cluster; this layout is now `fuzzball/t7-ward.fz` and `fuzzball/t7-forecast.fz`, gaps G2 and G3 are closed):
@@ -480,7 +480,7 @@ Check it with `t7-ward` job `load` (counts only), not by listing files by hand.
 
 1. `t7-fit` (once per model): saves the probes. It stages the open demo ward by default.
 2. `t7-ward`, rendered for the cohort: job `load` checks the folder, the table list, the 25 ids and the names file; job `tokenize` builds the room map and the tokens with the training vocabulary and swaps them into `/store/stage/`.
-3. `t7-twin` from `fuzzball/ready/t7-twin.fz` (its dispatcher line already ends in `--real-ward --clif-dir /data/dashboard_data --names fake`: names are generated per room number, `name.parquet` is no longer read).
+3. `t7-twin` from `fuzzball/ready/t7-twin.fz` (its dispatcher line already ends in `--real-ward --clif-dir /data/dashboard_data --names fake`: names are generated per room number, `name.parquet` is no longer read; its board line ends in `--real-ward`: a board without it serves a real ward counts-only).
 4. The first unit forecast ("Update the unit", or 07:00). It writes `rooms.json` and `forecast.json` with `"ward": {"source": "mimic-iv", ...}`.
 
 ```bash

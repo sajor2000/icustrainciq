@@ -17,7 +17,7 @@ ICU Lookahead is a bed board for one ICU. It shows the life support each patient
 | [How to run it](#how-to-run-it) | One command on the cluster, or a laptop demo |
 | [What was validated](#what-was-validated) | What ran on the cluster, what was only checked, what is open |
 
-Two pull requests are open. Rows marked **PR #16** (chat grounded in a shared ICU snapshot, draft) or **PR #20** (staffing and capacity in the backend, final board page) describe code that is not on `main` yet.
+One pull request is open. Rows marked **PR #20** (staffing and capacity in the backend, final board page) describe code that is not on `main` yet. The chat grounded in a shared ICU snapshot is on `main`; its `t7-lookahead-*` workflows have not been run on the cluster.
 
 ## What runs where
 
@@ -36,7 +36,7 @@ Each machine has one NVIDIA GB10 GPU. Fuzzball places CPU work on either machine
 | Volume `mimic_clif` | mounted at `/data`, only read | | | the 25-patient ward, training tokens, the trained model |
 | Volume `twin-store` | mounted at `/store`, the one volume we write | | | code, packages, the staged probe, staged tokens, the JSON files, `runs.jsonl` |
 | Volume `hfcache` | mounted at `/cache` | | | Nemotron weights |
-| Volume `demo-context` (**PR #16**) | mounted at `/context` by `t7-lookahead-*` | | | the selected 25-patient snapshot the chat is grounded in |
+| Volume `demo-context` | mounted at `/context` by `t7-lookahead-*` | | | the selected 25-patient snapshot the chat is grounded in |
 | Training | workflows `job_2_tokenize` to `job_4_probe` in [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin) | both GPUs | none | MIMIC-IV in CLIF format |
 
 The demo has one user at a time. There is no login; `role` is a label on the log and the answer.
@@ -86,12 +86,12 @@ Held-out AUROC runs from 0.771 (vasopressor start) to 0.930 (death) across the s
 | Part | Role |
 |---|---|
 | Board server | The only door in. Serves the page and the API, and holds the chat agent |
-| Chat agent | A bounded tool-calling loop. Nemotron picks tools; answers come from tool results. **PR #16:** clinical answers are rendered from retrieved evidence (`app/evidence.py`) over one shared snapshot (`app/demo_context.py`) |
+| Chat agent | A bounded tool-calling loop. Nemotron picks tools; answers come from tool results: clinical answers are rendered from retrieved evidence (`app/evidence.py`) over one shared snapshot (`app/demo_context.py`) |
 | Dispatcher | The 07:00 clock and the update button. Starts one forecast at a time through the Fuzzball CLI |
 | `t7-forecast` | `precheck` (CPU) checks the probe, the model and the staged ward. `extract` (GPU 2) runs one pass per patient. `score` (CPU) applies job 4's probe and writes `rooms.json`, then `forecast.json` |
 | `twin-store` | Everything we write. Files a reader may see mid-write are written to a temporary name and renamed |
 | `mimic_clif`, `hfcache` | Only read: the ward and the model; the Nemotron weights |
-| `demo-context` | **PR #16:** a restricted volume for the `t7-lookahead-prepare`, `-forecast` and `-chat` workflows; holds the roster, the token cache and `context.json` |
+| `demo-context` | A restricted volume for the `t7-lookahead-prepare`, `-forecast` and `-chat` workflows; holds the roster, the token cache and `context.json` |
 
 The page has two tabs, **Bed board** and **Unit strain**, and a **Now | Next 24 h** switch. Screens and states: [`FRONTEND_SPEC.md`](FRONTEND_SPEC.md).
 
@@ -146,7 +146,8 @@ The demo ward is a CLIF-format extract of 25 MIMIC-IV hospitalizations on `mimic
 | Jobs and scripts print counts only: never a row, an id, a date or a name | `backend/README.md` |
 | The chat refuses a question that names a patient identifier before any model call | `backend/docs/CHAT_AGENT.md` |
 | Patient data, model weights and probes are never committed | `AGENTS.md` |
-| **PR #16:** without `--real-ward` the board serves a real ward as counts only: no rooms, no room chat | `backend/fuzzball/t7-twin.fz` on the PR branch |
+| Without `--real-ward` the board serves a real ward as counts only: no rooms, no room chat. With it, the model gets only the room the user asked about, with no ids and no dates | `backend/app/board.py`, `backend/fuzzball/t7-twin.fz`, `backend/docs/CHAT_AGENT.md` |
+| Chat logs hold the role, tool names and timing: never the question or the answer | `backend/docs/CHAT_AGENT.md` |
 
 ## How to run it
 
@@ -196,7 +197,7 @@ Open http://localhost:8080. This serves synthetic data. Without Nemotron and the
 | Guards, JSON shapes and the API | Tested off the cluster | `backend/tests/` |
 | The whole app, end to end | Ran | The team ran it on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14: code publish, ward staging, forecast, then the board with Nemotron. Failures met on the way and their fixes: [`RUNBOOK.md`](../backend/docs/RUNBOOK.md) section 7 |
 | This repo's rendered files | Open | `fuzzball/ready/` pins a commit older than the templates. Render again before publishing from this repo (`backend/fuzzball/ready/README.md`) |
-| Chat grounding in **PR #16** (`t7-lookahead-prepare`, `-forecast`, `-chat`) | Not run | Synthetic tests only; no model inference or real-data acceptance is claimed |
+| Chat grounding workflows (`t7-lookahead-prepare`, `-forecast`, `-chat`) | Not run on the cluster | Synthetic tests only; no model inference or real-data acceptance is claimed |
 | `t7-twin` without Nemotron (the no-chat fallback) | Not run | |
 | Time and memory of `extract` | Open | The values in `t7-forecast.fz` are starting values |
 | Clinical use | Not done | Retrospective check on one public dataset. Not a prospective test, not another hospital, not a medical device |

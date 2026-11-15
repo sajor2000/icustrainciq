@@ -27,7 +27,7 @@ Everything the board needs at run time is here. Model training stays in [vaishvi
 | `requirements/` | Hash-locked packages the cluster installs |
 | `docs/` | See below |
 
-Lands with PR #16: `app/demo_context.py`, `app/evidence.py`, `fuzzball/t7-lookahead-prepare.fz`, `-forecast.fz`, `-chat.fz` and the volume `demo-context`. Lands with PR #20: `app/capacity.py` (machines and staffing).
+Chat grounding, on `main`: `app/demo_context.py` builds the shared ICU snapshot, `app/evidence.py` renders answers from it, and `fuzzball/t7-lookahead-prepare.fz`, `-forecast.fz` and `-chat.fz` run it on the restricted volume `demo-context`. These three workflows have not been run on the cluster yet. Lands with PR #20: `app/capacity.py` (machines and staffing).
 
 ## Docs
 

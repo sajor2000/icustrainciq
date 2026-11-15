@@ -42,6 +42,12 @@ def main(argv=None) -> int:
     ap.add_argument("--room", type=int, default=0)
     ap.add_argument("--hours", type=float, default=0, help="demo-clock hours")
     ap.add_argument(
+        "--cut",
+        default="",
+        help="replay cut with a UTC offset, for a template with the cut token "
+        "(default: the last 07:00 America/Chicago before now, plus --hours)",
+    )
+    ap.add_argument(
         "--cohort", action="store_true", help="the final cohort on mimic_clif"
     )
     ap.add_argument("--real-ward", action="store_true")
@@ -65,12 +71,19 @@ def main(argv=None) -> int:
         ap.error("one template at a time (several only with --check)")
     if a.scope == "room" and a.room not in dispatcher.ROOMS:
         ap.error("--scope room needs --room 1..25")
+    if not a.cut:  # fixed now, as the dispatcher fixes it when it starts a run
+        import datetime as dt
+        import zoneinfo
+
+        now = dt.datetime.now(zoneinfo.ZoneInfo("America/Chicago"))
+        a.cut = dispatcher.replay_cut(now, a.hours)
     try:
         text = dispatcher.render_template(
             a.template[0].read_text(),
             scope=a.scope,
             room=a.room,
             hours=a.hours,
+            cut=a.cut,
             real_ward=a.real_ward,
             clif_dir=a.clif_dir,
             ward_ids=a.ward_ids,
