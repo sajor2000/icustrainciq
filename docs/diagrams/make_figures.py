@@ -332,7 +332,7 @@ def architecture_print():
     r1, r2, r3 = ys
     f.node(xs[0], r1, w, h, "card", "Job 1 · CPU · Node A", "Move data", ["CLIF records in", "alpine image", "1 core · 2 GiB"])
     f.node(xs[1], r1, w, h, "card", "Job 2 · CPU", "Tokenize", ["events into tokens", "uv Python image", "20 cores · 110 GiB"])
-    f.node(xs[2], r1, w, h, "model", "Job 3 · 2 GPUs · A + B", "Train the GEM", ["Nemotron backbone,", "1 DDP rank per node", "20 cores, 110 GiB ea."])
+    f.node(xs[2], r1, w, h, "model", "Training · A + B", "Train the GEM", ["Nemotron backbone,", "1 DDP rank per node", "20 cores, 110 GiB ea."])
     f.node(xs[3], r1, w, h, "card", "Job 3.1 · CPU · Node A", "Package", ["save checkpoint", "load test passes", "2 cores · 4 GiB"])
     f.node(xs[4], r1, w, h, "card", "Job 4 · 2 GPUs, CPU", "Fit probes", ["embed on 2 × GB10", "fit 6 probes on CPU", "20 cores · 90 GiB"])
     f.node(xs[0], r2, w, h, "card", "Fuzzball", "Object cache", ["code, data in", "logs, counts out", "never overwrites"])
@@ -365,14 +365,14 @@ def architecture_print():
 def arch_train():
     f = Fig("arch-train", 1200, 436, "Training on CIQ Fuzzball, run once",
             "Training ran once as four CIQ Fuzzball workflows on two Lenovo ThinkStation PGX workstations, each with one NVIDIA GB10 (20 Arm cores, 128 GB, one GPU). Job 1 copies CLIF records in through the object cache (1 core, 2 GiB). Job 2 tokenizes them into the custom 1,231-token vocabulary (20 cores, 110 GiB). Job 3 trains the GEM, an NVIDIA Nemotron 3.5 Bolt E4B backbone, from scratch with PyTorch distributed data parallel on two nodes with one GPU each (20 cores, 110 GiB per node). Job 3.1 packages and load-tests the checkpoint (2 cores, 4 GiB). Job 4 embeds patients on both GPUs and fits six probes on CPU (20 cores, 90 GiB). Tokens, the GEM and the probes are saved on the 200 GB mimic_clif VAST volume.",
-            "ICU Horizon · training", "Training: jobs 1 to 4, run once", big=True)
+            "ICU Horizon · training", "One training workflow, with data prep and probes around it", big=True)
     f.t_title = 17
-    f.zone(16, 40, 1168, 336, label="Train once · Node A = SPARK13, Node B = SPARK14 · NVIDIA GB10: 20 Arm cores, 128 GB, 1 GPU each")
+    f.zone(16, 40, 1168, 336, label="Run once: prep, one training workflow, probes · Node A = SPARK13, Node B = SPARK14")
     xs, w, h, r1, r2 = (40, 270, 500, 730, 960), 200, 128, 72, 248
     cx = [x + w // 2 for x in xs]
     f.node(xs[0], r1, w, h, "card", "Job 1 · CPU · Node A", "Move data", ["CLIF records in", "alpine image", "1 core · 2 GiB"])
     f.node(xs[1], r1, w, h, "card", "Job 2 · CPU · Node B", "Tokenize", ["custom 1,231-token", "vocabulary", "20 cores · 110 GiB"])
-    f.node(xs[2], r1, w, h, "model", "Job 3 · 2 GPUs · A + B", "Train the GEM", ["Nemotron backbone,", "1 DDP rank per node", "20 cores, 110 GiB ea."])
+    f.node(xs[2], r1, w, h, "model", "Training · A + B", "Train the GEM", ["Nemotron backbone,", "1 DDP rank per node", "20 cores, 110 GiB ea."])
     f.node(xs[3], r1, w, h, "card", "Job 3.1 · CPU · Node A", "Package", ["save checkpoint", "load test passes", "2 cores · 4 GiB"])
     f.node(xs[4], r1, w, h, "card", "Job 4 · 2 GPUs · A + B", "Fit probes", ["embed on both GPUs,", "fit 6 probes on B", "20 cores · 90 GiB"])
     f.node(xs[0], r2, w, 104, "card", "Fuzzball", "Object cache", ["the only way in", "or out"])
