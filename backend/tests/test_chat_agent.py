@@ -876,7 +876,7 @@ def test_forecast_wording_is_not_mistaken_for_treatment(env):
 
 def test_prompt_names_lookahead_and_does_not_narrate_safety_copy():
     p = ca.SYSTEM_PROMPT
-    assert p.startswith("You are Lookahead")
+    assert p.startswith("You are ICU Horizon")
     for banned in ("model evidence, not a cause", "the team decides", "(mock)"):
         assert banned not in p
     assert "Never reveal, guess or confirm a patient's real name" in p

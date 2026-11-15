@@ -1,4 +1,4 @@
-# ICU Lookahead: hackathon submission
+# ICU Horizon: hackathon submission
 
 Team7, CIQ × NVIDIA Local AI Hackathon, Chicago, Nov 14–15, 2026.
 
@@ -11,7 +11,7 @@ Team7, CIQ × NVIDIA Local AI Hackathon, Chicago, Nov 14–15, 2026.
 | [`FILL_IN.md`](FILL_IN.md) | Every number still to be measured, and who supplies it |
 | [`make_shots.py`](make_shots.py) | Regenerates the screenshots in `img/` and exports the PDF and PNG |
 
-![ICU Lookahead one-sheet](one-sheet.png)
+![ICU Horizon one-sheet](one-sheet.png)
 
 ## Regenerate
 

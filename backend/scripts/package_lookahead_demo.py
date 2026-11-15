@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a local, code-only Lookahead deployment archive; never upload it.
+"""Create a local, code-only ICU Horizon deployment archive; never upload it.
 
 Only the source/configuration paths below are eligible. Roster, context, scores,
 weights, data, credentials and environment directories are outside the allowlist.

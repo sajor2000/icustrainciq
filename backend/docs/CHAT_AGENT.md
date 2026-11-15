@@ -2,9 +2,9 @@
 
 Read this if you want to know how the chat picks its tools, what it refuses, and where its answers come from.
 
-This file describes the chat on `main`: `app/chat_agent.py` (the bounded tool loop), `app/evidence.py` (answers rendered from evidence) and `app/demo_context.py` (the shared ICU snapshot). The team ran ICU Lookahead end to end on the cluster with `scripts/launch.sh`; the chat-grounding workflows `t7-lookahead-prepare`, `-forecast` and `-chat` have not been run on the cluster yet.
+This file describes the chat on `main`: `app/chat_agent.py` (the bounded tool loop), `app/evidence.py` (answers rendered from evidence) and `app/demo_context.py` (the shared ICU snapshot). The team ran ICU Horizon end to end on the cluster with `scripts/launch.sh`; the chat-grounding workflows `t7-lookahead-prepare`, `-forecast` and `-chat` have not been run on the cluster yet.
 
-Lookahead is one assistant for the whole ICU team. The default view is **Whole ICU team**; an optional focus changes ordering and suggested questions. It does not select a different model, patient population, prediction set or permission level. Role labels are advisory attribution, not authentication.
+ICU Horizon is one assistant for the whole ICU team. The default view is **Whole ICU team**; an optional focus changes ordering and suggested questions. It does not select a different model, patient population, prediction set or permission level. Role labels are advisory attribution, not authentication.
 
 ## Prediction contract
 

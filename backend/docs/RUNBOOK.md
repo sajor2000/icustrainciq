@@ -1,12 +1,12 @@
-# Runbook: setting up and relaunching ICU Lookahead on the cluster
+# Runbook: setting up and relaunching ICU Horizon on the cluster
 
-Read this if you need to start ICU Lookahead on the cluster, publish new code to it, or bring it back after a break.
+Read this if you need to start ICU Horizon on the cluster, publish new code to it, or bring it back after a break.
 
 How to get the dashboard running from nothing, and how to bring it back after a
 break. Companion to [`LIVE_DEMO.md`](LIVE_DEMO.md) (what to say) and
 [`FUZZBALL_TEST_PLAN.md`](../../docs/archive/FUZZBALL_TEST_PLAN.md) (what to check).
 
-The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. This is the procedure that was used.
+The team ran ICU Horizon end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. This is the procedure that was used.
 
 Everything runs from `backend/` in this repo (`cd backend` first) on a laptop with the `fuzzball` CLI logged in.
 

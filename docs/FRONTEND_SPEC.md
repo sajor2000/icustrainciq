@@ -1,4 +1,4 @@
-# Frontend spec: ICU Lookahead, the ICU board
+# Frontend spec: ICU Horizon, the ICU board
 
 > **What the page draws (D25, 2026-11-15).** The board page is the team's final board design (ICU-Twin `55df710`), with bug fixes and the refinements the team approved on 2026-11-15 (each one, with before and after pictures and how to undo it, in [`UI_REVIEW.md`](UI_REVIEW.md)). It has **no bed status**: no Worsening / Watch / Still on support / Leaving, no status colour on a tile, no "Worry first" rail, no Staffing card, no 1:1 tag and no role picker. What it draws:
 >
@@ -10,7 +10,7 @@
 >
 > Staffing (D23) and the yardstick stay in the backend, the API and the chat; capacity is entered in the Settings form. The screen-by-screen section below describes this page.
 
-ICU Lookahead ("See the next 24 hours of your ICU. On machines you own.") is the ICU team's board for 07:00 morning rounds. The unit name stays the big title. The backend (forecaster, workflows, dispatcher, `app/board.py`) lives in [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin); this repo holds the frontend design, the mockup, and the contract it must meet. Journeys: [`USER_JOURNEY.md`](USER_JOURNEY.md). Decisions: [`DECISIONS.md`](DECISIONS.md). Words: [`NAMING_AND_WORDING.md`](archive/NAMING_AND_WORDING.md). Visual system: [`../DESIGN.md`](../DESIGN.md).
+ICU Horizon ("From bench to bedside") is the ICU team's board for 07:00 morning rounds. The unit name stays the big title. The backend (forecaster, workflows, dispatcher, `app/board.py`) lives in [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin); this repo holds the frontend design, the mockup, and the contract it must meet. Journeys: [`USER_JOURNEY.md`](USER_JOURNEY.md). Decisions: [`DECISIONS.md`](DECISIONS.md). Words: [`NAMING_AND_WORDING.md`](archive/NAMING_AND_WORDING.md). Visual system: [`../DESIGN.md`](../DESIGN.md).
 
 ## How it runs
 
@@ -109,7 +109,7 @@ Polling: `/api/runs` every 10 s while a run is going or updating (the dispatcher
 
 This section describes the final page: the team's design (D25) with the refinements the team approved on 2026-11-15 ([`UI_REVIEW.md`](UI_REVIEW.md)). The earlier design (bed statuses, the "Worry first" rail, the role picker, the Staffing card) is retired and is not described here; its record is D12, D13, D22 and D25 in [`DECISIONS.md`](DECISIONS.md).
 
-The page is titled **ICU Lookahead** with the descriptor "next 24 hours". The unit ("Medical ICU · 25 beds") is a chip beside the data-source tag and comes from the forecast (`unit_name`, optional; "ICU" when absent, and `beds`). Two controls sit under the header and stay at the top while scrolling:
+The page is titled **ICU Horizon** with the descriptor "next 24 hours". The unit ("Medical ICU · 25 beds") is a chip beside the data-source tag and comes from the forecast (`unit_name`, optional; "ICU" when absent, and `beds`). Two controls sit under the header and stay at the top while scrolling:
 
 - **Tabs** (what you look at): **Bed board** (default) and **Unit strain**. `#view=beds|strain`, remembered in `localStorage` (`lookahead-view`).
 - **Time switch** (when): **Now** and **Next 24 h** (default), by button, left and right arrow keys, or a sideways swipe. `#when=now|next`, remembered (`lookahead-when`). Now is ink and shows only what is running at 07:00; Next 24 h is blue and shows the forecast. Switching re-renders in place: same grid, same room order, same scroll position.
@@ -118,7 +118,7 @@ Chances are **whole percentages** ("23%"; "<5%" when very small; "No estimate" f
 
 **Thresholds.** There is no bed status. An event is shown on a bed when its chance is at or above that event's threshold. Thresholds live in the Settings panel: "Flag beds at **40% · 20% · 10%**" (default 20%) sets the three life supports together, a visible **Reset to standard** returns every line to the standard (20% watch, 40% worsening, 60% leaving; D13, D14, D26), and a stepper per event (Ventilator, Vasopressor, CRRT, Leaving; leaving defaults to 60%) sets one, showing how many beds it catches. It is a view setting kept on the device (`localStorage` `lookahead-lines`); nothing is sent to the server. Changing a threshold never moves a tile. Death has no threshold, because death never marks a bed. The standard lines were applied when PR #24 merged (D26); before that the defaults were 25% with presets 50 / 25 / 10.
 
-1. **Header.** "ICU Lookahead · next 24 hours"; "07:00 to 07:00"; the unit chip; the data-source tag ("MIMIC-IV Demo", "MIMIC-IV · local" or "Demo data"); **Update the unit**; the gear (Settings).
+1. **Header.** "ICU Horizon · next 24 hours"; "07:00 to 07:00"; the unit chip; the data-source tag ("MIMIC-IV Demo", "MIMIC-IV · local" or "Demo data"); **Update the unit**; the gear (Settings).
 2. **Update progress** (under the header, only during and just after an update; item 8).
 3. **Alert line** (both tabs, Next 24 h). What is short against the machines the unit has ("Ventilators short by 1", "CRRT at the limit, none spare"); **"Deaths expected 1 (0 to 3)"**, the one place death appears outside an opened bed; on Unit strain the three highest-risk beds as 44px chips; "10 on life support now · +5 new expected in 24 h" with the yardstick word (USUAL, BUSY, VERY BUSY, or ON TRACK, TIGHT, SHORT when tonight's staffing is set), which links to Unit strain; "Last run 07:00".
 4. **Bed board, Next 24 h.**
@@ -145,7 +145,7 @@ Chances are **whole percentages** ("23%"; "<5%" when very small; "No estimate" f
    - **Vitals · last 12 h** when the data carries `vitals_12h`: heart rate, mean arterial pressure, SpO2, respiratory rate, hourly medians.
    - **What the model read · last 12 h** (five, then "Show more"), and the buttons **Update this bed** and **Ask about this forecast**.
    - **Now**: the three supports, each "On now", "Not running" or "Unknown".
-10. **Ask ICU Lookahead** (chat). A launcher at the bottom right; the panel is a non-modal dialog (a bottom sheet on a phone) and sits above an opened bed. Header: the name, a context chip ("Unit" or "Bed 12"; on a bed it switches between that bed and the unit), minimise and close. Minimise and Escape keep the conversation; close clears it.
+10. **Ask ICU Horizon** (chat). A launcher at the bottom right; the panel is a non-modal dialog (a bottom sheet on a phone) and sits above an opened bed. Header: the name, a context chip ("Unit" or "Bed 12"; on a bed it switches between that bed and the unit), minimise and close. Minimise and Escape keep the conversation; close clears it.
     - Suggested questions follow the context, under a small label. **About the unit**: "Which beds should we see first?", "Will we be short of ventilators or CRRT?", "Who is likely to leave the ICU today?", "Summarise the next 24 hours". **About bed 12**: "Why is bed 12 flagged?" (or "What is forecast for bed 12?"), "What did the model read for bed 12 in the last 12 hours?", "How likely is bed 12 to leave the ICU?".
     - Answers: numbers are bold; every bed number is a link that opens that bed's pop-up, with the panel still open on a desktop (on a phone the sheet steps aside). "Thinking…" with Stop; "Can't reach the chat right now. Try again."; treatment questions are declined. `POST /api/ask` is unchanged.
 11. **Settings** (the gear; a side panel): light or dark board, the thresholds, and Capacity (ventilators and CRRT machines on the unit, and optionally the life-support patients tonight's staffing covers).

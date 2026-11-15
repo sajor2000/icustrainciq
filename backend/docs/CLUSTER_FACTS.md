@@ -2,14 +2,14 @@
 
 Read this if you need the hardware, driver, image and storage facts of the two Lenovo PGX nodes; it is a dated record from the evening before the event, so use [`RUNBOOK.md`](RUNBOOK.md) to run the app and [`../../docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) for the overview.
 
-**Status:** The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Statements below that nothing had run describe the time of writing.
+**Status:** The team ran ICU Horizon end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Statements below that nothing had run describe the time of writing.
 
 Superseded since this check: the storage rows for `clif_work`, `tooling` and `twin-store`, and the `t7-build` and `t7-smoke` rows of the GPU table. Current state:
 
 | Topic | Current state (code on `main`) |
 |---|---|
 | How to run | `scripts/launch.sh` first ([`RUNBOOK.md`](RUNBOOK.md)); the manual workflow steps are the fallback |
-| Volumes | `twin-store` is the one volume ICU Lookahead writes (code, packages, stage ward, forecast files). `mimic_clif` is only read, at `/data`. `hfcache` holds the Nemotron weights. `clif_work` and `tooling` are not used |
+| Volumes | `twin-store` is the one volume ICU Horizon writes (code, packages, stage ward, forecast files). `mimic_clif` is only read, at `/data`. `hfcache` holds the Nemotron weights. `clif_work` and `tooling` are not used |
 | Probe | Fitted by job 4 in vaishvikc/ICU-Twin and staged at `/store/train/probe-final.joblib` with `probe-final.meta.json`. `t7-fit` is the fallback |
 | Names | Generated per room number by `app/fake_names.py` (`--names fake`). `name.parquet` is no longer read |
 | Code on the cluster | Published by `t7-code` from this repo's `backend/` at a pinned commit. Training (`job_2` to `job_4`) is in vaishvikc/ICU-Twin; there is no `t7-build` here |
@@ -59,7 +59,7 @@ The aggregate job and the bed board need no GPU.
 | `clif_work` | Superseded: not used. Was planned for tokens and per-stay scores; they are on `twin-store` (`/store/stage`, `/store/train`) | |
 | `tooling` | Superseded: not used. Packages are at `/store/py` on `twin-store` | |
 | `hfcache` | team7 only: Nemotron weights cache, needed by `t7-twin.fz` (80 GB) | |
-| `twin-store` | Superseded: it now holds everything ICU Lookahead writes, including the staged ward tokens and per-stay scores, so treat it as restricted ([`FUZZBALL_VALIDATION.md`](FUZZBALL_VALIDATION.md)) | |
+| `twin-store` | Superseded: it now holds everything ICU Horizon writes, including the staged ward tokens and per-stay scores, so treat it as restricted ([`FUZZBALL_VALIDATION.md`](FUZZBALL_VALIDATION.md)) | |
 | `shared/datasets` | organizers' open data (bio, city, finance, geo, gov, space). No clinical data | |
 | Read-only mounts | not tested (`fuzzball run --volume` has no `:ro`) | S2 open |
 

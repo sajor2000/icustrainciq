@@ -1,4 +1,4 @@
-"""Lookahead forecast: life support, yardstick, rooms, demo clock (synthetic data)."""
+"""ICU Horizon forecast: life support, yardstick, rooms, demo clock (synthetic data)."""
 
 import datetime as dt
 import itertools

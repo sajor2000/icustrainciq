@@ -1,6 +1,6 @@
 <!-- diagram-design-profile
-name: Lookahead (ICU board)
-slug: lookahead
+name: ICU Horizon (ICU board)
+slug: horizon
 source-url: none
 created: 2026-11-14
 updated: 2026-11-14
@@ -239,9 +239,9 @@ Four options:
 - **Dot pattern is optional, not default**: the 22×22 dot pattern is an opt-in "dotted paper" variant (good for long-form editorial hero diagrams). The default background is a clean `paper` fill, no pattern. When the pattern is enabled, it should sit at ~10% opacity of `ink` on `paper` — visible but quiet.
 - **Container is clean by default**: the diagram sits directly on the page paper, no secondary container background or border. A framed variant (`paper-2` bg + `rule` border + 8px radius + padding) is available as an opt-in for card-heavy layouts, but don't reach for it by default — the extra chrome fights the figure.
 
-## Lookahead mapping (from DESIGN.md)
+## ICU Horizon mapping (from DESIGN.md)
 
-**This mapping takes precedence.** Where it differs from the inherited sections above (fonts, radii, the default and terminal skins), this mapping applies. Lookahead figures use the board's native sans only: no web font, no serif titles, no terminal skin.
+**This mapping takes precedence.** Where it differs from the inherited sections above (fonts, radii, the default and terminal skins), this mapping applies. ICU Horizon figures use the board's native sans only: no web font, no serif titles, no terminal skin.
 
 This profile is the board's design system applied to figures. `DESIGN.md` (section "Diagrams") is the source; this file follows it.
 
