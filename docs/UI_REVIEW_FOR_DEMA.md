@@ -6,7 +6,7 @@ The page is still Dema's design: the same layout, tiles, person figure, circle i
 
 - Page file: [`mockups/command-center.html`](../mockups/command-center.html); the served copy `backend/app/static/index.html` is byte-identical.
 - Open it without a server: `python3 -m http.server 8000`, then `http://localhost:8000/mockups/command-center.html#synthetic` (made-up patients).
-- "Before" pictures are the page on `main` before this pull request. All pictures use made-up patients. In the bed-board "before" pictures the death threshold is set to 5% so that the death marks show.
+- "Before" pictures are Dema's page as it was on `main` before PR 24 and this pull request (flag line 25%). All pictures use made-up patients. In the bed-board "before" pictures the death threshold is set to 5% so that the death marks show.
 
 ## 1. Decide these in the meeting
 
@@ -25,6 +25,7 @@ The page is still Dema's design: the same layout, tiles, person figure, circle i
 | 11 | Header reads "ICU Lookahead" | D24 | |
 | 12 | Phone layout at 390 px | J.C. Q6d | |
 | 13 | No console error when no context is published | bug fix | |
+| 14 | Standard flag lines 20% / 40% / 60% and "Reset to standard" | D26; applied: J.C. merged PR 24 | |
 
 Not applied, for you to decide: section 3.
 
@@ -192,13 +193,27 @@ Pictures: change 1.
 
 **Undo.** `backend/app/board.py`: the `/api/context` line back to 404. The page needs no undo.
 
+### 14. Standard flag lines 20% / 40% / 60% and "Reset to standard"
+
+| Before | After |
+|---|---|
+| ![before](screenshots/review/11-standard-lines-before.png) | ![after](screenshots/review/11-standard-lines-after.png) |
+
+**What.** The default "Flag beds at" is 20% (it was 25%), the presets are 40 / 20 / 10 (they were 50 / 25 / 10), High on an opened bed's rows starts at 40% (it was 50%), and a visible "Reset to standard" beside the presets returns every line to the standard. Leaving stays 60%. Dema's per-event steppers are unchanged. A threshold saved on a device earlier is kept until "Reset to standard" is pressed.
+
+**What it changes on screen.** With the made-up data the 20% line flags 6 beds where 25% flagged 3, the Ventilator card counts 3 beds (it was 2) and the unit with six ventilators reads "short by 2" (it was 1). The three See first beds are the same: that row does not depend on the line.
+
+**Why.** D13 and D14 set the board's thresholds at 20% (watch), 40% (worsening) and 60% (leaving); D26 makes them the page's defaults. This is no longer a proposal: J.C. merged PR 24 on 2026-11-15.
+
+**Undo.** `LINE_DEF` back to `.25`, `upLine` back to `[.25,.5,.75]`, the three preset buttons back to 50 / 25 / 10 (and `[50,25,10]` in `paintFlag`), and remove the `flag-reset` button and its handler.
+
 ## 3. Proposals not applied
 
 These would change Dema's settings or the design system, so they are listed, not made.
 
 | # | Proposal | From | What it would change |
 |---|---|---|---|
-| A | Default flag lines 20% / 40% / 60% | PR 24, D26, D13/D14 | Default "Flag beds at" 20% (now 25%), presets 40 / 20 / 10 (now 50 / 25 / 10), High on the bed pop-up from 40% (now 50%), and a visible "Reset to standard". Leaving stays 60%. With the made-up data the 20% line flags 6 beds where 25% flags 3. Patch: PR 24's page diff, hunks `LINE_DEF`, `upLine`, `fseg`, `flag-reset` |
+| A | (was: default flag lines 20% / 40% / 60%) | PR 24, D26 | **Applied**, no longer a proposal: change 14 above |
 | B | The page's blue | DESIGN.md | The page uses `#2563EB` (night `#8DBBFF`); DESIGN.md's `blue` token is `#1E5BB8`. They are visibly different, so the page was left alone. Either record `#2563EB` in DESIGN.md as the board's blue, or move the page to the token |
 | C | Three type sizes off the scale | DESIGN.md | `.6875rem` (capitals labels: NEXT 24 H, status chips), `1.25rem` ("All 25 beds", "How this forecast was made") and `2.25rem` (the lead number in Now). The nearest tokens are `.75rem`, `1.125rem` or `1.375rem`, and `2rem` or `2.5rem`; each differs by 1 px or more, so none was changed. Either add the three sizes to DESIGN.md or move the page |
 | D | One radius off the scale | DESIGN.md | `2px` on the underline of the Now / Next 24 h switch. Add to DESIGN.md or use `.125rem` (the same at 16 px) |

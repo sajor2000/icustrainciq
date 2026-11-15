@@ -3,7 +3,7 @@
 > **What the page draws (D25, J.C. 2026-11-15).** The board page is Dema's final design (ICU-Twin `55df710`), with bug fixes and the refinements J.C. approved on 2026-11-15 (each one, with before and after pictures and how to undo it, in [`UI_REVIEW_FOR_DEMA.md`](UI_REVIEW_FOR_DEMA.md)). It has **no bed status**: no Worsening / Watch / Still on support / Leaving, no status colour on a tile, no "Worry first" rail, no Staffing card, no 1:1 tag and no role picker. What it draws:
 >
 > - **Bed tile:** a person icon, the bed number, the generated (fictional) name with sex and age, the life support running at 07:00, and under NEXT 24 H each event at or above its threshold in Settings, in a circle with its chance (a new ventilator, vasopressor or CRRT, discharge). When a new life support is at its threshold the person icon turns red and pulses; discharge alone does not. Death is never shown on a tile. A "See first" row above the grid names the three highest-risk beds. In Now a bed on two or more supports is marked Critical.
-> - **Settings panel** (the gear): light or dark board, "Flag beds at 50% · 25% · 10%" (default 25%) with a threshold per event (kept on the device; a change of the defaults to 20% / 40% / 60% is proposed in D26, not applied), and Capacity (ventilators and CRRT machines on the unit, and optionally the life-support patients tonight's staffing covers).
+> - **Settings panel** (the gear): light or dark board, "Flag beds at 40% · 20% · 10%" (default 20%) with a visible "Reset to standard" and a threshold per event (kept on the device). The standard lines are 20% watch, 40% worsening, 60% leaving (D26, applied: J.C. merged PR #24), and Capacity (ventilators and CRRT machines on the unit, and optionally the life-support patients tonight's staffing covers).
 > - **Bed pop-up** (`#room=N`): the five predictions, the last 12 hours of vital signs (`vitals_12h`, hourly medians) and the last events the model read; "Update this bed" and "Ask about this forecast".
 > - **Unit strain:** a line with what is short, "Deaths expected" as one unit count, the three highest-risk beds (they pulse; death never ranks a bed) and "N on life support now · +N new expected in 24 h"; then one event card each for Deaths, Ventilator, Vasopressor, CRRT and Leave the ICU: on now, free machines, "Predicted new*" (beds at the threshold), the unit forecast with its range, the usage bar and the beds to watch. Deaths is a unit count only and lists no bed. An event the forecast skipped (`available: false`) reads "no data" / "not available", never 0, and does not blank the board.
 > - **Now | Next 24 h:** a switch, or a sideways swipe.
@@ -25,6 +25,10 @@ ICU Lookahead ("See the next 24 hours of your ICU. On machines you own.") is the
 Five predictions only, all for the next 24 h, 07:00 to 07:00: ICU discharge, IMV, vasopressor, CRRT, death. No hypotension, no readmission, nothing else.
 
 **Life support** means IMV (breathing tube or tracheostomy), a vasopressor infusion (inotropes alone do not count) or CRRT. **Now** means running at the 07:00 cut (decided 2026-11-14, Q29/Q30). ECMO and other mechanical support are not in the data and are not shown anywhere on the board.
+
+## How this forecast was made
+
+A native model, trained from scratch on our own token vocabulary; one forward pass per patient, then small classifiers on its last-layer summary; how Fuzzball ran it and what is only written so far. Full account, with sources: [`README.md`](../README.md#how-this-forecast-was-made). One page for judges: [`ONE_PAGER.md`](ONE_PAGER.md). Accuracy and its limits: [`RESULTS.md`](RESULTS.md).
 
 ## Data the board reads
 
@@ -112,7 +116,7 @@ The page is titled **ICU Lookahead** with the descriptor "next 24 hours". The un
 
 Chances are **whole percentages** ("23%"; "<5%" when very small; "No estimate" for null).
 
-**Thresholds.** There is no bed status. An event is shown on a bed when its chance is at or above that event's threshold. Thresholds live in the Settings panel: "Flag beds at **50% · 25% · 10%**" (default 25%) sets the three life supports together, and a stepper per event (Ventilator, Vasopressor, CRRT, Leaving; leaving defaults to 60%) sets one, showing how many beds it catches. It is a view setting kept on the device (`localStorage` `lookahead-lines`); nothing is sent to the server. Changing a threshold never moves a tile. Death has no threshold, because death never marks a bed. A change of the defaults to 20% / 40% / 60% is proposed (D26) and not applied.
+**Thresholds.** There is no bed status. An event is shown on a bed when its chance is at or above that event's threshold. Thresholds live in the Settings panel: "Flag beds at **40% · 20% · 10%**" (default 20%) sets the three life supports together, a visible **Reset to standard** returns every line to the standard (20% watch, 40% worsening, 60% leaving; D13, D14, D26), and a stepper per event (Ventilator, Vasopressor, CRRT, Leaving; leaving defaults to 60%) sets one, showing how many beds it catches. It is a view setting kept on the device (`localStorage` `lookahead-lines`); nothing is sent to the server. Changing a threshold never moves a tile. Death has no threshold, because death never marks a bed. The standard lines were applied when J.C. merged PR #24 (D26); before that the defaults were 25% with presets 50 / 25 / 10.
 
 1. **Header.** "ICU Lookahead · next 24 hours"; "07:00 to 07:00"; the unit chip; the data-source tag ("MIMIC-IV Demo", "MIMIC-IV · local" or "Demo data"); **Update the unit**; the gear (Settings).
 2. **Update progress** (under the header, only during and just after an update; item 8).

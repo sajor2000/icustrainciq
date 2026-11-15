@@ -21,7 +21,7 @@ A bed board for one ICU. It shows the life support each patient is on now and fo
 | 1 | [`docs/ICU_TWIN_DELTA.md`](docs/ICU_TWIN_DELTA.md) | every change in this repo against the team's ICU-Twin repo, the risk of each to the running demo, and what to port before or after the demo |
 | 2 | [`docs/UI_REVIEW_FOR_DEMA.md`](docs/UI_REVIEW_FOR_DEMA.md) | each change to Dema's board page: before and after pictures, why, how to undo, and how to port |
 | 3 | [`README.md`](README.md) | the overview and screenshots |
-| 4 | [`docs/submission/`](docs/submission/) | the one-pager and the five-minute demo script |
+| 4 | [`docs/submission/`](docs/submission/), [`docs/ONE_PAGER.md`](docs/ONE_PAGER.md) | the printed one-sheet and the five-minute demo script; the one-page explainer of the model and of how Fuzzball ran it |
 | 5 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | what runs where, tech stack, endpoints, data boundary, every figure |
 | 6 | [`docs/RESULTS.md`](docs/RESULTS.md) | held-out results per task |
 | 7 | [`backend/docs/RUNBOOK.md`](backend/docs/RUNBOOK.md) | set up, publish code and relaunch on the cluster |
@@ -121,5 +121,5 @@ Not for the demo. Afterwards, and only with the team's go-ahead:
 | 3 | The demo clock: at 24 h after ICU arrival no patient in the cohort is on CRRT. Pick the clock setting for the demo |
 | 4 | ECMO: one cohort patient has ECMO records; the board leaves ECMO out |
 | 5 | Coming off life support is not forecast. A "comes off support" prediction would need a new model task |
-| 6 | The page proposals not applied: default flag lines 20 / 40 / 60 (D26), the page's blue and three type sizes against DESIGN.md (`docs/UI_REVIEW_FOR_DEMA.md` section 3) |
+| 6 | The page proposals not applied: the page's blue and three type sizes against DESIGN.md (`docs/UI_REVIEW_FOR_DEMA.md` section 3). The standard flag lines 20 / 40 / 60 are applied (D26, PR #24) |
 | 7 | Demo stays in the training token files: `exclude_demo` filters `splits.parquet` only (`docs/ICU_TWIN_DELTA.md`, row for Vaishvik) |

@@ -33,7 +33,7 @@ One file. Details, pictures and undo for every row: [`UI_REVIEW_FOR_DEMA.md`](UI
 | Chat: clearer suggested questions; the chat opens above an open bed (it was under the pop-up and could not be clicked) | Polish and a bug fixed | Low | Port before demo | The page file |
 | Escape closes one panel at a time; 44 px targets; quieter tiles; phone layout; header reads "ICU Lookahead" | Bug fixed and polish | Low | Port before demo | The page file |
 | Machine totals read from the server; the saved total stays when use exceeds it ("1 over") | Bug fixed | Low on ICU-Twin's server (it has no totals, so the page keeps them on the device) | Port with the page | The page file |
-| Default flag lines 20 / 40 / 60 | Proposal, **not applied here** | n/a | Decide in the meeting | `UI_REVIEW_FOR_DEMA.md` section 3 |
+| Standard flag lines 20 / 40 / 60 with "Reset to standard" (ICU-Twin: 25%, presets 50 / 25 / 10) | Decision D26, applied here (J.C. merged PR #24) | Low, but it changes which beds are flagged on stage: rehearse with it | Port with the page if Dema agrees; otherwise revert the six lines first | The page file; `UI_REVIEW_FOR_DEMA.md` change 14 |
 
 **How to port the page:** `cp mockups/command-center.html <ICU-Twin>/app/static/index.html`, or review [`patches/icu-twin-page.patch`](patches/icu-twin-page.patch) first. It runs on ICU-Twin's `board.py` and `dispatcher.py` unchanged. It is all or nothing unless a change is undone here first (each entry in `UI_REVIEW_FOR_DEMA.md` says how).
 
@@ -123,7 +123,7 @@ Lines that differ (`diff | grep -c '^[<>]'`), ICU-Twin `fac343d` against this re
 | File | Lines | Section |
 |---|---|---|
 | `app/chat_agent.py` | 548 | 5.2, 5.3 |
-| `app/static/index.html` | 465 | 5.9 |
+| `app/static/index.html` | 478 | 5.9 |
 | `app/aggregate.py` | 363 | 5.4, 5.8 |
 | `app/board.py` | 264 | 5.2, 5.3, 5.8 |
 | `scripts/run_cohort.py` | 210 | 5.2, 5.6 |
