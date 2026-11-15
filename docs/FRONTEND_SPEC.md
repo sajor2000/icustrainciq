@@ -16,6 +16,10 @@ Five predictions only, all for the next 24 h, 07:00 to 07:00: ICU discharge, IMV
 
 **Life support** means IMV (breathing tube or tracheostomy), a vasopressor infusion (inotropes alone do not count) or CRRT. **Now** means running at the 07:00 cut (decided 2026-11-14, Q29/Q30). ECMO and other mechanical support are not in the data and are not shown anywhere on the board.
 
+## How this forecast was made
+
+A native model, trained from scratch on our own token vocabulary; one forward pass per patient, then small classifiers on its last-layer summary; how Fuzzball ran it and what is only written so far. Full account, with sources: [`README.md`](../README.md#how-this-forecast-was-made). One page for judges: [`ONE_PAGER.md`](ONE_PAGER.md). Accuracy and its limits: [`RESULTS.md`](RESULTS.md).
+
 ## Data the board reads
 
 | Source | What | Who writes it |
