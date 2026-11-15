@@ -209,6 +209,8 @@ def test_parse_update_ask():
     assert p("rerun the forecast") == ("unit", None)
     assert p("Update the unit please") == ("unit", None)
     assert p("refresh room 12") == ("room", 12)
+    assert p("update bed 12") == ("room", 12) and p("update bed 26") is None
+    assert p("update this bed", 9) == ("room", 9)
     assert p("update room 26") is None and p("update room 0") is None
     assert p("update this room", 9) == ("room", 9) and p("update this room") is None
     assert p("did you update the forecast?") is None
