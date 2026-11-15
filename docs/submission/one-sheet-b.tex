@@ -1,0 +1,107 @@
+\documentclass[10pt]{extarticle}
+\usepackage[letterpaper,margin=0.42in,top=0.36in,bottom=0.3in]{geometry}
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\setsansfont{Arial}
+\usepackage{xcolor,graphicx,booktabs,array,multicol,microtype,tikz,tcolorbox}
+\usetikzlibrary{positioning,arrows.meta,calc}
+\definecolor{ink}{HTML}{111827}
+\definecolor{sec}{HTML}{5B6474}
+\definecolor{blue}{HTML}{2563EB}
+\definecolor{board}{HTML}{F6F7F9}
+\definecolor{rule}{HTML}{CDD3DC}
+\color{ink}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}\setlength{\parskip}{2pt}
+\linespread{1.0}
+\setlength{\columnsep}{16pt}
+\setlength{\columnseprule}{0.4pt}\def\columnseprulecolor{\color{rule}}
+\newcommand{\sh}[1]{{\sffamily\bfseries\color{blue}\small\MakeUppercase{#1}}\par\vspace{1pt}}
+\newcommand{\gl}[1]{{\color{sec}#1}}
+\renewcommand{\arraystretch}{1.04}
+\begin{document}
+\fontsize{9}{10.8}\selectfont
+% masthead
+\begin{minipage}[b]{0.38\textwidth}
+{\fontsize{31}{33}\selectfont\bfseries ICU Horizon}\\[1pt]
+{\large\itshape\color{sec} From bench to bedside}
+\end{minipage}\hfill
+\begin{minipage}[b]{0.61\textwidth}\raggedleft\sffamily\fontsize{7.6}{9.4}\selectfont\color{sec}
+\textbf{\color{ink}Team 7 \textperiodcentered{} CLIF} \textperiodcentered{} CIQ $\times$ NVIDIA $\times$ Lenovo Local AI Hackathon\\
+Chicago, Nov 14--15, 2026\\
+J.C. Rojas, MD, MS (Rush University) \textperiodcentered{} Kaveri Chhikara, MS (UChicago Medicine)\\
+Vaishvik Chaudhari, MS (Rush University) \textperiodcentered{} Dema Therese, MS (UChicago Medicine)\\
+Zewei (`Whiskey') Liao, MS (UChicago Medicine)
+\end{minipage}
+
+\vspace{2pt}{\color{ink}\rule{\textwidth}{1.1pt}}\vspace{3pt}
+
+{\raggedright\fontsize{14.5}{17}\selectfont\bfseries Five predictions for every ICU patient, for the next 24 hours, \color{blue}made on two \mbox{computers} inside the hospital.\par}
+
+\vspace{2pt}
+\begin{multicols}{3}
+\sh{The problem}
+A small or rural ICU (intensive care unit) has few ventilators and dialysis machines, no data-science team and no cloud for patient data. It learns it is short when it already is; help is a transfer hours away.
+
+\columnbreak
+\sh{What we built}
+A bed board for 07:00 rounds: each patient's life support now and the chance of what starts by tomorrow, added up against the unit's machines a day ahead. A chat answers in plain words.
+
+\columnbreak
+\sh{What is new for healthcare AI}
+\textbf{Speaks EHR, not English:} our own model, trained from scratch on two desk-side GPUs. \textbf{One pass, many outcomes:} probes on its hidden layer, no retraining. \textbf{Patient to unit:} resource strain a day ahead. \textbf{Private, portable:} local, on any hospital's CLIF data.
+\end{multicols}
+
+\vspace{2pt}
+{\sffamily\bfseries\color{blue}\small THE FIVE PREDICTIONS\hfill\normalfont\itshape\color{sec} each is the chance it happens in the next 24 hours\par}\vspace{1pt}
+{\sffamily\fontsize{9}{11}\selectfont
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}p{1.75in}p{2.3in}rp{1.1in}@{}}
+\toprule
+\textbf{Prediction} & \textbf{In plain words} & \textbf{AUROC (95\% range)} & \textbf{Plans} \\
+\midrule
+Starts a ventilator & machine that breathes for the patient & \textbf{0.780} (0.747--0.812) & respiratory therapy \\
+Starts a vasopressor & drug drip that holds blood pressure up & \textbf{0.771} (0.739--0.802) & pharmacy \\
+Starts CRRT & continuous dialysis for failed kidneys & \textbf{0.881} (0.850--0.910) & ICU team \\
+Leaves the ICU: to a ward & ward bed & \textbf{0.799} (0.790--0.808) & bed manager \\
+Leaves the ICU: to step-down & step-down bed & \textbf{0.885} (0.872--0.898) & bed manager \\
+Dies & counted for the unit, never on a bed & \textbf{0.930} (0.912--0.946) & ICU team \\
+\bottomrule
+\end{tabular*}}\\[1pt]
+{\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
+AUROC, held-out patients, MIMIC-IV in CLIF, cut 24 h after ICU arrival: 0.5 is a coin toss, 1.0 is perfect. Range: 95\% bootstrap. CRRT: continuous renal replacement therapy. Six classifiers, five predictions. A patient already on a support gets no prediction for starting it.}
+
+\vspace{5pt}
+\begin{tcolorbox}[colback=board,colframe=blue,boxrule=0.9pt,arc=0pt,left=6pt,right=6pt,top=3pt,bottom=3pt,
+ title={\sffamily\bfseries The model we trained, and the hidden layer},coltitle=white,colbacktitle=blue,fonttitle=\small,toptitle=1pt,bottomtitle=1pt]
+\fontsize{8.7}{10.2}\selectfont
+\begin{multicols}{2}
+\textbf{1. A model that speaks EHR, not English.} Trained by us from scratch on both GB10 GPUs. Its 1,231 words are clinical events (labs, vital signs, drugs, machines), each value binned into one of ten bins. Its one task: guess the next event and the time until it, as a language model guesses the next word. 16 layers, hidden size 384, \textbf{36.2M parameters}, 4,096-event context; the layer design of NVIDIA Nemotron 3.5 Bolt E4B, no pretrained weights.
+
+\textbf{2. The hidden layer is the summary.} We do not make it write the future. One pass over a patient's first 24 hours in the ICU; the last layer's hidden state at the last event is \textbf{384 numbers}, the model's summary of the patient. Having learned to anticipate the next event, it carries what is likely to happen.
+
+\columnbreak
+\textbf{3. Six small probes read it.} Six logistic regressions (``linear probes'', Alain \& Bengio 2016) turn the 384 numbers into six chances. Fitted once on past patients (z-scored, L2, chosen by cross-validated AUROC). A new prediction needs a new probe, not a new model.
+
+\textbf{4. The chances add up.} Unit counts with an 80\% range (exact Poisson-binomial), against the unit's ventilators and CRRT machines.
+
+\textbf{5. A chat model explains it in English.} NVIDIA Nemotron 3 Nano on vLLM, used as is, answers by calling read-only tools on the forecast. It predicts nothing.
+\end{multicols}
+\end{tcolorbox}
+
+\vspace{2pt}
+{\sffamily\bfseries\color{blue}\small HOW WE USED THE CIQ STACK\hfill\normalfont\itshape\color{sec} the Fuzzball workflow on two local Lenovo ThinkStation PGX, one NVIDIA GB10 each\par}
+\begin{center}
+\includegraphics[width=0.68\linewidth]{../diagrams/architecture-print.png}
+\end{center}
+\vspace{-4pt}
+{\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
+\textbf{\color{ink}Fuzzball:} Orchestrate schedules every job, image and VAST volume; Substrate runs the NGC containers (PyTorch, vLLM); we drove it with the Fuzzball MCP server and CLI, data in by ingress and out by egress through the object cache. \textbf{\color{ink}All four tracks:} multi-node training (job 3 DDP on both GB10s) \textperiodcentered{} inference (job 5, Nemotron on vLLM) \textperiodcentered{} scientific AI (a clinical model trained from scratch) \textperiodcentered{} cluster and scheduling (five workflows; inference frees its GPU before Nemotron starts).\par}
+
+\vfill
+{\color{ink}\rule{\textwidth}{0.9pt}}\\[2pt]
+{\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
+\begin{minipage}[t]{0.74\textwidth}
+Code \textbf{\color{ink}github.com/vaishvikc/ICU-Twin} \textperiodcentered{} docs \textbf{\color{ink}github.com/sajor2000/icustrainciq}. Trained on one hospital's data (MIMIC-IV in CLIF), retrospective. Research prototype, not a medical device; recommends no treatment.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.25\textwidth}\raggedleft{\normalsize\bfseries\color{ink}\rmfamily Nothing leaves the building.}\end{minipage}}
+\end{document}

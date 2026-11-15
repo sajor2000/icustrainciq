@@ -19,9 +19,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 
 # ---- tokens (DESIGN.md front matter; the same values as mockups/command-center.html :root)
-BOARD, BOARD2, SURFACE = "#F3F5F9", "#E8ECF2", "#FFFFFF"
-INK, INK2, LINE = "#111827", "#4A5567", "#7A8597"
-BLUE, LV_MEDIUM, ON_HIGH = "#1E5BB8", "#D2E2F8", "#FFFFFF"
+BOARD, BOARD2, SURFACE = "#F6F7F9", "#EEF0F4", "#FFFFFF"   # the board page on t7/fb-job5-launch
+INK, INK2, LINE = "#111827", "#5B6474", "#CDD3DC"
+BLUE, LV_MEDIUM, ON_HIGH = "#2563EB", "#DBE7FE", "#FFFFFF"
 OK, AMBER, AMBER_BG, AMBER_EDGE = "#18794E", "#8A4B08", "#FCE8C3", "#C27A14"
 FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
 FONT_ATTR = FONT.replace('"', "'")
@@ -290,30 +290,60 @@ def flow():
     f.write()
 
 
-# =============================================================== detail: architecture
+# =============================================================== detail: architecture (job 5 path)
 def architecture():
-    f = Fig("architecture", 1280, 600, "Technical architecture",
-            "The board page talks to one service, the board server, which holds the page, the API and the grounded chat agent. The board server asks Nemotron for chat answers and asks the dispatcher to start or report runs. The dispatcher starts the t7-forecast job, which runs the patient model with the probe fitted by job 4, reads the mimic_clif volume and writes forecast files to twin-store, where the board server reads them. Nemotron's weights are on hfcache. A fourth volume, demo-context, arrives with pull request 16.",
-            "ICU Horizon · architecture", "One door into the two machines; everything else stays inside")
-    f.zone(288, 32, 976, 496)
-    f.node(24, 232, 216, 96, "card", "Clinician's browser", "Board page", ["one HTML file, over HTTPS"], icon="person")
-    f.node(328, 72, 240, 96, "nvidia", "GPU 1 · service", "Nemotron 3 Nano", ["NVIDIA, on vLLM, used as is"])
-    f.node(328, 232, 240, 96, "card", "CPU · service", "Board server", ["page, API, grounded chat"])
-    f.node(328, 392, 240, 96, "card", "CPU · service", "Dispatcher", ["07:00 clock, one run at once"])
-    f.node(656, 72, 240, 96, "store", "Volume · read only", "hfcache", ["Nemotron weights"])
-    f.node(656, 392, 240, 96, "model", "GPU 2 · job", "t7-forecast", ["our model + job 4's probe"])
-    f.node(992, 72, 240, 96, "store", "Volume · restricted", "demo-context", ["the chat's ICU snapshot"])
-    f.node(992, 232, 240, 96, "store", "Volume · written", "twin-store", ["code, probe, forecast files"])
-    f.node(992, 392, 240, 96, "store", "Volume · read only", "mimic_clif", ["25-patient ward, our model"])
-    f.arrow([(240, 280), (328, 280)])
-    f.arrow([(448, 232), (448, 168)], label="Asks", at=(448, 200), side="right")
-    f.arrow([(448, 328), (448, 392)], label="Run · status", at=(448, 360), side="right")
-    f.arrow([(568, 440), (656, 440)], label="Starts", at=(612, 440))
-    f.arrow([(656, 120), (568, 120)], label="Weights", at=(612, 120))
-    f.arrow([(992, 280), (568, 280)], BLUE, label="Forecast files", at=(780, 280))
-    f.arrow([(896, 420), (944, 420), (944, 304), (992, 304)], BLUE, label="Writes", at=(944, 362), side="left")
-    f.arrow([(992, 460), (896, 460)], label="Reads", at=(944, 460), side="below")
-    f.caption("The board server is the only door in. Ink is a call; blue is the forecast.", 572)
+    f = Fig("architecture", 1040, 596, "ICU Horizon architecture",
+            "On two Lenovo ThinkStation PGX machines run by CIQ Fuzzball 4.3: jobs 1 to 4 train our model once on both GPUs from CLIF data that comes in through the object cache and save it with six probes to the mimic_clif volume. Job 5 loads the code, runs our model and probes on one GPU, and writes rooms.json and forecast.json to the twin-store volume. The board server reads them and serves the clinician's browser; it asks NVIDIA Nemotron 3 Nano on vLLM, whose weights are on hfcache, to answer chat questions. The volumes are on VAST storage.",
+            "ICU Horizon · architecture", "Train once, then one workflow runs the board")
+    f.zone(208, 32, 816, 504)
+    c1, c2, c3, w, h = 232, 520, 808, 200, 104
+    r1, r2, r3 = 64, 216, 368
+    f.node(16, r2, 168, h, "card", "Hospital", "Clinician", ["the bed board,", "in a browser"], icon="person")
+    f.node(c1, r1, w, h, "nvidia", "Service · 1 GPU", "Nemotron 3 Nano", ["NVIDIA chat on vLLM,", "answers in plain words"])
+    f.node(c2, r1, w, h, "store", "VAST volume", "hfcache", ["Nemotron weights"])
+    f.node(c1, r2, w, h, "card", "Service · CPU", "Board server", ["page, API, chat tools"])
+    f.node(c2, r2, w, h, "forecast", "VAST volume", "twin-store", ["rooms.json,", "forecast.json"])
+    f.node(c3, r2, w, h, "store", "VAST volume", "mimic_clif", ["patients in CLIF,", "model, six probes"])
+    f.node(c1, r3, w, h, "card", "Fuzzball", "Object cache", ["the only way in or out"])
+    f.node(c2, r3, w, h, "model", "Job 5 · 1 GPU", "Our model predicts", ["load, infer, score:", "one pass per patient"])
+    f.node(c3, r3, w, h, "card", "Jobs 1–4 · 2 GPUs", "Train once", ["tokenize, train (DDP),", "fit six probes"])
+    f.arrow([(184, 268), (c1, 268)])
+    f.arrow([(332, r2), (332, r1 + h)], label="Chat", at=(332, 192), side="right")
+    f.arrow([(c2, 116), (c1 + w, 116)], label="Weights", at=(476, 116))
+    f.arrow([(c2, 268), (c1 + w, 268)], BLUE, label="Forecast", at=(476, 268))
+    f.arrow([(620, r3), (620, r2 + h)], BLUE)
+    f.arrow([(836, r2 + h), (836, 344), (680, 344), (680, r3)], label="Reads", at=(758, 344))
+    f.arrow([(928, r3), (928, r2 + h)], label="Saves", at=(928, 344), side="right")
+    f.arrow([(c1 + w, 420), (c2, 420)], label="Code in", at=(476, 420))
+    f.arrow([(332, r3 + h), (332, 496), (928, 496), (928, r3 + h)], label="CLIF data in", at=(620, 496), side="below")
+    f.caption("Inside the dashed line is CIQ Fuzzball. Blue carries the forecast.", 572)
+    f.write()
+
+
+# =============================================================== print: architecture for the one-page handouts
+def architecture_print():
+    f = Fig("architecture-print", 1120, 440, "ICU Horizon architecture, print",
+            "On two Lenovo ThinkStation PGX machines run by CIQ Fuzzball 4.3: jobs 1 to 4 train our model once on both GPUs and save it with six probes to the mimic_clif volume. Job 5 reads it, runs one pass per patient on one GPU and writes the forecast to the twin-store volume. The board server reads the forecast for the clinician's browser and asks NVIDIA Nemotron 3 Nano on vLLM, whose weights are on hfcache, to answer chat questions. The volumes are on VAST storage; the object cache is the only way in or out.",
+            "ICU Horizon · architecture", "Train once, then one workflow runs the board")
+    f.zone(200, 32, 904, 352)
+    xs, w, h, r1, r2 = (224, 448, 672, 896), 184, 112, 64, 240
+    f.node(16, r1, 160, h, "card", "Hospital", "Clinician", ["the bed board", "in a browser"], icon="person")
+    f.node(xs[0], r1, w, h, "card", "CPU service", "Board server", ["page, API and", "chat tools"])
+    f.node(xs[1], r1, w, h, "nvidia", "GPU service", "Nemotron 3 Nano", ["NVIDIA chat, vLLM", "plain-word answers"])
+    f.node(xs[2], r1, w, h, "store", "VAST volume", "hfcache", ["Nemotron weights"])
+    f.node(xs[3], r1, w, h, "card", "Jobs 1–4 · 2 GPUs", "Train once", ["tokenize, train,", "fit six probes"])
+    f.node(xs[0], r2, w, h, "forecast", "VAST volume", "twin-store", ["rooms.json,", "forecast.json"])
+    f.node(xs[1], r2, w, h, "model", "Job 5 · 1 GPU", "Our model", ["load, infer, score:", "one pass each"])
+    f.node(xs[2], r2, w, h, "store", "VAST volume", "mimic_clif", ["CLIF patients,", "model, probes"])
+    c1, c2 = r1 + h // 2, r2 + h // 2
+    f.arrow([(176, c1), (xs[0], c1)])
+    f.arrow([(xs[0] + w, c1), (xs[1], c1)])
+    f.arrow([(xs[2], c1), (xs[1] + w, c1)])
+    f.arrow([(316, r2), (316, r1 + h)], BLUE, label="Forecast", at=(316, 208), side="right")
+    f.arrow([(xs[1], c2), (xs[0] + w, c2)], BLUE)
+    f.arrow([(xs[2], c2), (xs[1] + w, c2)])
+    f.arrow([(988, r1 + h), (988, c2), (xs[2] + w, c2)], label="Saves", at=(988, 232), side="right")
+    f.caption("Inside the dashed line: CIQ Fuzzball. Blue carries the forecast.", 420)
     f.write()
 
 
@@ -474,7 +504,7 @@ def results_auroc():
     f.write()
 
 
-FIGURES = (stack, flow, architecture, workflow, api, trigger, data_boundary, results_auroc)
+FIGURES = (stack, flow, architecture, architecture_print, workflow, api, trigger, data_boundary, results_auroc)
 
 if __name__ == "__main__":
     if "--night" in sys.argv:

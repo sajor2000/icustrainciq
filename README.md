@@ -11,6 +11,10 @@ A bed board that tells a small ICU at 07:00 what the next 24 hours will need. Te
 | [`docs/ICU_TWIN_DELTA.md`](docs/ICU_TWIN_DELTA.md) | **The morning decision:** every change in this repo against ICU-Twin, its risk to the running demo, and what to port before or after the demo |
 | [`docs/UI_REVIEW.md`](docs/UI_REVIEW.md) | Each change to the team's board page, with before and after pictures and how to undo it |
 | [`HANDOFF.md`](HANDOFF.md) | Where things stand, who owns what, the morning steps |
+| [`docs/HOW_WE_USED_CIQ.md`](docs/HOW_WE_USED_CIQ.md) | **Exactly how we used CIQ Fuzzball, the Lenovo PGX machines and NVIDIA software**, read from the team's demo code (`t7/fb-job5-launch`): every workflow, image, volume and GPU |
+| [`docs/MODEL_EXPLAINED.md`](docs/MODEL_EXPLAINED.md) | The model we trained (it speaks EHR, not English) and how its last hidden layer gives the five predictions, in two minutes for judges |
+| [`docs/submission/AB_TEST.md`](docs/submission/AB_TEST.md) | Two one-page handouts, A (HTML) and B (LaTeX), for the team to pick one |
+| [`docs/proposals/`](docs/proposals/README.md) | A proposed README for ICU-Twin and what we found reading its code; nothing applied there |
 
 **Project page with every figure and screenshot:** https://sajor2000.github.io/icustrainciq/ · **Taking this over?** Start with [`HANDOFF.md`](HANDOFF.md).
 
@@ -27,7 +31,7 @@ ICU Horizon answers one question each morning: who is on life support now, who i
 ![Two Lenovo machines run by CIQ Fuzzball: one GPU serves NVIDIA Nemotron 3 Nano, the other runs our patient model](docs/diagrams/stack.png)
 
 - **Lenovo ThinkStation PGX × 2, each with an NVIDIA GB10.** The whole product runs on these two desk-size machines. Nothing is in the cloud.
-- **CIQ Fuzzball 4.3.** Workflows publish the code (`t7-code`), stage the unit (`t7-ward`) and run each forecast (`t7-forecast`). Services keep the board server, the dispatcher and the chat model up (`t7-twin`). Three volumes: `mimic_clif` (patient data and the trained model, only read), `hfcache` (Nemotron weights) and `twin-store` (code, the staged unit, results). The board's "Update the unit" button starts a Fuzzball job.
+- **CIQ Fuzzball 4.3.** In the team's demo code, five workflows: jobs 1 to 4 move the CLIF data in, tokenize it, train our model on both GPUs and fit six probes; job 5 (`t7-launch`) infers the 25-patient ward on one GPU, writes the forecast, then serves the board and Nemotron. Three volumes on VAST storage: `mimic_clif` (patient data and the trained model), `hfcache` (Nemotron weights) and `twin-store` (the forecast). A new forecast means starting job 5 again. Details: [`docs/HOW_WE_USED_CIQ.md`](docs/HOW_WE_USED_CIQ.md). This repo's older `t7-*` workflows and dispatcher, described below, are not the demo path.
 - **NVIDIA Nemotron 3 Nano on vLLM.** It answers questions in the chat. We use it as it is; we did not train it. It reads the forecast and predicts nothing.
 - **Our patient model.** We trained it on the two machines, across both GPUs, on MIMIC-IV in CLIF format. It runs in the forecast job on one GPU while Nemotron holds the other.
 
