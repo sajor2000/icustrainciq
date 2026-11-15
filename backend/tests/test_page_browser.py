@@ -10,9 +10,11 @@ Skipped unless Playwright is installed:
 Synthetic data only (examples/). Each check runs at a desk and a phone width.
 """
 
+import http.server
 import json
 import pathlib
 import re
+import threading
 import time
 
 import pytest
@@ -299,13 +301,15 @@ def test_a_refresh_updates_the_capacity_box_that_is_not_being_edited(
 def test_attention_first_is_ordered_by_the_highest_flagged_chance(
     browser, tmp_path, size
 ):
-    """CodeRabbit PR 20 (second review): "highest chance first" counts death too.
-    The built-in demo data (#synthetic), with the death line at 5%."""
+    """The chat's "see first" list is ordered by each bed's highest chance of a new
+    life support at its threshold. Death never ranks or marks a bed (D13), so a
+    saved death line from an older page changes nothing. The built-in demo data."""
     unit_files(tmp_path, lambda room: None)
     with running_board(tmp_path, static_path=PAGE) as base:
         page = open_page(
             browser, base, size, "synthetic&fast", {"lookahead-lines": {"death": 5}}
         )
+        assert page.locator('#grid use[href="#i-death"]').count() == 0
         # each bed's highest shown chance, leaving the ICU aside ("<5%" reads as 4)
         top = page.evaluate(
             """() => Object.fromEntries(
@@ -317,7 +321,7 @@ def test_attention_first_is_ordered_by_the_highest_flagged_chance(
                   .map(t => t.startsWith('<') ? 4 : parseInt(t, 10)))]))"""
         )
         page.click("#chatbtn")
-        page.fill("#q", "Which beds need attention first?")
+        page.fill("#q", "Which beds should we see first?")
         page.click("#send")
         page.wait_for_selector("#log .msg.a")
         answer = page.inner_text("#log .msg.a")
@@ -327,4 +331,251 @@ def test_attention_first_is_ordered_by_the_highest_flagged_chance(
         assert len(order) >= 3 and min(chances) >= 0, (order, chances)
         assert len({top[n] for n in order}) > 1  # a real ordering, not all ties
         assert chances == sorted(chances, reverse=True), list(zip(order, chances))
+        page.close()
+
+
+@pytest.mark.parametrize("size", WIDTHS)
+def test_death_is_a_unit_count_and_see_first_names_the_top_beds(
+    browser, tmp_path, size
+):
+    """J.C.'s decisions Q4/Q9 and Q6a: no death icon and no death flag on a bed
+    tile; one unit count in the alert line; See first names Dema's top beds."""
+
+    def edit(room):
+        room[3]["p"]["death"] = 0.9  # very likely to die: still no mark on the tile
+        room[5]["p"]["vasopressor"] = 0.6
+        room[9]["p"]["imv"] = 0.5
+        room[12]["p"]["crrt"] = 0.4
+
+    unit_files(tmp_path, edit)
+    with running_board(tmp_path, static_path=PAGE) as base:
+        page = open_page(browser, base, size, "fast")
+        tile = page.locator('button.bed[data-room="3"]')
+        assert tile.get_attribute("data-state") == "clear"
+        assert "hit" not in tile.get_attribute("class")
+        assert "death" not in tile.get_attribute("aria-label").lower()
+        assert page.locator('#grid use[href="#i-death"]').count() == 0
+        assert "Deaths expected" in page.inner_text("#alerts")
+        first = page.locator("#seefirst .sfb")
+        assert [b.get_attribute("data-room") for b in first.all()] == ["5", "9", "12"]
+        first.nth(0).click()
+        page.wait_for_selector("#roomview:not([hidden])")
+        assert "Dies in hospital" in page.inner_text(
+            "#rv-risks"
+        )  # death is in the pop-up
+        # Escape closes one panel at a time: Settings first, then the bed
+        page.evaluate("document.getElementById('gear').click()")
+        page.keyboard.press("Escape")
+        assert page.is_hidden("#setmenu") and page.is_visible("#roomview")
+        page.keyboard.press("Escape")
+        page.wait_for_selector("#roomview", state="hidden", timeout=3000)
+        page.close()
+
+
+@pytest.mark.parametrize("size", WIDTHS)
+def test_no_failed_request_when_no_context_is_published(browser, tmp_path, size):
+    """The page probes /api/context on every load; without a context the server
+    answers 200 {"context_mode": false}, so nothing is logged as a failed request."""
+    unit_files(tmp_path, lambda room: None)
+    with running_board(tmp_path, static_path=PAGE) as base:
+        page = browser.new_page(viewport={"width": size[0], "height": size[1]})
+        failed = []
+        page.on(
+            "response",
+            lambda r: failed.append((r.status, r.url)) if r.status >= 400 else None,
+        )
+        page.on(
+            "console", lambda m: failed.append(m.text) if m.type == "error" else None
+        )
+        page.goto(f"{base}/#fast")
+        page.wait_for_selector('button.bed[data-room="1"]', state="attached")
+        page.wait_for_timeout(600)
+        assert failed == []
+        page.close()
+
+
+def test_an_update_shows_its_steps_then_updated(browser, tmp_path):
+    """J.C.'s decision Q6b: Queued, Running on the GPU, Scoring, Done, then a short
+    "Updated HH:MM"; a stopped run says so in plain words (built-in demo data)."""
+    unit_files(tmp_path, lambda room: None)
+    with running_board(tmp_path, static_path=PAGE) as base:
+        page = open_page(browser, base, WIDTHS[0], "synthetic&fast")
+        page.click("#rerun")
+        page.wait_for_selector("#runprog .steps li.is")
+        steps = " ".join(page.locator("#runprog .steps li").all_inner_texts())
+        for word in ("Queued", "Running on the GPU", "Scoring", "Done"):
+            assert word in steps, steps
+        page.wait_for_selector("#runprog .pg-h.ok", timeout=5000)
+        assert re.search(r"Updated \d\d:\d\d", page.inner_text("#runprog"))
+        page.wait_for_selector("#runprog", state="hidden", timeout=5000)
+        page.close()
+        page = open_page(browser, base, WIDTHS[0], "synthetic&fast&failrun")
+        page.click("#rerun")
+        page.wait_for_selector("#runprog .pg-h.bad", timeout=5000)
+        words = page.inner_text("#runprog")
+        assert "was stopped" in words and "still shown" in words, words
+        page.click("#runprog .pg-x")
+        assert page.is_hidden("#runprog")
+        page.close()
+
+
+class _FakeDispatcher:
+    """a dispatcher whose /status follows a script: the page's progress strip reads
+    running.state and stuck from it through GET /api/runs"""
+
+    def __init__(self):
+        self.status = {"running": None, "updating": False, "stuck": None}
+        me = self
+
+        class H(http.server.BaseHTTPRequestHandler):
+            def _send(self, obj):
+                data = json.dumps(obj).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+
+            def do_GET(self):
+                self._send({"next_scheduled": "2026-01-02T07:00", **me.status})
+
+            def do_POST(self):
+                self.rfile.read(int(self.headers.get("Content-Length", 0)))
+                self._send({"started": True, "name": "t7-forecast-unit-0101-0700"})
+
+            def log_message(self, *a):
+                pass
+
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.url = f"http://127.0.0.1:{self.server.server_port}"
+
+    def set(self, state=None, stuck=None):
+        run = {"name": "t7-forecast-unit-0101-0700", "state": state} if state else None
+        self.status = {"running": run, "updating": bool(run), "stuck": stuck}
+
+    def close(self):
+        self.server.shutdown()
+        self.server.server_close()
+
+
+def test_a_live_update_follows_the_dispatcher_and_ends_updated_or_stopped(
+    browser, tmp_path
+):
+    """Served live, the strip's step comes from /api/runs: PENDING is Queued, any
+    other running state is Running on the GPU, the job gone from the list is Scoring,
+    and a new forecast file is "Updated HH:MM". A run the dispatcher stopped says so."""
+    unit_files(tmp_path, lambda room: None)
+    fake = _FakeDispatcher()
+    current = lambda page: page.inner_text("#runprog .steps li.is")  # noqa: E731
+    try:
+        with running_board(tmp_path, dispatcher=fake.url, static_path=PAGE) as base:
+            page = open_page(browser, base, WIDTHS[0], "fast")
+            fake.set("PENDING")
+            page.click("#rerun")
+            page.wait_for_selector("#runprog .steps li.is")
+            assert "Queued" in current(page)
+            fake.set("STARTED")
+            page.wait_for_selector(
+                "#runprog .steps li.is:has-text('Running on the GPU')"
+            )
+            # the job list cannot be read: the step stays, and the strip says so
+            fake.status = {
+                "running": {"unknown": True},
+                "updating": False,
+                "stuck": None,
+            }
+            page.wait_for_selector(
+                "#runprog .pg-m:has-text(\"Can't read the job's status\")"
+            )
+            assert "Running on the GPU" in current(page)
+            fake.set(None)
+            page.wait_for_selector("#runprog .steps li.is:has-text('Scoring')")
+            forecast = json.loads((tmp_path / "forecast.json").read_text())
+            forecast["made_at"] = "2026-01-01T07:42:00"
+            (tmp_path / "forecast.json").write_text(json.dumps(forecast))
+            page.wait_for_selector("#runprog .pg-h.ok", timeout=5000)
+            assert "Updated 07:42" in page.inner_text("#runprog")
+            page.wait_for_selector("#runprog", state="hidden", timeout=5000)
+            # a second run that waits for a GPU and is stopped by the dispatcher
+            fake.set("PENDING")
+            page.click("#rerun")
+            page.wait_for_selector("#runprog .steps li.is")
+            stopped = {
+                "at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                "name": "t7-forecast-unit-0101-0700",
+                "minutes": 5,
+                "reason": "The update waited for a GPU for 5 minutes and was stopped.",
+            }
+            fake.set(None, stuck=stopped)
+            page.wait_for_selector("#runprog .pg-h.bad", timeout=5000)
+            words = page.inner_text("#runprog")
+            assert "The update was stopped." in words, words
+            assert "waited for a free GPU for 5 minutes" in words, words
+            assert page.get_attribute("#rerun", "aria-disabled") == "false"
+            page.close()
+    finally:
+        fake.close()
+
+
+def test_a_refused_second_update_leaves_the_running_one_alone(browser, tmp_path):
+    """CodeRabbit PR 25: while a bed update runs, an update of the unit asked in the
+    chat is refused; the strip keeps the bed's scope and step and adds the reason."""
+    unit_files(tmp_path, lambda room: None)
+    with running_board(tmp_path, static_path=PAGE) as base:
+        page = open_page(browser, base, WIDTHS[0], "synthetic&room=3")
+        page.click("#rv-update")
+        page.wait_for_selector("#rv-prog .steps li.is")
+        page.click("#rv-ask")
+        page.fill("#q", "update the unit")
+        page.click("#send")
+        page.wait_for_selector("#log .msg.a")
+        assert "already running" in page.inner_text("#log .msg.a")
+        strip = page.inner_text("#runprog")
+        assert "Updating bed 3" in strip and "Not started." not in strip, strip
+        assert "A second update was not started" in strip, strip
+        assert page.locator("#runprog .steps li.is").count() == 1
+        page.close()
+
+
+def test_a_capacity_read_that_began_before_a_save_is_dropped(browser, tmp_path):
+    """CodeRabbit PR 25: GET /api/capacity is asked for at load; a total saved while
+    that answer is on its way must not be put back by it."""
+    unit_files(tmp_path, lambda room: None)
+    (tmp_path / "capacity.json").write_text(json.dumps({"vents_total": 5}))
+    with running_board(tmp_path, static_path=PAGE) as base:
+        page = browser.new_page(viewport={"width": 1440, "height": 900})
+        held = []
+        page.route(
+            "**/api/capacity",
+            lambda route: (
+                held.append(route)
+                if route.request.method == "GET" and not held
+                else route.continue_()
+            ),
+        )
+        page.goto(f"{base}/#fast")
+        page.wait_for_function("() => true")
+        for _ in range(50):
+            if held:
+                break
+            page.wait_for_timeout(100)
+        assert held, "the page did not ask for the capacity"
+        # the first read is still on its way (with total 5): save 10 now
+        page.evaluate("document.getElementById('gear').click()")
+        page.fill("#cap-vt", "10")
+        with page.expect_response(
+            lambda r: r.url.endswith("/api/capacity") and r.request.method == "POST"
+        ):
+            page.press("#cap-vt", "Enter")
+        held[0].fulfill(
+            status=200,
+            content_type="application/json",
+            body=json.dumps({"vents_total": 5, "crrt_total": None}),
+        )
+        page.wait_for_selector('button.bed[data-room="1"]', state="attached")
+        page.wait_for_timeout(600)
+        assert page.input_value("#cap-vt") == "10"
+        stored = page.evaluate("localStorage.getItem('lookahead-machines')")
+        assert json.loads(stored)["imv"] == 10, stored
         page.close()

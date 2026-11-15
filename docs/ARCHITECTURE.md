@@ -17,7 +17,9 @@ ICU Lookahead is a bed board for one ICU. It shows the life support each patient
 | [How to run it](#how-to-run-it) | One command on the cluster, or a laptop demo |
 | [What was validated](#what-was-validated) | What ran on the cluster, what was only checked, what is open |
 
-One pull request is open. Rows marked **PR #20** (staffing and capacity in the backend, final board page) describe code that is not on `main` yet. The chat grounded in a shared ICU snapshot is on `main`; its `t7-lookahead-*` workflows have not been run on the cluster.
+**The demo runs from the team's ICU-Twin repo ([github.com/vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin)). Do not run `launch.sh` from this repo; its `ready/` files would overwrite the team's code on the shared volume.** What differs between the two repos: [`ICU_TWIN_DELTA.md`](ICU_TWIN_DELTA.md).
+
+Everything described here is on `main`: staffing and capacity in the backend and Dema's final board page came in with PR #20. The chat grounded in a shared ICU snapshot is on `main` too; its `t7-lookahead-*` workflows have not been run on the cluster.
 
 ## What runs where
 
@@ -72,7 +74,7 @@ The demo has one user at a time. There is no login; `role` is a label on the log
 
 1. **Training.** The model learned to read a chart as a sequence of events (labs, vital signs, drugs, machines) and predict the next event.
 2. **Last layer.** At the cut, the model runs once over each patient's chart so far. We keep the output of its last layer: one vector per patient.
-3. **Five classifiers.** A logistic classifier per event reads that vector: starting a ventilator, starting a vasopressor, starting CRRT, leaving the ICU, and death, each in the next 24 hours. The code calls a classifier a probe. Job 4 fits the probes on training patients beside the model they belong to; the forecast applies the saved probe and never refits.
+3. **Six classifiers, five predictions.** A logistic classifier per event reads that vector: starting a ventilator, starting a vasopressor, starting CRRT, leaving the ICU for a ward, leaving the ICU for step-down, and death, each in the next 24 hours. The two departure classifiers are combined into the board's one prediction, "Leaving the ICU". The code calls a classifier a probe. Job 4 fits the probes on training patients beside the model they belong to; the forecast applies the saved probe and never refits.
 4. **Unit counts.** Patient chances are added up into counts for the unit with an 80% range.
 
 The cut is 24 hours after ICU arrival. One pass per patient takes minutes on one GPU.
@@ -86,7 +88,7 @@ Held-out AUROC runs from 0.771 (vasopressor start) to 0.930 (death) across the s
 | Part | Role |
 |---|---|
 | Board server | The only door in. Serves the page and the API, and holds the chat agent |
-| Chat agent | A bounded tool-calling loop. Nemotron picks tools; answers come from tool results: clinical answers are rendered from retrieved evidence (`app/evidence.py`) over one shared snapshot (`app/demo_context.py`) |
+| Chat agent | A bounded tool-calling loop. Nemotron picks tools; answers come from tool results. As launched by `launch.sh` (`t7-twin` without `--context`) it reads `forecast.json` and `rooms.json` as two files. Only a board started with `--context` (the `t7-lookahead-*` workflows, not run on the cluster) answers from one shared snapshot (`app/demo_context.py`), with clinical answers rendered from retrieved evidence (`app/evidence.py`) |
 | Dispatcher | The 07:00 clock and the update button. Starts one forecast at a time through the Fuzzball CLI |
 | `t7-forecast` | `precheck` (CPU) checks the probe, the model and the staged ward. `extract` (GPU 2) runs one pass per patient. `score` (CPU) applies job 4's probe and writes `rooms.json`, then `forecast.json` |
 | `twin-store` | Everything we write. Files a reader may see mid-write are written to a temporary name and renamed |
@@ -105,12 +107,13 @@ The page has two tabs, **Bed board** and **Unit strain**, and a **Now | Next 24 
 | `GET /api/forecast` | | `forecast.json`: five predictions as unit counts with 80% ranges |
 | `GET /api/rooms` | | `rooms.json`: one entry per room |
 | `GET /api/runs` | | dispatcher status: next 07:00, `scheduled.state`, running update, last runs |
-| `GET /api/capacity` | | `life_support_patients`, `vents_free`, `updated_at`. **PR #20** adds `vents_total`, `crrt_total`, `crrt_free`, `set_by_role` |
+| `GET /api/capacity` | | `life_support_patients`, `vents_total`, `vents_free`, `crrt_total`, `crrt_free`, `nurses_on_shift`, `rt_on_shift`, `updated_at`, `set_by_role`. The free counts are worked out from the totals when read |
+| `GET /api/context` | | with `board.py --context`: the shared snapshot. Without it: `200 {"available": false, "context_mode": false}` |
 | `POST /api/rerun` | `{role, scope: "unit" or "room", room?}` | starts one forecast: `{started, name}` or `{started: false, reason}` |
-| `POST /api/capacity` | `{life_support_patients, vents_free?, role}`. **PR #20** adds `vents_total`, `crrt_total`, `nurses_on_shift`, `rt_on_shift` | saves `capacity.json`; whole numbers 0 to 50 |
+| `POST /api/capacity` | `{role}` and any of `life_support_patients`, `vents_total`, `crrt_total`, `nurses_on_shift`, `rt_on_shift` (a `vents_free` is ignored) | saves `capacity.json`; whole numbers 0 to 50 |
 | `POST /api/ask` | `{question, role, room?, seen_made_at?}` | `{answer, made_at, trace?}` |
 
-Every POST needs `Content-Type: application/json` and `X-Lookahead: 1`. If the browser sends an `Origin` header, it must match `Host`. Anything else gets 403. The dispatcher's two endpoints, `GET /status` and `POST /run`, answer only the board server. JSON shapes: [`../backend/docs/CONTRACT.md`](../backend/docs/CONTRACT.md).
+Every POST needs `Content-Type: application/json` and `X-Lookahead: 1`. If the browser sends an `Origin` header, it must match `Host`. Anything else gets 403. The dispatcher's two endpoints, `GET /status` and `POST /run`, are internal: the board server and its chat agent are the intended callers. The dispatcher does not check who is calling. It listens on port 9000 inside the workflow, so any client that can reach that port can start a forecast run; the protection is that the port is not published outside the workflow. JSON shapes: [`../backend/docs/CONTRACT.md`](../backend/docs/CONTRACT.md).
 
 ## How the board starts a Fuzzball job
 

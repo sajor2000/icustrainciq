@@ -4,7 +4,7 @@ Read this if you want the record of what `fuzzball workflow validate` said about
 
 **Status:** The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Statements below that nothing had run describe the time of writing.
 
-Superseded since this record: the sentence "No workflow in this repo has run on the cluster" describes this session only; [`RUNBOOK.md`](RUNBOOK.md) is the team's later procedure for creating `twin-store` and launching the app, and its section 7 lists the errors met and their fixes. The runbook creates `twin-store` at 20 GB, not 50 GiB. The probe is job 4's file at `/store/train/probe-final.joblib`; `probes/` from `t7-fit` is the fallback. `name.parquet` is on the volume but no longer read. Current state:
+Superseded since this record: the sentence "No workflow in this repo has run on the cluster" describes this session only; [`RUNBOOK.md`](RUNBOOK.md) is the team's later procedure for creating `twin-store` and launching the app, and its section 7 lists the errors met and their fixes. The runbook creates `twin-store` at 20 GB, not 50 GiB. The probe is job 4's file at `/store/train/probe-final.joblib`; `t7-fit` is the fallback and writes the same path (`/store/train/probe-final.joblib` with `probe-final.meta.json`), not a `probes/` folder. `name.parquet` is on the volume but no longer read. Current state:
 
 | Topic | Current state (code on `main`) |
 |---|---|
@@ -86,5 +86,5 @@ The cohort: the log of `t7-fc-dashboard-patients.fz` and of two one-core `fuzzba
 4. The 19 table names in `dashboard_data/`: only the file count (21) and two file names are in the logs. `t7-ward` job `load` checks the tables, the 25 ids and the names file.
 5. Time and memory of `t7-fit` (winnowing and extracting every training stay): the values in the file are starting values.
 6. That vLLM serves the local Nemotron folder (`t7-twin` falls back to the Hugging Face name at the same revision if the folder has no `config.json`).
-7. Everything in `FUZZBALL_TEST_PLAN.md` "Questions only the cluster can answer" (queueing beside Nemotron, the service endpoint, the CLI download in the dispatcher).
+7. Everything in [`FUZZBALL_TEST_PLAN.md`](../../docs/archive/FUZZBALL_TEST_PLAN.md) (archived) "Questions only the cluster can answer" (queueing beside Nemotron, the service endpoint, the CLI download in the dispatcher).
 8. The code that `t7-code` publishes from the commit above predates the storage change: regenerate `fuzzball/ready/` after the merge (see `fuzzball/ready/README.md`).

@@ -424,10 +424,15 @@ Decided by J.C. on 2026-11-14 (`docs/DECISIONS.md` D9). Code: `app/dispatcher.py
 
 ### 9.1 Order of workflows (one-time, then daily)
 
-1. Training (vaishvikc/ICU-Twin, both GPUs) writes the model to `mimic_clif:/model_output/final/`; job 4 fits the probe; `t7-code` publishes this repo's `backend/`.
-2. **`t7-fit`** (fallback, only when job 4 has not staged a probe): `stage` (CPU: stage-ward list, tokens, winnow, vocabulary check), `extract` (GPU, train/tuning/held_out), `fit` (CPU: probes saved to `/store/train/probe-final.joblib`). An update refuses to hold the GPU if the probes or the stage tokens are missing ("run t7-fit first").
-3. `t7-twin` (Nemotron, board, dispatcher). The board no longer waits for Nemotron.
-4. Daily: the dispatcher starts `t7-forecast` at **07:00 sharp** (dispatcher clock, zone-aware `America/Chicago`, so daylight saving moves nothing; window 07:00 to 07:00). If another run is active, the cluster cannot be listed, or the start fails, it retries every minute for 10 minutes and logs every attempt and the outcome to `runs.jsonl`. The 07:00 run ignores the 20 minute gap. A dispatcher that starts after 07:00 with no scheduled run since the cut runs it once (catch-up). Until it lands the board keeps the previous forecast and `/api/runs` says `updating: true`; a failed or missed scheduled run shows in `/api/runs` as `scheduled.state` = `failed` or `missed`: check it after 07:15 on demo day.
+> **For the demo, follow ICU-Twin's procedure, from the ICU-Twin checkout.** The sequence below, run from this repo, publishes this repo's `backend/` to `/store/code` and `/store/py` and replaces the team's code on the shared volume. It is for after the demo only, and only with the team's go-ahead (`AGENTS.md`, `HANDOFF.md`).
+
+1. Training (vaishvikc/ICU-Twin, both GPUs) writes the model to `mimic_clif:/model_output/final/`. Job 4 fits the probe beside the model and writes the winnowed training split, `/data/tokenized_output/train_for_inference.parquet`.
+2. **`t7-code`** (post-demo, with the team's go-ahead; from ICU-Twin it publishes ICU-Twin's code instead) publishes this repo's `backend/` to `/store/code` and `/store/py`. It comes before the probe's sidecar, because the sidecar command imports `icutwin` from those two folders.
+3. **Stage the probe** (once per `twin-store`; again if the volume is recreated): copy job 4's probe to `/store/train/probe-final.joblib` and write its provenance sidecar `probe-final.meta.json` ([`RUNBOOK.md`](RUNBOOK.md) section 4). The forecast's precheck stops without both files.
+4. **`t7-ward`** (once, and whenever the ward changes; needed even when the probe is already staged): the stage-ward list and its tokens under `/store/stage`. The forecast's precheck stops without them ("run t7-ward first").
+5. **`t7-fit`** (fallback, only when job 4 has not staged a probe): `stage` (CPU: links to the training tokens, winnow, vocabulary check), `extract` (GPU, train/tuning/held_out), `fit` (CPU: probes saved to `/store/train/probe-final.joblib` with the sidecar). **The fallback alone does not make a forecast run:** `t7-fit` writes its winnowed training labels under `/store/train`, and `t7-forecast` requires job 4's `/data/tokenized_output/train_for_inference.parquet` (its precheck) and reads its baseline from `/data/tokenized_output`. If that file is missing, run job 4's winnow step in vaishvikc/ICU-Twin first; `mimic_clif` is read-only for this repo, so nothing here writes it. Aligning the forecast with the fallback's own output is an open item for the workflow's owner (Kaveri).
+6. `t7-twin` (Nemotron, board, dispatcher). The board no longer waits for Nemotron.
+7. Daily: the dispatcher starts `t7-forecast` at **07:00 sharp** (dispatcher clock, zone-aware `America/Chicago`, so daylight saving moves nothing; window 07:00 to 07:00). If another run is active, the cluster cannot be listed, or the start fails, it retries every minute for 10 minutes and logs every attempt and the outcome to `runs.jsonl`. The 07:00 run ignores the 20 minute gap. A dispatcher that starts after 07:00 with no scheduled run since the cut runs it once (catch-up). Until it lands the board keeps the previous forecast and `/api/runs` says `updating: true`; a failed or missed scheduled run shows in `/api/runs` as `scheduled.state` = `failed` or `missed`: check it after 07:15 on demo day.
 
 ### 9.2 Updates on demand
 
@@ -466,7 +471,7 @@ Always pass `--name t7-forecast-...`: the dispatcher's one-run-at-a-time guard g
 
 ### 9.5a Final cohort (the 25 demo patients)
 
-Nothing in this section is started until training (`t7-build`) has finished. Step by step, with commands: `FUZZBALL_TEST_PLAN.md`.
+Nothing in this section is started until training (`t7-build`) has finished. Step by step, with commands: [`FUZZBALL_TEST_PLAN.md`](../../docs/archive/FUZZBALL_TEST_PLAN.md) (archived).
 
 **What it is.** A CLIF extract of 25 real MIMIC-IV stays: 19 `clif_*.parquet` tables, `dashboard_patients_unit25.parquet` (one column, `hospitalization_id`) and `name.parquet` (made-up names; it holds real ids; no longer read, names are generated per room number). On the laptop it is `backend/data/local/unit25/`, which git ignores. It never goes into the repo, a commit, a log, a screenshot or a public host.
 

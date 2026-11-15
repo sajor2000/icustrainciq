@@ -755,3 +755,13 @@ def test_capacity_follows_the_context_forecast_in_context_mode(tmp_path):
     (tmp_path / "context.json").unlink()
     with running_board(tmp_path, context_path=tmp_path / "context.json") as base:
         assert request(base, "/api/capacity")[1]["vents_free"] is None
+
+
+def test_without_a_context_the_probe_is_answered_quietly(tmp_path):
+    """the page asks /api/context on every load: 200 with context_mode false, not a
+    404 that the browser logs as a failed request"""
+    (tmp_path / "forecast.json").write_text("{}")
+    with running_board(tmp_path) as base:
+        code, reply = request(base, "/api/context")
+        assert code == 200
+        assert reply == {"available": False, "context_mode": False}

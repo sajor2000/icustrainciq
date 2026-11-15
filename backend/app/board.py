@@ -332,7 +332,9 @@ def make_handler(
                 )
                 return self._json(200, context[projection] if projection else context)
             if path == "/api/context":
-                return self._json(404, {"available": False, "context_mode": False})
+                # no context is configured: answered 200 so the page's probe on every
+                # load leaves no failed request in the browser console
+                return self._json(200, {"available": False, "context_mode": False})
             if path == "/api/forecast":
                 fc = load()
                 if is_real_ward(fc) and not real_ward:

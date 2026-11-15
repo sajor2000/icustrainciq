@@ -967,7 +967,7 @@ def test_a_started_forecast_runs_to_its_limit_and_other_workflows_are_never_stop
     assert g.status()["running"] == {"name": "t7-build", "state": "PENDING"}
 
 
-# ---- docs/FUZZBALL_43_REVIEW.md fixes ---------------------------------------------
+# ---- docs/archive/FUZZBALL_43_REVIEW.md fixes ---------------------------------------------
 
 
 def test_workflow_start_output_is_parsed_in_both_documented_forms(tmp_path):

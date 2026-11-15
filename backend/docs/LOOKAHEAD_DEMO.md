@@ -66,7 +66,7 @@ the bounded cohort of 25 and republishes the whole snapshot so room and unit
 views remain consistent. Ordinary chat reads the existing snapshot and consumes
 no forecast GPU allocation.
 
-The existing [Fuzzball review](FUZZBALL_43_REVIEW.md) and
+The existing [Fuzzball review](../../docs/archive/FUZZBALL_43_REVIEW.md) (archived) and
 [compute plan](COMPUTE_PLAN.md) govern placement: forecast extraction requests
 8 cores/48 GB and one GPU without `exclusive`, leaving room for the board and
 dispatcher on that node (11 cores/54 GB combined). Nemotron may keep the demo's

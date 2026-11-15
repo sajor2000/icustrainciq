@@ -320,17 +320,17 @@ def architecture():
 # =============================================================== detail: how to run it on the cluster
 def workflow():
     f = Fig("workflow", 1280, 424, "How to run it on the cluster",
-            "Three steps by hand: create the twin-store volume once, stage job 4's probe once per model, and render the ready workflow files after each code change. Then one command, scripts/launch.sh --all, runs four Fuzzball workflows in order: t7-code, t7-ward, t7-forecast-unit and t7-twin, and prints the board's link. The team ran this path end to end on the cluster; every step but the per-change render is marked done.",
+            "Three steps by hand: create the twin-store volume once, render the ready workflow files after each code change, and stage job 4's probe once per model after the code is published (scripts/launch.sh --code), because the probe's sidecar command imports the published code. Then one command, scripts/launch.sh --all, runs four Fuzzball workflows in order: t7-code, t7-ward, t7-forecast-unit and t7-twin, and prints the board's link. The team ran this path end to end on the cluster; every step but the per-change render is marked done.",
             "ICU Lookahead · how to run it", "Three steps by hand, then one command")
     xs = [24, 344, 664, 984]
     y1, y2, h = 40, 232, 112
     f.zone(8, 200, 1264, 168, label_dx=312)
     f.node(xs[0], y1, 272, h, "card", "Done · once", "Create twin-store",
            ["fuzzball volume create team7", "twin-store --size 20GB"], chip="done")
-    f.node(xs[1], y1, 272, h, "card", "Done · once per model", "Stage job 4's probe",
-           ["to /store/train, with its", "provenance sidecar"], chip="done")
-    f.node(xs[2], y1, 272, h, "card", "After each code change", "Render ready/",
+    f.node(xs[1], y1, 272, h, "card", "After each code change", "Render ready/",
            ["git push, then make_ready.sh", "at that commit"], chip="todo")
+    f.node(xs[2], y1, 272, h, "card", "Done · once per model", "Stage job 4's probe",
+           ["after launch.sh --code: to", "/store/train, with its sidecar"], chip="done")
     f.node(xs[3], y1, 272, h, "card", "Ran end to end", "scripts/launch.sh --all",
            ["runs the four workflows below,", "prints the board's link"], chip="done")
     f.node(xs[0], y2, 272, h, "card", "1 · CPU · done", "t7-code", ["publishes code and packages", "to twin-store"], chip="done")
@@ -356,7 +356,7 @@ def api():
     f.node(304, 56, 528, 224, "card", "4 GETs · no headers needed", "Read", rows=[
         ("GET /api/forecast", "unit counts with 80% ranges", False),
         ("GET /api/rooms", "one entry per room", False),
-        ("GET /api/capacity", "capacity and staffing set tonight", False),
+        ("GET /api/capacity", "machine totals, free, staff on shift", False),
         ("GET /api/runs", "next 07:00, running update, last runs", False)])
     f.node(304, 320, 528, 224, "card", "3 POSTs · JSON body", "Write", rows=[
         ("Every POST", "JSON, X-Lookahead: 1, same origin; else 403", True),
@@ -372,7 +372,7 @@ def api():
     f.arrow([(832, 236), (916, 236), (916, 276), (1000, 276)], label="Status", at=(874, 236))
     f.arrow([(832, 356), (916, 356), (916, 308), (1000, 308)], label="Run", at=(874, 356), side="below")
     f.arrow([(832, 500), (1000, 500)], label="Chat", at=(916, 500))
-    f.caption("GET / is the page. The dispatcher and Nemotron answer only the board server.", 592)
+    f.caption("GET / is the page. The dispatcher and Nemotron are inside the workflow; no caller check.", 592)
     f.write()
 
 

@@ -1,0 +1,985 @@
+--- a/app/static/index.html
++++ b/app/static/index.html
+@@ -3,11 +3,12 @@
+ <head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+-<title>Lookahead · ICU forecast, next 24 hours</title>
++<title>ICU Lookahead · ICU forecast, next 24 hours</title>
+ <style>
+ /* The look follows Dema's Alternative board (mockups/command-center.html): a cool neutral ground, white hairline cards, one blue.
+    Numbers are ink. On Unit strain amber is TIGHT / BUSY / AT LIMIT and red is SHORT / VERY BUSY; a red card is tinted with a still halo and only the beds pulse.
+-   On the Bed board a tile's edge is its trajectory: red worsening, amber watch, green leaving. */
++   On the Bed board a tile has no status: its figure turns red and pulses when a new life support is at its threshold.
++   Death never marks a bed tile: it is one unit count in the alert line and a row in the bed pop-up. */
+ :root{
+   --board:#F6F7F9; --board-2:#EEF0F4; --surface:#FFFFFF; --ink:#111827; --ink-2:#5B6474; --rule:rgba(17,24,39,.10); --line:#CDD3DC;
+   --blue:#2563EB; --focus:#2563EB; --sel:rgba(37,99,235,.22); --fig:#E4E6EA;
+@@ -118,7 +119,7 @@
+ [data-slide="l"] :is(#bedsview,#strainview,.rv-grid){animation:slide-l .22s ease-out}
+ [data-slide="r"] :is(#bedsview,#strainview,.rv-grid){animation:slide-r .22s ease-out}
+ /* flag presets (Dema's threshold toggle): which chance flags a bed; they sit in the settings panel under Thresholds */
+-.flag{display:flex;align-items:center;gap:.5rem;margin-top:.375rem}
++.flag{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-top:.375rem}
+ [data-pending] .flag{opacity:.55}
+ [data-pending] .flag button{cursor:default}
+ .flag .fl{font-size:.8125rem;font-weight:600;color:var(--ink-2);white-space:nowrap}
+@@ -150,7 +151,7 @@
+ .legend .sep{width:1px;height:1rem;background:var(--line)}
+ .roomnote{margin:0 0 .5rem;font-size:.875rem;font-weight:600}
+ 
+-/* bed tile: room, one trajectory status, then Now -> Next 24 h */
++/* bed tile: room, then Now -> Next 24 h (no bed status, D25) */
+ .bed{--t-bg:var(--surface);--t-fg:var(--ink);--t-2:var(--ink-2);--ic-k:var(--t-bg);
+   display:flex;flex-direction:column;gap:.5rem;min-width:0;min-height:5.75rem;text-align:left;padding:.625rem .75rem;
+   border:1px solid var(--rule);border-radius:1rem;background:var(--t-bg);color:var(--t-fg);cursor:pointer;box-shadow:var(--card);
+@@ -160,19 +161,19 @@
+ .bed.s1{--t-bg:var(--board-2)}
+ .bed.s2{--t-bg:var(--board-2);border:3px solid var(--red);padding:calc(.625rem - 2px) calc(.75rem - 2px)}
+ .bed.s0 .st{color:var(--ink-2);font-weight:600}
+-.nowl{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .75rem;margin-top:auto;min-height:1.75rem}
++.nowl{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .75rem;margin-top:auto;min-height:1.875rem}
+ .nowl .nx{display:inline-flex;align-items:center;gap:.25rem}
+ .nowl .nx small{font-size:.875rem;font-weight:700}
+-.nowl .mu{font-size:.8125rem;font-weight:600;color:var(--ink-2)}
++.nowl .mu{font-size:.8125rem;font-weight:400;color:var(--ink-2)}
+ .nowl .ic{width:1.75rem;height:1.75rem}
+ /* next 24 h: under a hairline, the supports that may start and leaving, each an icon and its chance */
+-.nextl{display:flex;flex-wrap:wrap;align-items:center;gap:.125rem .75rem;padding-top:.375rem;border-top:1px solid var(--rule);min-height:1.875rem}
++.nextl{display:flex;flex-wrap:wrap;align-items:center;gap:.125rem .75rem;padding-top:.375rem;border-top:1px solid var(--rule);min-height:2.125rem}
+ .nextl .cap{font-size:.6875rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+ .nextl .nx{display:inline-flex;align-items:center;gap:.25rem}
+ .nextl .nx small{font-size:.875rem;font-weight:700}
+-.nextl .mu{font-size:.8125rem;font-weight:600;color:var(--ink-2)}
++.nextl .mu{font-size:.8125rem;font-weight:400;color:var(--ink-2)}
+ .nextl .ic{width:1.375rem;height:1.375rem}
+-/* circle badge: an event that may happen in the next 24 h (a support starting, death, leaving), ringed in its own colour */
++/* circle badge: an event that may happen in the next 24 h (a support starting, leaving), ringed in its own colour */
+ .cb{display:inline-grid;place-items:center;flex:none;width:1.625rem;height:1.625rem;border-radius:50%;background:var(--surface);border:1.5px solid var(--line);--ic-k:var(--surface)}
+ .cb .ic,.nextl .cb .ic,.legend .cb .ic{width:1.0625rem;height:1.0625rem;color:inherit}
+ @keyframes swap{from{opacity:.35}}
+@@ -205,11 +206,52 @@
+ .bed .av{flex:none;align-self:center;width:1.875rem;height:1.97rem}
+ .bed .av svg{display:block;width:100%;height:100%;fill:color-mix(in srgb,var(--ink-2) 40%,var(--surface))}
+ .bed.on .av svg{fill:color-mix(in srgb,var(--ink) 62%,var(--surface))}
+-/* a bed with a new life support or death at its threshold in Settings: the person figure turns red and pulses (beat and halo as on Unit strain) */
++/* a bed with a new life support at its threshold in Settings: the person figure turns red and pulses (beat and halo as on Unit strain) */
+ .bed.hit .av{position:relative;isolation:isolate;animation:beat 1.2s ease-in-out infinite}
+ .bed.hit .av svg{fill:var(--red)}
+ .bed.hit .av::after{content:"";position:absolute;inset:-.4375rem;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--red) 55%,transparent) 35%,transparent);animation:watchp 1.2s ease-in-out infinite}
+ .bedhead{font-size:1.25rem;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin:.5rem 0 .75rem}
++/* See first: the three highest-risk beds (Dema's top-beds rule), one compact row above the grid; her person figure and circle icons */
++.seefirst{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;margin:0 0 .75rem}
++.seefirst[hidden]{display:none}
++.seefirst h2{font-size:1rem;font-weight:700;line-height:1.2;margin-right:.25rem}
++.sfb{display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem;padding:.25rem .75rem .25rem .5rem;background:var(--surface);border:1px solid var(--rule);border-radius:.75rem;box-shadow:var(--card);color:var(--ink);cursor:pointer;text-align:left}
++.sfb:hover{background:var(--board-2)}
++.sfb .av{flex:none;width:1.5rem;height:1.575rem}
++.sfb .av svg{display:block;width:100%;height:100%;fill:var(--red)}
++.sfb .rm{font-size:1.375rem;font-weight:800;line-height:1;letter-spacing:-.01em}
++.sfb .pn{font-size:.8125rem;font-weight:700;white-space:nowrap}
++.sfb .nx{display:inline-flex;align-items:center;gap:.25rem}
++.sfb .nx small{font-size:.875rem;font-weight:700}
++[data-view="beds"][data-mode="next"] .alerts .hi{display:none}      /* the Bed board names them in See first */
++/* deaths: one unit count in the alert line, never on a bed */
++.dth{display:inline-flex;align-items:center;gap:.375rem;font-size:.875rem;color:var(--ink-2)}
++.dth b{color:var(--ink)}
++.dth .ic{width:1.125rem;height:1.125rem}
++/* an update in progress: queued, running on the GPU, scoring, done; then "Updated HH:MM"; a failure in plain words */
++.runprog{display:flex;flex-wrap:wrap;align-items:center;gap:.375rem 1rem;padding:.5rem 1rem;margin:.5rem 0 .25rem;background:var(--surface);border:1px solid var(--rule);border-radius:.75rem;box-shadow:var(--card);font-size:.875rem}
++.runprog[hidden]{display:none}
++#rv-prog{margin:.375rem 0;padding:.5rem .75rem;box-shadow:none}
++.pg-h{display:inline-flex;align-items:center;gap:.375rem;font-weight:700;white-space:nowrap}
++.pg-h .ic{width:1.125rem;height:1.125rem}
++.pg-h.ok .ic{color:var(--ok);stroke-width:2.5}
++.pg-h.bad{color:var(--amber)}
++.pg-h.bad .ic{stroke:none;--ic-k:var(--surface)}
++.pg-m{color:var(--ink-2);min-width:0;flex:1 1 16rem}
++.pg-x{flex:none}
++.steps{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .5rem;list-style:none;margin:0;padding:0}
++.steps li{display:inline-flex;align-items:center;gap:.375rem;padding:.125rem .625rem .125rem .25rem;border:1px solid transparent;border-radius:999px;color:var(--ink-2);font-weight:600;white-space:nowrap}
++.steps li i{display:grid;place-items:center;width:1.25rem;height:1.25rem;border-radius:50%;border:1.5px solid var(--line);font-style:normal;font-size:.75rem;font-weight:700}
++.steps li .ic{width:1.25rem;height:1.25rem;padding:.1875rem;stroke-width:2.5;color:var(--ink)}
++.steps li.was{color:var(--ink)}
++.steps li.is{background:var(--ink);color:var(--board);font-weight:700}
++.steps li.is i{border-color:var(--board)}
++.steps li+li::before{content:"";width:.75rem;height:1px;margin:0 .25rem 0 -.25rem;background:var(--line)}
++.steps li.is::before{display:none}
++/* a new forecast has landed: the cards take one short blue ring, so the refresh is seen */
++@keyframes fresh{from{box-shadow:0 0 0 2px var(--blue)}to{box-shadow:0 0 0 2px transparent}}
++[data-fresh] :is(.grid .bed,.wc,.alerts,.sfb,.rv-card){animation:fresh 1.2s ease-out}
++.chipl{font-size:.75rem;font-weight:700;color:var(--ink-2);margin:0}
+ .viewsub{font-size:.875rem;color:var(--ink-2);margin:0 0 .75rem}
+ .viewsub b{color:var(--ink);font-weight:700}
+ 
+@@ -264,7 +306,7 @@
+ .al.amber{color:var(--amber)}
+ .al .ic{width:1.125rem;height:1.125rem;stroke:none;--ic-k:var(--surface)}
+ .hi{display:inline-flex;flex-wrap:wrap;align-items:center;gap:.5rem;font-size:.875rem;color:var(--ink-2)}
+-.bedchip{min-width:2.5rem;min-height:2rem;padding:0 .625rem;background:transparent;border:1.5px solid var(--red);border-radius:999px;color:var(--red);font-weight:700;cursor:pointer}
++.bedchip{min-width:2.75rem;min-height:2.75rem;padding:0 .625rem;background:transparent;border:1.5px solid var(--red);border-radius:999px;color:var(--red);font-weight:700;cursor:pointer}
+ .bedchip:hover{background:color-mix(in srgb,var(--red) 10%,transparent)}
+ .alerts .capset{font-size:.8125rem;color:var(--ink-2)}
+ .runbadge{display:inline-flex;align-items:center;gap:.375rem;font-size:.8125rem;font-weight:600;border:1px solid var(--line);border-radius:999px;padding:.125rem .625rem;white-space:nowrap}
+@@ -283,7 +325,7 @@
+ .fc b{color:var(--ink)}
+ .bedline{font-size:.8125rem;color:var(--ink-2);margin:0 0 .5rem}
+ .bedline b{color:var(--ink)}
+-.chg{background:transparent;border:0;padding:.375rem .25rem;margin:-.375rem 0 -.375rem .25rem;font-weight:600;color:var(--blue);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
++.chg{display:inline-flex;align-items:center;min-height:2.75rem;background:transparent;border:0;padding:.375rem .25rem;margin:-.75rem 0 -.75rem .25rem;font-weight:600;color:var(--blue);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+ .prednote{font-size:.8125rem;color:var(--ink-2);margin:1rem 0 0;max-width:none}
+ .wc header{display:flex;align-items:flex-start;gap:.625rem}
+ .wc header .ic{width:1.75rem;height:1.75rem;color:var(--ink-2)}
+@@ -403,13 +445,13 @@
+ .rv-acts{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
+ 
+ /* chat: a launcher at the bottom right (the page keeps space for it) and a non-modal panel that opens above it; a bottom sheet on a phone */
+-.chatbtn{position:fixed;right:1.5rem;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));z-index:20;display:grid;place-items:center;width:3.25rem;height:3.25rem;padding:0;border:0;border-radius:50%;background:var(--ink);color:var(--board);font-weight:700;cursor:pointer;box-shadow:0 2px 4px rgba(16,24,40,.12),0 16px 40px rgba(16,24,40,.18)}
++.chatbtn{position:fixed;right:1.5rem;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));z-index:54;display:grid;place-items:center;width:3.25rem;height:3.25rem;padding:0;border:0;border-radius:50%;background:var(--ink);color:var(--board);font-weight:700;cursor:pointer;box-shadow:0 2px 4px rgba(16,24,40,.12),0 16px 40px rgba(16,24,40,.18)}
+ .chatbtn:hover{opacity:.92}
+ .chatbtn .ic{width:1.5rem;height:1.5rem}
+ .chatbtn[aria-expanded="true"]{visibility:hidden}
+ .chatbtn .dot{position:absolute;top:0;right:0;width:.875rem;height:.875rem;border-radius:50%;background:var(--blue);border:2px solid var(--board)}
+ .chatbtn .dot[hidden]{display:none}
+-.chatpanel{position:fixed;right:1.5rem;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));z-index:21;width:min(25rem,calc(100vw - 2rem));height:min(37.5rem,80vh);display:flex;flex-direction:column;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:1rem;padding:.75rem 1rem 1rem;box-shadow:0 2px 4px rgba(16,24,40,.12),0 16px 40px rgba(16,24,40,.18)}
++.chatpanel{position:fixed;right:1.5rem;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));z-index:55;width:min(25rem,calc(100vw - 2rem));height:min(37.5rem,80vh);display:flex;flex-direction:column;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:1rem;padding:.75rem 1rem 1rem;box-shadow:0 2px 4px rgba(16,24,40,.12),0 16px 40px rgba(16,24,40,.18)}
+ .chatpanel[hidden]{display:none}
+ .cp-head{display:flex;align-items:center;gap:.5rem;padding-bottom:.5rem;border-bottom:1px solid var(--rule)}
+ .cp-head h2{font-size:1.125rem;white-space:nowrap}
+@@ -498,6 +540,11 @@
+   .when{flex:1 1 auto}
+   .when button{flex:1 1 0}
+   .legend .sep{display:none}
++  .seefirst h2{flex:1 1 100%;margin:0}
++  .sfb{flex:1 1 0;min-width:0;justify-content:center;padding:.25rem .375rem;gap:.5rem}
++  .sfb .pn,.sfb .av{display:none}
++  .runprog{padding:.5rem .75rem}
++  .runprog .pg-m{flex:1 1 100%}
+   .lead{padding:.875rem 1rem}
+   .roomview{padding:0}
+   .rv-card{border-radius:0;border:0;min-height:100%;padding:1rem}
+@@ -528,13 +575,7 @@
+   <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="7.2" r="3.9"/><path d="M4.5 21v-1.4c0-3.5 3.2-5.9 7.5-5.9s7.5 2.4 7.5 5.9V21z"/></symbol>
+   <symbol id="i-person-on" viewBox="0 0 24 24"><circle fill="currentColor" cx="12" cy="7.2" r="3.9"/><path fill="currentColor" d="M4.5 21v-1.4c0-3.5 3.2-5.9 7.5-5.9s7.5 2.4 7.5 5.9V21z"/></symbol>
+   <symbol id="i-fig" viewBox="0 0 40 42"><circle cx="20" cy="10.5" r="8.5"/><path d="M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z"/></symbol>
+-  <!-- trajectory shapes -->
+-  <symbol id="i-up" viewBox="0 0 24 24"><path fill="currentColor" d="M12 4.5 21 19.5H3z"/></symbol>
+-  <symbol id="i-watch" viewBox="0 0 24 24"><path d="M12 6.5 19.5 19h-15z" stroke-width="2.5"/></symbol>
+-  <symbol id="i-hold" viewBox="0 0 24 24"><path d="M4 8.5h16M4 15.5h16" stroke-width="3.5"/></symbol>
+-  <symbol id="i-steady" viewBox="0 0 24 24"><circle fill="currentColor" cx="12" cy="12" r="3.5" stroke="none"/></symbol>
+   <symbol id="i-none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" stroke-width="1.5"/></symbol>
+-  <symbol id="i-any" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/></symbol>
+   <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6" stroke-width="2.25"/></symbol>
+   <symbol id="i-same" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M3.5 12h16M14 6.5l5.5 5.5-5.5 5.5" stroke-width="2.25"/></symbol>
+@@ -543,6 +584,7 @@
+   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.6" stroke-width="3.4" stroke-dasharray="3.2 2.77" stroke-linecap="butt"/><circle cx="12" cy="12" r="5.6"/><circle cx="12" cy="12" r="2.2"/></symbol>
+   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></symbol>
+   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.6 6.6 0 0 0 10.5 10.5Z"/></symbol>
++  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+   <symbol id="i-min" viewBox="0 0 24 24"><path d="M6 17.5h12" stroke-width="2.25"/></symbol>
+   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" stroke-width="2.25"/></symbol>
+   <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5.5M6 11l6-6 6 6" stroke-width="2.25"/></symbol>
+@@ -554,7 +596,7 @@
+ <div class="wrap">
+   <header class="top">
+     <div class="unit">
+-      <h1>Lookahead <span class="what">ICU forecast</span></h1>
++      <h1>ICU Lookahead <span class="what">next 24 hours</span></h1>
+       <div class="sub"><span data-tip="The forecast window: 07:00 today to 07:00 tomorrow">07:00 to 07:00</span><span class="srctag" id="unit" data-tip="The unit this forecast covers" hidden></span><span class="srctag" id="syn" hidden></span><p class="runstate" id="runstate" role="status" aria-live="polite" data-tip="When this forecast was made"></p></div>
+     </div>
+     <span class="spacer"></span>
+@@ -563,6 +605,7 @@
+     </div>
+     <button class="toggle gear" id="gear" type="button" aria-label="Settings" data-tip="Settings" aria-expanded="false" aria-controls="setmenu"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-gear"/></svg></button>
+   </header>
++  <div class="runprog" id="runprog" role="group" aria-label="Update progress" hidden></div>
+ 
+   <!-- settings side panel (Dema's, from the Alternative board): light or dark board (the two icons beside the heading), thresholds, capacity -->
+   <!-- the role picker is off the page: the board acts as the ICU nurse (charge). The select stays, hidden, so #role=pharmacy still works for captures. -->
+@@ -570,9 +613,9 @@
+   <aside class="setmenu" id="setmenu" role="dialog" aria-labelledby="set-h" hidden>
+     <div class="sethead"><h2 id="set-h" tabindex="-1">Settings</h2><div class="setapp" role="group" aria-label="Board appearance"><button type="button" class="toggle" data-t="day" aria-pressed="true" aria-label="Light board" data-tip="Light board"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-sun"/></svg></button><button type="button" class="toggle" data-t="night" aria-pressed="false" aria-label="Dark board" data-tip="Dark board"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-moon"/></svg></button></div><span class="spacer"></span><button type="button" class="toggle" id="setclose">Close</button></div>
+     <h3 class="seth" id="thr-h">Event thresholds</h3>
+-    <p class="seti">An event is flagged on a bed when its chance is at or above that event's threshold: the event's circle icon then shows on the bed's card. When a new life support or death is at its threshold, the bed's person icon turns red and pulses (discharge alone does not).</p>
++    <p class="seti">An event is flagged on a bed when its chance is at or above that event's threshold: the event's circle icon then shows on the bed's card. When a new life support is at its threshold, the bed's person icon turns red and pulses (discharge alone does not). Death is never shown on a bed's card: it is one unit count, and a row when a bed is opened.</p>
+     <div class="thrpop" id="thrpop" hidden></div>
+-    <div class="flag" id="flag"><span class="fl" id="flag-l">Flag beds at</span><div class="fseg" id="fseg" role="group" aria-labelledby="flag-l"><button type="button" data-p="50" aria-pressed="false">50%</button><button type="button" data-p="25" aria-pressed="true">25%</button><button type="button" data-p="10" aria-pressed="false">10%</button></div></div>
++    <div class="flag" id="flag"><span class="fl" id="flag-l">Flag beds at</span><div class="fseg" id="fseg" role="group" aria-labelledby="flag-l"><button type="button" data-p="40" aria-pressed="false">40%</button><button type="button" data-p="20" aria-pressed="true">20%</button><button type="button" data-p="10" aria-pressed="false">10%</button></div><button type="button" class="toggle" id="flag-reset" data-tip="Back to the standard lines: 20% watch, 40% worsening, 60% leaving">Reset to standard</button></div>
+     <h3 class="seth" id="cap-h">Capacity</h3>
+     <p class="seti">Total machines on the unit. Free = total minus in use now. Leave a box blank if it is not set.</p>
+     <div class="capbox" id="capbox">
+@@ -600,6 +643,7 @@
+     <p class="roomnote" id="roomnote" role="status" hidden></p>
+ 
+     <div id="bedsview">
++      <section class="seefirst" id="seefirst" aria-labelledby="sf-h" hidden><h2 id="sf-h" data-tip="The three beds with the highest chance of a new life support in the next 24 h">See first</h2></section>
+       <div class="subrow"><p class="viewsub" id="bedsub"></p><div class="legend" id="legend" role="group" aria-label="Key"></div></div>
+       <section aria-labelledby="board-h">
+         <h2 class="bedhead" id="board-h">All rooms</h2>
+@@ -626,7 +670,7 @@
+       <summary>How this forecast was made</summary>
+       <dl class="facts">
+         <div><dt>What is forecast</dt><dd>Five predictions for every patient, each for the next 24 h (07:00 to 07:00): starting a ventilator (IMV), starting a vasopressor, starting CRRT, leaving the ICU, and death in hospital. The unit numbers are those patients added up.</dd></div>
+-        <div><dt>Each bed</dt><dd>Under NOW: life support running at 07:00. Under NEXT 24 H, each in a circle with its chance: a new life support, death in hospital or discharge from the ICU, shown when its chance is at or above that event's threshold in Settings. When a new life support or death is at its threshold, the person icon on the bed's card turns red and pulses; discharge alone does not. A bed has no status colour.</dd></div>
++        <div><dt>Each bed</dt><dd>Under NOW: life support running at 07:00. Under NEXT 24 H, each in a circle with its chance: a new life support or discharge from the ICU, shown when its chance is at or above that event's threshold in Settings. When a new life support is at its threshold, the person icon on the bed's card turns red and pulses; discharge alone does not. See first names the three beds with the highest chance of a new life support. Death is never shown on a bed's card: it is one unit count, and a row when a bed is opened. A bed has no status colour.</dd></div>
+         <div><dt>Flag beds at</dt><dd id="defflag"></dd></div>
+         <div><dt>Icons</dt><dd class="keys" id="iconkey"></dd></div>
+         <div><dt>Unit strain</dt><dd>Counts carry a range covering 8 in 10 likely outcomes (p10 to p90). The bead is the median, the solid line is what tonight's staffing covers, the dashed line is a typical day. With machine totals set, a card's bar is the whole total: solid for in use now, lighter with the flagged beds, red when that passes the total (SHORT), amber label AT LIMIT when it is exactly the total. A figure fills to its bed's chance; a solid figure is on that support now. Hover, focus or long-press any icon, figure, bar or chip for what it means.</dd></div>
+@@ -656,6 +700,7 @@
+     <div class="rvflow" id="rv-flow"></div>
+     <p class="rv-sub" id="rv-sub"></p>
+     <p class="rv-run" id="rv-run" role="status" aria-live="polite"></p>
++    <div class="runprog" id="rv-prog" role="group" aria-label="Update progress" hidden></div>
+     <nav class="rv-nav" aria-label="Beds">
+       <div class="when" role="group" aria-label="Show now or the next 24 hours"><button type="button" data-w="now" aria-pressed="false">Now</button><button type="button" data-w="next" aria-pressed="true">Next 24 h</button></div>
+       <span class="rv-step"><a id="rv-prev" href="#"></a><a id="rv-next" href="#"></a></span>
+@@ -683,9 +728,9 @@
+   </div>
+ </div>
+ 
+-<button class="chatbtn" id="chatbtn" type="button" aria-label="Ask Lookahead" data-tip="Ask about the unit or a bed" aria-expanded="false" aria-controls="chatpanel"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-chat"/></svg><i class="dot" id="chatdot" hidden></i><span class="sr" id="chatdot-l" hidden>, forecast updated</span></button>
+-<section class="chatpanel" id="chatpanel" role="dialog" aria-label="Ask Lookahead" hidden>
+-  <div class="cp-head"><h2 id="chat-h">Ask Lookahead</h2><button class="ctx" id="chat-scope" type="button">Unit</button><span class="spacer"></span>
++<button class="chatbtn" id="chatbtn" type="button" aria-label="Ask ICU Lookahead" data-tip="Ask about the unit or a bed" aria-expanded="false" aria-controls="chatpanel"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-chat"/></svg><i class="dot" id="chatdot" hidden></i><span class="sr" id="chatdot-l" hidden>, forecast updated</span></button>
++<section class="chatpanel" id="chatpanel" role="dialog" aria-label="Ask ICU Lookahead" hidden>
++  <div class="cp-head"><h2 id="chat-h">Ask ICU Lookahead</h2><button class="ctx" id="chat-scope" type="button">Unit</button><span class="spacer"></span>
+     <button class="cpb" id="chatmin" type="button" aria-label="Minimise chat"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-min"/></svg></button>
+     <button class="cpb" id="chatclose" type="button" aria-label="Close chat and clear it"><svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div>
+   <div class="chips" id="chips" role="group" aria-label="Suggested questions"></div>
+@@ -707,6 +752,7 @@
+   const flag = f => new RegExp("(^|[#&])"+f+"(&|$)").test(location.hash);
+   const FAST = flag("fast");                       // review captures: short polls and runs
+   const POLL_MS = FAST?400:30000, RUN_MS = FAST?1200:20000, GUARD_MIN = 20, IDLE_MS = FAST?1500:300000;
++  const RUN_POLL_MS = FAST?400:10000, IDLE_GRACE_MS = FAST?800:60000, DONE_MS = FAST?1500:8000;      // while an update runs: the status every 10 s (the dispatcher caches the job list for 10 s); a run with no new forecast is given 60 s; "Updated HH:MM" stays 8 s
+   const OFFLINE_LINE = "Can't reach the board server — retrying";
+ 
+   /* ---------- times: the ward's zone (from cut_time), never the browser's ---------- */
+@@ -802,7 +848,9 @@
+ 
+   /* ---------- validation: nothing from the server reaches the page unchecked ---------- */
+   const LV = ["low","medium","high"];
+-  const vq = o => !!o && fin(o.p10) && fin(o.p50) && fin(o.p90);
++  const vq = o => !!o && o.available!==false && fin(o.p10) && fin(o.p50) && fin(o.p90);
++  const naq = o => !!o && o.available===false;   // the probe for this event was skipped: no estimate, never 0 (docs/CONTRACT.md)
++  const vqn = o => vq(o) || naq(o);
+   const str = (s,n=120) => typeof s==="string" ? s.slice(0,n) : "";
+   const NAME_OK = /^[\p{L}][\p{L} .,'-]{0,39}$/u, nm1 = v => typeof v==="string" && NAME_OK.test(v.trim()) ? v.trim() : null;
+   function cleanName(n){ if(!n || typeof n!=="object") return null; const display=nm1(n.display); if(!display) return null;
+@@ -815,31 +863,37 @@
+   function cleanRoom(r){
+     if(!r || typeof r!=="object" || !Number.isInteger(r.room) || r.room<1) return null;
+     const on0=r.on_now||{}, p0=r.p||{}, sb=r.stopped_before_cut||{}, pr=v=>fin(v)&&v>=0&&v<=1?v:null;
+-    const on_now={imv:on0.imv===true, vasopressor:on0.vasopressor===true, crrt:on0.crrt===true};
++    const observed=v=>typeof v==="boolean"?v:null;
++    const on_now={imv:observed(on0.imv), vasopressor:observed(on0.vasopressor), crrt:observed(on0.crrt)};
+     const p={}; for(const k of [...SUP,"icu_departure","death"]) p[k]=pr(p0[k]);
+     const w=r.window||{};
+-    return {room:r.room,
++    const clean={room:r.room, present:r.present!==false,
+       age:(typeof r.age==="string"||fin(r.age)) && /^\d{1,3}\+?$/.test(String(r.age)) ? String(r.age) : null,
+       sex:r.sex==="F"||r.sex==="M" ? r.sex : null,
+       name:cleanName(r.name),
+       level:LV.includes(r.level) ? r.level : null,
+       on_now, p, out:r.out===true,
+-      on_life_support:typeof r.on_life_support==="boolean" ? r.on_life_support : SUP.filter(k=>on_now[k]).length>=2,
++      on_life_support:typeof r.on_life_support==="boolean" ? r.on_life_support : SUP.filter(k=>on_now[k]===true).length>=2?true:SUP.some(k=>on_now[k]===null)?null:false,
+       stopped_before_cut:{imv:sb.imv===true, vasopressor:sb.vasopressor===true, crrt:sb.crrt===true},
+       updated_at:str(r.updated_at,40), cut_time:str(r.cut_time,40), window:{start:str(w.start,40), end:str(w.end,40)},
+       past_12h:(Array.isArray(r.past_12h)?r.past_12h:[]).filter(x=>x&&typeof x.text==="string").slice(0,8).map(x=>({h:fin(x.h)&&x.h!==0?Math.abs(x.h):null, text:x.text.slice(0,200)})),
+       vitals_12h:vitalsOf(r.vitals_12h)};
++    if(!clean.present){ clean.age=clean.sex=clean.name=clean.level=clean.on_life_support=null; clean.out=false; clean.past_12h=[]; clean.vitals_12h=null; for(const k of SUP){ clean.on_now[k]=null; clean.stopped_before_cut[k]=false; } for(const k of Object.keys(clean.p)) clean.p[k]=null; }
++    return clean;
+   }
+   const cleanRooms = list => (Array.isArray(list)?list:[]).map(cleanRoom).filter(Boolean).sort((a,b)=>a.room-b.room).filter((x,i,a)=>!i||x.room!==a[i-1].room);
+   const cfRooms = () => { const c=FC&&FC.check_first; return Array.isArray(c) ? c.map(x=>typeof x==="object"&&x?x.room:x).filter(n=>Number.isInteger(n)&&n>=1) : null; };   // objects from the backend, bare numbers from older files
+   /* pending-model: no model or probes yet. The Now side (running supports, names, counts) is real; nothing forecast is shown or computed. */
+   const isPending = () => !!FC && typeof FC==="object" && FC.forecast_state==="pending-model";
+-  const hasNow = () => { const ls=FC&&FC.life_support, nb=ls&&ls.now_by; return !!ls && fin(ls.now_patients) && !!nb && fin(nb.imv) && fin(nb.vasopressor) && fin(nb.crrt); };
++  const hasNow = () => !!(FC?.life_support && (fin(FC.life_support.now_patients)||fin(FC.life_support.now_known_patients)));
++  const nowCount = () => fin(FC?.life_support?.now_patients)?String(FC.life_support.now_patients):fin(FC?.life_support?.now_known_patients)?`At least ${FC.life_support.now_known_patients}`:"Unknown";
++  const nowDetail = () => FC?.life_support?.now_unknown_patients>0?`Support status unknown for ${FC.life_support.now_unknown_patients} rooms.`:"";
++  const supportCount = k => fin(FC?.life_support?.now_by?.[k])?String(FC.life_support.now_by[k]):fin(FC?.life_support?.now_known_by?.[k])?`At least ${FC.life_support.now_known_by[k]}`:"Unknown";
+   const nowMode = () => when==="now" || isPending();
+   const PEND_LINE = "Forecast not ready yet: the model is still being prepared.";
+   function hasFc(){ const f=FC; if(!f||typeof f!=="object"||!f.life_support) return false;
+     const ls=f.life_support, eb=ls.expected_by||{}, nb=ls.now_by||{}, rs=f.resources||{};
+-    return fin(ls.now_patients) && vq(ls.expected_new_patients) && vq(eb.imv) && vq(eb.vasopressor) && vq(eb.crrt) && fin(nb.imv) && fin(nb.vasopressor) && fin(nb.crrt) && vq(rs.icu_departure) && vq(rs.death); }
++    return fin(ls.now_patients) && vq(ls.expected_new_patients) && vqn(eb.imv) && vqn(eb.vasopressor) && vqn(eb.crrt) && fin(nb.imv) && fin(nb.vasopressor) && fin(nb.crrt) && vqn(rs.icu_departure) && vqn(rs.death); }   // one skipped event does not blank the board
+   function normY(y){
+     if(!y || typeof y!=="object") return null;
+     const kind=y.kind==="capacity"?"capacity":y.kind==="typical"?"typical":null, words=typeof y.words==="string"&&hasOwn(LEVEL_OF_WORD,y.words)?y.words:null;
+@@ -859,12 +913,12 @@
+   /* Served by app/board.py (http/https) the page reads GET /api/forecast and /api/rooms and every action is a real call; a failed load retries and keeps the last good data.
+      Only file:// or #synthetic uses the built-in generator (badge "Demo data"). */
+   const LIVE = /^https?:$/.test(location.protocol) && !flag("synthetic");
+-  let FC = null, RM = {made_at:null, rooms:[], ward:null}, DEMO_LABEL = "", seenMadeAt = null, lastRoomRunAt, pollTimer = null;
++  let FC = null, RM = {made_at:null, rooms:[], ward:null}, CONTEXT=null, contextMode=null, DEMO_LABEL = "", seenMadeAt = null, lastRoomRunAt, pollTimer = null;
+   let run = null, offline = false, failN = 0, viewTyp = false, capLocal = null, room = null, pastOpen = false;
+   const R = n => RM.rooms.find(r=>r.room===n);
+   const setZone = () => { const r0=RM.rooms[0]||{}, c=[FC&&FC.cut_time, FC&&FC.window&&FC.window.start, r0.cut_time, r0.window&&r0.window.start].map(offMin).filter(v=>v!=null); ZONE = c.length?c[0]:null; };
+   const getJSON = async (url, ms=3000) => { const c=new AbortController(), t=setTimeout(()=>c.abort(),ms);
+-    try{ const r=await fetch(url,{signal:c.signal,cache:"no-store"}); if(!r.ok) throw new Error(r.status); return await r.json(); } finally{ clearTimeout(t); } };
++    try{ const r=await fetch(url,{signal:c.signal,cache:"no-store"}); if(!r.ok){ const e=new Error(r.status); e.status=r.status; throw e; } return await r.json(); } finally{ clearTimeout(t); } };
+   /* every POST: same origin, Content-Type application/json and X-Lookahead: 1 (the server refuses anything else with 403 "request refused") */
+   const postJSON = async (url, body, ms=8000, c=new AbortController()) => { const t=setTimeout(()=>c.abort(),ms);
+     try{ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json","X-Lookahead":"1"},body:JSON.stringify(body),signal:c.signal});
+@@ -872,12 +926,23 @@
+       if(!r.ok){ j.ok=false; if(!j.started) j.started=false; if(!j.reason) j.reason=r.status===403?"request refused":`The board server answered ${r.status}.`; }
+       return j; } finally{ clearTimeout(t); } };
+   function setData(f, r){
+-    FC=f; RM={made_at:typeof r.made_at==="string"?r.made_at:null, rooms:cleanRooms(r.rooms), note:str(r.note,200), ward:r.ward};
++    FC=f; RM={made_at:typeof r.made_at==="string"?r.made_at:null, rooms:cleanRooms(r.rooms), note:str(r.note,200), ward:r.ward, snapshot_id:r.snapshot_id, cohort_id:r.cohort_id, forecast_state:r.forecast_state};
+     seenMadeAt=typeof f.made_at==="string"?f.made_at:null; setZone();
+     if(capLocal && capLocal.forMadeAt===seenMadeAt) applyCapLocal();      // our recompute holds until the next forecast
+   }
+-  async function loadAll(){ const [f,r]=await Promise.all([getJSON("/api/forecast"), getJSON("/api/rooms")]);
+-    if(!f||typeof f!=="object"||!r||typeof r!=="object") throw new Error("shape"); setData(f,r); }
++  async function loadAll(preloaded=null){
++    const capGen=capSeq, cap=getJSON("/api/capacity").catch(()=>null);      // the machine totals saved on the server, on every load; capGen: the saves made when this read began
++    if(contextMode!==false){ try{ const c=preloaded||await getJSON("/api/context");
++        if(c && c.context_mode===false && contextMode!==true) contextMode=false;      // no context is published: the server says so with 200, so the probe leaves no error in the console (an older server answers 404, handled below)
++        else { if(c.schema_version!==1 || !c.forecast || !c.rooms || c.snapshot_id!==c.forecast.snapshot_id || c.snapshot_id!==c.rooms.snapshot_id || c.cohort_id!==c.forecast.cohort_id || c.cohort_id!==c.rooms.cohort_id) throw new Error("context shape");
++          contextMode=true; CONTEXT=c; setData(c.forecast,c.rooms); seenMadeAt=c.published_at; serverMachines(await cap, capGen); return; }
++      }catch(e){ if(e.status===404 && contextMode!==true) contextMode=false; else throw e; }
++    }
++    const [f,r]=await Promise.all([getJSON("/api/forecast"), getJSON("/api/rooms")]);
++    if(!f||typeof f!=="object"||!r||typeof r!=="object") throw new Error("shape");
++    if(f.snapshot_id && r.snapshot_id && (f.snapshot_id!==r.snapshot_id || f.cohort_id!==r.cohort_id)) throw new Error("snapshot mismatch");
++    setData(f,r); serverMachines(await cap, capGen);
++  }
+   const sleep = ms => new Promise(res=>setTimeout(res,ms));
+   async function loadRetry(tries=3){ for(let i=0;i<tries;i++){ try{ await loadAll(); return true; }catch(e){ if(i<tries-1) await sleep((FAST?150:600)*Math.pow(3,i)); } } return false; }
+   function useSynthetic(){ const d=new Date(); d.setHours(7,0,0,0); if(d.getTime()>Date.now()) d.setDate(d.getDate()-1);   // the morning cut: the most recent 07:00
+@@ -893,7 +958,9 @@
+       }
+       const now=new Date(); run={...body, t0:Date.now()};
+       res({started:true, name:`t7-forecast-${z(now.getMonth()+1)}${z(now.getDate())}-${z(now.getHours())}${z(now.getMinutes())}`}); },120)); },
+-    status(){ return Promise.resolve({state: run && Date.now()-run.t0>=RUN_MS ? "done" : "running"}); },
++    status(){ const f = run ? (Date.now()-run.t0)/RUN_MS : 1;
++      if(flag("failrun") && f>=.5) return Promise.resolve({state:"failed"});
++      return Promise.resolve({state: f>=1 ? "done" : "running", phase: f<.2 ? "queued" : f<.75 ? "gpu" : "score"}); },
+     capacity(body){ return new Promise(res=>setTimeout(()=>res({ok:true, capacity:{set_at:iso(Date.now())}}),80)); }
+   };
+ 
+@@ -914,9 +981,9 @@
+     if(k) el.dataset.tip=DEF.ward[k]; else delete el.dataset.tip; el.hidden = !k; el.textContent = k==="synthetic"?"Demo data":k==="mimic-iv"?"MIMIC-IV · local":k==="open-demo"?"MIMIC-IV Demo":"";
+     el.removeAttribute("title");
+     const u=$("unit"), un=FC ? [FC.unit_name, FC.unit].find(x=>typeof x==="string"&&x.trim()) : null;      // the unit comes from the forecast (unit_name), never from the page
+-    u.hidden=!FC; u.textContent = FC ? [un?str(un,40):"ICU", fin(FC.beds)?`${Math.round(FC.beds)} beds`:""].filter(Boolean).join(" · ") : "";
+-    for(const e of document.querySelectorAll(".wardnote")) e.textContent = k==="mimic-iv" ? "Stage ward: MIMIC-IV patients." : k==="open-demo" ? "Stage ward: MIMIC-IV Demo patients." : "Demo patients.";
+-    document.title = "Lookahead · ICU forecast, next 24 hours";
++    u.hidden=!FC; u.textContent = FC ? [un?str(un,40):"ICU", fin(FC.beds)?CONTEXT?`${Math.round(FC.beds)} patients · ${RM.rooms.length} rooms`:`${Math.round(FC.beds)} beds`:""].filter(Boolean).join(" · ") : "";
++    for(const e of document.querySelectorAll(".wardnote")) e.textContent = (k==="mimic-iv" ? "Stage ward: MIMIC-IV patients." : k==="open-demo" ? "Stage ward: MIMIC-IV Demo patients." : "Demo patients.")+" Retrospective research replay, not a live hospital census.";
++    document.title = "ICU Lookahead · ICU forecast, next 24 hours";
+   }
+ 
+   /* ---------- the yardstick: the saved capacity, a local recompute, or a typical-day view ---------- */
+@@ -931,7 +998,7 @@
+   function applyCapLocal(){ if(hasFc() && capLocal) FC.yardstick=localCapYard(capLocal); }
+   const YNAME = y => y.kind==="capacity" ? "vs tonight's staffing" : "vs a typical day";
+ 
+-  /* ---------- icons, and one bed's trajectory (worked out here from the five forecasts) ---------- */
++  /* ---------- icons, and what is flagged on a bed (worked out here from the five forecasts and the thresholds) ---------- */
+   const ICON = {imv:"vent", vasopressor:"pump", crrt:"crrt", leave:"leave"};
+   const SUPN = {imv:"IMV", vasopressor:"Vasopressor", crrt:"CRRT"};
+   const ICN = {imv:"Ventilator", vasopressor:"Vasopressor", crrt:"CRRT"};
+@@ -947,17 +1014,17 @@
+   const SHORTN = {imv:"Ventilator", vasopressor:"Vasopressor", crrt:"CRRT"};
+   /* flag lines (Dema's threshold toggle): a view setting kept on this device. The page works out every bed's status from p and these lines;
+      the level the server sends is not used for status. base = the line for flagging; each support and leaving can be tuned on its own. */
+-  const LINE_DEF = {base:.25, imv:.25, vasopressor:.25, crrt:.25, leave:.6, death:.25, worse:null};      // worse: the room page's High line; null = one preset above the flag line
++  const LINE_DEF = {base:.2, imv:.2, vasopressor:.2, crrt:.2, leave:.6, worse:null};      // the standard lines (D13, D26): Watch 20%, Worsening 40%, Leaving 60%. Death has no line: it never marks a bed.      // worse: the room page's High line; null = one preset above the flag line
+   let lines = {...LINE_DEF};
+   try{ const s=JSON.parse(localStorage.getItem("lookahead-lines")||"null"); if(s && typeof s==="object") for(const k of Object.keys(LINE_DEF)) if(Number.isInteger(s[k]) && s[k]>=1 && s[k]<=99) lines[k]=s[k]/100; }catch(e){ /* no storage: the default lines */ }
+   const saveLines = () => { try{ localStorage.setItem("lookahead-lines", JSON.stringify(Object.fromEntries(Object.keys(lines).map(k=>[k,lines[k]==null?null:Math.round(lines[k]*100)])))); }catch(e){ /* storage blocked */ } };
+-  const upLine = v => { const n=[.25,.5,.75].find(x=>x>v+1e-9); return n!=null ? n : Math.min(.99, v+.2); };      // the room page's High level starts at the next preset up
++  const upLine = v => { const n=[.2,.4,.6,.8].find(x=>x>v+1e-9); return n!=null ? n : Math.min(.99, v+.2); };      // the room page's High level starts at the next preset up
+   const worseLine = v => lines.worse!=null ? Math.max(lines.worse, Math.min(.99, v+.01)) : upLine(v);      // where High starts on the room page, for a flag line v
+   const P = v => Math.round(v*100)+"%";
+   const DEF = {
++    unknown:"No estimate: a complete model forecast is unavailable", ended:"Not in the ICU at this replay time",
+     get flag(){ return `Flag beds at ${P(lines.base)}: a bed is flagged when its chance is ${P(lines.base)} or more`; },
+     none:"No life support running at 07:00", get same(){ return `No new life support at ${P(lines.base)} or more`; },
+-    dead:v=>`${pct(v)} chance of death in hospital in the next 24 h`,
+     on:k=>`${ICN[k]} running at 07:00`, start:(k,v)=>`${pct(v)} chance of starting ${START[k]} in the next 24 h`, out:v=>`${pct(v)} chance of leaving the ICU in the next 24 h`,
+     get level(){ return {High:`High: ${P(worseLine(lines.base))} or more`, Medium:`Medium: ${P(lines.base)} or more`, Low:`Low: under ${P(lines.base)}`}; },
+     band:{"USUAL":"USUAL: about a typical day", "BUSY":"BUSY: more life support than a typical day", "VERY BUSY":"VERY BUSY: well above a typical day",
+@@ -966,22 +1033,27 @@
+     bar:(what,q)=>`${what}: ${q.p50}, likely range ${q.p10} to ${q.p90} (8 in 10 outcomes)`
+   };
+   /* no bed status: an event is flagged on a bed when its chance is at or above that event's threshold in Settings */
+-  const onList = r => SUP.filter(k=>r.on_now[k]);
+-  const nextList = r => SUP.filter(k=>!r.on_now[k] && r.p[k]!=null && r.p[k]>=lines[k]).sort((a,b)=>r.p[b]-r.p[a]);
+-  const anyNew = r => 1-SUP.reduce((m,k)=>m*(r.on_now[k]||r.p[k]==null?1:1-r.p[k]),1);
++  const onList = r => SUP.filter(k=>r.on_now[k]===true);
++  const unknownList = r => SUP.filter(k=>r.on_now[k]===null);
++  /* a support whose current state is unknown (null) is not "off": it cannot start "new", and it leaves the forecast for this bed without an estimate */
++  const nextList = r => SUP.filter(k=>r.on_now[k]===false && r.p[k]!=null && r.p[k]>=lines[k]).sort((a,b)=>r.p[b]-r.p[a]);
++  /* no score for a support that is off: missing data, unless it was started and stopped before the cut (the task rule gives that no score: not a new start, and the rest of the forecast stands) */
++  const noScore = (r,k) => r.on_now[k]===false && r.p[k]==null && !r.stopped_before_cut[k];
++  const anyNew = r => SUP.some(k=>r.on_now[k]==null || noScore(r,k))?null:1-SUP.reduce((m,k)=>m*(r.on_now[k]===true||r.p[k]==null?1:1-r.p[k]),1);
++  /* a bed with a support not observed, or with no estimate: its empty Next 24 h reads "No estimate", never "nothing new" */
++  const noEst = r => anyNew(r)==null || r.p.icu_departure==null;
+   const showLeave = r => r.p.icu_departure!=null && r.p.icu_departure>=lines.leave;
+-  const showDeath = r => r.p.death!=null && r.p.death>=lines.death;
+-  /* a bed is flagged when a new life support or death is at its threshold; discharge is shown but is not a flag */
+-  const flagged = r => nextList(r).length>0 || showDeath(r);
+-  const flowWords = r => { const on=onList(r), nx=nextList(r).map(k=>`${SHORTN[k]} ${pct(r.p[k])}`);
+-    if(showDeath(r)) nx.push(`death ${pct(r.p.death)}`);
++  /* a bed is flagged when a new life support is at its threshold; discharge is shown but is not a flag. Death never flags or marks a bed (PRODUCT.md, D13). */
++  const flagged = r => nextList(r).length>0;
++  const flowWords = r => { if(r.present===false) return "Not in the ICU at this replay time."; const on=onList(r), unknown=unknownList(r), nx=nextList(r).map(k=>`${SHORTN[k]} ${pct(r.p[k])}`);
+     if(showLeave(r)) nx.push(`leaving the ICU ${pct(r.p.icu_departure)}`);
+-    return `Now: ${on.length?on.map(k=>SHORTN[k]).join(", "):"no life support"}. Next 24 hours: ${nx.length?nx.join(", "):"nothing new"}.`; };
++    return `Now: ${on.length?on.map(k=>SHORTN[k]).join(", "):unknown.length?"support unknown":"no life support"}${unknown.length?`; unknown: ${unknown.map(k=>SHORTN[k]).join(", ")}`:""}. Next 24 hours: ${nx.length?nx.join(", "):noEst(r)?"No estimate":"nothing new"}.`; };
+   function flow(r){ const on=onList(r), it=(tip,icon,name,v)=>`<span class="nx"${T(tip)}>${icon}<small><span class="nm">${name} </span>${esc(pct(v))}</small></span>`;
++    if(r.present===false) return `<span class="flow"><small class="mu">Not in the ICU at this replay time</small></span>`;
+     let next = nextList(r).map(k=>it(DEF.start(k,r.p[k]),ic(k,false),SHORTN[k],r.p[k])).join("");
+-    if(showDeath(r)) next += it(DEF.dead(r.p.death),svg("death"),"Death",r.p.death);
+     if(showLeave(r)) next += it(DEF.out(r.p.icu_departure),ic("leave",false),"Discharge",r.p.icu_departure);
+-    return `<span class="flow" aria-hidden="true"><span class="col"><span class="cap">Now</span><span class="its">${on.length?on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}<small><span class="nm">${SHORTN[k]}</span></small></span>`).join(""):`<small class="mu"${T(DEF.none)}>no support</small>`}</span></span>${svg("arrow","","arr")}<span class="col"><span class="cap">Next 24 h</span><span class="its">${next||`<small class="mu"${T(DEF.same)}>nothing new</small>`}</span></span></span>`; }
++    const unknown=unknownList(r), now=on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}<small><span class="nm">${SHORTN[k]}</span></small></span>`).join("")+(unknown.length?`<small class="mu">${esc(unknown.map(k=>SHORTN[k]).join(", "))} unknown</small>`:"");
++    return `<span class="flow" aria-hidden="true"><span class="col"><span class="cap">Now</span><span class="its">${now||`<small class="mu"${T(DEF.none)}>no support</small>`}</span></span>${svg("arrow","","arr")}<span class="col"><span class="cap">Next 24 h</span><span class="its">${next||`<small class="mu"${T(noEst(r)?DEF.unknown:DEF.same)}>${noEst(r)?"No estimate":"nothing new"}</small>`}</span></span></span>`; }
+   /* Dema's range bar: track, the 8-in-10 range, a bead at the median, a solid ink line for what is free or covered, a dashed one for a typical day */
+   function bar(q, mark, typ, top, tip){ const max=Math.max(q.p90, mark==null?0:mark, typ==null?0:typ, top||0, 1)+1, x=v=>Math.round((6+(v/max)*288)*10)/10;
+     return `<svg class="bar" viewBox="0 0 300 24" preserveAspectRatio="xMinYMid meet" aria-hidden="true"${tip?T(tip):""}><rect x="0" y="0" width="300" height="24" fill="none" pointer-events="all"/><line class="trk" x1="6" x2="294" y1="12" y2="12"/><line class="rng" x1="${x(q.p10)}" x2="${Math.max(x(q.p90),x(q.p10)+2)}" y1="12" y2="12"/>${typ!=null?`<line class="typ" x1="${x(typ)}" x2="${x(typ)}" y1="1" y2="23"/>`:""}${mark!=null?`<rect class="cap" x="${x(mark)-1.5}" y="0" width="3" height="24"/>`:""}<circle class="med" cx="${x(q.p50)}" cy="12" r="4.5"/></svg>`; }
+@@ -1024,15 +1096,15 @@
+     b.onkeydown=e=>{ if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight") return; e.preventDefault(); const o=b.parentElement.querySelector(`button[data-w="${e.key==="ArrowLeft"?"now":"next"}"]`); o.focus(); setWhen(o.dataset.w,true); }; }
+ 
+   /* the flag control: three presets and a small Thresholds popover (per-event steppers with the beds each catches, and a custom line) */
+-  const flagCount = k => RM.rooms.filter(r => k==="leave" ? r.p.icu_departure!=null && r.p.icu_departure>=lines.leave : k==="death" ? r.p.death!=null && r.p.death>=lines.death : !r.on_now[k] && r.p[k]!=null && r.p[k]>=lines[k]).length;
++  const flagCount = k => RM.rooms.filter(r => k==="leave" ? r.p.icu_departure!=null && r.p.icu_departure>=lines.leave : r.on_now[k]===false && r.p[k]!=null && r.p[k]>=lines[k]).length;
+   function paintFlag(){ const pv=Math.round(lines.base*100), even=SUP.every(k=>lines[k]===lines.base);
+     for(const b of $("flag").querySelectorAll("button")) b.disabled=isPending();
+     for(const b of $("fseg").children) b.setAttribute("aria-pressed", String(even && +b.dataset.p===pv));
+-    $("flag-l").dataset.tip=DEF.flag; $("flag-l").textContent = even && [50,25,10].includes(pv) ? "Flag beds at" : `Flag beds at ${even?P(lines.base):"custom"}`;
++    $("flag-l").dataset.tip=DEF.flag; $("flag-l").textContent = even && [40,20,10].includes(pv) ? "Flag beds at" : `Flag beds at ${even?P(lines.base):"custom"}`;
+     const pop=$("thrpop"); if(pop.hidden) return; if(isPending()){ pop.innerHTML=`<p class="seti">Thresholds can be set once there is a forecast.</p>`; return; }
+     const act=document.activeElement, keep=act && pop.contains(act) ? [act.dataset.k, act.dataset.d] : null;
+     const row=(k,name,icon)=>{ const n=flagCount(k), v=Math.round(lines[k]*100); return `<div class="lrow"><span class="nm">${icon}${name}</span><button type="button" class="step" data-k="${k}" data-d="-5" aria-label="${name}: flag 5 points lower"${v<=5?" disabled":""}>−</button><span class="val">${v}%</span><button type="button" class="step" data-k="${k}" data-d="5" aria-label="${name}: flag 5 points higher"${v>=95?" disabled":""}>+</button><span class="cnt">${n} ${n===1?"bed":"beds"}</span></div>`; };
+-    pop.innerHTML=`${SUP.map(k=>row(k,SHORTN[k],ic(k,false))).join("")}${row("leave","Leaving",ic("leave",false))}${row("death","Death",svg("death"))}
++    pop.innerHTML=`${SUP.map(k=>row(k,SHORTN[k],ic(k,false))).join("")}${row("leave","Leaving",ic("leave",false))}
+       <div class="cust"><label for="thr-all">All supports</label><input id="thr-all" type="number" inputmode="numeric" min="1" max="99" step="1" value="${pv}"><span>%</span><span class="spacer"></span><button type="button" class="toggle" id="thr-reset">Reset</button></div>`;
+     for(const b of pop.querySelectorAll(".step")) b.onclick=()=>setLine(b.dataset.k, Math.round(lines[b.dataset.k]*100)+ +b.dataset.d);
+     $("thr-all").onchange=e=>{ const v=Math.round(+e.target.value); if(v>=1&&v<=99){ setBase(v); $("thr-all").focus(); } else e.target.value=pv; };
+@@ -1042,20 +1114,21 @@
+   function setLine(k, v){ lines[k]=Math.max(1,Math.min(99,v))/100; if(SUP.includes(k)) lines.base=Math.min(...SUP.map(s=>lines[s])); applyLines(); }
+   function setBase(v){ lines.base=v/100; for(const k of SUP) lines[k]=lines.base; applyLines(); }
+   for(const b of $("fseg").children) b.onclick=()=>setBase(+b.dataset.p);
++  $("flag-reset").onclick=()=>{ lines={...LINE_DEF}; applyLines(); $("flag-reset").focus(); };
+   /* the settings panel: the gear opens it. Close, Escape or a press outside closes it. */
+   const menu=$("setmenu"), gear=$("gear");
+   function setMenu(on, at){ menu.hidden=!on; $("thrpop").hidden=!on; gear.setAttribute("aria-expanded",String(on));
+     if(!on) return; paintFlag(); $("set-h").focus({preventScroll:true}); if(at) $(at).scrollIntoView({block:"start"}); else menu.scrollTop=0; }
+   gear.onclick=()=>setMenu(menu.hidden);
+   $("setclose").onclick=()=>{ setMenu(false); gear.focus(); };
+-  document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !menu.hidden){ setMenu(false); gear.focus(); } });
++  document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !menu.hidden){ e.preventDefault(); setMenu(false); gear.focus(); } });      // one panel per Escape: the open bed stays
+   document.addEventListener("pointerdown", e=>{ if(!menu.hidden && !menu.contains(e.target) && !gear.contains(e.target)) setMenu(false); });
+   function paintLegend(){
+     if(nowMode()) $("legend").innerHTML = `<span${T("Critical: on two or more life supports at 07:00")}><i class="sw t-worse"></i>Critical <b>${RM.rooms.filter(r=>onList(r).length>=2).length}</b></span><i class="sep"></i>`+SUP.map(k=>`<span${T(DEF.on(k))}>${ic(k,true)}${SHORTN[k]}</span>`).join("")+`<i class="sep"></i><span>Life support running at 07:00</span>`;
+     else $("legend").innerHTML = SUP.map(k=>`<span${T(`${SHORTN[k]}. Solid: running at 07:00. Circled with a percentage: the chance it starts in the next 24 h`)}>${ic(k,true)}${cb(ic(k,false))}${SHORTN[k]}</span>`).join("")
+-      +`<span${T("Leaving the ICU for a ward or step-down unit in the next 24 h")}>${cb(ic("leave",false))}Discharge</span><span${T(`Death in hospital in the next 24 h, at ${P(lines.death)} or more`)}>${cb(svg("death"))}Death</span>`;
++      +`<span${T("Leaving the ICU for a ward or step-down unit in the next 24 h")}>${cb(ic("leave",false))}Discharge</span>`;
+     $("iconkey").innerHTML = SUP.map(k=>`<span${T(DEF.on(k))}>${ic(k,true,ICN[k]+" running")}${cb(ic(k,false,ICN[k]+" expected"))}${SHORTN[k]}</span>`).join("")
+-      +`<span>${cb(ic("leave",false,"Leaving the ICU"))}Discharge from the ICU</span><span>${cb(svg("death","Death in hospital"))}Death</span><span>Solid: running at 07:00. Circled: the chance it happens in the next 24 h, shown at its threshold.</span>`;
++      +`<span>${cb(ic("leave",false,"Leaving the ICU"))}Discharge from the ICU</span><span>${svg("death","Death in hospital")}Death: a unit count and a row in an opened bed, never on a bed's card</span><span>Solid: running at 07:00. Circled: the chance it happens in the next 24 h, shown at its threshold.</span>`;
+     $("defflag").textContent = `${DEF.flag}. Kept on this device; Settings sets each event's threshold.`;
+     $("defband").innerHTML = Object.values(DEF.band).map(s=>`<span>${esc(s)}.</span>`).join(" "); }
+ 
+@@ -1064,6 +1137,13 @@
+   function unitLine(){ const ls=FC.life_support, y=Y(); return `<b>${ls.now_patients}</b> on life support now · <b>${ls.expected_new_patients.p50}</b> more expected ${rgT(ls.expected_new_patients)}${y?` · ${y.words} ${YNAME(y)}`:""}`; }
+   function renderStrain(){
+     const tbtn=$("viewtyp"), sl=$("sline");
++    if(hasNow() && !hasFc()){
++      const pending=FC.forecast_state==="pending-model", extra=nowDetail();
++      $("strainbody").innerHTML=`<div class="lh"><h2 id="strain-h">Life support</h2></div><div class="nums"><span><b>${esc(nowCount())}</b><i>on life support now</i></span>${when==="next"?`<span class="f"><b>No estimate</b><i>${pending?"Model pending":"Forecast unavailable"}</i></span>`:""}</div><p class="barl">${esc(extra)}</p>`;
++      $("lead").className="lead"; $("deaths").textContent=when==="next"?"Deaths: No estimate":""; $("capset").textContent=""; tbtn.hidden=true; sl.hidden=false; delete $("strainview").dataset.cards; $("alerts").hidden=true;
++      sl.innerHTML=`<span><b>${esc(nowCount())}</b> on life support now</span>${when==="next"?'<span class="f">No estimate</span>':""}`;
++      sl.setAttribute("aria-label",`${nowCount()} on life support now. ${extra}${when==="next"?" Next 24 hours: No estimate.":""}`); renderWatch(); return;
++    }
+     if(!hasFc() && !(isPending() && hasNow())){
+       const off = offline && !FC;
+       $("strainbody").innerHTML=`<div class="lh"><h2 id="strain-h">Life support</h2></div><p class="nums"><span><b>No forecast yet</b></span></p><p class="barl">${off?"Can't reach the board server — retrying.":'Updates start at 07:00. Use "Update the unit" to start one.'}</p>`;
+@@ -1082,7 +1162,7 @@
+       ${bar(load, mark, typ, 0, DEF.bar("On life support now plus expected new starts",load)+(mark!=null?`\nSolid line: tonight's staffing covers ${mark}`:typ!=null?`\nDashed line: a typical day, ${typ}`:""))}
+       <p class="barl">Now plus new <b>${load.p50}</b> ${rgT(load)}${mark!=null?` · staffing covers <b>${mark}</b>`:typ!=null?` · typical day <b>${typ}</b>`:""}</p>`;
+     $("lead").className = "lead"+(y&&y.level!=="ok"?` lv-${y.level}`:"");
+-    $("deaths").innerHTML = `<span${T(DEF.bar("Deaths expected in the unit in the next 24 h",dd))}>Deaths expected in the unit <b>${dd.p50}</b> ${rgT(dd)}</span>`;
++    $("deaths").innerHTML = vq(dd) ? `<span${T(DEF.bar("Deaths expected in the unit in the next 24 h",dd))}>Deaths expected in the unit <b>${dd.p50}</b> ${rgT(dd)}</span>` : `<span>Deaths expected in the unit <b>no data</b></span>`;
+     sl.hidden=false; sl.setAttribute("aria-label",`Unit forecast: ${ls.now_patients} on life support now, ${q.p50} new expected in 24 hours${y?`, ${y.words}`:""}`);
+     sl.innerHTML = `<span${T("Patients on a ventilator, vasopressor or CRRT at 07:00")}><b>${ls.now_patients}</b> on life support now</span><span class="f"${T(DEF.bar("Patients expected to start life support in the next 24 h",q))}><b>+${q.p50}</b> new expected in 24 h</span>${y?`<span class="band lv-${y.level}"${T(DEF.band[y.words])}>${y.words}</span>`:""}`;
+     let cs="";
+@@ -1096,14 +1176,15 @@
+     const warn=svg("warn"), w3=topBeds();
+     $("alerts").hidden=false; $("runbadge").hidden=false; $("runbadge").textContent=`Last run ${hm(FC.made_at)}`;
+     $("albody").innerHTML = [["imv","Ventilators"],["crrt","CRRT"]].map(([k,nm])=>{ const g=gapOf(k); return g>0 ? `<span class="al red"${T(DEF.band.SHORT)}>${warn}${nm} short by ${g}</span>` : g===0 && flagCount(k)>0 ? `<span class="al amber"${T(DEF.band["AT LIMIT"])}>${warn}${nm} at the limit, none spare</span>` : ""; }).join("")
++      + (vq(dd) ? `<span class="dth"${T(DEF.bar("Deaths expected in the unit in the next 24 h",dd))}>${svg("death")}Deaths expected <b>${dd.p50}</b> ${rgT(dd)}</span>` : `<span class="dth"${T("No estimate for deaths in this forecast: no data, not zero")}>${svg("death")}Deaths expected <b>no data</b></span>`)
+       + (w3.length ? `<span class="hi"><span>Highest-risk beds</span>${w3.map(n=>`<button type="button" class="bedchip" data-room="${n}" aria-label="Open bed ${n}, one of the highest-risk beds">${n}</button>`).join("")}</span>` : "")
+       + (cs ? `<span class="capset">${esc(cs)}</span>` : "");
+     for(const b of $("alerts").querySelectorAll(".bedchip")) b.onclick=()=>openRoom(+b.dataset.room);
+     renderWatch();
+   }
+-  /* Dema's capacity bar, used when a number free is set: the whole bar is the total (in use + free); solid = in use now,
++  /* Dema's capacity bar, used when a number free is set: the whole bar is the total (the saved machine total, which use may already exceed; null when no total is set); solid = in use now,
+      lighter = with the flagged beds; it turns red when that passes the total. */
+-  function usageBar(on, free, pred, tip){ const tot=free!=null?on+free:null, sum=on+pred, over=tot!=null&&sum>tot, max=tot!=null?Math.max(tot,1):Math.max(sum,1)+1, x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
++  function usageBar(on, tot, pred, tip){ const sum=on+pred, over=tot!=null&&sum>tot, max=tot!=null?Math.max(tot,1):Math.max(sum,1)+1, x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
+     return `<svg class="ubar" viewBox="0 0 300 46" preserveAspectRatio="xMinYMid meet" role="img" aria-label="${on} in use now, ${sum} with the flagged beds${tot!=null?`, ${tot} in total${over?": over the total":""}`:", no total set"}"${tip?T(tip):""}>
+       <rect x="0" y="0" width="300" height="46" fill="none" pointer-events="all"/><line x1="6" x2="294" y1="25" y2="25" stroke="var(--fig)" stroke-width="10" stroke-linecap="round"/>
+       ${sum?`<line x1="6" x2="${x(sum)}" y1="25" y2="25" stroke="${col}" stroke-opacity=".4" stroke-width="10" stroke-linecap="round"/>`:""}
+@@ -1111,45 +1192,46 @@
+       <line x1="${x(on)}" x2="${x(on)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3"/><text x="${x(on)}" y="11" text-anchor="middle" font-size="14" font-weight="700">${on}</text>
+       ${pred?`<line x1="${x(sum)}" x2="${x(sum)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3" stroke-dasharray="3 2"/>${x(sum)-x(on)>24?`<text x="${Math.min(x(sum),286)}" y="11" text-anchor="${x(sum)>280?"end":"middle"}" font-size="14" font-weight="700">${sum}*</text>`:""}`:""}
+       ${tot!=null?`<text x="294" y="45" text-anchor="end" font-size="13">${tot} total</text>`:""}</svg>`; }
+-  /* a bed's top risk: its highest chance among death and the supports it is not on yet; the three highest in the unit pulse (Dema's rule), with ties */
+-  const RISKK = ["death","imv","vasopressor","crrt"];
+-  const riskOf = (r,k) => k==="death" ? r.p.death : k==="leave" ? r.p.icu_departure : r.on_now[k] ? null : r.p[k];
++  /* a bed's top risk: its highest chance among the supports it is not on yet; the three highest in the unit pulse (Dema's rule), with ties */
++  const RISKK = ["imv","vasopressor","crrt"];   // death never ranks or marks a bed (PRODUCT.md): it is a unit count and a row in the bed view
++  const riskOf = (r,k) => k==="death" ? r.p.death : k==="leave" ? r.p.icu_departure : r.on_now[k]===false ? r.p[k] : null;      // a support that is on, or not observed, has no "new start" chance
+   const topRisk = r => { let best=null; for(const k of RISKK){ const v=riskOf(r,k); if(v!=null && (!best || v>best[1])) best=[k,v]; } return best; };
+   const topBeds = () => { const l=RM.rooms.map(r=>[r.room,topRisk(r)]).filter(x=>x[1]).sort((a,b)=>b[1][1]-a[1][1]); if(l.length<=3) return l.map(x=>x[0]);
+     const cut=Math.round(l[2][1][1]*100); return l.filter(x=>Math.round(x[1][1]*100)>=cut).map(x=>x[0]); };      // the top three, plus any bed tied with the third at the shown percent
+-  const gapOf = k => { const fr=machFree(k); return fr==null ? null : flagCount(k)-fr; };      // flagged beds minus what is free
++  const gapOf = k => { const sp=machSpare(k); return sp==null ? null : flagCount(k)-sp; };      // flagged beds minus what is spare; machines already over the total count too
+   /* the beds behind each count: solid ink figures are on that support now, the others fill with the chance (2 in 10 or more; leaving at 6 in 10 or more) */
+   /* Dema's bed figure: head and shoulders, the bed number, a label; p fills it from the bottom, dv is a stack of support badges */
+   const fig = (r,cls,p,label,name,dv) => `<button type="button" class="pp${cls?" "+cls:""}" data-room="${r.room}" aria-label="Bed ${r.room}${r.name?`, ${esc(r.name.full)}`:""}: ${name}"${T(`Bed ${r.room}${r.name?` · ${r.name.display}`:""} · ${name}`)}><span class="av"${p!=null?` style="--p:${Math.round(p*100)}%"`:""} aria-hidden="true"><svg class="base" viewBox="0 0 40 42"><use href="#i-fig"/></svg>${p!=null?`<svg class="fill" viewBox="0 0 40 42"><use href="#i-fig"/></svg>`:""}</span><span class="rm">${r.room}</span>${label?`<span class="pc">${label}</span>`:""}${dv?`<span class="dv" aria-hidden="true">${dv}</span>`:""}</button>`;
+   function renderWatch(){
+-    const el=$("watch"); if((!hasFc() && !(isPending() && hasNow())) || !RM.rooms.length){ el.innerHTML=""; return; }
++    const el=$("watch"); if(!hasNow() || !RM.rooms.length){ el.innerHTML=""; return; }
+     const ls=FC.life_support, y=Y(), rs=RM.rooms, first=FIRST[role()], CARDN={imv:"Ventilator (IMV)", vasopressor:"Vasopressor", crrt:"CRRT"};
+-    const top = Math.max(...SUP.map(k=>ls.expected_by[k].p90));      // the three support bars share one scale
+-    if(nowMode()){
++    const top = Math.max(0,...SUP.map(k=>vq(ls.expected_by?.[k])?ls.expected_by[k].p90:0));      // the three support bars share one scale
++    if(nowMode() || !hasFc()){
+       el.innerHTML = SUP.map(k=>{ const on=rs.filter(r=>r.on_now[k]); return `<article class="wc" data-k="${k}" style="order:${first===k?0:1}" aria-labelledby="wc-${k}">
+         <header>${ic(k,true)}<div><h3 id="wc-${k}">${CARDN[k]}</h3><p class="wsub">patients on ${START[k]} at 07:00</p></div></header>
+-        <div class="nums"><span><b>${ls.now_by[k]}</b><i>on now</i></span>${machFree(k)!=null?`<span${T(`${k==="imv"?"Ventilators":"CRRT machines"} free now`)}><b>${machFree(k)}</b><i>free${machines[k]!=null?` of ${machines[k]}`:""}</i></span>`:""}</div>
+-        <span class="gl">On now</span>${on.length?`<div class="set">${on.map(r=>fig(r,"on",null,"",`on ${START[k]} now`)).join("")}</div>`:`<p class="nobody">None</p>`}</article>`; }).join("");
++        <div class="nums"><span><b>${esc(supportCount(k))}</b><i>on now</i></span>${machFree(k)!=null?`<span${T(`${k==="imv"?"Ventilators":"CRRT machines"} free now`)}><b>${machFree(k)}</b><i>free${machines[k]!=null?` of ${machines[k]}`:""}${machSpare(k)<0?` · ${-machSpare(k)} over`:""}</i></span>`:""}</div>
++        <span class="gl">On now</span>${on.length?`<div class="set">${on.map(r=>fig(r,"on",null,"",`on ${START[k]} now`)).join("")}</div>`:`<p class="nobody">${ls.now_unknown_by?.[k]>0?"None confirmed":"None"}</p>`}${ls.now_unknown_by?.[k]>0?`<p class="nobody">Support status unknown for ${ls.now_unknown_by[k]} rooms.</p>`:""}</article>`; }).join("");
+       for(const b of el.querySelectorAll(".pp")) b.onclick=()=>openRoom(+b.dataset.room); return; }
+     /* Dema's cards: one per event. Predicted new* is the beds at or above that event's threshold; the unit forecast (expected count, 8-in-10 range) sits under it. */
+     const NAME={death:"Deaths", imv:"Ventilator", vasopressor:"Vasopressor", crrt:"CRRT", leave:"Leave the ICU to ward or step-down"}, EVW={death:"death in hospital", imv:"starting a ventilator", vasopressor:"starting a vasopressor", crrt:"starting CRRT", leave:"leaving the ICU"}, SHORTEV={death:"Death", imv:"Vent", vasopressor:"Press", crrt:"CRRT"};
+     const w3=topBeds(), nb=n=>n?`${n} ${n===1?"bed":"beds"}`:"no beds", flagged=new Set();
+     const card = k => { const sup=SUP.includes(k), c = k==="death" ? FC.resources.death : k==="leave" ? FC.resources.icu_departure : ls.expected_by[k], q = c && c.p50!=null ? c : null;
+-      const may=rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), n=may.length; if(k!=="leave") for(const r of may) flagged.add(r.room);
++      const may=k==="death" ? [] : rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), skey = k==="leave" ? "icu_departure" : k, na = !q && (naq(c) || rs.some(r=>r.skipped && r.skipped[skey])), n = na ? 0 : may.length; if(k!=="leave" && k!=="death" && !na) for(const r of may) flagged.add(r.room);   // na: the probe was skipped, so there is no estimate (not zero)
+       const mach = k==="imv"||k==="crrt", free = sup ? machFree(k) : null, onN = sup ? rs.filter(r=>r.on_now[k]).length : 0;
+-      const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is free
++      const spare = sup ? machSpare(k) : null, st = spare==null ? null : n>spare ? "SHORT" : n===spare && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is spare (below zero when more are in use than the saved total)
+       const freeable = k==="imv"||k==="crrt" ? rs.filter(r=>r.on_now[k] && r.p.icu_departure!=null && r.p.icu_departure>=lines.leave).length : 0;
+       const frees = k==="leave" ? ["imv","crrt"].map(x=>[x,may.filter(r=>r.on_now[x]).length]).filter(x=>x[1]) : [];
+       return `<article class="wc${lv?` lv-${lv}`:""}" data-k="${k}" style="order:${first===k?0:1};--w:${Math.max(4,Math.min(10,n))}" aria-labelledby="wc-${k}">
+         <h3 id="wc-${k}">${NAME[k]}${st?`<span class="band lv-${lv}"${T(DEF.band[st])}>${st}</span>`:""}</h3>
+-        <div class="stats">${sup?`<span${T(`Patients on ${START[k]} at 07:00`)}><i>On now</i><b>${ls.now_by[k]}</b><small>beds</small></span>`:""}${mach ? (free!=null?`<span class="free"${T(`${k==="imv"?"Ventilators":"CRRT machines"} free: ${free}${machines[k]!=null?` of ${machines[k]} on the unit`:""}`)}><i>Free</i><b>${free}</b><small>${machines[k]!=null?`of ${machines[k]}`:"&nbsp;"}</small></span>`:`<span${T(`No total is set for ${k==="imv"?"ventilators":"CRRT machines"}: set it in Settings, under Capacity`)}><i>Free</i><b>–</b><small><button type="button" class="chg capset-go" aria-label="Set the total ${k==="imv"?"ventilators":"CRRT machines"} in settings">not set</button></small></span>`) : ""}<span class="exp"${T("Beds at or above this event's threshold: a flag per bed, not a certainty")}><i>Predicted new*</i><b>${n}</b></span></div>
+-        ${q?`<p class="fc"${T(DEF.bar(`Unit forecast: ${EVW[k]}`,q))}>Unit forecast <b>${q.p50}</b> ${rgT(q)}</p>`:""}
++        <div class="stats">${sup?`<span${T(`Patients on ${START[k]} at 07:00`)}><i>On now</i><b>${esc(supportCount(k))}</b><small>beds</small></span>`:""}${mach ? (free!=null?`<span class="free"${T(`${k==="imv"?"Ventilators":"CRRT machines"} free: ${free}${machines[k]!=null?` of ${machines[k]} on the unit`:""}`)}><i>Free</i><b>${free}</b><small>${machines[k]!=null?`of ${machines[k]}${machSpare(k)<0?` · ${-machSpare(k)} over`:""}`:"&nbsp;"}</small></span>`:`<span${T(`No total is set for ${k==="imv"?"ventilators":"CRRT machines"}: set it in Settings, under Capacity`)}><i>Free</i><b>–</b><small><button type="button" class="chg capset-go" aria-label="Set the total ${k==="imv"?"ventilators":"CRRT machines"} in settings">not set</button></small></span>`) : ""}${k==="death" ? (q?`<span${T(DEF.bar("Deaths expected in the unit in the next 24 h",q))}><i>Unit forecast</i><b>${q.p50}</b><small>likely range ${q.p10} to ${q.p90}</small></span>`:`<span${T("No estimate for this event in this forecast: no data, not zero")}><i>Unit forecast</i><b>–</b><small>no data</small></span>`) : `<span class="exp"${T(na ? "No estimate for this event in this forecast: no data, not zero" : "Beds at or above this event's threshold: a flag per bed, not a certainty")}><i>Predicted new*</i><b>${na?"–":n}</b>${na?"<small>no data</small>":""}</span>`}</div>
++        ${k==="death"?"":q?`<p class="fc"${T(DEF.bar(`Unit forecast: ${EVW[k]}`,q))}>Unit forecast <b>${q.p50}</b> ${rgT(q)}</p>`:na?`<p class="fc">Unit forecast <b>not available</b></p>`:""}
+         ${freeable?`<p class="frees"${T(`Beds on ${START[k]} now with ${P(lines.leave)} or more to leave the ICU`)}><i>${ic(k,true)}</i><b>${freeable}</b> may free up if likely leavers go</p>`:""}
+         ${frees.length?`<p class="frees">If these beds leave, they free ${frees.map(([x,m])=>`<i>${ic(x,true)}</i><b>${m}</b> ${x==="imv"?(m===1?"ventilator":"ventilators"):"CRRT"}`).join(" ")}</p>`:""}
+-        ${mach ? usageBar(onN, free, n, `${onN} in use now, ${onN+n} with the ${n} flagged${free!=null?`, ${onN+free} in total`:"; no total set"}`) : ""}
+-        <span class="gl">Beds to watch</span>
+-        <p class="bedline"${T(DEF.flag)}>Beds at <b>${P(lines[k])}</b> or more · <b>${nb(n)}</b> <button type="button" class="chg" aria-label="Change the threshold for ${NAME[k]} in settings">Change</button></p>
+-        ${n?`<div class="set">${may.map(r=>fig(r, k!=="leave" && w3.includes(r.room) && topRisk(r)[0]===k ? "w" : "", null, esc(pct(riskOf(r,k))), `${pct(riskOf(r,k))} chance of ${EVW[k]}`, k==="leave" ? SUP.filter(x=>r.on_now[x]).map(x=>`<i>${ic(x,true)}</i>`).join("") : "")).join("")}</div>`:""}</article>`; };
++        ${mach ? usageBar(onN, free!=null?machTotal(k):null, n, `${onN} in use now, ${onN+n} with the ${n} flagged${free!=null?`, ${machTotal(k)} in total`:"; no total set"}`) : ""}
++        <span class="gl">${k==="death"?"Unit count only":"Beds to watch"}</span>
++        ${na?`<p class="bedline"><b>No estimate for this event</b> · not counted as zero</p>`:""}
++        ${k==="death" ? (na?"":`<p class="bedline">Counted for the whole unit. No bed is listed or ranked by death.</p>`) : `<p class="bedline"${T(DEF.flag)}${na?" hidden":""}>Beds at <b>${P(lines[k])}</b> or more · <b>${nb(n)}</b> <button type="button" class="chg" aria-label="Change the threshold for ${NAME[k]} in settings">Change</button></p>`}
++        ${n&&k!=="death"?`<div class="set">${may.map(r=>fig(r, k!=="leave" && w3.includes(r.room) && topRisk(r)[0]===k ? "w" : "", null, esc(pct(riskOf(r,k))), `${pct(riskOf(r,k))} chance of ${EVW[k]}`, k==="leave" ? SUP.filter(x=>r.on_now[x]).map(x=>`<i>${ic(x,true)}</i>`).join("") : "")).join("")}</div>`:""}</article>`; };
+     const cards=["death",...SUP,"leave"].map(card).join(""), rest=rs.filter(r=>!flagged.has(r.room));
+     el.innerHTML = cards + (rest.length ? `<article class="wc rest" aria-labelledby="wc-rest"><h3 id="wc-rest">Other beds</h3><p class="bedline"><b>under every threshold · ${nb(rest.length)}</b></p>
+         <div class="set">${rest.map(r=>{ const t=topRisk(r); return fig(r, "", null, t?`${SHORTEV[t[0]]}<br>${esc(pct(t[1]))}`:"–", t?`highest chance: ${EVW[t[0]]}, ${pct(t[1])}`:"no estimate"); }).join("")}</div></article>` : "");
+@@ -1157,9 +1239,9 @@
+     for(const b of el.querySelectorAll(".pp")) b.onclick=()=>openRoom(+b.dataset.room);
+   }
+   function renderFooter(){
+-    if(!hasFc()){ $("alltasks").innerHTML=`<tr><td colspan="3">—</td></tr>`; return; }
++    if(!FC?.resources){ $("alltasks").innerHTML=`<tr><td colspan="3">No estimate</td></tr>`; return; }
+     const T = [["IMV starts","invasive ventilation begins (tube or tracheostomy)","ventilator"],["Vasopressor starts","a vasopressor infusion starts (not inotropes alone)","vasopressor"],["CRRT starts","continuous dialysis begins","crrt"],["ICU discharges","leave the ICU for a ward or step-down unit","icu_departure"],["Death","in-hospital death","death"]];
+-    $("alltasks").innerHTML = T.map(([n,def,k])=>{ const c=FC.resources[k]; if(!vq(c)) return `<tr><th scope="row">${n}<span class="range">${def}</span></th><td class="num">—</td><td></td></tr>`;
++    $("alltasks").innerHTML = T.map(([n,def,k])=>{ const c=FC.resources[k]; if(!vq(c)) return `<tr><th scope="row">${n}<span class="range">${def}</span></th><td class="num">No estimate</td><td></td></tr>`;
+       return `<tr><th scope="row">${n}<span class="range">${def}</span></th><td class="num">${c.p50} <span class="range">${rgT(c)}</span></td><td>${esc(str(c.team,40))}</td></tr>`; }).join("");
+   }
+ 
+@@ -1170,22 +1252,30 @@
+   const rn = n => { const r=R(n); return `bed ${n}${r&&r.name?` (${r.name.display})`:""}`; };
+   function bedTile(r){
+     const who=[r.sex,r.age].filter(Boolean).join(" "), b=document.createElement("button");
+-    b.type="button"; b.className="bed"+(flagged(r)?" hit":""); b.dataset.room=r.room; b.dataset.level=r.level||"none"; b.dataset.state=flagged(r)?"flagged":"clear"; b.dataset.ftip=flowWords(r);
++    b.type="button"; b.className="bed"+(flagged(r)?" hit":""); b.dataset.room=r.room; b.dataset.level=r.level||"none"; b.dataset.state=flagged(r)?"flagged":noEst(r)?"unknown":"clear"; b.dataset.ftip=flowWords(r);
+     b.setAttribute("aria-label",`Bed ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${flowWords(r)}`);
+-    { const on=onList(r), it=(tip,icon,v)=>`<span class="nx"${T(tip)}>${icon}<small>${esc(pct(v))}</small></span>`;
++    { const on=onList(r), unknown=unknownList(r), it=(tip,icon,v)=>`<span class="nx"${T(tip)}>${icon}<small>${esc(pct(v))}</small></span>`;
+       let next = nextList(r).map(k=>it(DEF.start(k,r.p[k]),cb(ic(k,false)),r.p[k])).join("");
+-      if(showDeath(r)) next += it(DEF.dead(r.p.death),cb(svg("death")),r.p.death);
+       if(showLeave(r)) next += it(DEF.out(r.p.icu_departure),cb(ic("leave",false)),r.p.icu_departure);
+       b.innerHTML=`<span class="bt"><span class="av" aria-hidden="true"><svg viewBox="0 0 40 42"><use href="#i-fig"/></svg></span><span class="rm">${r.room}</span>${whoH(r)}</span>
+-        <span class="nowl" aria-hidden="true">${on.length?on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}</span>`).join(""):`<small class="mu"${T(DEF.none)}>No life support</small>`}</span>
+-        <span class="nextl" aria-hidden="true"><span class="cap">Next 24 h</span>${next||`<small class="mu"${T(DEF.same)}>nothing new</small>`}</span>`; }
+-    if(nowMode()){ const on=onList(r), n=on.length;      // Now: only what is running at 07:00; weight is the number of supports
+-      b.className="bed s"+Math.min(n,2)+(n?" on":""); b.dataset.state="now-"+n; b.dataset.ftip = n ? `Life support running at 07:00: ${on.map(k=>SHORTN[k]).join(", ")}` : DEF.none;
+-      b.setAttribute("aria-label",`Bed ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${n?`on ${on.map(k=>SHORTN[k]).join(", ")}`:"no life support"} at 07:00.`);
+-      b.innerHTML=`<span class="bt"><span class="av" aria-hidden="true"><svg viewBox="0 0 40 42"><use href="#i-fig"/></svg></span><span class="rm">${r.room}</span>${whoH(r)}${n>=2?`<span class="st"${T(`On ${n} life supports at 07:00`)}>${n} supports</span>`:""}</span><span class="nowl" aria-hidden="true">${n?"":`<small class="mu"${T(DEF.none)}>No life support</small>`}${on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}</span>`).join("")}</span>`; }
++        <span class="nowl" aria-hidden="true">${on.length||unknown.length?on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}</span>`).join("")+(unknown.length?`<small class="mu">${esc(unknown.map(k=>SHORTN[k]).join(", "))} unknown</small>`:""):`<small class="mu"${T(DEF.none)}>No life support</small>`}</span>
++        <span class="nextl" aria-hidden="true"><span class="cap">Next 24 h</span>${next||`<small class="mu"${T(noEst(r)?DEF.unknown:DEF.same)}>${noEst(r)?"No estimate":"nothing new"}</small>`}</span>`; }
++    if(r.present===false){ b.className="bed"; b.dataset.state="ended"; b.dataset.ftip=DEF.ended; b.innerHTML=`<span class="bt"><span class="rm">${r.room}</span></span><span class="nowl" aria-hidden="true"><small class="mu">Not in the ICU</small></span>`; b.onclick=()=>openRoom(r.room); return b; }
++    if(nowMode()){ const on=onList(r), n=on.length, unknown=unknownList(r), nowW=flowWords(r).split(" Next 24 hours:")[0];      // Now: only what is running at 07:00; weight is the number of known active supports
++      b.className="bed s"+Math.min(n,2)+(n?" on":""); b.dataset.state="now-"+n; b.dataset.ftip = unknown.length ? nowW : n ? `Life support running at 07:00: ${on.map(k=>SHORTN[k]).join(", ")}` : DEF.none;
++      if(!n && unknown.length) b.dataset.state="now-unknown";
++      b.setAttribute("aria-label",`Bed ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${unknown.length?nowW:`${n?`on ${on.map(k=>SHORTN[k]).join(", ")}`:"no life support"} at 07:00.`}`);
++      b.innerHTML=`<span class="bt"><span class="av" aria-hidden="true"><svg viewBox="0 0 40 42"><use href="#i-fig"/></svg></span><span class="rm">${r.room}</span>${whoH(r)}${n>=2?`<span class="st"${T(`On ${n} life supports at 07:00`)}>${n} supports</span>`:""}</span><span class="nowl" aria-hidden="true">${n||unknown.length?"":`<small class="mu"${T(DEF.none)}>No life support</small>`}${on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}</span>`).join("")}${unknown.length?`<small class="mu">${esc(unknown.map(k=>SHORTN[k]).join(", "))} unknown</small>`:""}</span>`; }
+     b.onclick=()=>openRoom(r.room); return b; }
++  /* See first: the three highest-risk beds by Dema's top-beds rule (ties with the third included), each with its top event; Next 24 h only */
++  function renderSeeFirst(){ const el=$("seefirst"), w3 = !nowMode() && hasFc() ? topBeds() : [];
++    for(const b of el.querySelectorAll(".sfb")) b.remove(); el.hidden=!w3.length;
++    for(const n of w3){ const r=R(n), [k,v]=topRisk(r), b=document.createElement("button"); b.type="button"; b.className="sfb"; b.dataset.room=n;
++      b.setAttribute("aria-label",`Open bed ${n}${r.name?`, ${r.name.full}`:""}: ${DEF.start(k,v)}`); b.dataset.ftip=`Bed ${n}${r.name?` · ${r.name.display}`:""} · ${DEF.start(k,v)}`;
++      b.innerHTML=`<span class="av" aria-hidden="true"><svg viewBox="0 0 40 42"><use href="#i-fig"/></svg></span><span class="rm">${n}</span>${r.name?`<span class="pn">${esc(r.name.display)}</span>`:""}<span class="nx"${T(DEF.start(k,v))}>${cb(ic(k,false))}<small>${esc(pct(v))}</small></span>`;
++      b.onclick=()=>openRoom(n); el.appendChild(b); } }
+   function renderGrid(){
+-    const g=$("grid"), N=RM.rooms.length; g.innerHTML="";
++    const g=$("grid"), N=RM.rooms.length; g.innerHTML=""; renderSeeFirst();
+     $("board-h").textContent = N ? `All ${N} beds` : "Beds";
+     paintView(); renderWatch();
+     if(!N){ g.innerHTML=`<p class="note">${offline&&!FC?"Can't reach the board server — retrying.":"No beds yet. They appear when the first forecast finishes."}</p>`; return; }
+@@ -1221,7 +1311,8 @@
+     if(ids.length<2){ pa.hidden=na.hidden=true; } else { const pv=ids[(i-1+ids.length)%ids.length], nx=ids[(i+1)%ids.length]; pa.hidden=na.hidden=false;
+       pa.href=`#room=${pv}`; pa.innerHTML=svg("arrow","","flip")+`Bed ${pv}`; na.href=`#room=${nx}`; na.innerHTML=`Bed ${nx}`+svg("arrow"); }
+     const p=r.p, on=r.on_now;
+-    if(nowM) $("rv-risks").innerHTML = (isPending() ? `<p class="stopped">${PEND_LINE}</p>` : "") + `<ul class="risks now">${SUP.map(k=>`<li><span class="nm">${ic(k,on[k])}${SHORTN[k]}</span><span class="lw2${on[k]?" on":""}">${on[k]?"On now":"Not running"}</span></li>`).join("")}</ul>${stoppedNote(r)}`;
++    if(r.present===false){ $("rv-risk-h").textContent="Not in the ICU at this replay time"; $("rv-risks").textContent="No current patient or forecast in this stable room slot."; $("past").textContent=""; $("pastmore").hidden=true; $("rv-vit").hidden=true; $("vits").innerHTML=""; paintScope(); return; }
++    if(nowM) $("rv-risks").innerHTML = (isPending() ? `<p class="stopped">${PEND_LINE}</p>` : "") + `<ul class="risks now">${SUP.map(k=>`<li><span class="nm">${ic(k,on[k]===true)}${SHORTN[k]}</span><span class="lw2${on[k]===true?" on":""}">${on[k]===true?"On now":on[k]===false?"Not running":"Unknown"}</span></li>`).join("")}</ul>${stoppedNote(r)}`;
+     else $("rv-risks").innerHTML = `<ul class="risks">${SUP.map(k=>rrow(ROWN[k],p[k],on[k],ic(k,on[k]),p[k]!=null?DEF.start(k,p[k]):"")).join("")}</ul>${stoppedNote(r)}
+       <ul class="risks solo">${rrow("Leaves the ICU (ward or step-down)",p.icu_departure,false,ic("leave",false),p.icu_departure!=null?DEF.out(p.icu_departure):"")}${rrow("Dies in hospital",p.death,false,svg("death"),p.death!=null?`${pct(p.death)} chance of death in hospital in the next 24 h`:"")}</ul>`;
+     const ph=r.past_12h, items=pastOpen?ph:ph.slice(0,5);
+@@ -1244,14 +1335,14 @@
+   const VIT=[["heart_rate","Heart rate","bpm"],["map","Mean arterial pressure","mmHg",65],["spo2","SpO2","%"],["respiratory_rate","Respiratory rate","/min"]];
+   const closeRoom = () => { location.hash=$("back").getAttribute("href"); };
+   roomview.addEventListener("pointerdown", e=>{ if(e.target===roomview) closeRoom(); });
+-  document.addEventListener("keydown", e=>{ if(e.key==="Escape" && room!==null && $("setmenu").hidden) closeRoom(); });
++  document.addEventListener("keydown", e=>{ if(e.key==="Escape" && room!==null && $("setmenu").hidden && !e.defaultPrevented) closeRoom(); });
+   function paintScope(){ const el=$("chat-scope"); el.textContent = chatScope!==null ? `Bed ${chatScope}` : "Unit"; el.disabled = room===null;      // what the chat is about; on a room page it switches between that room and the unit
+     el.setAttribute("aria-label", chatScope!==null ? `Asking about bed ${chatScope}. Switch to the unit` : room!==null ? `Asking about the unit. Switch to bed ${room}` : "Asking about the unit"); }
+   function showRoom(n){
+     const first = room!==n; room=n; if(first){ chatScope=n; pastOpen=false; hold.room=false; put("rv-run",""); }
+     $("roomnote").hidden=true;
+     roomview.hidden=false;
+-    renderRoom(); renderChips();
++    renderRoom(); renderChips(); paintProg();
+     if(first){ roomview.scrollTop=0; $("rv-h").focus({preventScroll:true}); }
+   }
+   function showBoard(missing){
+@@ -1291,6 +1382,33 @@
+     paintWard(); paintLegend(); renderStrain(); renderFooter(); route(false);
+     if(!run){ hold.unit=false; idleLine(); }
+   }
++  /* ---------- an update in progress: Queued, Running on the GPU, Scoring, Done; then "Updated HH:MM"; a failure in plain words.
++     Served live the step follows GET /api/runs: running.state PENDING is queued, any other state is on the GPU, and once the job has left the
++     list the board is reading the new scores. The runstate line carries the same words for a screen reader; while the strip shows it is off screen. ---------- */
++  const STEPS = [["queued","Queued","Waiting for a free GPU"],["gpu","Running on the GPU","The model reads each patient's record"],["score","Scoring","The scores are read and added up into the unit forecast"],["done","Done","The board shows the new forecast"]];
++  const PHASE_SAY = {queued:"queued", gpu:"running on the GPU", score:"scoring"};
++  let prog = null, progT = 0, freshT = 0;
++  const progWhat = () => prog.scope==="room" ? `bed ${prog.n}` : "the unit";
++  const stillShown = () => FC && FC.made_at ? `The forecast from ${hm(FC.made_at)} is still shown.` : "No forecast is shown yet.";
++  const stuckWords = st => { const m=fin(st.minutes)?st.minutes:null, r=str(st.reason,300), why=/waited for a GPU/.test(r)?"waited for a free GPU":/did not finish/.test(r)?"ran without finishing":"did not move";
++    return `It ${why}${m!=null?` for ${m} minutes`:""} and was stopped. ${stillShown()} Update again; if it happens twice, ask the team what is holding the GPU.`; };
++  function progHTML(){
++    if(prog.phase==="fail") return `<span class="pg-h bad">${svg("warn")}${esc(prog.title)}</span><span class="pg-m">${esc(prog.msg)}</span><button type="button" class="chg pg-x">Dismiss</button>`;
++    if(prog.phase==="done") return `<span class="pg-h ok">${svg("check")}Updated ${hm(prog.at)}</span><span class="pg-m">${prog.scope==="room"?`Bed ${prog.n} shows`:"The board shows"} the new forecast.</span>`;
++    const i=STEPS.findIndex(x=>x[0]===prog.phase);
++    return `<span class="pg-h">Updating ${progWhat()}</span><ol class="steps">${STEPS.map(([k,l,tip],j)=>`<li class="${j<i?"was":j===i?"is":""}"${j===i?' aria-current="step"':""}${T(tip)}>${j<i?svg("check"):`<i>${j+1}</i>`}${l}</li>`).join("")}</ol><span class="pg-m">${esc(prog.note||(prog.morning?"The 07:00 morning run. ":"")+"The last forecast stays on screen.")}</span>`; }
++  function paintProg(){ const h=prog?progHTML():"";
++    for(const id of ["runprog","rv-prog"]){ const el=$(id), on=!!prog && (id==="runprog" || (prog.scope==="room" && room===prog.n)), v=on?h:"";
++      if(lastHTML[id]!==v){ el.innerHTML=v; lastHTML[id]=v; const x=el.querySelector(".pg-x"); if(x) x.onclick=()=>{ const sc=prog.scope; prog=null; hold.unit=hold.room=false; paintProg(); if(sc==="room") put("rv-run",""); idleLine(); (sc==="room"&&room!==null?$("rv-update"):$("rerun")).focus(); }; }
++      el.hidden=!on; }
++    $("runstate").classList.toggle("sr", !!prog); }
++  function flashFresh(){ const h=document.documentElement; delete h.dataset.fresh; void h.offsetWidth; h.dataset.fresh="1"; clearTimeout(freshT); freshT=setTimeout(()=>{ delete h.dataset.fresh; }, 1400); }
++  function setProg(phase, o={}){ clearTimeout(progT); const was=prog&&prog.phase; prog={...(prog||{}), ...o, phase}; if(!hasOwn(o,"note")) prog.note="";
++    paintProg(); if(phase===was) return;
++    if(phase==="done"){ if(prog.scope!=="room") say2("unit", `Updated ${hm(prog.at)}. The board shows the new forecast.`); flashFresh();
++      progT=setTimeout(()=>{ prog=null; paintProg(); lastHTML.runstate=null; idleLine(); }, DONE_MS); }
++    else if(phase==="fail") say2(prog.scope, `${prog.title} ${prog.msg}`, true);
++    else say2(prog.scope, `Updating ${progWhat()}: ${PHASE_SAY[phase]}. The last forecast stays on screen.`); }
+   function markRunning(on){
+     for(const id of ["upd-strain","upd-grid","upd-room"]){ const e=$(id); if(e) e.hidden=!on; }
+     for(const id of ["rerun","rv-update"]){ const b=$(id); b.setAttribute("aria-disabled",String(on)); b.textContent = on?"Updating…": id==="rerun"?"Update the unit":"Update this bed"; }
+@@ -1300,14 +1418,17 @@
+     if(scope==="room" && !R(n)) return `Bed ${n} is not in this forecast.`;
+     const body={scope, role:who||role()}; if(scope==="room") body.room=n;
+     const res=LIVE ? await api.liveRerun(body) : await api.rerun(body);
+-    if(!res.started){ const why=str(res.reason,200)||"The update did not start."; say2(scope, why, true); return why; }
++    if(!res.started){ const why=str(res.reason,200)||"The update did not start."; if(run && prog && prog.phase!=="fail" && prog.phase!=="done"){ prog.note=`A second update was not started: ${why}`; paintProg(); }      // the update already running keeps its own strip, scope and step
++      else setProg("fail",{scope, n, title:"Not started.", msg:why});
++      return why; }
+     hold.unit=hold.room=false; markRunning(true);
+-    const what = scope==="room"?"bed "+n:"the unit";
+-    if(LIVE){ run={live:true,scope,n,before:sigOf(),idle:0}; if(typeof res.demo_clock_label==="string") DEMO_LABEL=res.demo_clock_label;
+-      say2(scope, `Updating ${what} for ${roleLabel(body.role)}. The last forecast stays on screen.`); schedulePoll(POLL_MS);
++    if(LIVE){ run={live:true,scope,n,before:sigOf(),t0:Date.now(),idleAt:0,sawBusy:false}; if(typeof res.demo_clock_label==="string") DEMO_LABEL=res.demo_clock_label;
++      setProg("queued",{scope, n, morning:false}); schedulePoll(RUN_POLL_MS);
+       return `Started ${str(res.name,60)||"the update"} (${scope==="room"?"bed "+n:"unit"}). The numbers refresh in place when it finishes.`; }
+-    say2(scope, `Updating ${what}${who==="schedule"?" (morning run)":" for "+roleLabel(body.role)}. The last forecast stays on screen.`);
+-    const tm = setInterval(async()=>{ const s=await api.status(); if(s.state!=="done") return; clearInterval(tm); finishRun(scope,n); }, POLL_MS);
++    setProg("queued",{scope, n, morning:who==="schedule"});
++    const tm = setInterval(async()=>{ const s=await api.status();
++      if(s.state==="failed"){ clearInterval(tm); run=null; markRunning(false); setProg("fail",{title:"The update was stopped.", msg:stuckWords({minutes:5, reason:"waited for a GPU"})}); return; }
++      if(s.state!=="done"){ setProg(s.phase); return; } clearInterval(tm); finishRun(scope,n); }, FAST?150:1000);
+     return `Started ${res.name} (${scope==="room"?"bed "+n:"unit"}). The numbers refresh in place when it finishes.`;
+   }
+   function finishRun(scope, n){
+@@ -1317,6 +1438,7 @@
+     else { const old=R(n), nr=genRoom(n, mk(seedN), now, old.on_now); nr.scope="room"; const i=RM.rooms.findIndex(x=>x.room===n); RM.rooms[i]=cleanRoom(nr); FC.demo_clock_hours=demo; FC.check_first=checkFirst(RM.rooms); }
+     markRunning(false); hold.unit=hold.room=false; refreshAll();
+     if(scope==="room") put("rv-run",`<b>${runLine("room",n)}</b>`);
++    setProg("done",{at: scope==="room" && R(n) ? R(n).updated_at : FC.made_at});
+     noteChange();
+   }
+   $("rerun").onclick=()=>{ if($("rerun").getAttribute("aria-disabled")==="true") return; startUpdate("unit"); };
+@@ -1326,54 +1448,81 @@
+   function schedulePoll(ms){ clearTimeout(pollTimer); pollTimer=setTimeout(pollRuns,ms); }
+   async function pollRuns(){
+     let rn=null; try{ rn=await getJSON("/api/runs"); }catch(e){ /* the dispatcher may be down: the board still works */ }
+-    let f=null; try{ f=await getJSON("/api/forecast"); }catch(e){ f=null; }
+-    if(!f || typeof f!=="object"){ offline=true; failN++; idleLine(); if(!FC){ renderStrain(); renderGrid(); }
++    let f=null, snapshot=null; try{ if(contextMode===true){ snapshot=await getJSON("/api/context"); f=snapshot.forecast; } else f=await getJSON("/api/forecast"); }catch(e){ f=null; }
++    if(!f || typeof f!=="object"){ offline=true; failN++; if(prog && run){ prog.note="Can't reach the board server. Still trying; the last forecast stays on screen."; paintProg(); } idleLine(); if(!FC){ renderStrain(); renderGrid(); }
+       schedulePoll(Math.min(30000,(FAST?300:2000)*Math.pow(2,Math.min(failN,4)))); return; }
+     const wasOff=offline; offline=false; failN=0;
+     const avail=!!(rn && rn.available!==false), busy=!!(avail && (rn.running||rn.updating));
+     if(avail) DEMO_LABEL = rn.demo_clock_hours>0 ? str(rn.demo_clock_label,80)||`Demo clock +${Number(rn.demo_clock_hours)||0} h` : "";
+     const ra=rn&&rn.last&&rn.last.room&&rn.last.room.at;
+-    let need = wasOff || !FC || (f.made_at||null)!==(FC&&FC.made_at||null) || !!run;
++    let need = wasOff || !FC || (f.made_at||null)!==(FC&&FC.made_at||null) || (snapshot && snapshot.snapshot_id!==CONTEXT?.snapshot_id) || !!run;
+     if(lastRoomRunAt===undefined) lastRoomRunAt=ra||null; else if(ra && ra!==lastRoomRunAt){ lastRoomRunAt=ra; need=true; }
+-    let changed=false;
+-    if(need){ try{ await loadAll(); changed=true; }catch(e){ /* keep the last data on screen */ } }
++    let changed=false; const sig0=sigOf(), capGen=capSeq;      // the forecast on screen before this poll's reload: the baseline for a run started elsewhere
++    if(need){ try{ await loadAll(snapshot); changed=true; }catch(e){ /* keep the last data on screen */ } }
++    else { try{ if(serverMachines(await getJSON("/api/capacity"), capGen)) changed=true; }catch(e){ /* keep the totals on screen */ } }   // every refresh: totals saved on another device
++    const rstate = rn && rn.running && typeof rn.running.state==="string" ? rn.running.state.toUpperCase() : "", phaseNow = /PEND|QUEUE/.test(rstate) ? "queued" : "gpu";
++    const cantTell = !avail || !!(rn.running && rn.running.unknown) || (busy && (!rstate || rstate==="UNKNOWN")), CANT = "Can't read the job's status right now. Still trying; the last forecast stays on screen.", /* cantTell: the job list could not be read, or gave no state: never shown as a step */ stuck = avail && rn.stuck && typeof rn.stuck==="object" ? rn.stuck : null;
+     if(run && !busy){
+-      const moved = changed && sigOf()!==run.before;
+-      if(moved || run.idle>=2){       // grace of two quiet polls: the dispatcher can report idle just before the files land
+-        const sc=run.scope; run=null; markRunning(false); hold.unit=hold.room=false; lastHTML.runstate=null; refreshAll();
++      const moved = changed && sigOf()!==run.before, stopped = !!stuck && Date.parse(stuck.at) >= run.t0-60000;
++      if(!run.idleAt) run.idleAt=Date.now();
++      if(moved || stopped || (!cantTell && Date.now()-run.idleAt>=IDLE_GRACE_MS)){       // a grace before giving up: the dispatcher can report idle just before the files land
++        const sc=run.scope, n=run.n; run=null; markRunning(false); hold.unit=hold.room=false; lastHTML.runstate=null; refreshAll();
+         if(room!==null) put("rv-run", `<b>${runLine("room",room)}</b>`);
+-        if(!moved){ put("runstate","Update finished. The numbers have not changed yet."); }
+-      } else run.idle++;
+-    } else if(busy && !run){ run={live:true,scope:"unit",before:sigOf(),idle:0}; markRunning(true); }
+-    else if(busy && run) run.idle=0;
++        if(moved) setProg("done",{scope:sc, n, at: sc==="room" && R(n) ? R(n).updated_at : FC.made_at});
++        else if(stopped) setProg("fail",{scope:sc, n, title:"The update was stopped.", msg:stuckWords(stuck)});
++        else setProg("fail",{scope:sc, n, title:"No new forecast arrived.", msg:`The update ended without new numbers. ${stillShown()} Update again; if it happens twice, ask the team to check the job on the cluster.`});
++      } else if(cantTell){ if(prog){ prog.note=CANT; paintProg(); } }
++      else if(run.sawBusy) setProg("score");      // the job has left the list: the board is reading the new scores
++    } else if(busy && !run){ if(!cantTell){ run={live:true,scope:"unit",before:sig0,t0:Date.now(),idleAt:0,sawBusy:true}; markRunning(true); setProg(phaseNow,{scope:"unit", n:null, morning:false}); } }      // started by the schedule or on another screen
++    else if(busy && run){ run.idleAt=0; if(cantTell){ if(prog){ prog.note=CANT; paintProg(); } } else { run.sawBusy=true; setProg(phaseNow); } }      // an unknown status keeps the step it had
+     if(!run){ if(changed) refreshAll(); else idleLine(); }
+-    schedulePoll(run?POLL_MS:IDLE_MS);
++    schedulePoll(run?RUN_POLL_MS:IDLE_MS);
+   }
+ 
+   /* ---------- capacity ---------- */
+   /* Capacity as machine totals (Dema's model): total ventilators and CRRT machines on the unit; free = total - in use now.
+-     The totals live on this device (lookahead-machines). The staffing number is optional and, when given, is POSTed as before
+-     with vents_free derived from the ventilator total; the API is unchanged (a CRRT total has no field yet). */
+-  let machines = {imv:null, crrt:null};
++     Served live, the totals are the server's: GET /api/capacity on load and on every refresh, and its value wins (even null); the device
++     copy (lookahead-machines) is used when the server leaves the key out and in #synthetic. A save POSTs vents_total and crrt_total
++     (null when a saved total is blanked; a derived vents_free is never sent); the device copy changes only when the save works. */
++  let machines = {imv:null, crrt:null}, capSeq = 0, capDone = 0, capBusy = 0, srvVF;      // srvVF: the ventilators free GET /api/capacity gives now (null: none); undefined until the server has answered
++  const MKEY = {imv:"vents_total", crrt:"crrt_total"};
+   try{ const m=JSON.parse(localStorage.getItem("lookahead-machines")||"null"); if(m && typeof m==="object") for(const k of ["imv","crrt"]) if(Number.isInteger(m[k]) && m[k]>=0 && m[k]<=50) machines[k]=m[k]; }catch(e){ /* no storage */ }
+   const saveMachines = () => { try{ localStorage.setItem("lookahead-machines", JSON.stringify(machines)); }catch(e){ /* storage blocked: totals last for this page */ } };
+-  const inUse = k => RM.rooms.filter(r=>r.on_now[k]).length;
+-  function machFree(k){ if(k!=="imv" && k!=="crrt") return null; if(machines[k]!=null) return Math.max(0, machines[k]-inUse(k));
+-    const y=Y(); return k==="imv" && y && y.kind==="capacity" && y.vf!=null ? y.vf : null; }      // a ventilators-free number saved on the server still counts
+-  function paintCapForm(){ $("cap-vt").value = machines.imv==null ? "" : machines.imv; $("cap-ct").value = machines.crrt==null ? "" : machines.crrt; }
++  /* machines in use now: counted from the rooms; when the room records are withheld (a counts-only ward), from the unit's own count; null when neither says */
++  const inUse = k => RM.rooms.length ? RM.rooms.filter(r=>r.on_now[k]).length : fin(FC?.life_support?.now_by?.[k]) ? FC.life_support.now_by[k] : null;
++  /* spare = total - in use now, negative when more are in use than the saved total (a deficit that must stay visible);
++     free = spare, never below 0; total = the saved total, or in use + free when only a number free is known. */
++  function machSpare(k){ if(k!=="imv" && k!=="crrt") return null; if(RM.rooms.some(r=>r.present!==false && r.on_now[k]===null)) return null; if(machines[k]!=null){ const u=inUse(k); return u==null ? null : machines[k]-u; }
++    if(k!=="imv") return null; if(srvVF!==undefined) return srvVF;      // no total: only a ventilators-free number the server stores now (never the forecast's, which may come from a total since cleared)
++    const y=Y(); return y && y.kind==="capacity" && y.vf!=null ? y.vf : null; }      // the server's capacity has not been read (#synthetic, or an older server): the forecast's number
++  const machFree = k => { const sp=machSpare(k); return sp==null ? null : Math.max(0, sp); };
++  const machTotal = k => machines[k]!=null ? machines[k] : inUse(k)+machFree(k);
++  const CAPBOX = {imv:"cap-vt", crrt:"cap-ct"};
++  function paintCapForm(skip){ for(const k of ["imv","crrt"]) if(CAPBOX[k]!==skip) $(CAPBOX[k]).value = machines[k]==null ? "" : machines[k]; }      // skip: the box being edited keeps what was typed
++  /* the server's totals win when it sends the key (even null); true when a total changed. Skipped while a save is in flight. */
++  function serverMachines(c, gen){ if(c && typeof c==="object" && c.capacity && typeof c.capacity==="object") c=c.capacity;
++    if(!c || typeof c!=="object" || capBusy || (gen!==undefined && gen!==capSeq)) return false; /* gen: a read that began before a save or a reset is stale, even when that save has already finished */ let ch=false;
++    for(const k of ["imv","crrt"]) if(hasOwn(c,MKEY[k])){ const v=c[MKEY[k]], n = Number.isInteger(v) && v>=0 && v<=50 ? v : null; if(n!==machines[k]){ machines[k]=n; ch=true; } }
++    if(ch){ saveMachines(); const a=document.activeElement; paintCapForm(a && a.id); }      // only the box with the focus is left alone: the other follows the server, so a save never sends a stale total back
++    if(hasOwn(c,"vents_free")){ const v=c.vents_free, n = c.vents_total==null && Number.isInteger(v) && v>=0 && v<=50 ? v : null; if(n!==srvVF){ srvVF=n; ch=true; } }      // with a total, free comes from the total
++    return ch; }
++  const postCap = async body => { capBusy++; try{ return LIVE ? await postJSON("/api/capacity", body) : await api.capacity(body); }
++    catch(err){ return {ok:false,reason:"The board server did not answer. Try again in a moment."}; } finally{ capBusy--; } };
+   $("capform").onsubmit=async e=>{ e.preventDefault();
+     const ls=$("cap-ls").value.trim(), vt=$("cap-vt").value.trim(), ct=$("cap-ct").value.trim(), ok=v=>/^\d{1,2}$/.test(v) && +v<=50, msg=$("capmsg");
+     for(const [v,id,what] of [[vt,"cap-vt","Ventilators on the unit"],[ct,"cap-ct","CRRT machines on the unit"],[ls,"cap-ls","Life-support patients tonight's staffing covers"]])
+       if(v!=="" && !ok(v)){ msg.textContent=`${what} must be a whole number from 0 to 50, or left empty.`; $(id).focus(); return; }
+     if(ls==="" && vt==="" && ct==="" && machines.imv==null && machines.crrt==null){ msg.textContent="Enter the ventilators or CRRT machines on the unit, or the patients tonight's staffing covers."; $("cap-vt").focus(); return; }
+-    machines={imv:vt===""?null:+vt, crrt:ct===""?null:+ct}; saveMachines();
+-    if(ls===""){ renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device."; return; }
+-    const vfN = machines.imv==null ? null : Math.max(0, machines.imv-inUse("imv"));
+-    const body={life_support_patients:+ls, role:role()}; if(vfN!=null) body.vents_free=vfN;   // POST /api/capacity
+-    let rs;
+-    if(LIVE){ try{ rs=await postJSON("/api/capacity", body); }catch(err){ rs={ok:false,reason:"The board server did not answer. Try again in a moment."}; } }
+-    else rs=await api.capacity(body);
+-    if(!rs.ok){ msg.textContent=str(rs.reason,200)||"Capacity was not saved."; return; }
++    const newM={imv:vt===""?null:+vt, crrt:ct===""?null:+ct}, seq=++capSeq, body={role:role()};   // POST /api/capacity
++    const commit=()=>{ if(seq>capDone){ capDone=seq; machines=newM; saveMachines(); } };   // an older save that answers late never overwrites a newer one
++    for(const k of ["imv","crrt"]){ if(newM[k]!=null) body[MKEY[k]]=newM[k]; else if(machines[k]!=null) body[MKEY[k]]=null; }   // a blanked total goes as null (the server clears it); a box that was never set is left out
++    if(ls!=="") body.life_support_patients=+ls;
++    if(ls==="" && (!LIVE || Object.keys(body).length===1)){ commit(); renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device."; return; }
++    const usedV = inUse("imv"), vfN = newM.imv==null || usedV==null ? null : Math.max(0, newM.imv-usedV);   // local view only; never sent (free = total - in use, worked out by the server)
++    const rs=await postCap(body);
++    if(!rs.ok){ msg.textContent="Not saved. "+(str(rs.reason,200)||"Try again in a moment."); return; }
++    commit();   // the device copy of the totals only when the save worked
++    if(ls===""){ renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved."; return; }
+     const sv=rs.capacity||{}, setAt=typeof sv.set_at==="string"?sv.set_at:typeof sv.updated_at==="string"?sv.updated_at:iso(Date.now());
+     viewTyp=false;
+     if(LIVE){ try{ await loadAll(); }catch(err){ /* keep the last forecast */ }
+@@ -1383,7 +1532,10 @@
+       if(hasFc()) FC.yardstick=genYardstick(FC,cap); }
+     renderStrain(); if(room!==null) renderRoom(); noteChange();
+     msg.textContent="Saved."; };
+-  $("capreset").onclick=()=>{ machines={imv:null, crrt:null}; saveMachines(); paintCapForm(); $("cap-ls").value="";
++  $("capreset").onclick=async()=>{ const seq=++capSeq;
++    if(LIVE){ const rs=await postCap({role:role(), vents_total:null, crrt_total:null}); if(!rs.ok){ $("capmsg").textContent="Not saved. "+(str(rs.reason,200)||"Try again in a moment."); return; } }   // the server's totals win on refresh, so they are cleared there too
++    if(seq<capDone) return; capDone=seq;
++    machines={imv:null, crrt:null}; saveMachines(); paintCapForm(); $("cap-ls").value="";
+     if(!LIVE){ cap={...NOCAP}; try{ localStorage.removeItem("lookahead-capacity"); }catch(err){ /* storage blocked */ } if(hasFc()) FC.yardstick=genYardstick(FC,cap); }
+     viewTyp=false; renderStrain(); if(room!==null) renderRoom();
+     $("capmsg").textContent = LIVE ? "Machine totals cleared. The staffing number saved on the server stays until it is set again." : "Capacity cleared."; };
+@@ -1393,12 +1545,14 @@
+   /* ---------- chat widget: a launcher at the bottom right and a non-modal panel. Open or closed is remembered; the draft and messages last for the session. ---------- */
+   const log=$("log"), chatbtn=$("chatbtn"), chatpanel=$("chatpanel"), qEl=$("q"), sendBtn=$("send");
+   const CHAT_DOWN = "Can't reach the chat right now. Try again.";
+-  let chatScope=null, chatSeen=null, askCtl=null;      // chatScope: a room number, or null for the unit
+-  const UNIT_Q = ["Which beds need attention first?","How many ventilators will we need?","Who is likely to leave today?","Summarise the next 24 hours"];
+-  const roomQ = n => { const r=R(n); return [`${r&&flagged(r)?"Why is this bed flagged":"What is forecast for this bed"}?`,"What changed in the last 12 hours?","Chance of leaving the ICU?"]; };
++  let chatScope=null, chatSeen=null, chatGen=0;      // chatScope: a room number, or null for the unit; chatGen: the conversation, a new one after Close
++  const asks=new Set();      // the requests of this conversation that are still waiting
++  const UNIT_Q = ["Which beds should we see first?","Will we be short of ventilators or CRRT?","Who is likely to leave the ICU today?","Summarise the next 24 hours"];
++  const roomQ = n => { const r=R(n); return [r&&flagged(r) ? `Why is bed ${n} flagged?` : `What is forecast for bed ${n}?`, `What did the model read for bed ${n} in the last 12 hours?`, `How likely is bed ${n} to leave the ICU?`]; };
+   function renderChips(){      // suggested questions: only while the conversation is empty, and they follow the context
+     const el=$("chips"); el.innerHTML=""; el.hidden = !!log.querySelector(".msg"); if(el.hidden) return;
+-    const qs = isPending() ? (chatScope!==null ? ["What is running in this bed now?","What changed in the last 12 hours?"] : ["Who is critical now?","How many are on a ventilator now?"]) : chatScope!==null ? roomQ(chatScope) : UNIT_Q;
++    const qs = isPending() ? (chatScope!==null ? [`What is running in bed ${chatScope} now?`,`What did the model read for bed ${chatScope} in the last 12 hours?`] : ["Who is critical now?","How many are on a ventilator now?"]) : chatScope!==null ? roomQ(chatScope) : UNIT_Q;
++    { const l=document.createElement("p"); l.className="chipl"; l.textContent = chatScope!==null ? `About bed ${chatScope}` : "About the unit"; el.appendChild(l); }
+     for(const q of qs){ const b=document.createElement("button"); b.type="button"; b.className="chip"; b.textContent=q; b.onclick=()=>ask(q); el.appendChild(b); }
+   }
+   /* an answer: every piece is escaped; numbers are bold and room numbers that exist become links */
+@@ -1411,34 +1565,43 @@
+     log.appendChild(d); log.scrollTop=log.scrollHeight; $("chips").hidden=true; return d; }
+   function noteChange(){ if(LIVE || chatpanel.hidden || !log.querySelector(".msg:not(.n)")) return; const o=log.querySelector(".msg.n"); if(o) o.remove(); say("",`Forecast updated ${hm(FC.made_at)}. Answers below use it.`,"n"); chatSeen=FC.made_at; }
+ 
+-  const cnt = q => `median ${q.p50} in the next 24 hours (range ${q.p10} to ${q.p90})`;
+-  const worryRooms = () => RM.rooms.filter(flagged).sort((a,b)=>anyNew(b)-anyNew(a)).map(r=>r.room);
+-  const worryLine = () => { const w=worryRooms(); return w.length ? `At or above a threshold for a new life support or death, highest chance first: ${w.map(rn).join(", ")}.` : "No bed has a new life support or death at its threshold."; };
++  const plus = q => vq(q) ? `+${q.p50}` : "no estimate";
++  const cnt = q => vq(q) ? `median ${q.p50} in the next 24 hours (range ${q.p10} to ${q.p90})` : "no estimate in this forecast";
++  const worryP = r => Math.max(0, ...nextList(r).map(k=>r.p[k]));      // a flagged bed's highest chance at its threshold: a new life support (death never ranks a bed)
++  const worryRooms = () => RM.rooms.filter(flagged).sort((a,b)=>worryP(b)-worryP(a)).map(r=>r.room);
++  const CHATN = {imv:"ventilator", vasopressor:"vasopressor", crrt:"CRRT"};
++  const worryItem = n => { const r=R(n), k=nextList(r)[0]; return `${rn(n)} ${CHATN[k]} ${pct(r.p[k])}`; };
++  const worryLine = () => { const w=worryRooms(); return w.length ? `See first, highest chance first: ${w.map(worryItem).join(", ")}. Each is at or above its threshold for a new life support.` : "No bed has a new life support at its threshold."; };
++  const shortLine = () => { const part = k => { const nm=k==="imv"?"Ventilators":"CRRT machines", n=flagCount(k), u=inUse(k), sp=machSpare(k), q=FC.life_support.expected_by[k];
++      return `${nm}: ${u==null?"use now unknown":`${u} in use now`}, ${n} ${n===1?"bed":"beds"} at ${P(lines[k])} or more to start${vq(q)?` (unit forecast ${q.p50}, range ${q.p10} to ${q.p90})`:""}; ${sp==null?"no total is set, so I cannot say short or not (Settings, Capacity)":n>sp?`${Math.max(0,sp)} free, short by ${n-sp}`:n===sp&&n>0?`${sp} free, at the limit`:`${sp} free, enough`}.`; };
++    return `${part("imv")} ${part("crrt")}`; };
+   function summary(){ if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
+     const ls=FC.life_support, y=Y(), d=FC.resources.icu_departure;
+-    return `${ls.now_patients} patients are on life support now and ${ls.expected_new_patients.p50} more are expected (${ls.expected_new_patients.p10} to ${ls.expected_new_patients.p90}). IMV +${ls.expected_by.imv.p50}, vasopressor +${ls.expected_by.vasopressor.p50}, CRRT +${ls.expected_by.crrt.p50}. ${d.p50} expected to leave the ICU (${d.p10} to ${d.p90}). ${y?`${y.words} ${YNAME(y)}. `:""}${worryLine()}`; }
++    return `${ls.now_patients} patients are on life support now and ${ls.expected_new_patients.p50} more are expected (${ls.expected_new_patients.p10} to ${ls.expected_new_patients.p90}). IMV ${plus(ls.expected_by.imv)}, vasopressor ${plus(ls.expected_by.vasopressor)}, CRRT ${plus(ls.expected_by.crrt)}. ${vq(d)?`${d.p50} expected to leave the ICU (${d.p10} to ${d.p90})`:"No estimate for leaving the ICU"}. ${y?`${y.words} ${YNAME(y)}. `:""}${worryLine()}`; }
+   function answer(q){
+-    const t=q.toLowerCase(), room=chatScope;      // the chat's own context, not the page's
++    const t=q.toLowerCase(), named=t.match(/\b(?:room|bed)\s*(\d+)/), room = named ? +named[1] : chatScope;      // a bed named in the question, else the chat's own context (not the page's)
+     if(isPending() && hasNow()){ const ls=FC.life_support, rs=RM.rooms, on=k=>rs.filter(r=>r.on_now[k]).map(r=>rn(r.room));
+-      if(room && R(room) && /(what changed|last 12)/.test(t)){ const ph=R(room).past_12h.slice(0,3); return ph.length ? `Bed ${room}, last 12 hours: ${ph.map(x=>`${x.h!=null?x.h+" h ago, ":""}${x.text}`).join("; ")}.` : `Bed ${room}: nothing recorded in the last 12 hours.`; }
++      if(room && R(room) && /(what changed|last 12|model read)/.test(t)){ const ph=R(room).past_12h.slice(0,3); return ph.length ? `Bed ${room}, last 12 hours: ${ph.map(x=>`${x.h!=null?x.h+" h ago, ":""}${x.text}`).join("; ")}.` : `Bed ${room}: nothing recorded in the last 12 hours.`; }
+       if(room && R(room)){ const o=onList(R(room)); return `Bed ${room} now: ${o.length?`on ${o.map(k=>SHORTN[k]).join(", ")}`:"no life support"}. ${PEND_LINE}`; }
+       if(/(critical|sickest|worry|which (?:rooms|beds))/.test(t)){ const two=rs.filter(r=>onList(r).length>=2).map(r=>rn(r.room)); return two.length ? `Critical, on two or more life supports: ${two.join(", ")}.` : "No bed is on two or more supports now."; }
+       for(const [re,k] of [[/vent|imv/,"imv"],[/pressor/,"vasopressor"],[/crrt|dialys/,"crrt"]]) if(re.test(t)) return `${ls.now_by[k]} on ${START[k]} now${on(k).length?`: ${on(k).join(", ")}`:""}.`;
+       return `${PEND_LINE} Now: ${ls.now_patients} patients on life support (ventilator ${ls.now_by.imv}, vasopressor ${ls.now_by.vasopressor}, CRRT ${ls.now_by.crrt}).`; }
+-    if(/worry about first|attention first/.test(t)) return hasFc() ? worryLine() : "No forecast yet. Updates start at 07:00.";
++    if(/see first|worry about first|attention first/.test(t)) return hasFc() ? worryLine() : "No forecast yet. Updates start at 07:00.";
+     if(/(should (we|i)|recommend|dose|dosing|treat|prescrib|order (a|an|the)|wean)/.test(t)) return "That's outside this forecast. I can tell you what the unit is likely to need in the next 24 hours.";
+     const mr=t.match(/\b(update|re-?run|refresh)\b.{0,24}\b(?:room|bed)\s*(\d+)/);
+     if(mr){ const n=+mr[2]; if(!R(n)) return `Bed ${n} is not in this forecast.`; return startUpdate("room",n); }
+     if(/\b(update|re-?run|refresh)\b.{0,24}\b(unit|forecast|board)\b/.test(t)) return startUpdate("unit");
+     if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
+     if(/summari[sz]e/.test(t)) return summary();
+-    if(room && R(room) && /(why is this|what is forecast for this) (?:room|bed)/.test(t)){ const r=R(room); return `Bed ${room}: ${flagged(r)?"flagged, at or above a threshold":"nothing at its threshold"}. ${flowWords(r)}`; }
+-    if(room && R(room) && /(what changed|last 12)/.test(t)){ const ph=R(room).past_12h.slice(0,3); return ph.length ? `Bed ${room}, last 12 hours: ${ph.map(x=>`${x.h!=null?x.h+" h ago, ":""}${x.text}`).join("; ")}.` : `Bed ${room}: nothing recorded in the last 12 hours.`; }
+-    if(room && R(room) && /chance of leaving/.test(t)){ const v=R(room).p.icu_departure; return v==null ? `Bed ${room}: no estimate for leaving the ICU.` : `Bed ${room}: ${inTen(v)} chance of leaving the ICU in the next 24 hours.`; }
++    if(named && !R(room)) return `Bed ${room} is not in this forecast.`;
++    if(/short/.test(t) && /(vent|crrt|machine)/.test(t)) return shortLine();
++    if(room && R(room) && /(why is|what is forecast for) (?:this )?(?:room|bed)/.test(t)){ const r=R(room); return `Bed ${room}: ${flagged(r)?"flagged, at or above a threshold":noEst(r)?"no estimate for part of its forecast":"no new life support at its threshold"}. ${flowWords(r)}${r.p.death!=null?` Death in hospital: ${pct(r.p.death)} (shown when the bed is opened, never on its card).`:""}`; }
++    if(room && R(room) && /(what changed|last 12|model read)/.test(t)){ const ph=R(room).past_12h.slice(0,3); return ph.length ? `Bed ${room}, last 12 hours: ${ph.map(x=>`${x.h!=null?x.h+" h ago, ":""}${x.text}`).join("; ")}.` : `Bed ${room}: nothing recorded in the last 12 hours.`; }
++    if(room && R(room) && /(chance of leaving|how likely)/.test(t)){ const v=R(room).p.icu_departure; return v==null ? `Bed ${room}: no estimate for leaving the ICU.` : `Bed ${room}: ${inTen(v)} chance of leaving the ICU in the next 24 hours.`; }
+     if(/likely to leave/.test(t)){ const o=RM.rooms.filter(r=>r.p.icu_departure!=null&&r.p.icu_departure>=lines.leave).sort((a,b)=>b.p.icu_departure-a.p.icu_departure);
+       return o.length ? `Most likely to leave: ${o.map(r=>`${rn(r.room)} ${inTen(r.p.icu_departure)}`).join(", ")}. Unit: ${cnt(FC.resources.icu_departure)}.` : `No bed is at ${P(lines.leave)} or more to leave the ICU.`; }
+-    const rr=t.match(/(?:room|bed) (\d+): what is most likely/), rn0=rr?+rr[1]:room, r0=rn0?R(rn0):null;
+-    if((rr||(room&&/most likely/.test(t)))){ if(!r0) return `Bed ${rn0} is not in this forecast.`;
++    const rn0=room, r0=rn0?R(rn0):null;
++    if(room && /most likely/.test(t)){ if(!r0) return `Bed ${rn0} is not in this forecast.`;
+       const r=r0, items=[["IMV",r.p.imv],["vasopressor",r.p.vasopressor],["CRRT",r.p.crrt],["ICU discharge",r.p.icu_departure],["death",r.p.death]].filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,2);
+       const on=[["IMV","imv"],["vasopressor","vasopressor"],["CRRT","crrt"]].filter(x=>r.on_now[x[1]]).map(x=>x[0]);
+       return `Bed ${r.room}, next 24 hours${r.level?` (${r.level} for new life support)`:""}: ${items.map(x=>`${x[0]} (${inTen(x[1])})`).join(", then ")}.${on.length?` On now: ${on.join(", ")}.`:""}`; }
+@@ -1447,23 +1610,24 @@
+       if(!y) return `Now plus new life support: ${cnt(load)}.`;
+       return y.kind==="capacity" ? `${y.words} vs tonight's staffing: now plus new life support ${cnt(load)}; staffing covers ${y.ls}${y.vf!=null?`; ${y.vf} ventilators free, IMV starts ${cnt(ls.expected_by.imv)}`:""}.`
+         : `${y.words} vs a typical day: now plus new life support ${cnt(load)}${y.typ!=null?`; a typical day is about ${y.typ}`:""}. No capacity is set for tonight.`; }
+-    if(/(check first|attention|worry|highest|which (?:rooms|beds)|rooms|beds)/.test(t))return worryLine();
++    if(/(check first|attention|worry|highest|which (?:rooms|beds)|rooms|beds)/.test(t)) return worryLine();
+     if(/vent|imv/.test(t)) return vq(FC.resources.ventilator)?`IMV starts: ${cnt(FC.resources.ventilator)}.`:"No estimate for IMV starts yet.";
+     if(/(pressor|norepi|pharm)/.test(t)) return vq(FC.resources.vasopressor)?`Vasopressor starts: ${cnt(FC.resources.vasopressor)}.`:"No estimate for vasopressor starts yet.";
+     if(/crrt|dialys/.test(t)) return vq(FC.resources.crrt)?`CRRT starts: ${cnt(FC.resources.crrt)}.`:"No estimate for CRRT starts yet.";
+     if(/death|die/.test(t)) return `Deaths: ${cnt(FC.resources.death)}.`;
+     if(/(leave|bed|out|transfer|discharg)/.test(t)) return `ICU discharges (to ward or step-down): ${cnt(FC.resources.icu_departure)}.`;
+-    return "I can answer from this forecast: life support, IMV, vasopressor and CRRT starts, discharges, deaths, which beds need attention first, or one bed. Say \"update bed 12\" or \"update the unit\" to start an update.";
++    return "I can answer from this forecast: life support, IMV, vasopressor and CRRT starts, discharges, deaths, which beds to see first, or one bed. Say \"update bed 12\" or \"update the unit\" to start an update.";
+   }
+   async function ask(q){ openChat(false); say(roleLabel(role()),q,"q");
+     const th=say("","Thinking…","t"), stop=document.createElement("button"); stop.type="button"; stop.className="stop"; stop.textContent="Stop"; th.appendChild(stop);
+-    const ctl=new AbortController(); let stopped=false, a; askCtl=ctl; stop.onclick=()=>{ stopped=true; ctl.abort(); qEl.focus(); };
++    const ctl=new AbortController(), gen=chatGen, here=()=>gen===chatGen; let stopped=false, a; asks.add(ctl); stop.onclick=()=>{ stopped=true; ctl.abort(); qEl.focus(); };
+     if(LIVE){ try{ const body={question:q, role:role(), seen_made_at:seenMadeAt}; if(chatScope!==null) body.room=chatScope; const rs=await postJSON("/api/ask", body, 60000, ctl);
+-        a=str(rs.answer,4000)||(rs.ok===false && /^The board server answered/.test(rs.reason||"") ? "" : str(rs.reason,200))||CHAT_DOWN; if(typeof rs.made_at==="string") seenMadeAt=rs.made_at; }catch(e){ a=CHAT_DOWN; }
++        a=str(rs.answer,4000)||(rs.ok===false && /^The board server answered/.test(rs.reason||"") ? "" : str(rs.reason,200))||CHAT_DOWN; if(here() && typeof rs.made_at==="string") seenMadeAt=rs.made_at; }catch(e){ a=CHAT_DOWN; }
+       schedulePoll(FAST?300:3000); }
+     else { await new Promise(res=>{ const t=setTimeout(res, FAST?40:450); ctl.signal.addEventListener("abort",()=>{ clearTimeout(t); res(); }); }); a = stopped ? "" : await Promise.resolve(answer(q)); }
+-    th.remove(); if(askCtl===ctl) askCtl=null;
+-    if(stopped) say("","Stopped.","n"); else say("Lookahead",a,"a"); }
++    asks.delete(ctl); if(!here()) return;      // Close cleared this conversation: its answers, errors and notes are dropped
++    th.remove();
++    if(stopped) say("","Stopped.","n"); else say("ICU Lookahead",a,"a"); }
+   const saveChat = v => { try{ localStorage.setItem("lookahead-chat",v); }catch(e){ /* storage blocked: the widget starts closed next time */ } };
+   function grow(){ qEl.style.height="auto"; qEl.style.height=Math.min(qEl.scrollHeight+2, 104)+"px"; sendBtn.disabled=!qEl.value.trim(); }
+   function openChat(focusInput=true){
+@@ -1471,7 +1635,7 @@
+       chatSeen = FC && typeof FC.made_at==="string" ? FC.made_at : null; $("chatdot").hidden=true; $("chatdot-l").hidden=true; paintScope(); renderChips(); grow(); }
+     if(focusInput) qEl.focus(); }
+   function minChat(focus=true){ chatpanel.hidden=true; chatbtn.setAttribute("aria-expanded","false"); document.documentElement.dataset.chat="closed"; saveChat("closed"); if(focus) chatbtn.focus(); }      // the conversation and the draft stay
+-  function closeChat(){ if(askCtl) askCtl.abort(); log.innerHTML=""; qEl.value=""; minChat(); }
++  function closeChat(){ chatGen++; for(const c of asks) c.abort(); asks.clear(); log.innerHTML=""; qEl.value=""; minChat(); }
+   chatbtn.onclick=()=>openChat();
+   $("chatmin").onclick=()=>minChat();
+   $("chatclose").onclick=closeChat;
+@@ -1539,4 +1703,4 @@
+ })();
+ </script>
+ </body>
+-</html>
+\ No newline at end of file
++</html>

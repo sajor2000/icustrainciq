@@ -1,6 +1,6 @@
 # Fill-in list for the submission
 
-Nothing below has been measured yet. Each slot is an empty tag in `one-sheet.html`
+Only the held-out accuracy has been measured so far. Each slot is an empty tag in `one-sheet.html`
 (`<span class="fill" data-fill="NAME" ...></span>`) or a `[FILL]` mark in `DEMO_SCRIPT.md`.
 The sheet prints a blue "— on site" style placeholder while a slot is empty, so it is finished either way.
 
@@ -22,13 +22,13 @@ Keep values short (about 14 characters fit in a slot on the sheet).
 | `forecast-time` | Seconds from pressing "Update the unit" to the board redrawing | Fuzzball lane | rehearsal, `COMPUTE_PLAN.md` checklist step 5 |
 | `chat-tokens-per-sec` | Nemotron 3 Nano tokens per second on one GB10 | Services lane | vLLM log during a chat question |
 | `heldout-accuracy` | **Filled:** held-out AUROC 0.77–0.93 (see `docs/RESULTS.md`) | Vaishvik | done 2026-11-14 |
-| `workflow-count` (has a value: 6) | Number of Fuzzball workflow files | Fuzzball lane | `ls backend/fuzzball/*.fz` |
 
 ## Counts printed on the sheet (recheck before printing)
 
 | Count | Value on Nov 14 | Recheck with |
 |---|---|---|
-| Backend tests passing | 282 | `cd backend && uv run --extra dev --extra model pytest -q` |
+| Backend tests passing | 459 on Nov 15 (431 without a browser, plus 28 page tests in a real browser) | `cd backend && uv run --extra dev --extra model --with playwright python -m pytest -q` |
+| "Ran end to end on the two Lenovo machines under Fuzzball with one launch script" | true of the team's run on Nov 14, from ICU-Twin | `HANDOFF.md`, Status |
 
 ## Statements to confirm on site
 
