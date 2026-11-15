@@ -226,7 +226,7 @@ A room may carry `"name": {"display", "first", "last", "fictional": true}` and t
 
 `"on_now_source"` (in `forecast.json` and `rooms.json`) says where "on now" comes from: `"tokens"` (default: the winnower's `LABEL//imv_at_cut`, `pressor_at_cut`, `crrt_at_cut` flags) or `"clif"` (`--clif-now <CLIF folder>` on `rooms.py` and `aggregate.py`, `app/clif_now.py`). With `"clif"`, raw CLIF decides what runs at each stay's cut (first ICU arrival + 24 h + the demo clock, in the data's timeline): IMV = the last non-null `device_category` within 24 h is IMV (no device row: the token flag is kept); vasopressor = per pressor the last `medication_admin_continuous` row within 24 h is start / dose_change / going with dose > 0 (null dose carries the last non-null since the last stop; `stop` ends it); CRRT = a `crrt_therapy` row within 6 h with `blood_flow_rate` > 0 (or no rate but a mode). That replaces the token flags for the room `on_now` tags and `stopped_before_cut`, `life_support.now_patients` / `now_by`, and the supports excluded from `any_life_support` and from the new-start counts. A key missing from an older file means `"tokens"`. A room-scope run refuses a `rooms.json` made with the other source. The `--real-ward` guard applies to the CLIF folder's stays too.
 
-### ward block (decided by J.C., 2026-11-14)
+### ward block (decided by 2026-11-14)
 
 Real MIMIC-IV per-patient room views are approved, with all patient data kept local (cluster volumes only; never git, screenshots, logs beyond counts, or public hosting). It is an explicit mode:
 

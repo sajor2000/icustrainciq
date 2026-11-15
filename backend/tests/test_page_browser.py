@@ -1,6 +1,6 @@
 r"""The board page in a real browser (CodeRabbit PR #16, findings on the page).
 
-The page is Dema's final board (D25): a bed has no trajectory word, so a fully
+The page is the team's final board (D25): a bed has no trajectory word, so a fully
 observed bed with nothing at its threshold reads "clear" (never "Steady"), and the
 machine totals are the server's (capacity.json), not the device copy.
 
@@ -338,8 +338,8 @@ def test_attention_first_is_ordered_by_the_highest_flagged_chance(
 def test_death_is_a_unit_count_and_see_first_names_the_top_beds(
     browser, tmp_path, size
 ):
-    """J.C.'s decisions Q4/Q9 and Q6a: no death icon and no death flag on a bed
-    tile; one unit count in the alert line; See first names Dema's top beds."""
+    """The team's decisions Q4/Q9 and Q6a: no death icon and no death flag on a bed
+    tile; one unit count in the alert line; See first names the team's top beds."""
 
     def edit(room):
         room[3]["p"]["death"] = 0.9  # very likely to die: still no mark on the tile
@@ -395,7 +395,7 @@ def test_no_failed_request_when_no_context_is_published(browser, tmp_path, size)
 
 
 def test_an_update_shows_its_steps_then_updated(browser, tmp_path):
-    """J.C.'s decision Q6b: Queued, Running on the GPU, Scoring, Done, then a short
+    """The team's decision Q6b: Queued, Running on the GPU, Scoring, Done, then a short
     "Updated HH:MM"; a stopped run says so in plain words (built-in demo data)."""
     unit_files(tmp_path, lambda room: None)
     with running_board(tmp_path, static_path=PAGE) as base:

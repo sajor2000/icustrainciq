@@ -6,7 +6,7 @@ in the app's DESIGN.md, and removed an approximate new preview example. The
 application code and both served-page copies are unchanged. Do not repeat this
 repair; continue chatbot work from [CHATBOT_HANDOFF.md](CHATBOT_HANDOFF.md).
 
-Requested by J.C. after the Nemotron chatbot handoff. Work in this isolated
+Requested after the Nemotron chatbot handoff. Work in this isolated
 checkout on `t7/ui-nemotron-chatbot`, starting from `64a3399`. The app integration
 is already pushed. [CHATBOT_HANDOFF.md](CHATBOT_HANDOFF.md) has the full technical
 handoff, 362 passing backend tests and 24 passing UI states.
@@ -22,7 +22,7 @@ Refresh only `.impeccable/design.json` in each checkout against its own existing
 `DESIGN.md`, using Impeccable's sidecar-only refresh instructions. Preserve each
 `DESIGN.md` byte for byte. Do not just advance `generatedAt`: inspect and repair
 stale extension metadata, component examples and narrative. Preserve provenance
-and credits, and avoid duplicating primitive tokens into the sidecar.
+and avoid duplicating primitive tokens into the sidecar.
 
 The current app sidecar still says chances are `N in 10`, `never percentages`,
 and `Don't show a percentage anywhere`. Those contradict the current app and

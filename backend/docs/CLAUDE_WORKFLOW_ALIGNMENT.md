@@ -2,7 +2,7 @@
 
 Local branch handoff, 2026-11-14: `t7/ui-nemotron-chatbot`, based on current-app
 commit `bc4c44df2ae6b7f26cf42ce21e119598d68b0d89`. Changes are isolated in a separate
-worktree. Whiskey receives the app/backend branch after local synthetic checks;
+worktree. The chat lane receives the app/backend branch after local synthetic checks;
 this record does not claim a cluster deployment or a completed private-data run.
 
 This integration follows the current ICU Horizon app in `icustrainciq`, including its

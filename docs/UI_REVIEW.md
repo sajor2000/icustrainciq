@@ -1,31 +1,31 @@
-# Page changes for Dema and J.C. to review
+# Page changes for the team to review
 
-Read this before the morning meeting on 2026-11-15. It lists every change this repo made to Dema's final board page (ICU-Twin `55df710`, decision D25), with a before and after picture, the reason, and how to undo it. Nothing here is in ICU-Twin yet. Section 4 says how to bring across what you approve.
+Read this before the morning meeting on 2026-11-15. It lists every change this repo made to the team's final board page (ICU-Twin `55df710`, decision D25), with a before and after picture, the reason, and how to undo it. Nothing here is in ICU-Twin yet. Section 4 says how to bring across what you approve.
 
-The page is still Dema's design: the same layout, tiles, person figure, circle icons, event cards, settings panel, bed pop-up and colours. These are refinements on top (D27).
+The page is still the team's design: the same layout, tiles, person figure, circle icons, event cards, settings panel, bed pop-up and colours. These are refinements on top (D27).
 
 - Page file: [`mockups/command-center.html`](../mockups/command-center.html); the served copy `backend/app/static/index.html` is byte-identical.
 - Open it without a server: `python3 -m http.server 8000`, then `http://localhost:8000/mockups/command-center.html#synthetic` (made-up patients).
-- "Before" pictures are Dema's page as it was on `main` before PR 24 and this pull request (flag line 25%). All pictures use made-up patients. In the bed-board "before" pictures the death threshold is set to 5% so that the death marks show.
+- "Before" pictures are the board page as it was on `main` before PR 24 and this pull request (flag line 25%). All pictures use made-up patients. In the bed-board "before" pictures the death threshold is set to 5% so that the death marks show.
 
 ## 1. Decide these in the meeting
 
 | # | Change | Decision it follows | Approve? |
 |---|---|---|---|
-| 1 | Death is hidden on bed tiles | J.C. Q4/Q9, D13 | |
-| 2 | Deaths is one unit count in the alert line | J.C. Q4/Q9 | |
+| 1 | Death is hidden on bed tiles | Q4/Q9, D13 | |
+| 2 | Deaths is one unit count in the alert line | Q4/Q9 | |
 | 3 | Deaths card shows only the unit count and range | PR 24, D26 | |
-| 4 | "See first" row above the bed grid | J.C. Q6a | |
-| 5 | Quieter tiles | J.C. Q6a | |
-| 6 | "Update the unit" shows its progress | J.C. Q6b | |
-| 7 | Chat: clearer suggested questions | J.C. Q6c | |
-| 8 | Chat opens above an open bed (bug fix) | J.C. Q6c | |
+| 4 | "See first" row above the bed grid | Q6a | |
+| 5 | Quieter tiles | Q6a | |
+| 6 | "Update the unit" shows its progress | Q6b | |
+| 7 | Chat: clearer suggested questions | Q6c | |
+| 8 | Chat opens above an open bed (bug fix) | Q6c | |
 | 9 | Escape closes one panel at a time (bug fix) | PR 24 | |
 | 10 | 44 px touch targets on bed chips and Change links | PR 24 | |
 | 11 | Header reads "ICU Horizon" | D24 | |
-| 12 | Phone layout at 390 px | J.C. Q6d | |
+| 12 | Phone layout at 390 px | Q6d | |
 | 13 | No console error when no context is published | bug fix | |
-| 14 | Standard flag lines 20% / 40% / 60% and "Reset to standard" | D26; applied: J.C. merged PR 24 | |
+| 14 | Standard flag lines 20% / 40% / 60% and "Reset to standard" | D26; applied: PR 24 merged | |
 
 Not applied, for you to decide: section 3.
 
@@ -41,7 +41,7 @@ Not applied, for you to decide: section 3.
 
 **What.** A tile no longer shows the death circle with its chance, and the person figure no longer turns red for death. Only a new life support turns the figure red. The Death row in the Settings thresholds is gone, because it now has nothing to switch. The key above the grid no longer lists Death. The tile's spoken label no longer mentions death.
 
-**Why.** J.C.'s decision Q4/Q9 and D13: death never colours or marks a bed. In the "before" picture, with a low death threshold, most of the unit is red.
+**Why.** the team's decision Q4/Q9 and D13: death never colours or marks a bed. In the "before" picture, with a low death threshold, most of the unit is red.
 
 **Where death still is.** In the bed pop-up, as the fifth row, "Dies in hospital", always with its chance (unchanged). In the alert line (change 2). On the Deaths card (change 3).
 
@@ -75,7 +75,7 @@ Not applied, for you to decide: section 3.
 
 Pictures: change 1, above the grid.
 
-**What.** One compact row at the top of the Bed board names the three beds with the highest chance of a new life support, using Dema's own top-beds rule (`topBeds`, the rule that already picked the three pulsing figures on Unit strain; a tie with the third is included). Each is a button: her red person figure, the bed number, the name, and the bed's top event as her circle icon with its chance. Pressing it opens the bed. The "Highest-risk beds 20 6 13" chips, which said the same thing without the reason, are hidden on the Bed board and stay on Unit strain. The row is not shown in Now.
+**What.** One compact row at the top of the Bed board names the three beds with the highest chance of a new life support, using the team's own top-beds rule (`topBeds`, the rule that already picked the three pulsing figures on Unit strain; a tie with the third is included). Each is a button: her red person figure, the bed number, the name, and the bed's top event as her circle icon with its chance. Pressing it opens the bed. The "Highest-risk beds 20 6 13" chips, which said the same thing without the reason, are hidden on the Bed board and stay on Unit strain. The row is not shown in Now.
 
 **Why.** Q6a: a faster read at 07:00. The three beds and why are readable from across the room before any tile.
 
@@ -199,17 +199,17 @@ Pictures: change 1.
 |---|---|
 | ![before](screenshots/review/11-standard-lines-before.png) | ![after](screenshots/review/11-standard-lines-after.png) |
 
-**What.** The default "Flag beds at" is 20% (it was 25%), the presets are 40 / 20 / 10 (they were 50 / 25 / 10), High on an opened bed's rows starts at 40% (it was 50%), and a visible "Reset to standard" beside the presets returns every line to the standard. Leaving stays 60%. Dema's per-event steppers are unchanged. A threshold saved on a device earlier is kept until "Reset to standard" is pressed.
+**What.** The default "Flag beds at" is 20% (it was 25%), the presets are 40 / 20 / 10 (they were 50 / 25 / 10), High on an opened bed's rows starts at 40% (it was 50%), and a visible "Reset to standard" beside the presets returns every line to the standard. Leaving stays 60%. The team's per-event steppers are unchanged. A threshold saved on a device earlier is kept until "Reset to standard" is pressed.
 
 **What it changes on screen.** With the made-up data the 20% line flags 6 beds where 25% flagged 3, the Ventilator card counts 3 beds (it was 2) and the unit with six ventilators reads "short by 2" (it was 1). The three See first beds are the same: that row does not depend on the line.
 
-**Why.** D13 and D14 set the board's thresholds at 20% (watch), 40% (worsening) and 60% (leaving); D26 makes them the page's defaults. This is no longer a proposal: J.C. merged PR 24 on 2026-11-15.
+**Why.** D13 and D14 set the board's thresholds at 20% (watch), 40% (worsening) and 60% (leaving); D26 makes them the page's defaults. This is no longer a proposal: PR 24 merged on 2026-11-15.
 
 **Undo.** `LINE_DEF` back to `.25`, `upLine` back to `[.25,.5,.75]`, the three preset buttons back to 50 / 25 / 10 (and `[50,25,10]` in `paintFlag`), and remove the `flag-reset` button and its handler.
 
 ## 3. Proposals not applied
 
-These would change Dema's settings or the design system, so they are listed, not made.
+These would change the team's settings or the design system, so they are listed, not made.
 
 | # | Proposal | From | What it would change |
 |---|---|---|---|

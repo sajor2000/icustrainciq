@@ -1267,7 +1267,7 @@ def _command_args(script: str, marker: str, stop: str | None = None) -> list[lis
 
 
 def test_rendered_team_workflows_pass_only_arguments_their_scripts_accept():
-    """J.C.'s rule for the team's Fuzzball files: a flag added to a job line must be
+    """The team's rule for the team's Fuzzball files: a flag added to a job line must be
     one the exact script it is passed to accepts, at the code this branch publishes.
     Every winnower call and the board call of the rendered templates (open demo and
     cohort) is parsed by that script's own option parser; nothing is run."""

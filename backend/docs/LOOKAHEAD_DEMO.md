@@ -2,7 +2,7 @@
 
 This is the actual app's backend on isolated branch `t7/ui-nemotron-chatbot`.
 Run local commands below from `backend/`. The workflow alignment record names
-the current-app base and the reviewed frontend fingerprint for Whiskey's handoff.
+the current-app base and the reviewed frontend fingerprint for the chat handoff.
 
 This drop-in package connects one ICU nurse or physician to a 25-room research
 replay. One private final cohort selects exactly 25 real MIMIC-IV

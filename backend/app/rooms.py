@@ -2,7 +2,7 @@
 
 Stage ward = the open MIMIC-IV Demo (docs/DECISIONS.md D6) by default: a room map
 with a stay id outside clif_demo/clif_hospitalization.parquet is refused. Real
-MIMIC-IV (J.C., 2026-11-14) is an explicit mode, `--real-ward`; its data stays on
+MIMIC-IV (2026-11-14) is an explicit mode, `--real-ward`; its data stays on
 the cluster volumes and rooms.json / forecast.json then carry
 "ward": {"source": "mimic-iv", "label": "Real MIMIC-IV · local only"}.
 

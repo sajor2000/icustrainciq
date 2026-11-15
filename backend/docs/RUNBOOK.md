@@ -10,7 +10,7 @@ The team ran ICU Horizon end to end on the two Lenovo machines under Fuzzball wi
 
 Everything runs from `backend/` in this repo (`cd backend` first) on a laptop with the `fuzzball` CLI logged in.
 
-This runbook is Kaveri's, written in [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin) where the app sits at the repo root; here the same files sit under `backend/`, and the code the cluster runs is published from this repo.
+This runbook is written in [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin) where the app sits at the repo root; here the same files sit under `backend/`, and the code the cluster runs is published from this repo.
 
 ---
 
