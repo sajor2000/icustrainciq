@@ -43,14 +43,7 @@ BACKEND = pathlib.Path(__file__).resolve().parent.parent
 if str(BACKEND) not in sys.path:  # run as a script from any folder
     sys.path.insert(0, str(BACKEND))
 
-from app import (  # noqa: E402
-    aggregate,
-    clif_now,
-    fake_names,
-    rooms,
-    stage_ward,
-    ward_check,
-)
+from app import aggregate, clif_now, fake_names, rooms, stage_ward, ward_check  # noqa: E402
 
 HOSP = "hospitalization_id"
 BASE_HOURS = 24  # D3: the cut is 24 h after ICU arrival
