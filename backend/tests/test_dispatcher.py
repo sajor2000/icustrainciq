@@ -1139,3 +1139,14 @@ def test_a_failed_token_refresh_is_retried_within_the_hour(tmp_path, monkeypatch
     monkeypatch.setattr(d, "refresh_token", lambda: calls.append(2) or True)
     s.tick()
     assert calls == [1, 2] and s.last_refresh == t0 + 3601
+
+
+def test_ward_cohort_winnow_steps_keep_the_rate_log_quiet():
+    """the winnower logs outcome rates of the cohort at INFO; the ward steps silence it (D19)"""
+    import pathlib
+
+    fz = pathlib.Path(__file__).resolve().parent.parent / "fuzzball"
+    for name in ("t7-forecast.fz", "t7-ward.fz"):
+        for line in (fz / name).read_text().splitlines():
+            if "winnower import main" in line:
+                assert "logger.setLevel(logging.WARNING)" in line, name

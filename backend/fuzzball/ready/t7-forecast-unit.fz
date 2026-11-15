@@ -75,7 +75,8 @@ jobs:
       if [ "$HOURS" = "0" ] && [ -f /store/stage/tokenized_output/held_out_for_inference.parquet ]; then
         echo "winnow: skipped (t7-ward cut this ward at the same 07:00 clock)"
       else
-        python -c "from icutwin.scoring.winnower import main; main()" /store/stage/tokenized_output \
+        # the winnower logs outcome rates of the ward cohort at INFO; quiet that logger so workflow logs keep counts only (D19)
+        python -c "import logging; from icutwin.common import logger; logger.setLevel(logging.WARNING); from icutwin.scoring.winnower import main; main()" /store/stage/tokenized_output \
           --demo-clock-hours "$HOURS"
       fi
       # one short forward pass per stage-ward stay (25 in the final cohort)
