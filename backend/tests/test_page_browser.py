@@ -10,9 +10,11 @@ Skipped unless Playwright is installed:
 Synthetic data only (examples/). Each check runs at a desk and a phone width.
 """
 
+import http.server
 import json
 import pathlib
 import re
+import threading
 import time
 
 import pytest
@@ -415,3 +417,92 @@ def test_an_update_shows_its_steps_then_updated(browser, tmp_path):
         page.click("#runprog .pg-x")
         assert page.is_hidden("#runprog")
         page.close()
+
+
+class _FakeDispatcher:
+    """a dispatcher whose /status follows a script: the page's progress strip reads
+    running.state and stuck from it through GET /api/runs"""
+
+    def __init__(self):
+        self.status = {"running": None, "updating": False, "stuck": None}
+        me = self
+
+        class H(http.server.BaseHTTPRequestHandler):
+            def _send(self, obj):
+                data = json.dumps(obj).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+
+            def do_GET(self):
+                self._send({"next_scheduled": "2026-01-02T07:00", **me.status})
+
+            def do_POST(self):
+                self.rfile.read(int(self.headers.get("Content-Length", 0)))
+                self._send({"started": True, "name": "t7-forecast-unit-0101-0700"})
+
+            def log_message(self, *a):
+                pass
+
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.url = f"http://127.0.0.1:{self.server.server_port}"
+
+    def set(self, state=None, stuck=None):
+        run = {"name": "t7-forecast-unit-0101-0700", "state": state} if state else None
+        self.status = {"running": run, "updating": bool(run), "stuck": stuck}
+
+    def close(self):
+        self.server.shutdown()
+        self.server.server_close()
+
+
+def test_a_live_update_follows_the_dispatcher_and_ends_updated_or_stopped(
+    browser, tmp_path
+):
+    """Served live, the strip's step comes from /api/runs: PENDING is Queued, any
+    other running state is Running on the GPU, the job gone from the list is Scoring,
+    and a new forecast file is "Updated HH:MM". A run the dispatcher stopped says so."""
+    unit_files(tmp_path, lambda room: None)
+    fake = _FakeDispatcher()
+    current = lambda page: page.inner_text("#runprog .steps li.is")  # noqa: E731
+    try:
+        with running_board(tmp_path, dispatcher=fake.url, static_path=PAGE) as base:
+            page = open_page(browser, base, WIDTHS[0], "fast")
+            fake.set("PENDING")
+            page.click("#rerun")
+            page.wait_for_selector("#runprog .steps li.is")
+            assert "Queued" in current(page)
+            fake.set("STARTED")
+            page.wait_for_selector(
+                "#runprog .steps li.is:has-text('Running on the GPU')"
+            )
+            fake.set(None)
+            page.wait_for_selector("#runprog .steps li.is:has-text('Scoring')")
+            forecast = json.loads((tmp_path / "forecast.json").read_text())
+            forecast["made_at"] = "2026-01-01T07:42:00"
+            (tmp_path / "forecast.json").write_text(json.dumps(forecast))
+            page.wait_for_selector("#runprog .pg-h.ok", timeout=5000)
+            assert "Updated 07:42" in page.inner_text("#runprog")
+            page.wait_for_selector("#runprog", state="hidden", timeout=5000)
+            # a second run that waits for a GPU and is stopped by the dispatcher
+            fake.set("PENDING")
+            page.click("#rerun")
+            page.wait_for_selector("#runprog .steps li.is")
+            stopped = {
+                "at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                "name": "t7-forecast-unit-0101-0700",
+                "minutes": 5,
+                "reason": "The update waited for a GPU for 5 minutes and was stopped.",
+            }
+            fake.set(None, stuck=stopped)
+            page.wait_for_selector("#runprog .pg-h.bad", timeout=5000)
+            words = page.inner_text("#runprog")
+            assert "The update was stopped." in words, words
+            assert "waited for a free GPU for 5 minutes" in words, words
+            assert page.get_attribute("#rerun", "aria-disabled") == "false"
+            page.close()
+    finally:
+        fake.close()
