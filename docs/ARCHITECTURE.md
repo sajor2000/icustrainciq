@@ -19,7 +19,7 @@ ICU Lookahead is a bed board for one ICU. It shows the life support each patient
 
 **The demo runs from the team's ICU-Twin repo ([github.com/vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin)). Do not run `launch.sh` from this repo; its `ready/` files would overwrite the team's code on the shared volume.** What differs between the two repos: [`ICU_TWIN_DELTA.md`](ICU_TWIN_DELTA.md).
 
-Everything described here is on `main`: staffing and capacity in the backend and Dema's final board page came in with PR #20. The chat grounded in a shared ICU snapshot is on `main` too; its `t7-lookahead-*` workflows have not been run on the cluster.
+Everything described here is on `main`: staffing and capacity in the backend and the team's final board page came in with PR #20. The chat grounded in a shared ICU snapshot is on `main` too; its `t7-lookahead-*` workflows have not been run on the cluster.
 
 ## What runs where
 

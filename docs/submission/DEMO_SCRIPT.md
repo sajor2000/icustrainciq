@@ -6,7 +6,7 @@ Team7 · CIQ × NVIDIA Local AI Hackathon · Chicago · Nov 14–15, 2026
 - The judges are engineers, not clinicians. Say each clinical word in plain words once, in passing, then use it.
 - The five things the judges must hear, and where: **the problem** (0:00), **what we built** (0:30 to 3:05), **how we used CIQ Fuzzball and the stack** (3:15 to 4:20), **what is new scientifically** (4:30), **how it works in a real hospital** (4:50).
 - Lines marked **[FILL]** depend on results that do not exist yet. Fill them or skip them. Never improvise a number.
-- **The demo runs from the team's ICU-Twin repo** ([github.com/vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin)). Do not run `launch.sh` from this repo: its `ready/` files would overwrite the team's code on the shared volume. The clicks below match this repo's final page; if the live board is ICU-Twin's page without the changes in [`../UI_REVIEW_FOR_DEMA.md`](../UI_REVIEW_FOR_DEMA.md), use the "On ICU-Twin's page" column note under the table.
+- **The demo runs from the team's ICU-Twin repo** ([github.com/vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin)). Do not run `launch.sh` from this repo: its `ready/` files would overwrite the team's code on the shared volume. The clicks below match this repo's final page; if the live board is ICU-Twin's page without the changes in [`../UI_REVIEW.md`](../UI_REVIEW.md), use the "On ICU-Twin's page" column note under the table.
 
 ## Words to explain once
 
@@ -73,7 +73,7 @@ Room numbers and percentages below are from the demo data (`#synthetic`). On the
 | 4:50 | One-sheet, bottom | point at "In the real world" | "On patients it never saw, AUROC is 0.77 to 0.93. Every step is a Fuzzball workflow file, and the data is in CLIF, an open format, so another hospital can rerun it on its own records. Nothing leaves the building." |
 | 5:00 | One-sheet | stop | "ICU Lookahead. Thank you." |
 
-On ICU-Twin's page (if the changes in `UI_REVIEW_FOR_DEMA.md` are not ported): there is no See first row, so at 1:35 point at the red person icons and at 2:15 press bed 20's tile; at 3:50 the only sign is the "updating" tag; at 4:00 the button reads **Ask Lookahead** and the question is **"Which beds need attention first?"**.
+On ICU-Twin's page (if the changes in `UI_REVIEW.md` are not ported): there is no See first row, so at 1:35 point at the red person icons and at 2:15 press bed 20's tile; at 3:50 the only sign is the "updating" tag; at 4:00 the button reads **Ask Lookahead** and the question is **"Which beds need attention first?"**.
 
 Timing notes: the 4:30 and 4:50 lines are about 60 and 40 words, 40 seconds together at a steady pace, so start the 4:30 line by 4:20 (the chat close at 4:20 has no words). If you are behind at 3:15, skip the 1:55 threshold beat, not the Fuzzball beat. Detail that no longer fits is for questions: the last-layer vector, the GPU split in service, the per-event AUROC table (`docs/RESULTS.md`), training on one GPU against two [FILL], and the next step, a prospective check on one site's data.
 

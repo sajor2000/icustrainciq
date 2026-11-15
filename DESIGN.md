@@ -288,8 +288,6 @@ The unit is read from three metres as icons, figures and numbers, with almost no
 
 Colour outside that pair is rationed to meaning. Amber appears for TIGHT and BUSY, red for SHORT and VERY BUSY and the highest-risk person figure, and green for Leaving borders and labels and for ON TRACK and USUAL. Leaving figures fill in secondary ink (grey). Every status is carried three ways at once, by a fill or border, a drawn shape and a word. There are two boards, day and night, and both are first-class: they swap custom properties and nothing else.
 
-Credit. The cluster cards, the person figure that fills with a bed's chance (a head-and-shoulders path, two stacked SVGs with a clip-path inset), the range bar with an ink line for free capacity, the status chip, the card radius, hairline and shadow language and the segmented view switch come from Dema's (GitHub: deetherese) design on the `alternative` branch (`origin/alternative`, `mockups/command-center.html`). The blue acuity scale comes from the earlier board at commit 65b36c6. The icon family was drawn for this board; no icon was copied or adapted from an external set.
-
 **Key Characteristics:**
 - Ink is now, blue is the next 24 hours.
 - Pictures before words: one drawn icon family, solid for running, outline for expected.
@@ -357,7 +355,7 @@ Night values carry the same names with a `night-` prefix. On the night board blu
 All sizes are rem. From 1800px the root is 120%, so every size and space on a wall screen grows together.
 
 ### Named Rules
-**The Count Rule.** A chance is a whole percentage on every screen ("23%"), "<5%" when very small, and "No estimate" when it is null (J.C., 2026-11-14 evening; this replaces the earlier natural frequencies). The room page keeps its 10-dot array as the picture beside the percentage. The lines that flag a bed are chosen by the team (default 25%, Worsening at the next step up, Leaving 60%).
+**The Count Rule.** A chance is a whole percentage on every screen ("23%"), "<5%" when very small, and "No estimate" when it is null (2026-11-14 evening; this replaces the earlier natural frequencies). The room page keeps its 10-dot array as the picture beside the percentage. The lines that flag a bed are chosen by the team (default 25%, Worsening at the next step up, Leaving 60%).
 
 **The Range Rule.** Every forecast count carries its range in Caption weight 400 beside it ("+3" then "1 to 5").
 
@@ -375,7 +373,7 @@ Spacing is a short rem scale: .125, .25, .375, .5, .625, .75, 1, 1.25, 1.5. Ever
 
 ## Elevation & Depth
 
-Nearly flat. Depth is one soft two-layer shadow under white cards on a grey ground, plus a hairline border. Dema's card language: radius, hairline, soft shadow. The night board removes the card shadow and relies on surface tone and the hairline.
+Nearly flat. Depth is one soft two-layer shadow under white cards on a grey ground, plus a hairline border. The team's card language: radius, hairline, soft shadow. The night board removes the card shadow and relies on surface tone and the hairline.
 
 ### Shadow Vocabulary
 - **Card** (`box-shadow: 0 1px 2px rgba(16,24,40,.06), 0 4px 12px rgba(16,24,40,.04)`; `none` at night): bed tiles, cards, the strain summary pill, the room page strip.
@@ -396,7 +394,7 @@ Borders carry meaning. A 1px hairline is the default. A 2px green border is Leav
 The unit name in Headline, then a caption row: the product name in ink at 800, the 07:00 to 07:00 window, a pill ward tag and the run line. The strain summary is a 2.75rem pill link on the surface with the card shadow: the count on life support in ink, the expected count in blue, then the status chip. It opens Unit strain. Header buttons are surface with a line border; pressed or expanded they turn ink with board text.
 
 ### Segmented tabs
-Dema's segmented view switch. A board-2 trough with a hairline and .1875rem padding holds two 2.75rem buttons, each an icon and a label at 700: Bed board (a 2 by 2 grid) and Unit strain (three bars on a baseline). The selected tab is ink with board text; hover is surface. On phone the two tabs share the full width.
+The team's segmented view switch. A board-2 trough with a hairline and .1875rem padding holds two 2.75rem buttons, each an icon and a label at 700: Bed board (a 2 by 2 grid) and Unit strain (three bars on a baseline). The selected tab is ink with board text; hover is surface. On phone the two tabs share the full width.
 
 ### Bed tile
 A button, min-height 5.75rem, radius .75rem, with the card shadow. Top row: room number (Room number), age and sex in Caption 600, then one trajectory status at the right as a shape and a word. Bottom row: the Now -> Next 24 h strip. The fill scale is the blue acuity scale from commit 65b36c6.
@@ -411,23 +409,23 @@ A button, min-height 5.75rem, radius .75rem, with the card shadow. Top row: room
 
 > **Bed status removed (2026-11-14).** The Bed board no longer has Worsening / Watch / Still on support / Leaving statuses, status colours on tiles, or the "Bed colours" settings. An event (a new ventilator, vasopressor or CRRT, discharge) shows on a bed's card as a circle icon with its chance when it is at or above that event's threshold in Settings. Death never marks a bed tile: no death circle, no death percentage, no red figure for death (D27). When a new life support is at its threshold, the person icon on the bed's tile turns red and pulses (the circle icons keep their own colours and do not pulse); discharge alone does not. The plus-in-a-ring combined chance is gone from the board. Where the text below still describes statuses or tile colours, this note wins.
 
-> **What the page draws (D25, J.C. 2026-11-15).** The board page is Dema's final design (ICU-Twin `55df710`) with bug fixes only: no bed statuses, no Worry first rail, no Staffing card, no 1:1 tag, no role picker. A bed tile is a person icon, the bed number, the name, life support now and the events at their Settings thresholds as circle icons with a chance; the person icon turns red and pulses when a new life support is at its threshold; death never marks a tile. Unit strain is an alert line (what is short, deaths expected as one unit count, the three highest-risk beds) and one event card per event. Settings (the gear) holds the board appearance, the thresholds and the capacity form; a bed opens a pop-up with five predictions, 12 hours of vitals and the last events. Staffing and capacity maths live in the backend and the form. Sections below that describe statuses, the rail or the Staffing card record the earlier design.
+> **What the page draws (D25, 2026-11-15).** The board page is the team's final board design (ICU-Twin `55df710`) with bug fixes only: no bed statuses, no Worry first rail, no Staffing card, no 1:1 tag, no role picker. A bed tile is a person icon, the bed number, the name, life support now and the events at their Settings thresholds as circle icons with a chance; the person icon turns red and pulses when a new life support is at its threshold; death never marks a tile. Unit strain is an alert line (what is short, deaths expected as one unit count, the three highest-risk beds) and one event card per event. Settings (the gear) holds the board appearance, the thresholds and the capacity form; a bed opens a pop-up with five predictions, 12 hours of vitals and the last events. Staffing and capacity maths live in the backend and the form. Sections below that describe statuses, the rail or the Staffing card record the earlier design.
 
 ### See first row
-The old priority rail (Worry first) was removed on 2026-11-14 with the bed statuses. Since D27 one compact row, **See first**, sits above the grid in Next 24 h: the three beds from Dema's top-beds rule (highest chance of a new life support; ties with the third included). Each is a 2.75rem button on the surface with a hairline border, radius .75rem and the card shadow: the red person figure (1.5rem), the bed number at 1.375rem / 800, the display name at .8125rem / 700, and the bed's top event as a circle icon with its percentage at .875rem / 700. On a phone the three share the row and drop the figure and the name. It has no status word and no colour of its own. Each bed tile carries Dema's person figure from Unit strain left of the bed number, as one flat tint (no level fill). In Next 24 h the figure turns red and pulses (beat and halo, 1.2s; still under reduced motion) when a new life support is at its threshold in Settings (never for death); the circle icons keep their own colours. In Now the figure is solid ink on a bed on life support, and a bed on two or more supports (Critical, named in the key) has a red border.
+The old priority rail (Worry first) was removed on 2026-11-14 with the bed statuses. Since D27 one compact row, **See first**, sits above the grid in Next 24 h: the three beds from the top-beds rule (highest chance of a new life support; ties with the third included). Each is a 2.75rem button on the surface with a hairline border, radius .75rem and the card shadow: the red person figure (1.5rem), the bed number at 1.375rem / 800, the display name at .8125rem / 700, and the bed's top event as a circle icon with its percentage at .875rem / 700. On a phone the three share the row and drop the figure and the name. It has no status word and no colour of its own. Each bed tile carries the team's person figure from Unit strain left of the bed number, as one flat tint (no level fill). In Next 24 h the figure turns red and pulses (beat and halo, 1.2s; still under reduced motion) when a new life support is at its threshold in Settings (never for death); the circle icons keep their own colours. In Now the figure is solid ink on a bed on life support, and a bed on two or more supports (Critical, named in the key) has a red border.
 
 ### Status chip
-Dema's status chip. Capitals at Label 800 with 0.05em tracking, radius .3125rem, 1.5px border. ON TRACK and USUAL: surface with a green border and green word. TIGHT and BUSY: amber-bg fill, amber-edge border, amber word. SHORT and VERY BUSY: red fill, on-red word. Not ready: line border, ink-2 word at 600, no tracking. The word is always shown.
+The team's status chip. Capitals at Label 800 with 0.05em tracking, radius .3125rem, 1.5px border. ON TRACK and USUAL: surface with a green border and green word. TIGHT and BUSY: amber-bg fill, amber-edge border, amber word. SHORT and VERY BUSY: red fill, on-red word. Not ready: line border, ink-2 word at 600, no tracking. The word is always shown.
 
 ### Life support lead card and capacity form
-A Dema cluster card at full width: surface, radius 1rem, hairline, card shadow, two columns. Left: "Life support" with the status chip and what it is measured against, then patients on now in ink and expected in blue at Lead numeral, a tall range bar (1.75rem) and one caption line. Right: a line on expected deaths in plain ink-2 text, then "Set tonight's capacity", a 2.75rem disclosure with a chevron that turns when open. The form is two labelled number inputs (surface, line border, radius .625rem, 2.75rem), an ink Save button, and a live status line. Amber and red statuses add a 2px border to the card.
+A cluster card at full width: surface, radius 1rem, hairline, card shadow, two columns. Left: "Life support" with the status chip and what it is measured against, then patients on now in ink and expected in blue at Lead numeral, a tall range bar (1.75rem) and one caption line. Right: a line on expected deaths in plain ink-2 text, then "Set tonight's capacity", a 2.75rem disclosure with a chevron that turns when open. The form is two labelled number inputs (surface, line border, radius .625rem, 2.75rem), an ink Save button, and a live status line. Amber and red statuses add a 2px border to the card.
 
 ### Support cards
-Dema's cluster cards, one per support (IMV, Vasopressor, CRRT) and one for Leaving. Header: the support's solid icon at 2.5rem, a Title name, the status chip at the right. Then counts at Numeral: on now and free in ink, expected in blue with its range. Then the range bar, then groups of person figures under small ink-2 labels (On now, May start, Likely to leave) separated by a hairline.
+the cluster cards, one per support (IMV, Vasopressor, CRRT) and one for Leaving. Header: the support's solid icon at 2.5rem, a Title name, the status chip at the right. Then counts at Numeral: on now and free in ink, expected in blue with its range. Then the range bar, then groups of person figures under small ink-2 labels (On now, May start, Likely to leave) separated by a hairline.
 
-**Range bar** (Dema's, with the ink line for free capacity). A 6-unit rounded track in figure grey; a 10-unit rounded blue segment for the 8-in-10 range; a surface bead with a blue ring at the median; a solid ink line for what is free or what tonight's staffing covers; a dashed ink line for a typical day.
+**Range bar** (with the ink line for free capacity). A 6-unit rounded track in figure grey; a 10-unit rounded blue segment for the 8-in-10 range; a surface bead with a blue ring at the median; a solid ink line for what is free or what tonight's staffing covers; a dashed ink line for a typical day.
 
-**Person figure** (Dema's). A 2.5rem by 2.625rem head-and-shoulders silhouette above a room number (800) and its percentage (Label). It is two stacked SVGs of the same path: a base in figure grey and a fill in blue clipped with `clip-path: inset(calc(100% - var(--p)) 0 0 0)`, so it fills from the bottom to the bed's chance. Solid ink means the support is on now. A grey (secondary ink) fill means leaving. Each figure is a button that opens the room; hover lifts the silhouette 1px.
+**Person figure**. A 2.5rem by 2.625rem head-and-shoulders silhouette above a room number (800) and its percentage (Label). It is two stacked SVGs of the same path: a base in figure grey and a fill in blue clipped with `clip-path: inset(calc(100% - var(--p)) 0 0 0)`, so it fills from the bottom to the bed's chance. Solid ink means the support is on now. A grey (secondary ink) fill means leaving. Each figure is a button that opens the room; hover lifts the silhouette 1px.
 
 ### Room page
 A back link and previous and next room links, underlined ink at 700 with the arrow icon. Then the room number in Room heading, the room status chip (the bed tile's five statuses as a chip at 1rem, radius .5rem), and the Now -> Next 24 h strip in its own small card with "Now" and "Next 24 h" labels. Two cards below. The first lists each event as a row: icon and name, a level chip (Low on board-2, Medium on `level-medium`, High on `level-high`, On now in ink), a ten-dot array (.75rem circles, filled blue to the count, outlined in line otherwise) and the percentage. Death is a plain row with no icon and no colour. The second card holds the last 12 hours and the two room actions.
@@ -444,24 +442,24 @@ One inline SVG sprite, drawn for this board on a 24 grid: `currentColor`, 1.75 s
 - **Leaving:** a bed with an outward arrow.
 - **Trajectory shapes:** solid triangle (Worsening), outline triangle (Watch), two bars (Still on support), dot (Steady).
 - **Marks:** plus in a ring (combined chance), ring (no support now), dash (nothing new).
-- **Interface:** arrow, chevron, moon, chat, bed grid and strain bars, on the same grid and stroke. The person figure is Dema's.
+- **Interface:** arrow, chevron, moon, chat, bed grid and strain bars, on the same grid and stroke. The person figure is the team's design.
 
 ### Focus ring
 A 3px outline in `focus` with a 2px offset and a .5rem radius on every focusable element. On the person figure the ring is drawn around the silhouette with a 3px offset.
 
 ### Motion
-State changes: a .2s ease-out on the board colour swap, a .15s ease-out 1px lift on tile and figure hover, a .15s chevron turn, and the board sliding in from the side it was swiped from. One loop, Dema's: the person figure pulses (a 1.2s beat with a red halo; on Unit strain also an expanding ring) on a bed whose new life support is at its threshold and on the three highest-risk beds. One moment, not a loop: when a new forecast lands, the cards take a single 1.2s blue ring. Reduced motion removes all of it.
+State changes: a .2s ease-out on the board colour swap, a .15s ease-out 1px lift on tile and figure hover, a .15s chevron turn, and the board sliding in from the side it was swiped from. One loop: the person figure pulses (a 1.2s beat with a red halo; on Unit strain also an expanding ring) on a bed whose new life support is at its threshold and on the three highest-risk beds. One moment, not a loop: when a new forecast lands, the cards take a single 1.2s blue ring. Reduced motion removes all of it.
 
 ### Product title and unit chip
 The H1 is the product, "ICU Lookahead", with the descriptor "next 24 hours" beside it at 1rem / 600 in secondary ink. The unit ("Medical ICU · 25 beds") is a pill chip in the sub-line next to the data-source tag and is read from the forecast, never written into the page.
 
-### Flag line control (Dema's threshold toggle)
-"Flag beds at" in secondary ink, then a three-part segmented control (40%, 20%, 10%; the standard line is 20%, and an outlined "Reset to standard" beside it returns to 20 / 40 / 60; surface ground, line border, radius .625rem, 2.75rem tall; the chosen part is blue with its on-colour) and an outlined "Thresholds" button. The popover under it (surface, line border, radius 1rem, floating shadow, 24rem wide) has one row per line: icon and name, a 2.75rem − and + stepper, the value at 800, and the beds it catches; then a custom field for all supports and Reset. Hidden in Now. Credit: Dema (deetherese).
+### Flag line control (threshold toggle)
+"Flag beds at" in secondary ink, then a three-part segmented control (40%, 20%, 10%; the standard line is 20%, and an outlined "Reset to standard" beside it returns to 20 / 40 / 60; surface ground, line border, radius .625rem, 2.75rem tall; the chosen part is blue with its on-colour) and an outlined "Thresholds" button. The popover under it (surface, line border, radius 1rem, floating shadow, 24rem wide) has one row per line: icon and name, a 2.75rem − and + stepper, the value at 800, and the beds it catches; then a custom field for all supports and Reset. Hidden in Now.
 
-### Person figure, highest risk and leavers (Dema's)
+### Person figure, highest risk and leavers
 A figure at the next step above its line takes a red fill, a red-tinted base and a soft radial red halo behind it; on the three highest-risk beds the figure beats and the halo and a red ring pulse (1.2s), and its percentage is red at 800. Leavers fill in secondary ink (grey), not green. A leaver on life support carries 1.125rem round device badges at its top right. On the Bed board the same red marks a tile's person icon when a new life support is at its threshold, and the See first figures.
 
-### Capacity bar and labels (Dema's)
+### Capacity bar and labels
 When a machine total is set the card's bar is the whole total (in use + free): a solid run for in use now, a lighter run to in use plus flagged beds, an ink tick at each with its number, "N total" at the right end. It is blue while it fits and red when it passes the total. Labels appear only when they matter: SHORT (solid red chip, 2px red card border), AT LIMIT (amber chip, amber border). The same alert is repeated once in the header strain line. Cards grow with the beds they hold so the row stays even.
 
 ### Patient name
@@ -494,9 +492,6 @@ A forecast a day old or more turns the run line into an amber chip ("Forecast fr
 ### Forecast not ready
 When the forecast is not ready (`pending-model`) the board is all ink: Now content only, no blue, no statuses. One sentence, "Forecast not ready yet: the model is still being prepared.", leads the sub-heading in bold; the flag control drops to 55% opacity and is disabled. No placeholder numbers are drawn.
 
-### Credits
-Cluster cards, bed figures, risk-threshold toggle and capacity model: Dema (deetherese), from the `alternative` branch.
-
 ## Do's and Don'ts
 
 ### Do:
@@ -508,14 +503,13 @@ Cluster cards, bed figures, risk-threshold toggle and capacity model: Dema (deet
 - **Do** keep every target at least 2.75rem (44px) tall and all text at 4.5:1 or better on both boards.
 - **Do** change only custom properties between the day and night boards.
 - **Do** keep to the five predictions: IMV, vasopressor, CRRT, leaving the ICU, death.
-- **Do** credit Dema (deetherese) wherever the cluster card, person figure, range bar, status chip or segmented switch is reused.
 
 ### Don't:
 - **Don't** let death colour or mark a bed tile: no death icon, percentage or red figure on a tile, and no ranking by death. It is one unit count in the alert line and on the Deaths card, and a plain row in the bed pop-up.
 - **Don't** use red outside SHORT, VERY BUSY and the highest-risk person figure; never fill a bed tile red.
 - **Don't** signal status by colour alone.
 - **Don't** use signal-bar glyphs or letter tags (V, P, C) for supports.
-- **Don't** add pulsing or looping animation beyond Dema's one loop (the person figure).
+- **Don't** add pulsing or looping animation beyond the team's one loop (the person figure).
 - **Don't** write hedging or disclaimer copy on the board.
 - **Don't** add a sixth prediction or a forecast count without its range.
 - **Don't** bring in icons from an external set; extend the drawn family on the 24 grid.

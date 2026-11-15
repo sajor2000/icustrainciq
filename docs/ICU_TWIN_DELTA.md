@@ -8,8 +8,8 @@ Compared on 2026-11-15, every claim checked against both repos:
 
 | Repo | Commit |
 |---|---|
-| ICU-Twin `main` | `fac343d` (merge of `55df710`, Dema's final board). No commit since |
-| icustrainciq | `main` at `ef95989` (after PRs #16, #19, #20, #23) plus the final pull request ("Final: one-pager, docs, repo flow, UI refinements on Dema's page") |
+| ICU-Twin `main` | `fac343d` (merge of `55df710`, the team's final board). No commit since |
+| icustrainciq | `main` at `ef95989` (after PRs #16, #19, #20, #23) plus the final pull request ("Final: one-pager, docs, repo flow, UI refinements on the board page") |
 
 **The rule for this morning: nothing in this repo is on the cluster.** The team ran `launch.sh` from ICU-Twin. Do not run `launch.sh` from this repo; its `ready/` files would overwrite the team's code on the shared volume.
 
@@ -18,64 +18,64 @@ Compared on 2026-11-15, every claim checked against both repos:
 How to read the columns:
 
 - **Risk to the running demo** is the risk of porting it now. *None*: it cannot change what the cluster does. *Low*: it changes code the demo runs, is covered by tests, and has a clear undo. *Needs live check*: it has never run on the cluster, so it must be watched once there before the demo relies on it.
-- **Recommendation** is this repo's suggestion. The owner decides.
+- **Recommendation** is this repo's suggestion. The team decides.
 
-### 1.1 The page (owner: Dema)
+### 1.1 The page (area: board page)
 
-One file. Details, pictures and undo for every row: [`UI_REVIEW_FOR_DEMA.md`](UI_REVIEW_FOR_DEMA.md).
+One file. Details, pictures and undo for every row: [`UI_REVIEW.md`](UI_REVIEW.md).
 
 | Change | Why | Risk to the running demo | Recommendation | How to port |
 |---|---|---|---|---|
 | Death hidden on bed tiles; one unit count in the alert line; Deaths card is a unit count only | Bug fixed (D13: death never marks a bed; ICU-Twin ranks the top beds with death in the list) | Low | Port before demo | The page file (below) |
 | A skipped event reads "no data", never 0; unknown life support stays "unknown" | Bug fixed | Low | Port before demo | The page file |
-| "See first" row: the three beds from Dema's top-beds rule | Feature (faster read at 07:00) | Low | Port before demo if Dema approves | The page file |
+| "See first" row: the three beds from the top-beds rule | Feature (faster read at 07:00) | Low | Port before demo if the team approves | The page file |
 | "Update the unit" progress strip: Queued, Running on the GPU, Scoring, Done, "Updated HH:MM", failures in plain words | Feature | **Needs live check**: never watched against a real Fuzzball run | Port before demo only if one update is watched on the cluster first; otherwise after | The page file |
 | Chat: clearer suggested questions; the chat opens above an open bed (it was under the pop-up and could not be clicked) | Polish and a bug fixed | Low | Port before demo | The page file |
 | Escape closes one panel at a time; 44 px targets; quieter tiles; phone layout; header reads "ICU Lookahead" | Bug fixed and polish | Low | Port before demo | The page file |
 | Machine totals read from the server; the saved total stays when use exceeds it ("1 over") | Bug fixed | Low on ICU-Twin's server (it has no totals, so the page keeps them on the device) | Port with the page | The page file |
-| Standard flag lines 20 / 40 / 60 with "Reset to standard" (ICU-Twin: 25%, presets 50 / 25 / 10) | Decision D26, applied here (J.C. merged PR #24) | Low, but it changes which beds are flagged on stage: rehearse with it | Port with the page if Dema agrees; otherwise revert the six lines first | The page file; `UI_REVIEW_FOR_DEMA.md` change 14 |
+| Standard flag lines 20 / 40 / 60 with "Reset to standard" (ICU-Twin: 25%, presets 50 / 25 / 10) | Decision D26, applied here (PR #24 merged) | Low, but it changes which beds are flagged on stage: rehearse with it | Port with the page if the team agrees; otherwise revert the six lines first | The page file; `UI_REVIEW.md` change 14 |
 
-**How to port the page:** `cp mockups/command-center.html <ICU-Twin>/app/static/index.html`, or review [`patches/icu-twin-page.patch`](patches/icu-twin-page.patch) first. It runs on ICU-Twin's `board.py` and `dispatcher.py` unchanged. It is all or nothing unless a change is undone here first (each entry in `UI_REVIEW_FOR_DEMA.md` says how).
+**How to port the page:** `cp mockups/command-center.html <ICU-Twin>/app/static/index.html`, or review [`patches/icu-twin-page.patch`](patches/icu-twin-page.patch) first. It runs on ICU-Twin's `board.py` and `dispatcher.py` unchanged. It is all or nothing unless a change is undone here first (each entry in `UI_REVIEW.md` says how).
 
 ### 1.2 The four small fixes before the demo
 
-| Change | Area | Why | Risk to the running demo | Recommendation | Owner | How to port |
+| Change | Area | Why | Risk to the running demo | Recommendation | Area to decide | How to port |
 |---|---|---|---|---|---|---|
-| Drop non-finite vital signs | backend | Bug fixed: one NaN or infinite reading makes `rooms.json` invalid JSON and the board shows no rooms | Low | **Port before demo** | Kaveri | [`patches/icu-twin-clif-now-vitals.patch`](patches/icu-twin-clif-now-vitals.patch) on `app/clif_now.py` (`rooms.py` needs nothing) |
-| A skipped event reads "no data" | page | Bug fixed | Low | Port before demo | Dema | With the page |
-| Death out of the risk ranking | page | Bug fixed (D13) | Low | Port before demo | Dema | With the page; or one line: `const RISKK = ["imv","vasopressor","crrt"];` |
-| Demo script matches the final page | docs | Polish | None | Port before demo | J.C. | Copy `docs/submission/DEMO_SCRIPT.md` |
+| Drop non-finite vital signs | backend | Bug fixed: one NaN or infinite reading makes `rooms.json` invalid JSON and the board shows no rooms | Low | **Port before demo** | Workflows and backend | [`patches/icu-twin-clif-now-vitals.patch`](patches/icu-twin-clif-now-vitals.patch) on `app/clif_now.py` (`rooms.py` needs nothing) |
+| A skipped event reads "no data" | page | Bug fixed | Low | Port before demo | Board page | With the page |
+| Death out of the risk ranking | page | Bug fixed (D13) | Low | Port before demo | Board page | With the page; or one line: `const RISKK = ["imv","vasopressor","crrt"];` |
+| Demo script matches the final page | docs | Polish | None | Port before demo | Docs and chat | Copy `docs/submission/DEMO_SCRIPT.md` |
 
 ### 1.3 Backend, chat and workflows
 
-| Change | Area | Why | Risk to the running demo | Recommendation | Owner | How to port |
+| Change | Area | Why | Risk to the running demo | Recommendation | Area to decide | How to port |
 |---|---|---|---|---|---|---|
-| Chat grounded in one published snapshot (PR #16): `demo_context.py`, `evidence.py`, a bounded `chat_agent.py`, `board.py --context` | chat | Feature, and a bug fixed (a unit answer and a bed answer could come from different runs; the model could state a number the forecast did not contain) | **Needs live check** (548 changed lines in `chat_agent.py`; tested here on synthetic data only) | Port after demo, with `app/capacity.py` (section 5.8) | J.C. | Section 5.2 |
-| The three `t7-lookahead-*.fz` workflows and the `demo-context` volume | workflows | Feature | **Needs live check: never run on the cluster**, and they use a second volume the team's plan does not have | Keep here only until after the demo | Kaveri | Section 5.2 |
-| Real MIMIC-IV rooms only with `--real-ward` (D19); `t7-twin.fz` passes `@WARD_FLAG@` | backend, workflows | Bug fixed (privacy: the board served real rooms whenever the files carried them) | **Needs live check**: if `board.py` is ported without the `t7-twin.fz` line, the cohort board shows no rooms | Port after demo, both together | Kaveri | Section 5.3 |
-| `--counts-only` on the ward winnow in `t7-fit`, `t7-ward`, `t7-forecast`, and the flag in `winnower.py` | workflows, scoring | Bug fixed (privacy: outcome rates of a 25-stay ward went into workflow logs) | **Needs live check**: the workflow line and the winnower must ship in one publish, or the job fails | Port after demo | Kaveri, Vaishvik | Section 5.6 |
-| Unknown stays unknown (`on_now` null, `available: false`, no "0" for a missing score) | backend | Bug fixed | Low, but it changes `forecast.json` and `rooms.json` shapes the page reads; take the page with it | Port after demo | Kaveri | Section 5.4 |
-| Features tied to the weights that made them (`provenance.py`, extractor sidecar, `apply_probes` refuses a mismatch) | scoring | Bug fixed (stale features could be scored with a refit probe) | **Needs live check**: features extracted before the change are refused until re-extracted | Port after demo | Vaishvik | Section 5.5 |
-| A non-finite score is left out of the metrics, not counted as zero risk | scoring | Bug fixed | None for the demo (metrics only) | Port after demo | Vaishvik | Section 5.10 |
-| Staffing and capacity: machine totals, 1:1 and 1:2 nursing, RT 1:6 (D23), `get_staffing` in the chat | backend, chat | Feature | Low (new keys; the page draws machine capacity only) | Port after demo | Kaveri, J.C. | Section 5.8 |
-| Dispatcher: `@CUT@`, `# needs: ward-ids`, "ICU team" role | backend | Feature and small fixes | Low | Port after demo | Kaveri | Section 5.7 |
-| `GET /api/context` answers 200 when no context is configured | backend | Polish (no failed request in the browser console) | None | Port after demo, with the chat grounding | J.C. | One line in `board.py` |
-| `t7-code.fz` and `make_ready.sh` publish `sajor2000/icustrainciq` | workflows | This repo's own pin | Would replace the team's code on the volume | **Keep here only. Never port** | Kaveri | Section 5.1 |
-| CodeRabbit review fixes (PRs #14, #16, #19, #20, #23) | all | Bugs fixed | Varies; each is one of the rows above or docs only | As the row it belongs to | each owner | [`WHAT_WE_FIXED.md`](WHAT_WE_FIXED.md); ready-to-paste patches for teammates' code in [`UPSTREAM_REVIEW_NOTES.md`](UPSTREAM_REVIEW_NOTES.md) (written before PR #16 merged: check each against ICU-Twin first). No Greptile review is recorded in this repo |
+| Chat grounded in one published snapshot (PR #16): `demo_context.py`, `evidence.py`, a bounded `chat_agent.py`, `board.py --context` | chat | Feature, and a bug fixed (a unit answer and a bed answer could come from different runs; the model could state a number the forecast did not contain) | **Needs live check** (548 changed lines in `chat_agent.py`; tested here on synthetic data only) | Port after demo, with `app/capacity.py` (section 5.8) | Docs and chat | Section 5.2 |
+| The three `t7-lookahead-*.fz` workflows and the `demo-context` volume | workflows | Feature | **Needs live check: never run on the cluster**, and they use a second volume the team's plan does not have | Keep here only until after the demo | Workflows and backend | Section 5.2 |
+| Real MIMIC-IV rooms only with `--real-ward` (D19); `t7-twin.fz` passes `@WARD_FLAG@` | backend, workflows | Bug fixed (privacy: the board served real rooms whenever the files carried them) | **Needs live check**: if `board.py` is ported without the `t7-twin.fz` line, the cohort board shows no rooms | Port after demo, both together | Workflows and backend | Section 5.3 |
+| `--counts-only` on the ward winnow in `t7-fit`, `t7-ward`, `t7-forecast`, and the flag in `winnower.py` | workflows, scoring | Bug fixed (privacy: outcome rates of a 25-stay ward went into workflow logs) | **Needs live check**: the workflow line and the winnower must ship in one publish, or the job fails | Port after demo | Workflows and backend; scoring and training | Section 5.6 |
+| Unknown stays unknown (`on_now` null, `available: false`, no "0" for a missing score) | backend | Bug fixed | Low, but it changes `forecast.json` and `rooms.json` shapes the page reads; take the page with it | Port after demo | Workflows and backend | Section 5.4 |
+| Features tied to the weights that made them (`provenance.py`, extractor sidecar, `apply_probes` refuses a mismatch) | scoring | Bug fixed (stale features could be scored with a refit probe) | **Needs live check**: features extracted before the change are refused until re-extracted | Port after demo | Scoring and training | Section 5.5 |
+| A non-finite score is left out of the metrics, not counted as zero risk | scoring | Bug fixed | None for the demo (metrics only) | Port after demo | Scoring and training | Section 5.10 |
+| Staffing and capacity: machine totals, 1:1 and 1:2 nursing, RT 1:6 (D23), `get_staffing` in the chat | backend, chat | Feature | Low (new keys; the page draws machine capacity only) | Port after demo | Workflows and backend; docs and chat | Section 5.8 |
+| Dispatcher: `@CUT@`, `# needs: ward-ids`, "ICU team" role | backend | Feature and small fixes | Low | Port after demo | Workflows and backend | Section 5.7 |
+| `GET /api/context` answers 200 when no context is configured | backend | Polish (no failed request in the browser console) | None | Port after demo, with the chat grounding | Docs and chat | One line in `board.py` |
+| `t7-code.fz` and `make_ready.sh` publish `sajor2000/icustrainciq` | workflows | This repo's own pin | Would replace the team's code on the volume | **Keep here only. Never port** | Workflows and backend | Section 5.1 |
+| CodeRabbit review fixes (PRs #14, #16, #19, #20, #23) | all | Bugs fixed | Varies; each is one of the rows above or docs only | As the row it belongs to | each area | [`WHAT_WE_FIXED.md`](WHAT_WE_FIXED.md); ready-to-paste patches for teammates' code in [`UPSTREAM_REVIEW_NOTES.md`](UPSTREAM_REVIEW_NOTES.md) (written before PR #16 merged: check each against ICU-Twin first). No Greptile review is recorded in this repo |
 
 ### 1.4 The rescued branch `save/backend-review-fixes`
 
 Nine commits that are on GitHub (`origin/save/backend-review-fixes`) and on neither `main` nor ICU-Twin.
 
-| Change | Area | Why | Risk to the running demo | Recommendation | Owner | How to port |
+| Change | Area | Why | Risk to the running demo | Recommendation | Area to decide | How to port |
 |---|---|---|---|---|---|---|
-| The 24 h outcome window starts at the cut (`7e001f3`) | scoring | Bug fixed | n/a: **already on `main` and in ICU-Twin** in the team's own form (`winnower.py`, "counted from the cut itself") | Nothing to do | Vaishvik | |
-| Probes pair features with labels by stay id (`e370067`) | scoring | Bug fixed | n/a: the join by `hospitalization_id` is on `main`; the weights check is section 5.5 | Nothing more to do | Vaishvik | |
-| End-to-end smoke test with no network, GPU or model (`8826826`, `test_smoke_end_to_end.py`) | backend tests | Feature | None (a test) | Port after demo, rebased: it was written against an older `board.py` | J.C. | Commit `8826826` |
-| Degraded mode: `t7-twin` without Nemotron, the chat answers one plain line (`7f87365`) | workflows, chat | Feature (a fallback if the chat model will not load) | **Needs live check**: never run | Keep on the branch; decide after the demo | Kaveri | Commit `7f87365` |
+| The 24 h outcome window starts at the cut (`7e001f3`) | scoring | Bug fixed | n/a: **already on `main` and in ICU-Twin** in the team's own form (`winnower.py`, "counted from the cut itself") | Nothing to do | Scoring and training | |
+| Probes pair features with labels by stay id (`e370067`) | scoring | Bug fixed | n/a: the join by `hospitalization_id` is on `main`; the weights check is section 5.5 | Nothing more to do | Scoring and training | |
+| End-to-end smoke test with no network, GPU or model (`8826826`, `test_smoke_end_to_end.py`) | backend tests | Feature | None (a test) | Port after demo, rebased: it was written against an older `board.py` | Docs and chat | Commit `8826826` |
+| Degraded mode: `t7-twin` without Nemotron, the chat answers one plain line (`7f87365`) | workflows, chat | Feature (a fallback if the chat model will not load) | **Needs live check**: never run | Keep on the branch; decide after the demo | Workflows and backend | Commit `7f87365` |
 | Capacity POST sends totals only (`5dd72ca`); README and figures commits | page, docs | | n/a: superseded by what is on `main` | Nothing to do | | |
 
-### 1.5 Docs, figures and the submission (owner: J.C.)
+### 1.5 Docs, figures and the submission (area: docs and chat)
 
 None of these can affect the cluster.
 
@@ -234,7 +234,7 @@ Each topic says what changed, why, and what to take with it.
 
 ### 5.9 The page, on top of `55df710`
 
-Dema's design is unchanged. Two layers sit on it. The first was on `main` before the final pull request:
+The team's design is unchanged. Two layers sit on it. The first was on `main` before the final pull request:
 
 | Addition | Where to look in the script |
 |---|---|
@@ -246,7 +246,7 @@ Dema's design is unchanged. Two layers sit on it. The first was on `main` before
 | Counts-only ward: machines in use come from the unit count | `inUse` |
 | Close clears the chat and drops answers still on their way | `chatGen`, `asks` |
 
-The second layer is the final pull request's refinements (D27): death hidden on tiles, the See first row, the update progress strip, the chat questions, the bug fixes. Each has its own entry, pictures and undo in [`UI_REVIEW_FOR_DEMA.md`](UI_REVIEW_FOR_DEMA.md).
+The second layer is the final pull request's refinements (D27): death hidden on tiles, the See first row, the update progress strip, the chat questions, the bug fixes. Each has its own entry, pictures and undo in [`UI_REVIEW.md`](UI_REVIEW.md).
 
 Browser tests: `backend/tests/test_page_browser.py` (`uv run --extra dev --extra model --with playwright python -m pytest -q tests/test_page_browser.py`).
 

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ICU Lookahead · ICU forecast, next 24 hours</title>
 <style>
-/* The look follows Dema's Alternative board (mockups/command-center.html): a cool neutral ground, white hairline cards, one blue.
+/* The look follows the alternative board (mockups/command-center.html): a cool neutral ground, white hairline cards, one blue.
    Numbers are ink. On Unit strain amber is TIGHT / BUSY / AT LIMIT and red is SHORT / VERY BUSY; a red card is tinted with a still halo and only the beds pulse.
    On the Bed board a tile has no status: its figure turns red and pulses when a new life support is at its threshold.
    Death never marks a bed tile: it is one unit count in the alert line and a row in the bed pop-up. */
@@ -70,7 +70,7 @@ h1,h2,h3,p{margin:0}
 .toggle[aria-disabled="true"]{opacity:.7;cursor:progress}
 .runbox{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
 .gear{padding:.375rem .6875rem}
-/* settings: a side panel on the right (Dema's, from the Alternative board); the board stays visible beside it so a threshold change shows at once */
+/* settings: a side panel on the right (from the alternative board); the board stays visible beside it so a threshold change shows at once */
 .setmenu{position:fixed;top:0;right:0;bottom:0;z-index:60;width:min(24rem,100vw);display:flex;flex-direction:column;gap:.5rem;padding:1rem 1.25rem 1.5rem;overflow:auto;background:var(--surface);color:var(--ink);border-left:1px solid var(--line);box-shadow:-16px 0 40px rgba(10,15,25,.16)}
 .setmenu[hidden]{display:none}
 .setmenu>*{flex-shrink:0}
@@ -118,7 +118,7 @@ h1,h2,h3,p{margin:0}
 @keyframes slide-r{from{opacity:.25;transform:translateX(-2.5rem)}}
 [data-slide="l"] :is(#bedsview,#strainview,.rv-grid){animation:slide-l .22s ease-out}
 [data-slide="r"] :is(#bedsview,#strainview,.rv-grid){animation:slide-r .22s ease-out}
-/* flag presets (Dema's threshold toggle): which chance flags a bed; they sit in the settings panel under Thresholds */
+/* flag presets (the team's threshold toggle): which chance flags a bed; they sit in the settings panel under Thresholds */
 .flag{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-top:.375rem}
 [data-pending] .flag{opacity:.55}
 [data-pending] .flag button{cursor:default}
@@ -202,7 +202,7 @@ h1,h2,h3,p{margin:0}
 @media (min-width:1800px){.wrap{padding-top:1.25rem}.top{padding-bottom:.5rem}.viewbar{padding:.25rem 0}.subrow{margin-bottom:.25rem}.bed{min-height:0;gap:.25rem;padding:.375rem .625rem}.bed.s2{padding:calc(.375rem - 2px) calc(.625rem - 2px)}.bed .flow .col{gap:0}.bed .flow .cap{font-size:.75rem;line-height:1.1}.bed .flow .its{min-height:1.5rem}.bed .flow .arr{margin-bottom:.25rem}.bed .flow .ic:not(.arr){width:1.5rem;height:1.5rem}.bed .flow .nx small{font-size:.9375rem}.bed .st{font-size:.9375rem}.bed .rm{font-size:1.75rem}.grid{gap:.375rem .625rem}.bedhead{margin-bottom:.25rem}.nowl{min-height:1.5rem;gap:0 .75rem}.nowl .ic{width:1.5rem;height:1.5rem}}
 .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.75rem}
 
-/* the person figure on a bed tile (Dema's, from Unit strain; flat, no level fill), left of the bed number */
+/* the person figure on a bed tile (the team's, from Unit strain; flat, no level fill), left of the bed number */
 .bed .av{flex:none;align-self:center;width:1.875rem;height:1.97rem}
 .bed .av svg{display:block;width:100%;height:100%;fill:color-mix(in srgb,var(--ink-2) 40%,var(--surface))}
 .bed.on .av svg{fill:color-mix(in srgb,var(--ink) 62%,var(--surface))}
@@ -211,7 +211,7 @@ h1,h2,h3,p{margin:0}
 .bed.hit .av svg{fill:var(--red)}
 .bed.hit .av::after{content:"";position:absolute;inset:-.4375rem;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--red) 55%,transparent) 35%,transparent);animation:watchp 1.2s ease-in-out infinite}
 .bedhead{font-size:1.25rem;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin:.5rem 0 .75rem}
-/* See first: the three highest-risk beds (Dema's top-beds rule), one compact row above the grid; her person figure and circle icons */
+/* See first: the three highest-risk beds (the top-beds rule), one compact row above the grid; her person figure and circle icons */
 .seefirst{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;margin:0 0 .75rem}
 .seefirst[hidden]{display:none}
 .seefirst h2{font-size:1rem;font-weight:700;line-height:1.2;margin-right:.25rem}
@@ -297,7 +297,7 @@ h1,h2,h3,p{margin:0}
 .wc{flex:var(--w,5) 1 13rem;min-width:0;padding:.875rem;background:var(--surface);border:1px solid var(--rule);border-radius:1rem;box-shadow:var(--card)}
 .wc.rest{flex:1 1 100%;order:9}
 .wc h3 .band{margin-left:.5rem;vertical-align:1px}
-/* the alert line above the cards (Dema's): what is short, the three highest-risk beds, when the forecast was made */
+/* the alert line above the cards (the team's): what is short, the three highest-risk beds, when the forecast was made */
 .alerts[hidden],.runbadge[hidden]{display:none}
 .albody{display:contents}
 .alerts{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1.5rem;padding:.625rem 1rem;margin:.25rem 0 1rem;background:var(--surface);border:1px solid var(--rule);border-radius:1rem;box-shadow:var(--card)}
@@ -336,7 +336,7 @@ h1,h2,h3,p{margin:0}
 .wc .gl{display:block;margin:.875rem 0 .5rem;padding-top:.75rem;border-top:1px solid var(--rule);font-size:.6875rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
 .wc .set{display:grid;grid-template-columns:repeat(auto-fill,3.25rem);justify-content:start;gap:.625rem .5rem}
 .wc .nobody{font-size:.8125rem;color:var(--ink-2)}
-/* bed figure (Dema's): head and shoulders that fill from the bottom with the chance; solid ink when the support is running now */
+/* bed figure (the team's): head and shoulders that fill from the bottom with the chance; solid ink when the support is running now */
 .pp{width:3.25rem;min-height:2.75rem;display:flex;flex-direction:column;align-items:center;gap:1px;background:transparent;border:0;padding:0;cursor:pointer;color:var(--ink)}
 .pp .av{position:relative;width:2.5rem;height:2.625rem;margin-bottom:.1875rem;transition:transform .15s ease-out}
 .pp:hover .av{transform:translateY(-1px)}
@@ -345,7 +345,7 @@ h1,h2,h3,p{margin:0}
 .pp .av .fill{fill:var(--blue);clip-path:inset(calc(100% - var(--p)) 0 0 0)}
 .pp.on .av .base{fill:color-mix(in srgb,var(--ink) 62%,var(--surface))}
 .pp.out .av .fill{fill:var(--ink-2)}
-/* the highest-risk beds (Dema's): tinted red, with a pulsing halo and ring */
+/* the highest-risk beds (the team's): tinted red, with a pulsing halo and ring */
 .pp{position:relative}
 .pp.w .av{isolation:isolate;animation:beat 1.2s ease-in-out infinite}
 .pp.w:hover .av{transform:none}
@@ -379,7 +379,7 @@ h1,h2,h3,p{margin:0}
 .pp:focus-visible .av{outline:3px solid var(--focus);outline-offset:3px;border-radius:.5rem}
 
 /* room page */
-/* room view: a dialog over the board (Dema's bed card); the board stays behind it */
+/* room view: a dialog over the board (the team's bed card); the board stays behind it */
 .roomview{position:fixed;inset:0;z-index:50;display:flex;justify-content:center;align-items:flex-start;padding:2rem 1rem;overflow:auto;background:rgba(15,20,30,.5)}
 .roomview[hidden]{display:none}
 .rv-card{width:min(46rem,100%);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:1rem;box-shadow:0 2px 4px rgba(16,24,40,.12),0 24px 60px rgba(16,24,40,.28);padding:1.25rem 1.5rem 1.5rem}
@@ -562,7 +562,7 @@ details.more summary:hover{color:var(--blue)}
 </head>
 <body>
 <!-- Icon family: drawn for this board on a 24 grid, 1.75 stroke. "-on" = running now (solid), plain = expected (outline).
-     The person figure (i-person and the bed figures) is Dema's (deetherese) from origin/alternative. -->
+     The person figure (i-person and the bed figures) is from the alternative board branch. -->
 <svg class="sprite" aria-hidden="true" focusable="false">
   <symbol id="i-vent" viewBox="0 0 24 24"><path d="M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8"/><path d="M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z"/><path d="M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z"/></symbol>
   <symbol id="i-vent-on" viewBox="0 0 24 24"><path d="M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8"/><path fill="currentColor" d="M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z"/><path fill="currentColor" d="M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z"/></symbol>
@@ -607,7 +607,7 @@ details.more summary:hover{color:var(--blue)}
   </header>
   <div class="runprog" id="runprog" role="group" aria-label="Update progress" hidden></div>
 
-  <!-- settings side panel (Dema's, from the Alternative board): light or dark board (the two icons beside the heading), thresholds, capacity -->
+  <!-- settings side panel (from the alternative board): light or dark board (the two icons beside the heading), thresholds, capacity -->
   <!-- the role picker is off the page: the board acts as the ICU nurse (charge). The select stays, hidden, so #role=pharmacy still works for captures. -->
   <select id="role" hidden aria-hidden="true" tabindex="-1"> <option value="ICU nurse">ICU nurse (charge)</option><option value="ICU physician">ICU physician</option><option value="pharmacy">pharmacy</option><option value="respiratory therapy">respiratory therapy</option><option value="bed manager">bed manager</option> </select>
   <aside class="setmenu" id="setmenu" role="dialog" aria-labelledby="set-h" hidden>
@@ -688,7 +688,6 @@ details.more summary:hover{color:var(--blue)}
         <div><dt>Where and when</dt><dd>Fuzzball workflow t7-forecast on 1 × NVIDIA GB10, morning run and on update</dd></div>
         <div><dt>Not included</dt><dd>Excludes new admissions from the ED and OR. <span class="wardnote"></span></dd></div>
         <div><dt>Use</dt><dd>For unit planning; the care team makes clinical decisions.</dd></div>
-        <div><dt>Credits</dt><dd>Cluster cards, bed figures, risk-threshold toggle and capacity model: Dema (deetherese).</dd></div>
       </dl>
     </details>
   </footer>
@@ -1012,7 +1011,7 @@ details.more summary:hover{color:var(--blue)}
   /* one map of definitions: the key under the tabs, every tooltip and "How this forecast was made" are all built from it */
   const START = {imv:"a ventilator", vasopressor:"a vasopressor", crrt:"CRRT"};
   const SHORTN = {imv:"Ventilator", vasopressor:"Vasopressor", crrt:"CRRT"};
-  /* flag lines (Dema's threshold toggle): a view setting kept on this device. The page works out every bed's status from p and these lines;
+  /* flag lines (the team's threshold toggle): a view setting kept on this device. The page works out every bed's status from p and these lines;
      the level the server sends is not used for status. base = the line for flagging; each support and leaving can be tuned on its own. */
   const LINE_DEF = {base:.2, imv:.2, vasopressor:.2, crrt:.2, leave:.6, worse:null};      // the standard lines (D13, D26): Watch 20%, Worsening 40%, Leaving 60%. Death has no line: it never marks a bed.      // worse: the room page's High line; null = one preset above the flag line
   let lines = {...LINE_DEF};
@@ -1054,7 +1053,7 @@ details.more summary:hover{color:var(--blue)}
     if(showLeave(r)) next += it(DEF.out(r.p.icu_departure),ic("leave",false),"Discharge",r.p.icu_departure);
     const unknown=unknownList(r), now=on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}<small><span class="nm">${SHORTN[k]}</span></small></span>`).join("")+(unknown.length?`<small class="mu">${esc(unknown.map(k=>SHORTN[k]).join(", "))} unknown</small>`:"");
     return `<span class="flow" aria-hidden="true"><span class="col"><span class="cap">Now</span><span class="its">${now||`<small class="mu"${T(DEF.none)}>no support</small>`}</span></span>${svg("arrow","","arr")}<span class="col"><span class="cap">Next 24 h</span><span class="its">${next||`<small class="mu"${T(noEst(r)?DEF.unknown:DEF.same)}>${noEst(r)?"No estimate":"nothing new"}</small>`}</span></span></span>`; }
-  /* Dema's range bar: track, the 8-in-10 range, a bead at the median, a solid ink line for what is free or covered, a dashed one for a typical day */
+  /* the team's range bar: track, the 8-in-10 range, a bead at the median, a solid ink line for what is free or covered, a dashed one for a typical day */
   function bar(q, mark, typ, top, tip){ const max=Math.max(q.p90, mark==null?0:mark, typ==null?0:typ, top||0, 1)+1, x=v=>Math.round((6+(v/max)*288)*10)/10;
     return `<svg class="bar" viewBox="0 0 300 24" preserveAspectRatio="xMinYMid meet" aria-hidden="true"${tip?T(tip):""}><rect x="0" y="0" width="300" height="24" fill="none" pointer-events="all"/><line class="trk" x1="6" x2="294" y1="12" y2="12"/><line class="rng" x1="${x(q.p10)}" x2="${Math.max(x(q.p90),x(q.p10)+2)}" y1="12" y2="12"/>${typ!=null?`<line class="typ" x1="${x(typ)}" x2="${x(typ)}" y1="1" y2="23"/>`:""}${mark!=null?`<rect class="cap" x="${x(mark)-1.5}" y="0" width="3" height="24"/>`:""}<circle class="med" cx="${x(q.p50)}" cy="12" r="4.5"/></svg>`; }
 
@@ -1182,7 +1181,7 @@ details.more summary:hover{color:var(--blue)}
     for(const b of $("alerts").querySelectorAll(".bedchip")) b.onclick=()=>openRoom(+b.dataset.room);
     renderWatch();
   }
-  /* Dema's capacity bar, used when a number free is set: the whole bar is the total (the saved machine total, which use may already exceed; null when no total is set); solid = in use now,
+  /* the team's capacity bar, used when a number free is set: the whole bar is the total (the saved machine total, which use may already exceed; null when no total is set); solid = in use now,
      lighter = with the flagged beds; it turns red when that passes the total. */
   function usageBar(on, tot, pred, tip){ const sum=on+pred, over=tot!=null&&sum>tot, max=tot!=null?Math.max(tot,1):Math.max(sum,1)+1, x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
     return `<svg class="ubar" viewBox="0 0 300 46" preserveAspectRatio="xMinYMid meet" role="img" aria-label="${on} in use now, ${sum} with the flagged beds${tot!=null?`, ${tot} in total${over?": over the total":""}`:", no total set"}"${tip?T(tip):""}>
@@ -1192,7 +1191,7 @@ details.more summary:hover{color:var(--blue)}
       <line x1="${x(on)}" x2="${x(on)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3"/><text x="${x(on)}" y="11" text-anchor="middle" font-size="14" font-weight="700">${on}</text>
       ${pred?`<line x1="${x(sum)}" x2="${x(sum)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3" stroke-dasharray="3 2"/>${x(sum)-x(on)>24?`<text x="${Math.min(x(sum),286)}" y="11" text-anchor="${x(sum)>280?"end":"middle"}" font-size="14" font-weight="700">${sum}*</text>`:""}`:""}
       ${tot!=null?`<text x="294" y="45" text-anchor="end" font-size="13">${tot} total</text>`:""}</svg>`; }
-  /* a bed's top risk: its highest chance among the supports it is not on yet; the three highest in the unit pulse (Dema's rule), with ties */
+  /* a bed's top risk: its highest chance among the supports it is not on yet; the three highest in the unit pulse (the team's rule), with ties */
   const RISKK = ["imv","vasopressor","crrt"];   // death never ranks or marks a bed (PRODUCT.md): it is a unit count and a row in the bed view
   const riskOf = (r,k) => k==="death" ? r.p.death : k==="leave" ? r.p.icu_departure : r.on_now[k]===false ? r.p[k] : null;      // a support that is on, or not observed, has no "new start" chance
   const topRisk = r => { let best=null; for(const k of RISKK){ const v=riskOf(r,k); if(v!=null && (!best || v>best[1])) best=[k,v]; } return best; };
@@ -1200,7 +1199,7 @@ details.more summary:hover{color:var(--blue)}
     const cut=Math.round(l[2][1][1]*100); return l.filter(x=>Math.round(x[1][1]*100)>=cut).map(x=>x[0]); };      // the top three, plus any bed tied with the third at the shown percent
   const gapOf = k => { const sp=machSpare(k); return sp==null ? null : flagCount(k)-sp; };      // flagged beds minus what is spare; machines already over the total count too
   /* the beds behind each count: solid ink figures are on that support now, the others fill with the chance (2 in 10 or more; leaving at 6 in 10 or more) */
-  /* Dema's bed figure: head and shoulders, the bed number, a label; p fills it from the bottom, dv is a stack of support badges */
+  /* the team's bed figure: head and shoulders, the bed number, a label; p fills it from the bottom, dv is a stack of support badges */
   const fig = (r,cls,p,label,name,dv) => `<button type="button" class="pp${cls?" "+cls:""}" data-room="${r.room}" aria-label="Bed ${r.room}${r.name?`, ${esc(r.name.full)}`:""}: ${name}"${T(`Bed ${r.room}${r.name?` · ${r.name.display}`:""} · ${name}`)}><span class="av"${p!=null?` style="--p:${Math.round(p*100)}%"`:""} aria-hidden="true"><svg class="base" viewBox="0 0 40 42"><use href="#i-fig"/></svg>${p!=null?`<svg class="fill" viewBox="0 0 40 42"><use href="#i-fig"/></svg>`:""}</span><span class="rm">${r.room}</span>${label?`<span class="pc">${label}</span>`:""}${dv?`<span class="dv" aria-hidden="true">${dv}</span>`:""}</button>`;
   function renderWatch(){
     const el=$("watch"); if(!hasNow() || !RM.rooms.length){ el.innerHTML=""; return; }
@@ -1212,13 +1211,13 @@ details.more summary:hover{color:var(--blue)}
         <div class="nums"><span><b>${esc(supportCount(k))}</b><i>on now</i></span>${machFree(k)!=null?`<span${T(`${k==="imv"?"Ventilators":"CRRT machines"} free now`)}><b>${machFree(k)}</b><i>free${machines[k]!=null?` of ${machines[k]}`:""}${machSpare(k)<0?` · ${-machSpare(k)} over`:""}</i></span>`:""}</div>
         <span class="gl">On now</span>${on.length?`<div class="set">${on.map(r=>fig(r,"on",null,"",`on ${START[k]} now`)).join("")}</div>`:`<p class="nobody">${ls.now_unknown_by?.[k]>0?"None confirmed":"None"}</p>`}${ls.now_unknown_by?.[k]>0?`<p class="nobody">Support status unknown for ${ls.now_unknown_by[k]} rooms.</p>`:""}</article>`; }).join("");
       for(const b of el.querySelectorAll(".pp")) b.onclick=()=>openRoom(+b.dataset.room); return; }
-    /* Dema's cards: one per event. Predicted new* is the beds at or above that event's threshold; the unit forecast (expected count, 8-in-10 range) sits under it. */
+    /* the team's cards: one per event. Predicted new* is the beds at or above that event's threshold; the unit forecast (expected count, 8-in-10 range) sits under it. */
     const NAME={death:"Deaths", imv:"Ventilator", vasopressor:"Vasopressor", crrt:"CRRT", leave:"Leave the ICU to ward or step-down"}, EVW={death:"death in hospital", imv:"starting a ventilator", vasopressor:"starting a vasopressor", crrt:"starting CRRT", leave:"leaving the ICU"}, SHORTEV={death:"Death", imv:"Vent", vasopressor:"Press", crrt:"CRRT"};
     const w3=topBeds(), nb=n=>n?`${n} ${n===1?"bed":"beds"}`:"no beds", flagged=new Set();
     const card = k => { const sup=SUP.includes(k), c = k==="death" ? FC.resources.death : k==="leave" ? FC.resources.icu_departure : ls.expected_by[k], q = c && c.p50!=null ? c : null;
       const may=k==="death" ? [] : rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), skey = k==="leave" ? "icu_departure" : k, na = !q && (naq(c) || rs.some(r=>r.skipped && r.skipped[skey])), n = na ? 0 : may.length; if(k!=="leave" && k!=="death" && !na) for(const r of may) flagged.add(r.room);   // na: the probe was skipped, so there is no estimate (not zero)
       const mach = k==="imv"||k==="crrt", free = sup ? machFree(k) : null, onN = sup ? rs.filter(r=>r.on_now[k]).length : 0;
-      const spare = sup ? machSpare(k) : null, st = spare==null ? null : n>spare ? "SHORT" : n===spare && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is spare (below zero when more are in use than the saved total)
+      const spare = sup ? machSpare(k) : null, st = spare==null ? null : n>spare ? "SHORT" : n===spare && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // the team's rule: flagged beds against what is spare (below zero when more are in use than the saved total)
       const freeable = k==="imv"||k==="crrt" ? rs.filter(r=>r.on_now[k] && r.p.icu_departure!=null && r.p.icu_departure>=lines.leave).length : 0;
       const frees = k==="leave" ? ["imv","crrt"].map(x=>[x,may.filter(r=>r.on_now[x]).length]).filter(x=>x[1]) : [];
       return `<article class="wc${lv?` lv-${lv}`:""}" data-k="${k}" style="order:${first===k?0:1};--w:${Math.max(4,Math.min(10,n))}" aria-labelledby="wc-${k}">
@@ -1267,7 +1266,7 @@ details.more summary:hover{color:var(--blue)}
       b.setAttribute("aria-label",`Bed ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${unknown.length?nowW:`${n?`on ${on.map(k=>SHORTN[k]).join(", ")}`:"no life support"} at 07:00.`}`);
       b.innerHTML=`<span class="bt"><span class="av" aria-hidden="true"><svg viewBox="0 0 40 42"><use href="#i-fig"/></svg></span><span class="rm">${r.room}</span>${whoH(r)}${n>=2?`<span class="st"${T(`On ${n} life supports at 07:00`)}>${n} supports</span>`:""}</span><span class="nowl" aria-hidden="true">${n||unknown.length?"":`<small class="mu"${T(DEF.none)}>No life support</small>`}${on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}</span>`).join("")}${unknown.length?`<small class="mu">${esc(unknown.map(k=>SHORTN[k]).join(", "))} unknown</small>`:""}</span>`; }
     b.onclick=()=>openRoom(r.room); return b; }
-  /* See first: the three highest-risk beds by Dema's top-beds rule (ties with the third included), each with its top event; Next 24 h only */
+  /* See first: the three highest-risk beds by the top-beds rule (ties with the third included), each with its top event; Next 24 h only */
   function renderSeeFirst(){ const el=$("seefirst"), w3 = !nowMode() && hasFc() ? topBeds() : [];
     for(const b of el.querySelectorAll(".sfb")) b.remove(); el.hidden=!w3.length;
     for(const n of w3){ const r=R(n), [k,v]=topRisk(r), b=document.createElement("button"); b.type="button"; b.className="sfb"; b.dataset.room=n;
@@ -1480,7 +1479,7 @@ details.more summary:hover{color:var(--blue)}
   }
 
   /* ---------- capacity ---------- */
-  /* Capacity as machine totals (Dema's model): total ventilators and CRRT machines on the unit; free = total - in use now.
+  /* Capacity as machine totals (the capacity model): total ventilators and CRRT machines on the unit; free = total - in use now.
      Served live, the totals are the server's: GET /api/capacity on load and on every refresh, and its value wins (even null); the device
      copy (lookahead-machines) is used when the server leaves the key out and in #synthetic. A save POSTs vents_total and crrt_total
      (null when a saved total is blanked; a derived vents_free is never sent); the device copy changes only when the save works. */

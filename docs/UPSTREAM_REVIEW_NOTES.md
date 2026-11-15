@@ -4,9 +4,9 @@
 
 CodeRabbit reviewed PRs 14, 16 and 19 on sajor2000/icustrainciq. The findings below sit in teammates' code (ICU-Twin), so we did not change it here. Each section is a message ready to paste, with the patch text. Patch files are named as in the triage folder; diff paths are repo-relative to sajor2000/icustrainciq. Nothing in this file has been sent yet.
 
-## Kaveri (Fuzzball workflows, launch.sh, runbook, clif_now)
+## Workflows and backend (Fuzzball workflows, launch.sh, runbook, clif_now)
 
-Paste into the ICU-Twin thread for Kaveri.
+Paste into the ICU-Twin thread for workflows and backend.
 
 CodeRabbit reviewed the ICU-Twin port (PR 16 and PR 19 on sajor2000/icustrainciq). Every finding below was checked against the code and has a patch attached. Please confirm 3 live, since we could not.
 
@@ -626,9 +626,9 @@ index 1ae023e..ecb890f 100644
          --model /store/model/mdl-icutwin --stay-ids /context/roster.csv
 ```
 
-## Vaishvik (icutwin/ scoring and training; also for ICU-Twin)
+## Scoring and training (icutwin/; also for ICU-Twin)
 
-Paste into the ICU-Twin thread for Vaishvik.
+Paste into the ICU-Twin thread for scoring and training.
 
 CodeRabbit findings on icutwin/ code in our port, all verified, patches attached.
 
@@ -909,9 +909,9 @@ index 03c9e91..a0b3af3 100644
    num_train_epochs: !!int 2 # epoch 1 is the checkpoint
 ```
 
-## Dema (board page)
+## Board page
 
-Paste into the ICU-Twin thread for Dema. Our copy of the page already has the fixes marked 'in our copy'; the question is whether ICU-Twin main should take them.
+Paste into the ICU-Twin thread for the board page. Our copy of the page already has the fixes marked 'in our copy'; the question is whether ICU-Twin main should take them.
 
 CodeRabbit findings on the board page. Patches are against the PR 19 page (01, m1, m2, m3 apply in that order after 02) and the older PR 16 page (06 to 08).
 
@@ -968,7 +968,7 @@ index f755510..95673d6 100644
 
 ### pr19-02: index.html:1193
 
-Why it matters: The Deaths card listed beds and ranked by death risk, which conflicts with PRODUCT.md:66 and DESIGN.md:501 (death never colours or marks a bed). J.C. decided to keep the card and show only the unit death count and range. In our copy: done.
+Why it matters: The Deaths card listed beds and ranked by death risk, which conflicts with PRODUCT.md:66 and DESIGN.md:501 (death never colours or marks a bed). the team decided to keep the card and show only the unit death count and range. In our copy: done.
 
 Patch `pr19-02-no-per-bed-death.patch`:
 
@@ -980,7 +980,7 @@ index 95673d6..e2f1d3c 100644
 @@ -1153,7 +1153,7 @@ details.more summary:hover{color:var(--blue)}
        ${pred?`<line x1="${x(sum)}" x2="${x(sum)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3" stroke-dasharray="3 2"/>${x(sum)-x(on)>24?`<text x="${Math.min(x(sum),286)}" y="11" text-anchor="${x(sum)>280?"end":"middle"}" font-size="14" font-weight="700">${sum}*</text>`:""}`:""}
        ${tot!=null?`<text x="294" y="45" text-anchor="end" font-size="13">${tot} total</text>`:""}</svg>`; }
-   /* a bed's top risk: its highest chance among death and the supports it is not on yet; the three highest in the unit pulse (Dema's rule), with ties */
+   /* a bed's top risk: its highest chance among death and the supports it is not on yet; the three highest in the unit pulse (the team's rule), with ties */
 -  const RISKK = ["death","imv","vasopressor","crrt"];
 +  const RISKK = ["imv","vasopressor","crrt"];      // death never marks or ranks a bed (PRODUCT.md, DESIGN.md)
    const riskOf = (r,k) => k==="death" ? r.p.death : k==="leave" ? r.p.icu_departure : r.on_now[k] ? null : r.p[k];
@@ -993,7 +993,7 @@ index 95673d6..e2f1d3c 100644
 -      const may=rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), n=may.length; if(k!=="leave") for(const r of may) flagged.add(r.room);
 +      const may=k==="death" ? [] : rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), n=k==="death" ? (q?q.p50:0) : may.length; if(k!=="leave") for(const r of may) flagged.add(r.room);
        const mach = k==="imv"||k==="crrt", free = sup ? machFree(k) : null, onN = sup ? rs.filter(r=>r.on_now[k]).length : 0;
-       const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is free
+       const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // the team's rule: flagged beds against what is free
        const freeable = k==="imv"||k==="crrt" ? rs.filter(r=>r.on_now[k] && r.p.icu_departure!=null && r.p.icu_departure>=lines.leave).length : 0;
 @@ -1187,9 +1187,9 @@ details.more summary:hover{color:var(--blue)}
          ${freeable?`<p class="frees"${T(`Beds on ${START[k]} now with ${P(lines.leave)} or more to leave the ICU`)}><i>${ic(k,true)}</i><b>${freeable}</b> may free up if likely leavers go</p>`:""}
@@ -1015,7 +1015,7 @@ index 95673d6..e2f1d3c 100644
 @@ -1153,7 +1153,7 @@ details.more summary:hover{color:var(--blue)}
        ${pred?`<line x1="${x(sum)}" x2="${x(sum)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3" stroke-dasharray="3 2"/>${x(sum)-x(on)>24?`<text x="${Math.min(x(sum),286)}" y="11" text-anchor="${x(sum)>280?"end":"middle"}" font-size="14" font-weight="700">${sum}*</text>`:""}`:""}
        ${tot!=null?`<text x="294" y="45" text-anchor="end" font-size="13">${tot} total</text>`:""}</svg>`; }
-   /* a bed's top risk: its highest chance among death and the supports it is not on yet; the three highest in the unit pulse (Dema's rule), with ties */
+   /* a bed's top risk: its highest chance among death and the supports it is not on yet; the three highest in the unit pulse (the team's rule), with ties */
 -  const RISKK = ["death","imv","vasopressor","crrt"];
 +  const RISKK = ["imv","vasopressor","crrt"];      // death never marks or ranks a bed (PRODUCT.md, DESIGN.md)
    const riskOf = (r,k) => k==="death" ? r.p.death : k==="leave" ? r.p.icu_departure : r.on_now[k] ? null : r.p[k];
@@ -1028,7 +1028,7 @@ index 95673d6..e2f1d3c 100644
 -      const may=rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), n=may.length; if(k!=="leave") for(const r of may) flagged.add(r.room);
 +      const may=k==="death" ? [] : rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), n=k==="death" ? (q?q.p50:0) : may.length; if(k!=="leave") for(const r of may) flagged.add(r.room);
        const mach = k==="imv"||k==="crrt", free = sup ? machFree(k) : null, onN = sup ? rs.filter(r=>r.on_now[k]).length : 0;
-       const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is free
+       const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // the team's rule: flagged beds against what is free
        const freeable = k==="imv"||k==="crrt" ? rs.filter(r=>r.on_now[k] && r.p.icu_departure!=null && r.p.icu_departure>=lines.leave).length : 0;
 @@ -1187,9 +1187,9 @@ details.more summary:hover{color:var(--blue)}
          ${freeable?`<p class="frees"${T(`Beds on ${START[k]} now with ${P(lines.leave)} or more to leave the ICU`)}><i>${ic(k,true)}</i><b>${freeable}</b> may free up if likely leavers go</p>`:""}
@@ -1063,7 +1063,7 @@ index e2f1d3c..af47b8c 100644
 -      const may=k==="death" ? [] : rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), n=k==="death" ? (q?q.p50:0) : may.length; if(k!=="leave") for(const r of may) flagged.add(r.room);
 +      const may=k==="death" ? [] : rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), n=k==="death" ? (q?q.p50:0) : may.length; for(const r of may) flagged.add(r.room);
        const mach = k==="imv"||k==="crrt", free = sup ? machFree(k) : null, onN = sup ? rs.filter(r=>r.on_now[k]).length : 0;
-       const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is free
+       const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // the team's rule: flagged beds against what is free
        const freeable = k==="imv"||k==="crrt" ? rs.filter(r=>r.on_now[k] && r.p.icu_departure!=null && r.p.icu_departure>=lines.leave).length : 0;
 diff --git a/mockups/command-center.html b/mockups/command-center.html
 index e2f1d3c..af47b8c 100644
@@ -1076,7 +1076,7 @@ index e2f1d3c..af47b8c 100644
 -      const may=k==="death" ? [] : rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), n=k==="death" ? (q?q.p50:0) : may.length; if(k!=="leave") for(const r of may) flagged.add(r.room);
 +      const may=k==="death" ? [] : rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), n=k==="death" ? (q?q.p50:0) : may.length; for(const r of may) flagged.add(r.room);
        const mach = k==="imv"||k==="crrt", free = sup ? machFree(k) : null, onN = sup ? rs.filter(r=>r.on_now[k]).length : 0;
-       const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is free
+       const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // the team's rule: flagged beds against what is free
        const freeable = k==="imv"||k==="crrt" ? rs.filter(r=>r.on_now[k] && r.p.icu_departure!=null && r.p.icu_departure>=lines.leave).length : 0;
 ```
 
@@ -1216,7 +1216,7 @@ index b3ba59f..9239e40 100644
 +++ b/backend/app/static/index.html
 @@ -1030,7 +1030,7 @@ details.more summary:hover{color:var(--ink)}
    }
-   /* Dema's capacity bar, used when a number free is set: the whole bar is the total (in use + free); solid = in use now,
+   /* the team's capacity bar, used when a number free is set: the whole bar is the total (in use + free); solid = in use now,
       lighter = with the flagged beds; it turns red when that passes the total. */
 -  function usageBar(on, free, pred, tip){ const tot=on+free, sum=on+pred, over=sum>tot, max=Math.max(tot,1), x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
 +  function usageBar(on, free, pred, tip, total){ const tot=total!=null?total:on+free, sum=on+pred, over=sum>tot, max=Math.max(tot,1), x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
@@ -1238,7 +1238,7 @@ index b3ba59f..9239e40 100644
 +++ b/mockups/command-center.html
 @@ -1030,7 +1030,7 @@ details.more summary:hover{color:var(--ink)}
    }
-   /* Dema's capacity bar, used when a number free is set: the whole bar is the total (in use + free); solid = in use now,
+   /* the team's capacity bar, used when a number free is set: the whole bar is the total (in use + free); solid = in use now,
       lighter = with the flagged beds; it turns red when that passes the total. */
 -  function usageBar(on, free, pred, tip){ const tot=on+free, sum=on+pred, over=sum>tot, max=Math.max(tot,1), x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
 +  function usageBar(on, free, pred, tip, total){ const tot=total!=null?total:on+free, sum=on+pred, over=sum>tot, max=Math.max(tot,1), x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";

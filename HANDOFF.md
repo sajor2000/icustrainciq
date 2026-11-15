@@ -8,7 +8,7 @@ Last updated: 2026-11-15.
 
 **Status in one line:** ICU-Twin is the demo repo. This repo is final: it holds the polished board page, the docs, the one-pager and every fix made after the team's code was synced, and it is the place to read what to port back.
 
-**For the morning meeting, read first:** [`docs/ICU_TWIN_DELTA.md`](docs/ICU_TWIN_DELTA.md) (every change here against ICU-Twin, its risk to the running demo, port before or after), then [`docs/UI_REVIEW_FOR_DEMA.md`](docs/UI_REVIEW_FOR_DEMA.md) (each page change with pictures).
+**For the morning meeting, read first:** [`docs/ICU_TWIN_DELTA.md`](docs/ICU_TWIN_DELTA.md) (every change here against ICU-Twin, its risk to the running demo, port before or after), then [`docs/UI_REVIEW.md`](docs/UI_REVIEW.md) (each page change with pictures).
 
 ## What it is
 
@@ -19,7 +19,7 @@ A bed board for one ICU. It shows the life support each patient is on now and fo
 | # | Read | For |
 |---|---|---|
 | 1 | [`docs/ICU_TWIN_DELTA.md`](docs/ICU_TWIN_DELTA.md) | every change in this repo against the team's ICU-Twin repo, the risk of each to the running demo, and what to port before or after the demo |
-| 2 | [`docs/UI_REVIEW_FOR_DEMA.md`](docs/UI_REVIEW_FOR_DEMA.md) | each change to Dema's board page: before and after pictures, why, how to undo, and how to port |
+| 2 | [`docs/UI_REVIEW.md`](docs/UI_REVIEW.md) | each change to the team's board page: before and after pictures, why, how to undo, and how to port |
 | 3 | [`README.md`](README.md) | the overview and screenshots |
 | 4 | [`docs/submission/`](docs/submission/), [`docs/ONE_PAGER.md`](docs/ONE_PAGER.md) | the printed one-sheet and the five-minute demo script; the one-page explainer of the model and of how Fuzzball ran it |
 | 5 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | what runs where, tech stack, endpoints, data boundary, every figure |
@@ -79,7 +79,7 @@ The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball 
 | The whole app on the cluster: `t7-code`, `t7-ward`, `t7-forecast`, `t7-twin` | Ran end to end with `launch.sh` |
 | Patient model | Trained on both GPUs; checkpoint 2616 of 4351 packaged at `mimic_clif:/model_output/final/` |
 | Probes | Fitted by job 4 beside the model; held-out results in `docs/RESULTS.md`. The forecast reads the staged copy at `/store/train/probe-final.joblib` with its `probe-final.meta.json` |
-| Board page, served by the backend | Final: Dema's design (D25) with the refinements of D27. Not yet in ICU-Twin; see `docs/UI_REVIEW_FOR_DEMA.md` |
+| Board page, served by the backend | Final: the team's design (D25) with the refinements of D27. Not yet in ICU-Twin; see `docs/UI_REVIEW.md` |
 | Staffing and capacity in the backend | On `main` (PR #20), with tests. The page shows machine capacity; staffing is in the API and the chat |
 | Board server, dispatcher, chat agent, life support now, generated names | On `main`, with tests |
 | Chat grounded in a shared ICU snapshot (`demo_context.py`, `evidence.py`, `t7-lookahead-*.fz`, volume `demo-context`) | On `main`, with tests on synthetic data. Its workflows have not been run on the cluster |
@@ -90,9 +90,9 @@ The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball 
 
 ## The morning steps (2026-11-15)
 
-1. **Meet (J.C., Dema, the team).** Go through the summary table in [`docs/ICU_TWIN_DELTA.md`](docs/ICU_TWIN_DELTA.md) and section 1 of [`docs/UI_REVIEW_FOR_DEMA.md`](docs/UI_REVIEW_FOR_DEMA.md). Mark each row: port before the demo, port after, or keep here only.
-2. **Port what was approved into ICU-Twin**, on a branch there: the page (one file), and the four small fixes (`UI_REVIEW_FOR_DEMA.md` section 4). Run ICU-Twin's tests.
-3. **Publish from ICU-Twin** (Kaveri): its own `make_ready.sh`, then `bash scripts/launch.sh --code --restart`, and check the board at its link. Press "Update the unit" once and watch the progress strip: that is the one live check the page still needs.
+1. **Meet (the team).** Go through the summary table in [`docs/ICU_TWIN_DELTA.md`](docs/ICU_TWIN_DELTA.md) and section 1 of [`docs/UI_REVIEW.md`](docs/UI_REVIEW.md). Mark each row: port before the demo, port after, or keep here only.
+2. **Port what was approved into ICU-Twin**, on a branch there: the page (one file), and the four small fixes (`UI_REVIEW.md` section 4). Run ICU-Twin's tests.
+3. **Publish from ICU-Twin** (workflows and backend): its own `make_ready.sh`, then `bash scripts/launch.sh --code --restart`, and check the board at its link. Press "Update the unit" once and watch the progress strip: that is the one live check the page still needs.
 4. **Rehearse** with [`docs/submission/DEMO_SCRIPT.md`](docs/submission/DEMO_SCRIPT.md); fill its `[FILL]` slots (speaker, driver, link, timings).
 5. **Print** [`docs/submission/one-sheet.pdf`](docs/submission/one-sheet.pdf) after filling the slots in [`docs/submission/FILL_IN.md`](docs/submission/FILL_IN.md).
 
@@ -103,7 +103,7 @@ Not for the demo. Afterwards, and only with the team's go-ahead:
 1. Merge the final pull request, then **re-render `ready/`**: `cd backend && scripts/make_ready.sh $(git rev-parse HEAD)` and commit `fuzzball/ready/`. The files there now pin `617edc0`.
 2. Check the ingress line names this repo: `grep -h "uri:.*http" fuzzball/ready/*.fz | sort -u`.
 3. If `twin-store` was recreated: publish the code first, `bash scripts/launch.sh --code` (the probe's sidecar command imports `icutwin` from `/store/code` and `/store/py`, which a new volume does not have yet), then stage job 4's probe and its sidecar (`RUNBOOK.md` section 4). On a volume that still holds the staged probe, skip this step.
-4. `bash scripts/launch.sh --all --restart`. `--all` alone publishes the code but leaves a running `t7-twin` on the code it loaded at start; `--restart` reloads it, and is skipped when nothing is running. This overwrites `/store/code` on the shared volume: the team's code there is replaced.
+4. `bash scripts/launch.sh --all --restart`. `--all` alone publishes the code but leaves a running `t7-twin` on the code it loaded at start; `--restart` reloads it, and is skipped when nothing is running. This overwrites `/store/code` on the shared volume, so the team's code there is replaced.
 
 ## Rules that must hold
 
@@ -123,4 +123,4 @@ Not for the demo. Afterwards, and only with the team's go-ahead:
 | 3 | The demo clock: at 24 h after ICU arrival no patient in the cohort is on CRRT. Pick the clock setting for the demo |
 | 4 | ECMO: one cohort patient has ECMO records; the board leaves ECMO out |
 | 5 | Coming off life support is not forecast. A "comes off support" prediction would need a new model task |
-| 6 | The page proposals not applied: the page's blue and three type sizes against DESIGN.md (`docs/UI_REVIEW_FOR_DEMA.md` section 3). The standard flag lines 20 / 40 / 60 are applied (D26, PR #24) |
+| 6 | The page proposals not applied: the page's blue and three type sizes against DESIGN.md (`docs/UI_REVIEW.md` section 3). The standard flag lines 20 / 40 / 60 are applied (D26, PR #24) |

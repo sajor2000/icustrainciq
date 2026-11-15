@@ -608,7 +608,7 @@ def test_demo_clock_flag_is_applied_by_winnow(tmp_path):
     assert out["last_valid"].to_list() == [4]
 
 
-# ---- running at the cut (J.C. 2026-11-14): last record before the cut ----
+# ---- running at the cut (2026-11-14): last record before the cut ----
 AT_LOOKUP = {
     "BOS": 1,
     "ADT//TRANSFER_IN//icu": 2,

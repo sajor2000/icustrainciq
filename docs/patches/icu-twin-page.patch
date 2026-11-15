@@ -68,7 +68,7 @@
  .bed.hit .av svg{fill:var(--red)}
  .bed.hit .av::after{content:"";position:absolute;inset:-.4375rem;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--red) 55%,transparent) 35%,transparent);animation:watchp 1.2s ease-in-out infinite}
  .bedhead{font-size:1.25rem;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin:.5rem 0 .75rem}
-+/* See first: the three highest-risk beds (Dema's top-beds rule), one compact row above the grid; her person figure and circle icons */
++/* See first: the three highest-risk beds (the top-beds rule), one compact row above the grid; her person figure and circle icons */
 +.seefirst{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;margin:0 0 .75rem}
 +.seefirst[hidden]{display:none}
 +.seefirst h2{font-size:1rem;font-weight:700;line-height:1.2;margin-right:.25rem}
@@ -522,7 +522,7 @@
      renderWatch();
    }
 -  /* Dema's capacity bar, used when a number free is set: the whole bar is the total (in use + free); solid = in use now,
-+  /* Dema's capacity bar, used when a number free is set: the whole bar is the total (the saved machine total, which use may already exceed; null when no total is set); solid = in use now,
++  /* the team's capacity bar, used when a number free is set: the whole bar is the total (the saved machine total, which use may already exceed; null when no total is set); solid = in use now,
       lighter = with the flagged beds; it turns red when that passes the total. */
 -  function usageBar(on, free, pred, tip){ const tot=free!=null?on+free:null, sum=on+pred, over=tot!=null&&sum>tot, max=tot!=null?Math.max(tot,1):Math.max(sum,1)+1, x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
 +  function usageBar(on, tot, pred, tip){ const sum=on+pred, over=tot!=null&&sum>tot, max=tot!=null?Math.max(tot,1):Math.max(sum,1)+1, x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
@@ -536,7 +536,7 @@
 -  /* a bed's top risk: its highest chance among death and the supports it is not on yet; the three highest in the unit pulse (Dema's rule), with ties */
 -  const RISKK = ["death","imv","vasopressor","crrt"];
 -  const riskOf = (r,k) => k==="death" ? r.p.death : k==="leave" ? r.p.icu_departure : r.on_now[k] ? null : r.p[k];
-+  /* a bed's top risk: its highest chance among the supports it is not on yet; the three highest in the unit pulse (Dema's rule), with ties */
++  /* a bed's top risk: its highest chance among the supports it is not on yet; the three highest in the unit pulse (the team's rule), with ties */
 +  const RISKK = ["imv","vasopressor","crrt"];   // death never ranks or marks a bed (PRODUCT.md): it is a unit count and a row in the bed view
 +  const riskOf = (r,k) => k==="death" ? r.p.death : k==="leave" ? r.p.icu_departure : r.on_now[k]===false ? r.p[k] : null;      // a support that is on, or not observed, has no "new start" chance
    const topRisk = r => { let best=null; for(const k of RISKK){ const v=riskOf(r,k); if(v!=null && (!best || v>best[1])) best=[k,v]; } return best; };
@@ -570,7 +570,7 @@
 +      const may=k==="death" ? [] : rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), skey = k==="leave" ? "icu_departure" : k, na = !q && (naq(c) || rs.some(r=>r.skipped && r.skipped[skey])), n = na ? 0 : may.length; if(k!=="leave" && k!=="death" && !na) for(const r of may) flagged.add(r.room);   // na: the probe was skipped, so there is no estimate (not zero)
        const mach = k==="imv"||k==="crrt", free = sup ? machFree(k) : null, onN = sup ? rs.filter(r=>r.on_now[k]).length : 0;
 -      const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is free
-+      const spare = sup ? machSpare(k) : null, st = spare==null ? null : n>spare ? "SHORT" : n===spare && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is spare (below zero when more are in use than the saved total)
++      const spare = sup ? machSpare(k) : null, st = spare==null ? null : n>spare ? "SHORT" : n===spare && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // the team's rule: flagged beds against what is spare (below zero when more are in use than the saved total)
        const freeable = k==="imv"||k==="crrt" ? rs.filter(r=>r.on_now[k] && r.p.icu_departure!=null && r.p.icu_departure>=lines.leave).length : 0;
        const frees = k==="leave" ? ["imv","crrt"].map(x=>[x,may.filter(r=>r.on_now[x]).length]).filter(x=>x[1]) : [];
        return `<article class="wc${lv?` lv-${lv}`:""}" data-k="${k}" style="order:${first===k?0:1};--w:${Math.max(4,Math.min(10,n))}" aria-labelledby="wc-${k}">
@@ -633,7 +633,7 @@
 +      b.setAttribute("aria-label",`Bed ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${unknown.length?nowW:`${n?`on ${on.map(k=>SHORTN[k]).join(", ")}`:"no life support"} at 07:00.`}`);
 +      b.innerHTML=`<span class="bt"><span class="av" aria-hidden="true"><svg viewBox="0 0 40 42"><use href="#i-fig"/></svg></span><span class="rm">${r.room}</span>${whoH(r)}${n>=2?`<span class="st"${T(`On ${n} life supports at 07:00`)}>${n} supports</span>`:""}</span><span class="nowl" aria-hidden="true">${n||unknown.length?"":`<small class="mu"${T(DEF.none)}>No life support</small>`}${on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}</span>`).join("")}${unknown.length?`<small class="mu">${esc(unknown.map(k=>SHORTN[k]).join(", "))} unknown</small>`:""}</span>`; }
      b.onclick=()=>openRoom(r.room); return b; }
-+  /* See first: the three highest-risk beds by Dema's top-beds rule (ties with the third included), each with its top event; Next 24 h only */
++  /* See first: the three highest-risk beds by the top-beds rule (ties with the third included), each with its top event; Next 24 h only */
 +  function renderSeeFirst(){ const el=$("seefirst"), w3 = !nowMode() && hasFc() ? topBeds() : [];
 +    for(const b of el.querySelectorAll(".sfb")) b.remove(); el.hidden=!w3.length;
 +    for(const n of w3){ const r=R(n), [k,v]=topRisk(r), b=document.createElement("button"); b.type="button"; b.className="sfb"; b.dataset.room=n;
