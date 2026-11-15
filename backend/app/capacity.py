@@ -17,7 +17,7 @@ def whole(v) -> int | None:
     """v as a whole number 0..50, else None (a bool, a string or 3.5 is not a count)"""
     if isinstance(v, bool) or not isinstance(v, (int, float)):
         return None
-    if v != v or v != int(v) or not 0 <= v <= CAPACITY_MAX:
+    if not 0 <= v <= CAPACITY_MAX or v != int(v):  # range first: int(inf) raises
         return None
     return int(v)
 

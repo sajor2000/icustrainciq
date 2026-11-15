@@ -196,10 +196,8 @@ def make_handler(
             "rt_on_shift",
         )
         given = {k: req[k] for k in keys if k in req}  # absent = keep what is saved
-        # each number is optional; one of them must be there
-        if not all(v is None or _int_in_range(v) for v in given.values()) or all(
-            v is None for v in given.values()
-        ):
+        # each key is optional and null clears it; one of them must be there
+        if not given or not all(v is None or _int_in_range(v) for v in given.values()):
             return 400, {
                 "ok": False,
                 "reason": f"enter whole numbers from 0 to {CAPACITY_MAX}",

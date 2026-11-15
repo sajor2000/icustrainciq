@@ -197,6 +197,21 @@ def test_capacity_post_ignores_a_vents_free_number(stack):
     )  # keys aggregate.py reads
 
 
+def test_capacity_post_can_only_clear_a_saved_field(stack):
+    """CodeRabbit PR 20: an explicit null clears a field without another number;
+    a body with no capacity key at all is still refused"""
+    base, tmp, fake, page = stack
+    body = {"life_support_patients": 9, "vents_total": 8, "role": "ICU nurse"}
+    assert jcall(base, "/api/capacity", body)[0] == 200
+    c, r = jcall(base, "/api/capacity", {"role": "ICU nurse", "vents_total": None})
+    assert c == 200 and r["ok"] and r["capacity"]["vents_total"] is None
+    saved = json.loads((tmp / "capacity.json").read_text())
+    assert saved["vents_total"] is None and saved["life_support_patients"] == 9
+    assert jcall(base, "/api/capacity", {"role": "ICU nurse"})[0] == 400
+    bad = {"role": "ICU nurse", "vents_total": None, "crrt_total": 51}
+    assert jcall(base, "/api/capacity", bad)[0] == 400
+
+
 # ---- review fixes (2026-11-14): CSRF rule, headers, strict bodies, HEAD ---------------------
 
 import http.client  # noqa: E402

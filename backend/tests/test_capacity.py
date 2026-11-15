@@ -16,6 +16,8 @@ def test_whole_numbers_only_and_free_is_total_minus_in_use():
     assert [capacity.whole(v) for v in (0, 50, 7.0)] == [0, 50, 7]
     for bad in (True, "7", 3.5, -1, 51, None, float("nan")):
         assert capacity.whole(bad) is None
+    for bad in (float("inf"), float("-inf"), 1e309):  # CodeRabbit PR 20: no overflow
+        assert capacity.whole(bad) is None
     tot = capacity.totals({"vents_total": 8, "crrt_total": "2", "vents_free": None})
     assert tot == {"vents_total": 8, "crrt_total": None, "vents_free": None}
     assert capacity.free("imv", tot, 5) == 3 and capacity.free("imv", tot, 9) == 0

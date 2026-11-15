@@ -681,7 +681,9 @@ def staffing_blocks(
         return pending or bool(sk.any() and (sk | on[support]).all())
 
     nxt = {"nurses": dict(NO_COUNTS), "rt": dict(NO_COUNTS)}
-    if not pending and (not no_data("crrt") or not r["one_to_one_crrt"]):
+    # CRRT matters only when it could move someone to 1:1 (not everyone is already)
+    crrt_matters = bool(r["one_to_one_crrt"]) and not alone.all()
+    if not pending and (not crrt_matters or not no_data("crrt")):
         p = tab["p"]["crrt"] if r["one_to_one_crrt"] else np.zeros(n)
         starts = pmf_quantiles(pb_pmf(np.where(alone, 0.0, np.nan_to_num(p))))
         nxt["nurses"] = {
@@ -733,7 +735,11 @@ def read_capacity(path: pathlib.Path | None) -> dict | None:
     unless the file only carries machine totals (`read_machine_totals`)."""
     if not path or not pathlib.Path(path).is_file():
         return None
-    raw = _capacity_raw(path)
+    return _capacity_of(_capacity_raw(path))
+
+
+def _capacity_of(raw) -> dict | None:
+    """`read_capacity` on an already parsed capacity file"""
     tot = capacity_mod.totals(raw)
     cap = raw.get("life_support_patients") if isinstance(raw, dict) else None
     if not _count_like(cap):
@@ -1037,9 +1043,12 @@ def build_forecast(
         print("no train_for_inference.parquet: typical yardstick left out")
     ls = life_support_block(tab)
     pending = forecast_state == PENDING
-    totals = read_machine_totals(capacity)
+    cap_raw = _capacity_raw(capacity)  # one read: totals and cap never disagree
+    totals = capacity_mod.totals(cap_raw)
     staff_now, staff_next = staffing_blocks(tab, staffing, pending)
-    cap = read_capacity(capacity)
+    cap = None
+    if cap_raw is not None or (capacity and pathlib.Path(capacity).is_file()):
+        cap = _capacity_of(cap_raw)  # a broken file still says "unreadable"
     if cap and cap["vents_free"] is None:  # derived from the ventilator total
         cap["vents_free"] = capacity_mod.free("imv", totals, ls["now_by"]["imv"])
     if pending:  # no model: nothing is expected, nothing is 0

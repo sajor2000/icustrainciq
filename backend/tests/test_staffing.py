@@ -109,3 +109,43 @@ def test_staffing_flags(monkeypatch, tmp_path):
         "one_to_one_vasoactives": 0,
         "rt_ratio": 4,
     }
+
+
+def test_known_nursing_estimate_is_kept_when_crrt_cannot_change_staffing():
+    """CodeRabbit PR 20: every patient is already 1:1 (two vasoactives each), so a
+    skipped CRRT probe cannot change any assignment and the count stays known"""
+    ids = ["pat-0", "pat-1"]
+    df = scores(2, p={CRRT: np.full(2, np.nan)}, ids=ids)
+    clif = {
+        i: {"imv": None, "vasopressor": True, "crrt": None, "vasoactives": 2}
+        for i in ids
+    }
+    tab = aggregate.patient_table(df, clif=clif)
+    now, nxt = aggregate.staffing_blocks(tab)
+    assert now["nurses"] == 2 and now["one_to_one"] == 2
+    assert nxt["nurses"]["available"] is True
+    assert nxt["nurses"]["p10"] == nxt["nurses"]["p90"] == 2
+    # one patient CRRT could still move: the skipped probe leaves the count unknown
+    clif["pat-1"]["vasoactives"] = 0
+    _, nxt = aggregate.staffing_blocks(aggregate.patient_table(df, clif=clif))
+    assert nxt["nurses"]["available"] is False and nxt["nurses"]["p50"] is None
+
+
+def test_one_capacity_snapshot_per_forecast(tmp_path, monkeypatch):
+    """CodeRabbit PR 20: machines and yardstick.capacity come from one read of the
+    capacity file, so a save between two reads cannot split them"""
+    cap = tmp_path / "capacity.json"
+    cap.write_text(json.dumps({"life_support_patients": 9, "vents_total": 8}))
+    real, reads = aggregate._capacity_raw, []
+
+    def raw_once(path):
+        reads.append(1)
+        got = real(path)
+        cap.write_text(json.dumps({"life_support_patients": 9, "vents_total": 20}))
+        return got
+
+    monkeypatch.setattr(aggregate, "_capacity_raw", raw_once)
+    fc = aggregate.build_forecast(_df(), "m", beds=8, capacity=cap)
+    assert len(reads) == 1
+    assert fc["machines"]["imv"]["total"] == 8
+    assert fc["yardstick"]["capacity"]["vents_total"] == 8
