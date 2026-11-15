@@ -21,9 +21,27 @@ Five predictions only, all for the next 24 h, 07:00 to 07:00: ICU discharge, IMV
 | Source | What | Who writes it |
 |---|---|---|
 | `GET /api/forecast` | `forecast.json`; example [`../examples/forecast.json`](../examples/forecast.json). Before the first run: `{"resources":{},"note":"no forecast yet: the 07:00 run has not finished"}` | `app/aggregate.py` after each `t7-forecast` run |
-| `GET /api/rooms` | `rooms.json`, stage ward only; example [`../examples/rooms.json`](../examples/rooms.json). Before the first run: `{"rooms":[],"note":"pending run"}` (not shown; the board says "No rooms yet") | lane 3, open MIMIC-IV Demo patients only (D6) |
+| `GET /api/rooms` | `rooms.json`, stage ward only; example [`../examples/rooms.json`](../examples/rooms.json). Before the first run: `{"rooms":[],"note":"pending run"}` (not shown; the board says "No rooms yet") | lane 3, open MIMIC-IV Demo patients by default (D6); a real ward only when the board runs with `--real-ward` (D19), otherwise `{"rooms":[],"counts_only":true}` |
 | `GET /api/runs` | `{next_scheduled, window, running: null / {name} / {unknown:true}, updating, last:{unit,room}, recent, demo_clock_hours, demo_clock_label, min_gap_minutes}`, or `{available:false, reason}` | `app/dispatcher.py` |
 | `GET /api/capacity` | `{life_support_patients, vents_free, updated_at}` | board server |
+
+### Coherent chat and board context
+
+With `board.py --context PATH`, `GET /api/context` returns one validated envelope
+containing `forecast` and `rooms`, with shared `snapshot_id` and `cohort_id`.
+The page reads that envelope atomically; the two existing routes still expose
+compatible projections. A legacy server's explicit context-mode 404 permits the
+old reads. An invalid configured context is a 503 and never falls back to stale
+independent files. Chat replies include the publication identity they used.
+
+`forecast_state: "pending-model"` preserves observed Now while every prediction
+has `No estimate`. `on_now` is true, false or null; null is unknown. When a unit
+count is incomplete, `now_known_patients` / `now_known_by` provide an explicit
+lower bound and `now_unknown_patients` / `now_unknown_by` report missingness.
+Unknown observations must not become off, zero, Steady or free machines.
+`present: false` keeps a stable room slot for an ended stay, with no current
+patient or forecast. The detailed envelope contract is in
+[`backend/docs/CONTRACT.md`](../backend/docs/CONTRACT.md).
 
 ### forecast.json
 
@@ -44,7 +62,7 @@ Five predictions only, all for the next 24 h, 07:00 to 07:00: ICU discharge, IMV
 
 `now_patients` counts patients with IMV, a vasopressor infusion or CRRT running at the 07:00 cut. `check_first` is the High rooms by combined chance (`any_life_support`), at most three; the Bed board does not read it; it builds its Worry first rail from `rooms.json`. The board reads only the keys above; anything else is ignored.
 
-### rooms.json (stage ward only)
+### rooms.json (stage ward; a real ward only in real-ward mode, D19)
 
 ```json
 { "made_at": "ISO", "rooms": [ { "room": 1, "updated_at": "ISO", "cut_time": "ISO", "window": {"start": "ISO", "end": "ISO"},
@@ -183,7 +201,7 @@ Both files may carry `"forecast_state": "pending-model"` (see the backend's `doc
 
 ## Rules
 
-- **Counts only for real MIMIC-IV.** Room-level views and room chat only for the stage ward (open MIMIC-IV Demo patients, excluded from training). Never log questions.
+- **Counts only for real MIMIC-IV, unless the server runs in real-ward mode** (D6, revised by D19). By default room-level views and room chat are for the stage ward only (open MIMIC-IV Demo patients, excluded from training). A real MIMIC-IV ward is served counts-only (`/api/rooms` returns `{"rooms": [], "counts_only": true}`, `check_first` is empty, the chat answers "counts only" to a room question) unless the board server was started with `--real-ward` on the local cluster. Rooms carry room numbers and invented names only. Never log questions or answers.
 - **Every number has its range**, written "(a to b)" and explained once as 8 in 10 likely outcomes. Chances are whole percentages ("23%", "<5%", "No estimate"); clinical history values in the last 12 h list are shown as recorded.
 - **Status never by colour alone**; text at 4.5:1 or better in day and night.
 - **Honest labels, no warnings**: a plain data-source tag ("Demo data", "MIMIC-IV Demo", "MIMIC-IV · local"), "Not ready yet" only as a standalone state where no run has produced a number, and no hedging copy; admissions are excluded from the forecast and the footer says so once.

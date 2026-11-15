@@ -43,7 +43,15 @@ BACKEND = pathlib.Path(__file__).resolve().parent.parent
 if str(BACKEND) not in sys.path:  # run as a script from any folder
     sys.path.insert(0, str(BACKEND))
 
-from app import aggregate, clif_now, fake_names, rooms, stage_ward, ward_check  # noqa: E402
+from app import (  # noqa: E402
+    aggregate,
+    clif_now,
+    demo_context,
+    fake_names,
+    rooms,
+    stage_ward,
+    ward_check,
+)
 
 HOSP = "hospitalization_id"
 BASE_HOURS = 24  # D3: the cut is 24 h after ICU arrival
@@ -97,36 +105,8 @@ def shared_cut(now: dt.datetime, tz: str, demo_clock_hours: float) -> dt.datetim
 
 
 def present_at_cut(clif_dir: pathlib.Path, cuts: dict) -> dict[str, bool]:
-    """per stay, on its own clock: is its cut after ICU arrival, inside an ICU stay
-    of clif_adt (in <= cut < out) and before hospital discharge? A stay that left
-    the ICU, died or was discharged before the cut is not present."""
-    if not cuts:
-        return {}
-    c = clif_now._cuts_frame(cuts).lazy()
-    adt = clif_now._read(
-        clif_dir,
-        "adt",
-        [HOSP, "in_dttm", "out_dttm", "location_category"],
-        ["in_dttm", "out_dttm"],
-    ).filter(pl.col("location_category").str.to_lowercase() == "icu")
-    in_icu = set(
-        adt.join(c, on=HOSP)
-        .filter(pl.col("in_dttm") < pl.col("cut"))
-        .filter(pl.col("out_dttm").is_null() | (pl.col("out_dttm") > pl.col("cut")))
-        .select(HOSP)
-        .unique()
-        .collect()[HOSP]
-    )
-    hosp = clif_now._read(
-        clif_dir, "hospitalization", [HOSP, "discharge_dttm"], ["discharge_dttm"]
-    )
-    gone = set(
-        hosp.join(c, on=HOSP)
-        .filter(pl.col("discharge_dttm") <= pl.col("cut"))
-        .select(HOSP)
-        .collect()[HOSP]
-    )
-    return {str(k): (str(k) in in_icu and str(k) not in gone) for k in cuts}
+    """Current CLIF census, shared with the context publisher."""
+    return clif_now.present_at_cut(clif_dir, cuts)
 
 
 def token_checks(root: pathlib.Path, ids: list[str], cuts: dict, tz: str) -> dict:
@@ -177,7 +157,7 @@ def state_at(
     from icutwin.scoring import winnower
 
     logger.setLevel("WARNING")  # the per-split outcome rates are small cells here
-    winnower.winnow(root, None, offset_hours or None)
+    winnower.winnow(root, None, offset_hours or None, counts_only=True)
     ids = list(room_of)
     df = aggregate.pending_scores(root, ids)
     kept = df[HOSP].to_list()
@@ -219,7 +199,7 @@ def cut_row(hours: float, df: pl.DataFrame, clif: dict | None, checks: dict) -> 
     }
 
 
-def score(root, df, model, probes, ids):
+def score(root, df, model, probes, ids, no_extract=False):
     """(score table, forecast_state, model name): the saved probes on fresh features
     when the model and the probes are there, else the pending table"""
     why = None
@@ -235,9 +215,10 @@ def score(root, df, model, probes, ids):
     if why:
         print(f"forecast pending: {why}")
         return df, aggregate.PENDING, "pending"
-    from icutwin.scoring import extractor
+    if not no_extract:
+        from icutwin.scoring import extractor
 
-    extractor.extract(root, model)
+        extractor.extract(root, model, stay_ids=ids)
     out = rep_based.apply_probes(root, model, probes, ids)
     scored = pl.read_parquet(out).filter(pl.col(HOSP).is_in(ids))
     return scored, aggregate.READY, pathlib.Path(model).name
@@ -250,7 +231,8 @@ def _strings(x):
     elif isinstance(x, dict):
         for k, v in x.items():
             yield str(k)
-            yield from _strings(v)
+            if k not in {"snapshot_id", "cohort_id", "weights_sha256", "probes_sha256"}:
+                yield from _strings(v)
     elif isinstance(x, list):
         for v in x:
             yield from _strings(v)
@@ -272,7 +254,7 @@ def check_no_source_dates(docs: dict[str, dict], ids: list[str]) -> None:
             raise SystemExit(f"{name}: a stay id; not written")
 
 
-def main(argv=None) -> None:
+def _main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("clif_dir", type=pathlib.Path, help="folder of clif_*.parquet")
     ap.add_argument("--ward-ids", type=pathlib.Path, required=True)
@@ -287,6 +269,25 @@ def main(argv=None) -> None:
     ap.add_argument(
         "--probes", type=pathlib.Path, help="probe-<model>.joblib (else pending)"
     )
+    ap.add_argument(
+        "--context-out",
+        type=pathlib.Path,
+        help="publish one atomic restricted snapshot",
+    )
+    ap.add_argument(
+        "--tokenized-output", type=pathlib.Path, help="existing selected-25 token cache"
+    )
+    ap.add_argument(
+        "--no-extract",
+        action="store_true",
+        help="apply probes to already extracted GPU features",
+    )
+    ap.add_argument(
+        "--cut-time", type=aggregate.cut_arg, help="shared replay time with UTC offset"
+    )
+    ap.add_argument("--dataset-version")
+    ap.add_argument("--names", help="fictional names file or fake; default off")
+    ap.add_argument("--unit-name", default=aggregate.UNIT_NAME)
     ap.add_argument(
         "--cut-after-arrival-hours",
         type=float,
@@ -303,12 +304,6 @@ def main(argv=None) -> None:
     ap.add_argument("--cut-table", help="demo clocks, e.g. 0,24,48,72: counts only")
     ap.add_argument("--tz", default=aggregate.DEFAULT_TZ, help="ward time zone")
     ap.add_argument("--data-tz", default="US/Eastern", help="time zone of the CLIF")
-    ap.add_argument(
-        "--names",
-        help="made-up names for the tiles: a names file beside the ward's data, or "
-        "'fake' for the seeded generator (default: none)",
-    )
-    ap.add_argument("--unit-name", default=aggregate.UNIT_NAME)
     ap.add_argument("--capacity", type=pathlib.Path)
     ap.add_argument("--baseline", type=pathlib.Path)
     ap.add_argument("--seed", type=int, default=stage_ward.SEED)
@@ -327,13 +322,41 @@ def main(argv=None) -> None:
         a.clif_dir, a.ward_ids, a.real_ward, a.seed
     )
     ward_rooms.write_csv(ward_csv)
+    ward_rooms.select("room", HOSP).write_csv(a.work / "roster.csv")
     room_of = aggregate.read_room_map(ward_csv)
     ward = aggregate.check_ward(room_of, a.real_ward)
     print(json.dumps({"ward_map": info}))
 
-    root = a.work / "tokenized_output"
-    if not (a.reuse_tokens and (root / "vocab.yaml").is_file()):
+    root = a.tokenized_output or a.work / "tokenized_output"
+    if not a.tokenized_output and not (
+        a.reuse_tokens and (root / "vocab.yaml").is_file()
+    ):
+        if a.context_out:
+            count = (
+                pl.scan_parquet(a.clif_dir / "clif_hospitalization.parquet")
+                .select(pl.col(HOSP).n_unique())
+                .collect()
+                .item()
+            )
+            if count != 25 or len(room_of) != 25:
+                raise demo_context.ContextUnavailable(
+                    "Tokenization requires the restricted selected-25 CLIF extract"
+                )
         root = tokenize(a.clif_dir, a.work, a.data_tz)
+    if a.context_out:
+        cache_ids = set()
+        for split in ("train", "tuning", "held_out"):
+            cache_ids.update(
+                pl.scan_parquet(root / f"tokens_{split}.parquet")
+                .select(HOSP)
+                .unique()
+                .collect()[HOSP]
+                .to_list()
+            )
+        if cache_ids != set(room_of):
+            raise demo_context.ContextUnavailable(
+                "Token cache does not match the fixed 25-stay roster"
+            )
     base = a.cut_after_arrival_hours - BASE_HOURS
     on_clif = tables["on_now_from_clif"]
 
@@ -348,16 +371,78 @@ def main(argv=None) -> None:
     offset = base + a.demo_clock_hours
     df, clif, checks = state_at(root, a.clif_dir, room_of, offset, a.data_tz, on_clif)
     ids = df[HOSP].to_list()
-    scored, state, model_name = score(root, df, a.model, a.probes, ids)
+    scored, state, model_name = score(root, df, a.model, a.probes, ids, a.no_extract)
     pending = state == aggregate.PENDING
 
     now = aggregate.now_iso()
-    cut = shared_cut(dt.datetime.fromisoformat(now), a.tz, a.demo_clock_hours)
+    cut = (
+        aggregate.parse_cut(a.cut_time)
+        if a.cut_time
+        else shared_cut(dt.datetime.fromisoformat(now), a.tz, a.demo_clock_hours)
+    )
+    if a.context_out:
+        if (
+            not on_clif
+            or checks["cut_clock_differs"]
+            or a.cut_after_arrival_hours != BASE_HOURS
+        ):
+            raise demo_context.ContextUnavailable(
+                "Context requires CLIF-native current state and matching 24-hour cuts"
+            )
+        provenance = None
+        if not pending:
+            import hashlib
+
+            verified, provenance, _ = demo_context.verified_scores(
+                root, a.model, ids, offset
+            )
+            if not verified.equals(scored):
+                raise demo_context.ContextUnavailable(
+                    "Scored rows changed before publication"
+                )
+            provenance["probes_sha256"] = hashlib.sha256(
+                a.probes.read_bytes()  # the one probe file (probe-<model>.joblib)
+            ).hexdigest()
+        context = demo_context.build_context(
+            root=root,
+            df=scored,
+            room_of=room_of,
+            clif=a.clif_dir,
+            current=clif,
+            cut_time=cut.isoformat(timespec="seconds"),
+            ward=ward,
+            forecast_state=state,
+            provenance=provenance,
+            demo_clock_hours=offset,
+            tz=a.tz,
+            dataset_version=a.dataset_version,
+            baseline=a.baseline,
+            capacity=a.capacity,
+            names=a.names,
+            unit_name=a.unit_name,
+        )
+        check_no_source_dates({"context.json": context}, list(room_of))
+        demo_context.write_context(a.context_out, context)
+        a.out.mkdir(parents=True, exist_ok=True)
+        aggregate.write_json(a.out / "rooms.json", context["rooms"])
+        aggregate.write_json(a.out / "forecast.json", context["forecast"])
+        print(
+            json.dumps(
+                {
+                    "published": True,
+                    "forecast_state": state,
+                    "roster_size": 25,
+                    "present": len(ids),
+                    "dropped": 25 - len(ids),
+                }
+            )
+        )
+        return
     vocab = yaml.safe_load((root / "vocab.yaml").read_text())["lookup"]
     words = {int(i): w for w, i in vocab.items()}
     demo = rooms.demographics(a.clif_dir, ids)
     names, name_counts = fake_names.names_for(
-        a.names, room_of, {s: d["sex"] for s, d in demo.items()}
+        a.names, room_of, {sid: d["sex"] for sid, d in demo.items()}
     )
     entries = rooms.room_entries(
         scored,
@@ -379,7 +464,7 @@ def main(argv=None) -> None:
         "on_now_source": source,
         "dropped": len(set(room_of.values()) - {r["room"] for r in entries}),
     }
-    if any("name" in r for r in entries):
+    if any("name" in entry for entry in entries):
         rooms_doc["names"] = "fictional"
     forecast = aggregate.build_forecast(
         scored,
@@ -417,10 +502,29 @@ def main(argv=None) -> None:
                 "now_patients": ls["now_patients"],
                 "now_by": ls["now_by"],
                 "checks": checks,
-                "out": [str(a.out / "rooms.json"), str(a.out / "forecast.json")],
             }
         )
     )
+
+
+def main(argv=None):
+    try:
+        _main(argv)
+    except SystemExit as exc:
+        if isinstance(exc.code, int):
+            raise
+        if "Re-run with --real-ward" in str(exc.code):
+            raise SystemExit(
+                "Ward is not the open demo. Re-run with --real-ward "
+                "to confirm restricted real-data mode"
+            ) from None
+        raise SystemExit(
+            "Ward preparation failed; check restricted source artifacts"
+        ) from None
+    except Exception:
+        raise SystemExit(
+            "Ward preparation failed; check restricted source artifacts"
+        ) from None
 
 
 if __name__ == "__main__":

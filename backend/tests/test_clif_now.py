@@ -216,7 +216,9 @@ def test_forecast_counts_follow_clif(tmp_path):
     df = tl.scores(4, ids=ids)
     fc = aggregate.build_forecast(df, "m", beds=4, clif_now=clif)
     assert fc["on_now_source"] == "clif"
-    assert fc["life_support"]["now_by"]["imv"] == 1
+    assert fc["life_support"]["now_by"]["imv"] is None
+    assert fc["life_support"]["now_known_by"]["imv"] == 1
+    assert fc["life_support"]["now_unknown_by"]["imv"] == 3
     assert aggregate.build_forecast(df, "m", beds=4)["on_now_source"] == "tokens"
 
 
@@ -287,9 +289,6 @@ def test_vitals_before_cut_leaves_out_non_finite_readings(tmp_path):
     ).write_parquet(d / "clif_vitals.parquet")
     got = clif_now.vitals_before_cut(d, {"s1": CUT})
     assert got == {
-        "s1": {
-            "heart_rate": [{"h": 1, "v": 100.0}],
-            "spo2": [{"h": 4, "v": 96.0}],
-        }
+        "s1": {"heart_rate": [{"h": 1, "v": 100.0}], "spo2": [{"h": 4, "v": 96.0}]}
     }
     json.dumps(got, allow_nan=False)  # strict JSON

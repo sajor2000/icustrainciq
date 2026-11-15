@@ -2,6 +2,8 @@
 
 Last updated: 2026-11-14, late afternoon. Branch `ui/strain-rooms-chat`, merged to `main` by pull request as work lands.
 
+**Chat (branch `t7/ui-nemotron-chatbot`).** The chat is grounded in one published snapshot of the unit (`context.json`: the same 25 rooms, Now and forecast, one `snapshot_id`), built by `backend/app/demo_context.py` and `scripts/run_cohort.py`. Nemotron picks bounded JSON tools (`chat_agent.py`); the numbers in an answer are rendered from that evidence (`evidence.py`), not from model prose. Unknown observations stay unknown. Its workflows are `backend/fuzzball/t7-lookahead-{prepare,chat,forecast}.fz`; they read packages from `/store/py` like the rest and keep the private roster on a separate restricted volume, `demo-context`. Details and next steps: [CHATBOT_HANDOFF.md](CHATBOT_HANDOFF.md) and [`backend/docs/LOOKAHEAD_DEMO.md`](backend/docs/LOOKAHEAD_DEMO.md).
+
 ## What ICU Lookahead is
 
 A bed board for one ICU. It shows what life support each patient is on **now** and forecasts the **next 24 hours** (07:00 to 07:00): starting a ventilator, a vasopressor or CRRT, leaving the ICU, and death. It adds the patients up into unit strain. It runs on two local Lenovo PGX machines under Fuzzball. Nothing is in the cloud. Story: the rural ICU (`docs/DECISIONS.md` D21).

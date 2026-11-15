@@ -87,7 +87,7 @@ def test_unit_run_renders_the_template_and_passes_the_offset(tmp_path):
     start = f.started[0]
     assert start[:2] == ("workflow", "start") and start[3] == "--name"
     assert rendered(f) == "scope=unit room=0 hours=4.5\n"
-    assert r["name"] == "t7-forecast-1114-1130"
+    assert r["name"] == "t7-lookahead-forecast-unit-1114-1130"
 
 
 def test_room_run_needs_a_room_and_names_it(tmp_path):
@@ -619,6 +619,14 @@ COHORT = (
         real_ward=True, clif_dir=d.COHORT_CLIF_DIR, ward_ids=d.COHORT_WARD_IDS
     )
 )
+# the chat-grounding workflows read an approved 25-patient extract on their own restricted
+# volume and never mount the full source volume (docs/LOOKAHEAD_DEMO.md)
+LOOKAHEAD_WARD = dict(
+    real_ward=True,
+    clif_dir="/context/clif",
+    ward_ids="/context/cohort_ids.csv",
+    names="fake",
+)
 VOLUMES = {  # docs/FUZZBALL_VALIDATION.md: one volume we write, one we only read, the HF cache
     "t7-code": {"twin-store", None},  # None: the ephemeral work volume
     "t7-smoke": {"twin-store", "hfcache", None},
@@ -626,6 +634,11 @@ VOLUMES = {  # docs/FUZZBALL_VALIDATION.md: one volume we write, one we only rea
     "t7-ward": {"mimic_clif", "twin-store"},
     "t7-forecast": {"mimic_clif", "twin-store"},
     "t7-twin": {"twin-store", "hfcache"},
+    # the chat-grounding workflows: twin-store is only read; the restricted context volume
+    # holds the private roster and the context; packages come from /store/py like the rest
+    "t7-lookahead-prepare": {"twin-store", "demo-context"},
+    "t7-lookahead-chat": {"twin-store", "hfcache", "demo-context"},
+    "t7-lookahead-forecast": {"twin-store", "demo-context"},
 }
 ORDER = {  # job -> the jobs it waits for (docs/diagrams/workflow.html, backend.html)
     "t7-code": {"publish": [], "deps": [], "check": ["publish", "deps"]},
@@ -645,6 +658,9 @@ ORDER = {  # job -> the jobs it waits for (docs/diagrams/workflow.html, backend.
     "t7-ward": {"load": [], "tokenize": ["load"]},
     "t7-forecast": {"precheck": [], "extract": ["precheck"], "score": ["extract"]},
     "t7-twin": {},  # services only
+    "t7-lookahead-prepare": {"prepare-context": []},
+    "t7-lookahead-chat": {},
+    "t7-lookahead-forecast": {"extract": [], "publish": ["extract"]},
 }
 
 
@@ -654,7 +670,7 @@ def render_any(name: str, **ward) -> str:
     text = text.replace("@CODE_REF@", "0" * 40).replace("@CODE_SHA256@", "1" * 64)
     text = (
         text.replace("@SCOPE@", "unit").replace("@ROOM@", "0").replace("@HOURS@", "0")
-    )
+    ).replace("@CUT@", "2026-11-14T07:00:00-06:00")
     return d.render_ward(text, **ward)
 
 
@@ -668,7 +684,7 @@ def test_every_fuzzfile_renders_to_yaml_with_pinned_images_and_no_token_left():
     import yaml
 
     for name in ORDER:
-        for ward in ({}, COHORT):
+        for ward in ({}, LOOKAHEAD_WARD if "lookahead" in name else COHORT):
             text = render_any(name, **ward)
             assert not re.search(r"@[A-Z0-9_]+@", text), name
             doc = yaml.safe_load(text)
@@ -677,7 +693,10 @@ def test_every_fuzzfile_renders_to_yaml_with_pinned_images_and_no_token_left():
             assert units, name
             for unit, spec in units.items():
                 assert spec["image"]["uri"] in PINNED, (name, unit)
-                assert spec["script"].startswith("#!/bin/bash"), (name, unit)
+                assert spec["script"].startswith(("#!/bin/bash\n", "#!/bin/sh\n")), (
+                    name,
+                    unit,
+                )
                 assert "cpu" in spec["resource"] and "memory" in spec["resource"]
             for job, spec in doc.get("jobs", {}).items():
                 if name != "t7-smoke" or job != "seed":  # seed is a copy: no timeout
@@ -888,17 +907,22 @@ def test_a_forecast_that_stays_pending_is_stopped_and_no_longer_blocks(tmp_path)
     r = f.start("schedule", "unit", enforce_gap=False)
     assert not r["started"] and r["busy"] and f.stopped == []
     assert f.status()["running"] == {
-        "name": "t7-forecast-1114-0700",
+        "name": "t7-lookahead-forecast-unit-1114-0700",
         "state": "PENDING",
     }
     assert f.status()["stuck"] is None
     clock.advance(minutes=3)  # 6 minutes Pending: stopped, and the retry starts
     r = f.start("schedule", "unit", enforce_gap=False)
     assert (
-        f.stopped == ["wf-1"] and r["started"] and r["name"] == "t7-forecast-1114-0706"
+        f.stopped == ["wf-1"]
+        and r["started"]
+        and r["name"] == "t7-lookahead-forecast-unit-1114-0706"
     )
     stuck = f.status()["stuck"]
-    assert stuck["name"] == "t7-forecast-1114-0700" and stuck["minutes"] == 6
+    assert (
+        stuck["name"] == "t7-lookahead-forecast-unit-1114-0700"
+        and stuck["minutes"] == 6
+    )
     assert "waited for a GPU for 6 minutes and was stopped" in stuck["reason"]
     rows = [json.loads(x) for x in (tmp_path / "runs.jsonl").read_text().splitlines()]
     assert [x for x in rows if x.get("event") == "stopped_stuck"][0][
@@ -1139,3 +1163,149 @@ def test_a_failed_token_refresh_is_retried_within_the_hour(tmp_path, monkeypatch
     monkeypatch.setattr(d, "refresh_token", lambda: calls.append(2) or True)
     s.tick()
     assert calls == [1, 2] and s.last_refresh == t0 + 3601
+
+
+# ---- CodeRabbit PR #16: the replay cut is fixed when the run is dispatched ----
+
+
+def test_the_cut_is_captured_at_dispatch_and_not_read_again_in_the_job(tmp_path):
+    import zoneinfo
+
+    import yaml
+
+    tz = zoneinfo.ZoneInfo("America/Chicago")
+    f = FakeCli(tmp_path, clock=Clock(dt.datetime(2026, 11, 15, 6, 59, tzinfo=tz)))
+    f.fuzzfile.write_text("h=@HOURS@ cut=@CUT@\n")
+    assert f.start("ICU nurse")["started"]
+    # asked one minute before 07:00: the offset and the cut both belong to the day
+    # that began on Nov 14 at 07:00, whenever the job reaches its last step
+    assert rendered(f) == "h=24 cut=2026-11-15T07:00:00-06:00\n"
+    f.clock.advance(hours=1)  # the scheduled run: no offset, this morning's cut
+    assert f.start("schedule", enforce_gap=False)["started"]
+    assert rendered(f) == "h=0 cut=2026-11-15T07:00:00-06:00\n"
+    # the forecast workflow uses that value and never works the day out again
+    job = yaml.safe_load(
+        d.render_template(
+            (FUZZ / "t7-lookahead-forecast.fz").read_text(),
+            hours=24,
+            cut="2026-11-15T07:00:00-06:00",
+            **LOOKAHEAD_WARD,
+        )
+    )["jobs"]["publish"]["script"]
+    assert "CUT=2026-11-15T07:00:00-06:00" in job and '--cut-time "$CUT"' in job
+    assert "last_cut" not in job and "datetime.now" not in job
+    for bad in ("", "2026-11-15T07:00:00", "2026-11-15 07:00; rm -rf /"):
+        try:
+            d.render_template("@CUT@", cut=bad)
+        except ValueError:
+            continue
+        raise AssertionError(f"accepted cut {bad!r}")
+
+
+def test_ward_winnows_log_counts_only():
+    """CodeRabbit PR #16: every workflow step that winnows a 25-stay ward asks the
+    winnower for counts only; the training cohort (thousands of stays) keeps its rates"""
+    ward = {
+        "t7-lookahead-forecast": ["$ROOT"],
+        "t7-forecast": ["/store/stage/tokenized_output"],
+        "t7-fit": ["tokenized_output"],
+        "t7-ward": ["tokenized_output"],
+    }
+    for name, roots in ward.items():
+        lines = (FUZZ / f"{name}.fz").read_text().replace("\\\n", " ").splitlines()
+        calls = [x for x in lines if "winnower import main" in x]
+        for root in roots:
+            hit = [
+                x for x in calls if f'main()" {root} ' in x or f'main()\' "{root}"' in x
+            ]
+            assert hit and all("--counts-only" in x for x in hit), (name, root)
+    train = [
+        x
+        for x in (FUZZ / "t7-fit.fz").read_text().splitlines()
+        if "winnower import main" in x and "/store/train" in x
+    ]
+    assert train and "--counts-only" not in train[0]
+
+
+def test_a_forecast_that_needs_a_roster_is_refused_before_it_starts(tmp_path):
+    """CodeRabbit PR #16: the lookahead forecast cannot publish without the ward ids;
+    a dispatcher started without --ward-ids refuses instead of spending the GPU job"""
+    f = FakeCli(tmp_path)
+    f.fuzzfile.write_text((FUZZ / "t7-lookahead-forecast.fz").read_text())
+    out = f.start("ICU nurse")
+    assert out["started"] is False and "--ward-ids" in out["reason"]
+    assert not f.started
+    f.ward_ids, f.real_ward, f.clif_dir, f.names = (
+        "/context/cohort_ids.csv",
+        True,
+        "/context/clif",
+        "fake",
+    )
+    assert f.start("ICU nurse")["started"]
+    # the team's forecast template has no such need: no ids means the open demo ward
+    (tmp_path / "demo").mkdir()
+    g = FakeCli(tmp_path / "demo")
+    assert g.start("ICU nurse")["started"]
+
+
+def _command_args(script: str, marker: str, stop: str | None = None) -> list[list[str]]:
+    """the arguments a job script passes after `marker`, one list per call
+    (continuation lines joined, the trailing comment dropped, $HOURS as 0)"""
+    import shlex
+
+    calls = []
+    text = script.replace("\\\n", " ")
+    for line in text.splitlines():
+        if marker not in line or line.lstrip().startswith("#"):
+            continue
+        rest = line.split(marker, 1)[1]
+        if stop:
+            rest = rest.split(stop, 1)[0]
+        rest = rest.replace('"$HOURS"', "0").replace("$HOURS", "0")
+        calls.append([a for a in shlex.split(rest, comments=True) if a != '"'])
+    return calls
+
+
+def test_rendered_team_workflows_pass_only_arguments_their_scripts_accept():
+    """J.C.'s rule for the team's Fuzzball files: a flag added to a job line must be
+    one the exact script it is passed to accepts, at the code this branch publishes.
+    Every winnower call and the board call of the rendered templates (open demo and
+    cohort) is parsed by that script's own option parser; nothing is run."""
+    import typer
+    import yaml
+
+    from app import board
+    from icutwin.scoring import winnower
+
+    parse = typer.main.get_command(winnower.app)
+    seen = {"counts_only": 0, "real_ward": 0}
+    for name in ("t7-fit", "t7-ward", "t7-forecast", "t7-twin"):
+        for ward in ({}, COHORT):
+            doc = yaml.safe_load(render_any(name, **ward))
+            units = {**doc.get("jobs", {}), **doc.get("services", {})}
+            for unit, spec in units.items():
+                for args in _command_args(
+                    spec["script"], 'winnower import main; main()"'
+                ):
+                    ctx = parse.make_context("icutwin-winnow", list(args))  # no exit
+                    seen["counts_only"] += bool(ctx.params["counts_only"])
+                    # a ward of 25 stays is winnowed counts-only; training keeps rates
+                    ward_sized = "/store/train" not in args[0]
+                    assert ctx.params["counts_only"] is ward_sized, (name, unit, args)
+                for args in _command_args(spec["script"], "app/board.py", "||"):
+                    a = board.parse_args(args)  # argparse: SystemExit on a bad flag
+                    assert a.real_ward is bool(ward), (name, unit, args)
+                    assert a.behind_proxy and a.port == 8080
+                    seen["real_ward"] += a.real_ward
+    assert seen["counts_only"] >= 6 and seen["real_ward"] == 1
+    # the committed ready/ copies (the cohort) carry the same flags
+    for ready in ("t7-fit", "t7-ward", "t7-forecast-unit", "t7-forecast-room12"):
+        script = (FUZZ / "ready" / f"{ready}.fz").read_text()
+        calls = _command_args(script, 'winnower import main; main()"')
+        assert calls, ready
+        for args in calls:
+            ctx = parse.make_context("icutwin-winnow", list(args))
+            assert ctx.params["counts_only"] is ("/store/train" not in args[0]), ready
+    twin = (FUZZ / "ready" / "t7-twin.fz").read_text().replace("\\\n", " ")
+    (board_args,) = _command_args(twin, "app/board.py", "||")
+    assert board.parse_args(board_args).real_ward is True

@@ -254,10 +254,13 @@ def test_cohort_run_writes_valid_pending_files(demo_run):
     assert len(r["rooms"]) + r["dropped"] == 25 and len(r["rooms"]) > 0
     assert f["beds"] == len(r["rooms"])
     on_any = sum(any(v for v in x["on_now"].values()) for x in r["rooms"])
-    assert f["life_support"]["now_patients"] == on_any  # the Now side is real
+    assert f["life_support"]["now_known_patients"] == on_any
     for k in ("imv", "vasopressor", "crrt"):
         n = sum(bool(x["on_now"][k]) for x in r["rooms"])
-        assert f["life_support"]["now_by"][k] == n
+        unknown = sum(x["on_now"][k] is None for x in r["rooms"])
+        assert f["life_support"]["now_known_by"][k] == n
+        assert f["life_support"]["now_unknown_by"][k] == unknown
+        assert f["life_support"]["now_by"][k] == (None if unknown else n)
     assert f["life_support"]["now_by"]["ecmo"] is None
     assert f["life_support"]["expected_new_patients"]["p50"] is None
     assert all(not v["available"] for v in f["resources"].values())
@@ -369,6 +372,12 @@ def test_a_stay_that_left_the_icu_or_died_before_the_cut_is_not_present(tmp_path
         "early": False,  # the cut is before this ICU arrival
     }
     assert run_cohort.present_at_cut(d, {}) == {}
+    # CodeRabbit PR #16: the interval is in <= cut < out. Back in the ICU exactly at
+    # the cut is present; leaving exactly at the cut is not.
+    assert run_cohort.present_at_cut(d, {"back": h(20), "left": h(20)}) == {
+        "back": True,
+        "left": False,
+    }
 
 
 def test_demo_clock_moves_every_stay_and_drops_ended_ones(demo_run, capsys):
@@ -433,9 +442,9 @@ def test_with_model_and_probes_the_predictions_are_filled(demo_run, monkeypatch)
             lab = pl.read_parquet(f, columns=[HOSP, "last_valid", "cut_s"])
             x = rng.normal(size=(lab.height, 4)).astype(np.float32)
             split = f.name.removesuffix("_for_inference.parquet")
-            lab.with_columns(features=pl.Series(list(x))).write_parquet(
-                pathlib.Path(root) / f"features-{split}-{tl.MODEL}.parquet"
-            )
+            out = pathlib.Path(root) / f"features-{split}-{tl.MODEL}.parquet"
+            lab.with_columns(features=pl.Series(list(x))).write_parquet(out)
+            tl.rep_based.write_features_meta(out, model_home)  # as the extractor
 
     from icutwin.scoring import extractor
 
@@ -460,13 +469,23 @@ def test_with_model_and_probes_the_predictions_are_filled(demo_run, monkeypatch)
         f["resources"]["death"]["available"]
         and f["resources"]["death"]["p50"] is not None
     )
-    assert f["life_support"]["expected_new_patients"]["p50"] is not None
+    # a stay whose current support is unknown in CLIF, or a support without a probe,
+    # leaves the combined counts unknown: never a count that takes it as 0
+    ls = f["life_support"]
+    partial = not all(ls["expected_by"][k]["available"] for k in aggregate.SUPPORTS)
+    assert (ls["expected_new_patients"]["p50"] is None) == partial
+    assert (f["yardstick"] is None) == partial
+    assert ls["expected_by"]["vasopressor"]["p50"] is not None
     free = [x for x in r["rooms"] if not x["on_now"]["vasopressor"]]
     # main's task rule: a pressor started (and stopped) before the cut gets no p
     ps = [x["p"]["vasopressor"] for x in free]
     assert any(v is not None for v in ps)
     assert all(v is None or 0 <= v <= 1 for v in ps)
-    assert all(x["level"] in ("low", "medium", "high") for x in r["rooms"])
+    for x in r["rooms"]:
+        gap = any(x["skipped"][k] for k in aggregate.SUPPORTS)
+        assert (x["level"] == "unavailable") == gap
+        assert (x["any_life_support"] is None) == gap
+        assert x["level"] in ("low", "medium", "high", "unavailable")
     assert all(x["p"]["imv"] is None for x in r["rooms"] if x["on_now"]["imv"])
     assert run_cohort.source_years(r) == run_cohort.source_years(f) == 0
     # weights or probes missing: still valid files, pending
