@@ -124,4 +124,3 @@ Not for the demo. Afterwards, and only with the team's go-ahead:
 | 4 | ECMO: one cohort patient has ECMO records; the board leaves ECMO out |
 | 5 | Coming off life support is not forecast. A "comes off support" prediction would need a new model task |
 | 6 | The page proposals not applied: the page's blue and three type sizes against DESIGN.md (`docs/UI_REVIEW_FOR_DEMA.md` section 3). The standard flag lines 20 / 40 / 60 are applied (D26, PR #24) |
-| 7 | Resolved 2026-11-15: the team confirmed the open-demo stays did not enter the training tokens. The `exclude_demo` hardening (`9e67f45`, on `save/backend-review-fixes`) is optional defence, not a fix for a leak |
