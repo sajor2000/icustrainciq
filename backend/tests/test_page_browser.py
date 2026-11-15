@@ -183,7 +183,8 @@ def test_an_ended_slot_shows_no_vitals_from_the_room_before(browser, tmp_path, s
         page.wait_for_selector("#rv-vit:not([hidden])")
         page.evaluate("location.hash = 'room=8&fast'")
         page.wait_for_function(
-            "document.getElementById('rv-risk-h').textContent.includes('Not in the ICU')"
+            "document.getElementById('rv-risk-h').textContent"
+            ".includes('Not in the ICU')"
         )
         assert page.is_hidden("#rv-vit")
         assert page.inner_html("#vits") == ""
