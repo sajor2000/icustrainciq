@@ -208,32 +208,12 @@ def life_support_answer(result: dict) -> str:
             and all(type(v) is int and v >= 0 for v in values)
             and values[0] <= values[1] <= values[2]
         ):
-            by = support.get("expected_by")
-            complete = isinstance(by, dict) and all(
-                isinstance(by.get(key), dict)
-                and by[key].get("available") is not False
-                and all(
-                    type(by[key].get(k)) is int and by[key][k] >= 0
-                    for k in ("p10", "p50", "p90")
-                )
-                and by[key]["p10"] <= by[key]["p50"] <= by[key]["p90"]
-                for key in ("imv", "vasopressor", "crrt")
-            )
+            # the combined count has its own availability (checked above); a support
+            # whose own count is unavailable does not make it a lower bound
             return (
                 observed
-                + (
-                    "\nForecast: "
-                    if complete
-                    else "\nAvailable-support lower-bound forecast: "
-                )
-                + f"{values[1]} new life-support patients "
+                + f"\nForecast: {values[1]} new life-support patients "
                 + f"(80% range {values[0]} to {values[2]})."
-                + (
-                    ""
-                    if complete
-                    else " Full any-support forecast unavailable: "
-                    "supporting probabilities are missing."
-                )
             )
         return observed + "\nNew life-support forecast: unavailable."
     values = [support.get(k) for k in ("p10", "p50", "p90")]

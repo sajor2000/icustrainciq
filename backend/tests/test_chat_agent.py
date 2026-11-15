@@ -1000,3 +1000,27 @@ def test_life_support_answer_includes_the_yardstick():
     for absent in (None, "pending run", {"kind": "typical", "words": "do x"}, {}):
         assert "Yardstick: unavailable." in render(absent)
     assert "Forecast: 5 new life-support patients" in render(None)
+
+
+def test_combined_forecast_label_follows_its_own_availability():
+    """CodeRabbit PR #16: on a vasopressor with IMV unknown. The combined count is
+    valid although the ventilator count is not; it is not called a lower bound."""
+    import polars as pl  # noqa: F401
+    from test_lookahead import IMV, scores
+
+    from app import aggregate
+
+    df = scores(2, p={IMV: [0.4, 0.4]}, ids=["a", "b"])
+    off = {"imv": False, "vasopressor": False, "crrt": False}
+    clif = {"a": {**off, "imv": None, "vasopressor": True}, "b": off}
+    fc = aggregate.build_forecast(df, "m", clif=clif)
+    ls = fc["life_support"]
+    assert ls["expected_by"]["imv"]["available"] is False
+    answer = ev.tool_answer("get_life_support", {"life_support": ls})
+    assert "\nForecast: " in answer and "new life-support patients" in answer
+    assert "lower-bound" not in answer and "unavailable: supporting" not in answer
+    # the combined count itself unavailable: said so, never a number
+    clif = {"a": {**off, "imv": None}, "b": off}
+    ls = aggregate.build_forecast(df, "m", clif=clif)["life_support"]
+    answer = ev.tool_answer("get_life_support", {"life_support": ls})
+    assert "New life-support forecast: unavailable." in answer

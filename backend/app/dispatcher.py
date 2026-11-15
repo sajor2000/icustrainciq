@@ -101,6 +101,9 @@ FAILED_STATES = frozenset(
 PENDING_STATES = frozenset({"PENDING", "UNSPECIFIED", "QUEUED", ""})
 WORKFLOW_ID = re.compile(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", re.I)
 TOKEN = re.compile(r"@[A-Z][A-Z0-9_]*@")  # a template token nobody filled
+NEEDS_WARD_IDS = (
+    "# needs: ward-ids"  # a template's own header line (lookahead forecast)
+)
 CUT_TOKEN = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}")
 TERMINAL = frozenset({"FINISHED", *FAILED_STATES})
 LIST_TIMEOUT_S = 20
@@ -630,6 +633,16 @@ class Dispatcher:
             return {
                 "started": False,
                 "reason": "No room data yet. Update the unit first, then a single room.",
+            }
+        try:  # a template that cannot run without the roster says so in its header
+            needs_ids = NEEDS_WARD_IDS in self.fuzzfile.read_text()
+        except OSError:
+            needs_ids = False
+        if needs_ids and not self.ward_ids:
+            return {
+                "started": False,
+                "reason": "This forecast needs the ward's id file: start the "
+                "dispatcher with --ward-ids.",
             }
         try:  # slow call first, outside the lock
             wfs = self.workflows()

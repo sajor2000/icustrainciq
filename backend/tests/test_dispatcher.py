@@ -1225,3 +1225,87 @@ def test_ward_winnows_log_counts_only():
         if "winnower import main" in x and "/store/train" in x
     ]
     assert train and "--counts-only" not in train[0]
+
+
+def test_a_forecast_that_needs_a_roster_is_refused_before_it_starts(tmp_path):
+    """CodeRabbit PR #16: the lookahead forecast cannot publish without the ward ids;
+    a dispatcher started without --ward-ids refuses instead of spending the GPU job"""
+    f = FakeCli(tmp_path)
+    f.fuzzfile.write_text((FUZZ / "t7-lookahead-forecast.fz").read_text())
+    out = f.start("ICU nurse")
+    assert out["started"] is False and "--ward-ids" in out["reason"]
+    assert not f.started
+    f.ward_ids, f.real_ward, f.clif_dir, f.names = (
+        "/context/cohort_ids.csv",
+        True,
+        "/context/clif",
+        "fake",
+    )
+    assert f.start("ICU nurse")["started"]
+    # the team's forecast template has no such need: no ids means the open demo ward
+    (tmp_path / "demo").mkdir()
+    g = FakeCli(tmp_path / "demo")
+    assert g.start("ICU nurse")["started"]
+
+
+def _command_args(script: str, marker: str, stop: str | None = None) -> list[list[str]]:
+    """the arguments a job script passes after `marker`, one list per call
+    (continuation lines joined, the trailing comment dropped, $HOURS as 0)"""
+    import shlex
+
+    calls = []
+    text = script.replace("\\\n", " ")
+    for line in text.splitlines():
+        if marker not in line or line.lstrip().startswith("#"):
+            continue
+        rest = line.split(marker, 1)[1]
+        if stop:
+            rest = rest.split(stop, 1)[0]
+        rest = rest.replace('"$HOURS"', "0").replace("$HOURS", "0")
+        calls.append([a for a in shlex.split(rest, comments=True) if a != '"'])
+    return calls
+
+
+def test_rendered_team_workflows_pass_only_arguments_their_scripts_accept():
+    """J.C.'s rule for the team's Fuzzball files: a flag added to a job line must be
+    one the exact script it is passed to accepts, at the code this branch publishes.
+    Every winnower call and the board call of the rendered templates (open demo and
+    cohort) is parsed by that script's own option parser; nothing is run."""
+    import typer
+    import yaml
+
+    from app import board
+    from icutwin.scoring import winnower
+
+    parse = typer.main.get_command(winnower.app)
+    seen = {"counts_only": 0, "real_ward": 0}
+    for name in ("t7-fit", "t7-ward", "t7-forecast", "t7-twin"):
+        for ward in ({}, COHORT):
+            doc = yaml.safe_load(render_any(name, **ward))
+            units = {**doc.get("jobs", {}), **doc.get("services", {})}
+            for unit, spec in units.items():
+                for args in _command_args(
+                    spec["script"], 'winnower import main; main()"'
+                ):
+                    ctx = parse.make_context("icutwin-winnow", list(args))  # no exit
+                    seen["counts_only"] += bool(ctx.params["counts_only"])
+                    # a ward of 25 stays is winnowed counts-only; training keeps rates
+                    ward_sized = "/store/train" not in args[0]
+                    assert ctx.params["counts_only"] is ward_sized, (name, unit, args)
+                for args in _command_args(spec["script"], "app/board.py", "||"):
+                    a = board.parse_args(args)  # argparse: SystemExit on a bad flag
+                    assert a.real_ward is bool(ward), (name, unit, args)
+                    assert a.behind_proxy and a.port == 8080
+                    seen["real_ward"] += a.real_ward
+    assert seen["counts_only"] >= 6 and seen["real_ward"] == 1
+    # the committed ready/ copies (the cohort) carry the same flags
+    for ready in ("t7-fit", "t7-ward", "t7-forecast-unit", "t7-forecast-room12"):
+        script = (FUZZ / "ready" / f"{ready}.fz").read_text()
+        calls = _command_args(script, 'winnower import main; main()"')
+        assert calls, ready
+        for args in calls:
+            ctx = parse.make_context("icutwin-winnow", list(args))
+            assert ctx.params["counts_only"] is ("/store/train" not in args[0]), ready
+    twin = (FUZZ / "ready" / "t7-twin.fz").read_text().replace("\\\n", " ")
+    (board_args,) = _command_args(twin, "app/board.py", "||")
+    assert board.parse_args(board_args).real_ward is True

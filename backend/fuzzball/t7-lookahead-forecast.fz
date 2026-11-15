@@ -1,6 +1,8 @@
 version: v4
 # Run names: t7-lookahead-forecast-unit-<time> or t7-lookahead-forecast-roomN-<time>.
 # Dispatcher renders scope/room/hours, real-ward, CLIF directory, private IDs and names.
+# needs: ward-ids   (the dispatcher refuses to start this run when it was started without --ward-ids:
+#                    the publish job cannot run without the roster, and the GPU job would be wasted)
 # @SCOPE@ = unit|room, @ROOM@ = 0|1..25, @HOURS@ = replay hours, @WARD_FLAG@ = --real-ward.
 # @CUT@ = the replay cut, fixed by the dispatcher when it starts the run (last 07:00 + @HOURS@,
 # with its UTC offset). The jobs never read the clock: a run asked at 06:59 that reaches its last
