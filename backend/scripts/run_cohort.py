@@ -314,6 +314,7 @@ def _main(argv=None) -> None:
         help="keep <work>/tokenized_output from an earlier run of the same folder",
     )
     a = ap.parse_args(argv)
+    staffing = aggregate.staffing_rules(a)  # checked once, for both publications
     tables = ward_check.table_report(a.clif_dir)
     print(json.dumps({"tables": tables}))
     a.work.mkdir(parents=True, exist_ok=True)
@@ -421,6 +422,7 @@ def _main(argv=None) -> None:
             capacity=a.capacity,
             names=a.names,
             unit_name=a.unit_name,
+            staffing=staffing,
         )
         check_no_source_dates({"context.json": context}, list(room_of))
         demo_context.write_context(a.context_out, context)
@@ -481,7 +483,7 @@ def _main(argv=None) -> None:
         forecast_state=state,
         clif=clif,
         unit_name=a.unit_name,
-        staffing=aggregate.staffing_rules(a),
+        staffing=staffing,
     )
     forecast["made_at"] = now  # one run, one time in both files
     forecast["cut_after_arrival_hours"] = a.cut_after_arrival_hours
@@ -514,6 +516,8 @@ def main(argv=None):
         _main(argv)
     except SystemExit as exc:
         if isinstance(exc.code, int):
+            raise
+        if str(exc.code).startswith("staffing ratios"):  # a flag, no source data
             raise
         if "Re-run with --real-ward" in str(exc.code):
             raise SystemExit(

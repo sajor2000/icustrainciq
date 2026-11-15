@@ -491,8 +491,8 @@ def patient_table(
         "on": on,
         "stopped": stopped,
         "skipped": skipped,
-        "unknown": unknown,
         "vasoactives": [None if v is None else int(v) for v in agents],
+        "unknown": unknown,
     }
 
 
@@ -670,7 +670,12 @@ def staffing_blocks(
     plus patients who start CRRT; rt = ceil((ventilated now + IMV starts) /
     rt_ratio). Approximations: every bed stays filled (no one leaves or stops a
     support), and a second vasoactive started in the window is not forecast, so
-    only patients already at the vasoactive count now are 1:1 for that reason."""
+    only patients already at the vasoactive count now are 1:1 for that reason.
+
+    A support whose state at the cut is unknown (raw CLIF gave no answer) is never
+    counted as off: `unknown` gives the stays per support, and the counts that
+    depend on it are null now and unavailable for the next 24 h (CRRT: the nurse
+    counts, when CRRT decides the ratio; IMV: `vented` and `rt`)."""
     r = {**STAFFING, **(rules or {})}
     on = tab["on"]
     n = int(on["imv"].size)
@@ -690,24 +695,40 @@ def staffing_blocks(
     nurses = lambda k: k + _ceil_div(n - k, r["nurse_ratio"])  # noqa: E731
     rts = lambda v: _ceil_div(v, r["rt_ratio"])  # noqa: E731
     k = int(alone.sum())
+    unk = tab.get("unknown") or {}
+    unknown = {s: int(np.sum(unk[s])) if s in unk else 0 for s in ("crrt", "imv")}
+    # an unknown CRRT state matters only for a stay that is not 1:1 already
+    no_nurses = bool(
+        r["one_to_one_crrt"]
+        and "crrt" in unk
+        and (np.asarray(unk["crrt"]) & ~many).any()
+    )
+    no_rt = unknown["imv"] > 0
     now = {
-        "nurses": int(nurses(k)),
-        "one_to_one": k,
-        "one_to_two": n - k,
-        "rt": int(rts(vented)),
-        "vented": vented,
+        "nurses": None if no_nurses else int(nurses(k)),
+        "one_to_one": None if no_nurses else k,
+        "one_to_two": None if no_nurses else n - k,
+        "rt": None if no_rt else int(rts(vented)),
+        "vented": None if no_rt else vented,
         "vasoactives_known": known,
+        "unknown": unknown,
         "rules": r,
     }
 
-    def no_data(support: str) -> bool:
+    def no_data(support: str, relevant: np.ndarray) -> bool:
+        """a stay whose start would change the count has no score: no count, since
+        a missing score is never a 0 (stays that cannot change it do not matter)"""
         sk = tab["skipped"][SUPPORT_RESOURCE[support]]
-        return pending or bool(sk.any())  # incomplete coverage is no estimate
+        return pending or bool((sk & relevant).any())
 
     nxt = {"nurses": dict(NO_COUNTS), "rt": dict(NO_COUNTS)}
     # CRRT matters only when it could move someone to 1:1 (not everyone is already)
     crrt_matters = bool(r["one_to_one_crrt"]) and not alone.all()
-    if not pending and (not crrt_matters or not no_data("crrt")):
+    if (
+        not pending
+        and not no_nurses
+        and (not crrt_matters or not no_data("crrt", ~alone))
+    ):
         p = tab["p"]["crrt"] if r["one_to_one_crrt"] else np.zeros(n)
         starts = pmf_quantiles(pb_pmf(np.where(alone, 0.0, np.nan_to_num(p))))
         nxt["nurses"] = {
@@ -715,7 +736,7 @@ def staffing_blocks(
             **_through(starts, lambda s: nurses(k + s)),
             "one_to_one": _through(starts, lambda s: k + s),
         }
-    if not no_data("imv"):
+    if not no_rt and not no_data("imv", ~on["imv"]):
         starts = pmf_quantiles(pb_pmf(tab["p"]["ventilator"]))
         nxt["rt"] = {
             "available": True,
@@ -806,14 +827,17 @@ def machine_yardsticks(tab: dict, totals: dict, pending: bool = False) -> dict |
     flagged = beds not on that support whose chance of starting it is FLAG_AT or
     more; SHORT when flagged > free, AT LIMIT when flagged == free and > 0, else
     ON TRACK. None when no total is set; a support without a total is None. With no
-    forecast (pending, or the probe skipped) `flagged`, `words` and `level` are null:
-    in use and free stay real."""
+    forecast (pending, or a bed that could start it has no score) `flagged`, `words`
+    and `level` are null: in use and free stay real. When raw CLIF cannot say whether
+    a stay is on the support, `in_use` is null too, and so is `free` unless the team
+    entered a number free: an unknown state is never counted as off."""
     out = {}
     for s in capacity_mod.MACHINES:
         on = tab["on"][s]
-        in_use = int(on.sum())
+        unk = (tab.get("unknown") or {}).get(s)
+        in_use = None if unk is not None and np.any(unk) else int(on.sum())
         free = capacity_mod.free(s, totals, in_use)
-        if free is None:
+        if free is None and totals.get(capacity_mod.MACHINES[s]) is None:
             out[s] = None
             continue
         name = SUPPORT_RESOURCE[s]
@@ -828,7 +852,7 @@ def machine_yardsticks(tab: dict, totals: dict, pending: bool = False) -> dict |
             "words": None,
             "level": None,
         }
-        if not (pending or (sk.any() and (sk | on).all())):
+        if not (pending or free is None or sk.any()):  # a missing score is never 0
             flagged = int((~on & (np.nan_to_num(p, nan=0.0) >= entry["flag_at"])).sum())
             w, lv = capacity_mod.words(flagged, free)
             entry.update(

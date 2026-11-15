@@ -1114,3 +1114,48 @@ def test_combined_forecast_label_follows_its_own_availability():
     ls = aggregate.build_forecast(df, "m", clif=clif)["life_support"]
     answer = ev.tool_answer("get_life_support", {"life_support": ls})
     assert "New life-support forecast: unavailable." in answer
+
+
+def test_rendered_answer_carries_machine_totals_and_staffing():
+    """the merged chat: the answer the user reads is rendered from the tool result,
+    so the machine totals (PR 18) and the staffing counts must be in that text"""
+    cap = {
+        "life_support_patients": 12,
+        "vents_total": 8,
+        "vents_free": 3,
+        "crrt_total": 2,
+        "crrt_free": 0,
+        "nurses_on_shift": 14,
+        "rt_on_shift": None,
+        "machines": {
+            "imv": {"flagged": 2, "words": "ON TRACK", "short_by": 0},
+            "crrt": {"flagged": 1, "words": "SHORT", "short_by": 1},
+        },
+    }
+    got = ev.tool_answer("get_capacity", cap)
+    assert "Life-support capacity: 12." in got and "Ventilators free: 3 of 8." in got
+    assert "CRRT machines free: 0 of 2." in got and "Nurses on shift: 14." in got
+    assert (
+        "CRRT: 1 flagged, SHORT by 1." in got
+        and "Ventilators: 2 flagged, ON TRACK." in got
+    )
+    assert "Respiratory therapists on shift" not in got  # not entered: not listed
+    # nothing entered: the two base lines say so, nothing else is invented
+    bare = ev.tool_answer("get_capacity", {"note": "not set"})
+    assert bare == "Life-support capacity: not set. Ventilators free: not set."
+    staff = {
+        "now": {"nurses": 14, "one_to_one": 3, "one_to_two": 22, "rt": None},
+        "next_24h": {
+            "nurses": {"available": True, "p10": 14, "p50": 15, "p90": 16},
+            "rt": {"available": False, "p10": None, "p50": None, "p90": None},
+        },
+    }
+    got = ev.tool_answer("get_staffing", staff)
+    assert "Nurses needed now: 14 (3 at 1:1, 22 at 1:2)." in got
+    assert "Nurses needed in the next 24 hours: 15 (80% range 14 to 16)." in got
+    assert "Respiratory therapists needed now: unknown." in got
+    assert "Respiratory therapists needed in the next 24 hours: No estimate." in got
+    assert "unit's ratio rule" in got
+    assert ev.tool_answer("get_staffing", {"error": "pending run"}) == (
+        "Requested evidence is unavailable."
+    )

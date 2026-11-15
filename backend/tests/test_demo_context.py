@@ -763,6 +763,21 @@ def test_atomic_context_preserves_fictional_names_and_custom_unit(ward_files):
     )
 
 
+def test_context_publication_uses_the_staffing_flags(ward_files):
+    """CodeRabbit PR 20 (third review): --nurse-ratio reaches the published
+    context, and a bad ratio stops the run before anything is written"""
+    from app.demo_context import load_context
+
+    cohort_tokens(ward_files)
+    bad = run_cohort(ward_files, "--nurse-ratio", "0")
+    assert bad.returncode != 0 and "staffing ratios" in bad.stderr
+    assert not ward_files["out"].exists()
+    run = run_cohort(ward_files, "--nurse-ratio", "3", "--rt-ratio", "4")
+    assert run.returncode == 0, run.stderr
+    rules = load_context(ward_files["out"])["forecast"]["staffing_now"]["rules"]
+    assert (rules["nurse_ratio"], rules["rt_ratio"]) == (3, 4)
+
+
 @pytest.mark.parametrize("score_files", ["retain", "omit"])
 def test_publisher_verifies_scores_for_the_active_census(ward_files, score_files):
     """CodeRabbit PR #16: one roster stay has ended. Scores are verified for the 24
