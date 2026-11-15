@@ -346,7 +346,7 @@ def verified_scores(root, model, ids, demo_clock_hours=0):
                 f"Selected {artifact} do not match the current winnower cut/labels; "
                 "extract and score again"
             )
-    rep_based.check_features_current(root, model.name, ids)
+    rep_based.check_features_current(root, model.name, ids, model_home=model)
     vocab = yaml.safe_load((root / "vocab.yaml").read_text())["lookup"]
     words = {int(i): w for w, i in vocab.items()}
     icu = vocab.get("ADT//TRANSFER_IN//icu")

@@ -69,6 +69,9 @@ def ward_files(tmp_path):
     pl.DataFrame(
         {k: scalar[k] for k in ("hospitalization_id", "last_valid", "cut_s")}
     ).write_parquet(features)
+    features.with_suffix(".meta.json").write_text(  # extracted with these weights
+        json.dumps({"model": model.name, "weights_sha256": checksum})
+    )
     (root / "vocab.yaml").write_text(
         yaml.safe_dump(
             {
@@ -717,14 +720,30 @@ def test_run_cohort_no_extract_applies_saved_probe_manifest_to_existing_features
         "tokens": {t: {"file": None} for t in tasks},
     }
     (probes / "manifest.json").write_text(json.dumps(manifest))
-    run = run_cohort(
-        ward_files,
+    reuse = (
         "--model",
         str(ward_files["model"]),
         "--probes",
         str(probes),
         "--no-extract",
     )
+    # CodeRabbit PR #16: features that do not say which weights made them (a file
+    # from before the digest was recorded), or that name other weights, are not
+    # reused: the earlier snapshot stays and the run says to extract again
+    from icutwin.scoring import rep_based
+
+    before = ward_files["out"].read_text()
+    rep_based.features_meta_path(ward_files["features"]).unlink()
+    for digest in (None, "0" * 64):
+        if digest:
+            rep_based.features_meta_path(ward_files["features"]).write_text(
+                json.dumps({"model": manifest["model"], "weights_sha256": digest})
+            )
+        run = run_cohort(ward_files, *reuse)
+        assert run.returncode != 0
+        assert ward_files["out"].read_text() == before
+    rep_based.write_features_meta(ward_files["features"], ward_files["model"])
+    run = run_cohort(ward_files, *reuse)
     assert run.returncode == 0, run.stderr
     doc = load_context(ward_files["out"])
     assert doc["forecast_state"] == "ready"

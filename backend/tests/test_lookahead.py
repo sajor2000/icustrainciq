@@ -459,6 +459,7 @@ def test_rooms_apply_probes_for_one_room_keeps_the_ward_scores(tmp_path, monkeyp
     ).with_columns(cut_s=pl.lit(86500.0)).write_parquet(
         stage / f"features-held_out-{MODEL}.parquet"
     )
+    rep_based.write_features_meta(stage / f"features-held_out-{MODEL}.parquet", home)
     pl.DataFrame({"room": range(1, 6), "hospitalization_id": ids}).write_csv(
         tmp_path / "stage_ward.csv"
     )
@@ -1114,6 +1115,9 @@ def _ward_stage(tmp_path, train, ids, cut_s, last_valid=40):
         pl.col("hospitalization_id").is_in(ids)
     ).with_columns(cut_s=pl.lit(cut_s), last_valid=pl.lit(last_valid)).write_parquet(
         stage / f"features-held_out-{MODEL}.parquet"
+    )
+    rep_based.write_features_meta(  # as icutwin-extract does, for the model in use
+        stage / f"features-held_out-{MODEL}.parquet", tmp_path / MODEL
     )
     pl.DataFrame({"room": range(1, len(ids) + 1), "hospitalization_id": ids}).write_csv(
         tmp_path / "stage_ward.csv"

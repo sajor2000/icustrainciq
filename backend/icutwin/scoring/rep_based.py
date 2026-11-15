@@ -10,7 +10,6 @@ ACKNOWLEDGMENTS.md.
 
 import enum
 import fnmatch
-import hashlib
 import json
 import pathlib
 import re
@@ -27,6 +26,12 @@ import typer
 
 from icutwin.common import load_vocab, logger, merge_config
 from icutwin.scoring.metrics import summarize_preds
+from icutwin.scoring.provenance import (  # noqa: F401  (also used through this module)
+    features_digest,
+    features_meta_path,
+    weights_digest,
+    write_features_meta,
+)
 
 
 class EstimatorType(str, enum.Enum):
@@ -50,27 +55,6 @@ MANIFEST = "manifest.json"
 
 
 CUT_COLS = ("last_valid", "cut_s")  # a stay's cut, stored by the winnower and extractor
-
-
-def weights_digest(model_home) -> str | None:
-    """sha256 over the model's weight files (and config.json): ties probes, features
-    and scores to the weights, not to a folder name. None when no weights are found."""
-    home = pathlib.Path(model_home).expanduser()
-    files = sorted(home.glob("*.safetensors")) or sorted(
-        home.glob("pytorch_model*.bin")
-    )
-    if not files:
-        return None
-    h = hashlib.sha256()
-    for f in [
-        *files,
-        *([home / "config.json"] if (home / "config.json").is_file() else []),
-    ]:
-        h.update(f.name.encode())
-        with f.open("rb") as fh:
-            for chunk in iter(lambda: fh.read(1 << 20), b""):
-                h.update(chunk)
-    return h.hexdigest()
 
 
 def scores_meta_path(scores: pathlib.Path) -> pathlib.Path:
@@ -106,17 +90,49 @@ def verify_scores(scores: pathlib.Path, model_home) -> None:
 
 
 class StaleFeatures(ValueError):
-    """the features were extracted at another cut than the labels now have"""
+    """the features were extracted at another cut than the labels now have, or
+    with other weights than the model folder now holds"""
 
 
-def check_features_current(root, model_name: str, stay_ids=None) -> None:
-    """refuse features whose stored cut differs from the winnowed labels' cut.
+def check_features_weights(root, model_home) -> None:
+    """refuse features that were not extracted with the weights now in `model_home`.
+
+    The probe manifest ties the probes to the weights and the cut columns tie the
+    features to the labels; neither ties the features to the weights. When the weights
+    change after an extract (and the probes are refit), the old features would be
+    scored with the new probes. A features file with no recorded digest (made before
+    it was recorded) is refused too: extract again. A model folder without weights has
+    nothing to compare and is not checked (the scripts stop earlier in that case)."""
+    root = pathlib.Path(root)
+    digest = weights_digest(model_home)
+    if digest is None:
+        return
+    name = pathlib.Path(model_home).name
+    for s in SPLITS:
+        f = root / f"features-{s}-{name}.parquet"
+        if not (f.is_file() and (root / f"{s}_for_inference.parquet").is_file()):
+            continue
+        if features_digest(f) != digest:
+            raise StaleFeatures(
+                f"{f.name} was extracted with other weights than {name} now has "
+                "(or it records none): run icutwin-extract again"
+            )
+
+
+def check_features_current(
+    root, model_name: str, stay_ids=None, model_home=None
+) -> None:
+    """refuse features whose stored cut differs from the winnowed labels' cut, and,
+    when `model_home` is given, features extracted with other weights
+    (`check_features_weights`).
 
     icutwin-extract stores each row's cut (`last_valid`, and `cut_s` when the winnower
     wrote it); a demo-clock move or a new threshold changes the labels' cut, and a
     one-room re-extract leaves the other rows at the old cut. Only `stay_ids` are
     checked when given. Label files without a cut column (old) are not checked."""
     root = pathlib.Path(root)
+    if model_home is not None:
+        check_features_weights(root, model_home)
     bad = 0
     for s in SPLITS:
         f, lab = (
@@ -372,7 +388,7 @@ def apply_probes(
             f"probes were fit on other weights than {model_home} (checksum differs "
             "or none was recorded); refit them with icutwin-rep-score --save-probes"
         )
-    check_features_current(root, model_name, stay_ids)
+    check_features_current(root, model_name, stay_ids, model_home=model_home)
     parts = []
     for s in SPLITS:
         f, lab = (

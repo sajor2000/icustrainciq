@@ -28,6 +28,11 @@ from transformers import AutoModelForCausalLM
 
 from icutwin.common import logger, merge_config
 from icutwin.model.decoder import ExactPrefix, load_split, stay_offsets
+from icutwin.scoring.provenance import (
+    features_digest,
+    weights_digest,
+    write_features_meta,
+)
 
 SPLITS = ("train", "tuning", "held_out")
 
@@ -163,9 +168,14 @@ class Extractor:
                 .with_columns(features=pl.Series(list(feats)))
                 .join(stored, on="hospitalization_id", how="left")
             )
-            if stay_ids is not None:
+            # rows kept from an earlier extract must come from these same weights:
+            # a file made with other weights (or with none recorded) is replaced
+            if stay_ids is not None and features_digest(out) == weights_digest(
+                self.model_home
+            ):
                 new = merge_features(out, new, stay_ids)
             new.write_parquet(out)
+            write_features_meta(out, self.model_home)  # which weights made it
             logger.info(
                 f"{split}: {order.height:,} stays, {width}-token windows, "
                 f"median probe {cuts['cut'].median() if cuts.height else 0:.0f} "
