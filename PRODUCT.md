@@ -73,6 +73,10 @@ Removed from the board: hypotension and ICU readmission. A task already under wa
 
 **Updates**: "Update the unit" (header) and "Update this room" (room page) start a forecast for the unit or one room, for the role chosen (never a name), at most once every 20 minutes. The last forecast stays on screen and is marked "updating"; the numbers refresh in place; a refusal reads "Updated 12 minutes ago. You can update again at 13:17." The 07:00 morning run is the scheduled update. The chat can start an update only when asked ("update room 12", "update the unit"). In the demo the replay clock is advanced and labelled ("Demo clock: recorded patients, time advanced N h").
 
+## How this forecast was made
+
+A native model, trained from scratch on our own token vocabulary; one forward pass per patient, then small classifiers on its last-layer summary; how Fuzzball ran it and what is only written so far. Full account, with sources: [`README.md`](README.md#how-this-forecast-was-made). One page for judges: [`ONE_PAGER.md`](docs/ONE_PAGER.md). Accuracy and its limits: [`RESULTS.md`](docs/RESULTS.md).
+
 ## Product Principles
 
 1. Answer the shift question first: what will we be short of, when, and how sure are we.
