@@ -1,5 +1,22 @@
 # Compute plan: who gets which GPU and which cores
 
+Read this if you want the reasoning for which job gets which GPU and how many cores; it is a dated plan written 2026-11-14 before anything ran, so use [`RUNBOOK.md`](RUNBOOK.md) to run the app and [`../../docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) for the overview.
+
+**Status:** The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Statements below that nothing had run describe the time of writing.
+
+Superseded since this plan: its recommendations on `exclusive` were applied to the workflow files (only Nemotron sets it). Rows that name `t7-build`, `clif_work` or `tooling` describe the earlier layout. Current state:
+
+| Topic | Current state (code on `main`) |
+|---|---|
+| How to run | `scripts/launch.sh` first ([`RUNBOOK.md`](RUNBOOK.md)); the manual workflow steps are the fallback |
+| Volumes | `twin-store` is the one volume ICU Lookahead writes (code, packages, stage ward, forecast files). `mimic_clif` is only read, at `/data`. `hfcache` holds the Nemotron weights. `clif_work` and `tooling` are not used |
+| Probe | Fitted by job 4 in vaishvikc/ICU-Twin and staged at `/store/train/probe-final.joblib` with `probe-final.meta.json`. `t7-fit` is the fallback |
+| Names | Generated per room number by `app/fake_names.py` (`--names fake`). `name.parquet` is no longer read |
+| Code on the cluster | Published by `t7-code` from this repo's `backend/` at a pinned commit. Training (`job_2` to `job_4`) is in vaishvikc/ICU-Twin; there is no `t7-build` here |
+| Schedule and cut | One run at 07:00; each patient is cut 24 h after ICU arrival; five predictions on the board |
+
+## Scope of this plan
+
 Written 2026-11-14 from the Fuzzball 4.3 documentation and this repo. **Nothing here was tested on the cluster**: training was running, so no CLI or MCP call was made. Every Fuzzball fact carries a source tag (list at the end). "Not documented" means the 4.3 docs do not say; it is not a guess.
 
 Line numbers refer to the working tree on 2026-11-14. Other people were editing the `.fz` files that day, so find the job by name if a line has moved. All changes below are **recommendations**; this plan edits nothing.
@@ -122,7 +139,7 @@ The same picture with **today's** files:
 | Request | What happens | Rule |
 |---|---|---|
 | Second forecast from the board or chat | The dispatcher refuses it in plain words. It never reaches the scheduler queue. | Nothing to do. |
-| Second forecast started by hand | It queues. Its `extract` waits for the GPU (`INSUFFICIENT_RESOURCES`). Both runs write the same stage files in `clif_work/stage`. | Do not start forecasts by hand while `t7-twin` is up. |
+| Second forecast started by hand | It queues. Its `extract` waits for the GPU (`INSUFFICIENT_RESOURCES`). Both runs write the same stage files in `/store/stage` on `twin-store` (`clif_work/stage` when this was written). | Do not start forecasts by hand while `t7-twin` is up. |
 | `t7-ward` during a forecast | CPU only, so it would run at once and replace the tokens the forecast is reading. | Start `t7-ward` only when no forecast is active. |
 | Retrain (`t7-build`) | Needs both nodes at the same moment. Nemotron holds one with no time limit, so the start cannot be estimated and the job waits for good. Preemption is off. While it waits, the dispatcher refuses every update and the 07:00 run is missed after 10 minutes of retries. | No retrain while the demo is up. To retrain, stop `t7-twin` first. That takes the board down too. |
 | `t7-fit` (new model) | Needs one GPU. Same exclusive problem as the forecast `extract`. The dispatcher refuses updates while it is unfinished. | Run it in a quiet window, after the fix in section 4. |
@@ -223,7 +240,7 @@ Facts behind this:
 | A named volume does not exist | The workflow is rejected at submission. | [VOLS] |
 | NFS is down while services run | **Not documented.** Expect the board to fail reading `forecast.json` and every job to fail on its mounts. No degraded mode on the cluster; use the laptop mockup. | n/a |
 | `hfcache` missing | Nemotron cannot load. Run mode F. | `t7-twin.fz` |
-| `clif_work` or `tooling` missing | No forecast. The board keeps the last good files from `twin-store`. | `t7-forecast.fz` |
+| `clif_work` or `tooling` missing (superseded: neither volume is used; `twin-store` holds both roles) | No forecast. The board keeps the last good files from `twin-store`. | `t7-forecast.fz` |
 | First use of an image on a node | Slow first start while the image is fetched and converted. Warm both nodes at the rehearsal. | [VOLS] |
 
 ## 7. Checklist for the demo

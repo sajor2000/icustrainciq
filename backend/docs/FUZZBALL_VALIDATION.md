@@ -1,5 +1,22 @@
 # Fuzzball validation record
 
+Read this if you want the record of what `fuzzball workflow validate` said about each file, where the trained model was found, and the storage map; it is a dated record from 2026-11-14 afternoon, so use [`RUNBOOK.md`](RUNBOOK.md) to run the app and [`../../docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) for the overview.
+
+**Status:** The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Statements below that nothing had run describe the time of writing.
+
+Superseded since this record: the sentence "No workflow in this repo has run on the cluster" describes this session only; [`RUNBOOK.md`](RUNBOOK.md) is the team's later procedure for creating `twin-store` and launching the app, and its section 7 lists the errors met and their fixes. The runbook creates `twin-store` at 20 GB, not 50 GiB. The probe is job 4's file at `/store/train/probe-final.joblib`; `probes/` from `t7-fit` is the fallback. `name.parquet` is on the volume but no longer read. Current state:
+
+| Topic | Current state (code on `main`) |
+|---|---|
+| How to run | `scripts/launch.sh` first ([`RUNBOOK.md`](RUNBOOK.md)); the manual workflow steps are the fallback |
+| Volumes | `twin-store` is the one volume ICU Lookahead writes (code, packages, stage ward, forecast files). `mimic_clif` is only read, at `/data`. `hfcache` holds the Nemotron weights. `clif_work` and `tooling` are not used |
+| Probe | Fitted by job 4 in vaishvikc/ICU-Twin and staged at `/store/train/probe-final.joblib` with `probe-final.meta.json`. `t7-fit` is the fallback |
+| Names | Generated per room number by `app/fake_names.py` (`--names fake`). `name.parquet` is no longer read |
+| Code on the cluster | Published by `t7-code` from this repo's `backend/` at a pinned commit. Training (`job_2` to `job_4`) is in vaishvikc/ICU-Twin; there is no `t7-build` here |
+| Schedule and cut | One run at 07:00; each patient is cut 24 h after ICU arrival; five predictions on the board |
+
+## What this session did
+
 Date: 2026-11-14 (afternoon). Cluster context `hack` (cluster `fb-hack`, account `team7@fb-hack.local`, group `team7`). CLI `~/.local/bin/fuzzball`.
 
 Only read-only calls were made: `fuzzball workflow validate`, `workflow list`, `workflow describe`, `workflow log`, `volume list`. **Nothing was started, stopped, created or deleted. No workflow in this repo has run on the cluster.** `validate` checks syntax, images and that the named volumes exist; it runs no script.
@@ -22,10 +39,10 @@ The missing volume is the only error in every file. The scratch copies were made
 
 ## The one volume to create
 
-Not run by this session; for the team to run once:
+Not run by this session; for the team to run once (the command current today is in [`RUNBOOK.md`](RUNBOOK.md), section 1):
 
 ```
-fuzzball volume create team7 twin-store --size 50GiB --description "Lookahead: code, packages, probes, stage ward, forecast files"
+fuzzball volume create team7 twin-store --size 50GiB --description "ICU Lookahead: code, packages, probes, stage ward, forecast files"
 fuzzball volume list          # twin-store: PERSISTENT Yes, STATUS Enabled
 fuzzball workflow validate fuzzball/ready/t7-code.fz
 ```
@@ -34,7 +51,7 @@ fuzzball workflow validate fuzzball/ready/t7-code.fz
 
 ## Storage map
 
-`mimic_clif` belongs to training. Lookahead only reads it (Fuzzball 4.3 has no read-only mount, so this is a rule the scripts keep: a test checks that no script writes under `/data`). Everything Lookahead writes is on `twin-store`.
+`mimic_clif` belongs to training. ICU Lookahead only reads it (Fuzzball 4.3 has no read-only mount, so this is a rule the scripts keep: a test checks that no script writes under `/data`). Everything ICU Lookahead writes is on `twin-store`.
 
 | Mount | Volume | Kind | Read | Written |
 |---|---|---|---|---|

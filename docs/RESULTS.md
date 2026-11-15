@@ -1,8 +1,18 @@
 # Model results on held-out patients
 
-How well the patient model's five classifiers did on patients they never saw during training.
+Read this if you want the numbers behind the forecast: how the patient model's classifiers did on patients they never saw.
 
-**Setup.** The cut is 24 hours after ICU arrival. Each task asks whether the event happens in the next 24 hours. Training used cross-validation on the training patients; the held-out patients were kept apart until the end. Ranges are 95% bootstrap intervals from 10,000 samples. Data: MIMIC-IV in CLIF format, trained and run on the two local Lenovo PGX machines.
+| Setup | |
+|---|---|
+| Data | MIMIC-IV in CLIF format |
+| Hardware | trained and run on the two local Lenovo PGX machines |
+| Cut | 24 hours after ICU arrival |
+| Question per task | does the event happen in the next 24 hours? |
+| Fitting | cross-validation on the training patients |
+| Held-out patients | kept apart until the end |
+| Ranges | 95% bootstrap intervals from 10,000 samples |
+
+![Held-out AUROC by task, with 95% ranges](diagrams/results-auroc.png)
 
 ## Held-out results
 
@@ -28,7 +38,7 @@ How well the patient model's five classifiers did on patients they never saw dur
 
 Held-out AUROC is close to the cross-validated AUROC for every task.
 
-## How to read it
+## How to read the metrics
 
 - **AUROC:** the chance that the model ranks a random patient who had the event above one who did not. 0.5 is a coin toss; 1.0 is perfect.
 - **AUPRC:** a summary of precision across all thresholds, read against the event's own rate (prevalence); a model that guesses scores about the prevalence. It is not the precision at the board's flag line; that would need precision measured at that threshold.
@@ -40,6 +50,10 @@ Held-out AUROC is close to the cross-validated AUROC for every task.
 - The board's **Leaving the ICU** combines the two departure tasks: leaves to a ward plus leaves to step-down.
 - **Ventilator**, **vasopressor** and **CRRT** are the three life-support starts; **death** is shown as a plain row and a unit count, never as a bed colour.
 
-## What these numbers are not
+## Limits
 
-A retrospective check on one public research dataset. It is not a prospective test, not a test at another hospital, and not clearance as a medical device. The board is for unit planning; the care team makes clinical decisions.
+- A retrospective check on one public research dataset.
+- Not a prospective test, and not a test at another hospital.
+- Not clearance as a medical device.
+
+The board is for unit planning. The care team makes clinical decisions.
