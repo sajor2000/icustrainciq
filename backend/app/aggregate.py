@@ -48,8 +48,10 @@ import numpy as np
 import polars as pl
 
 try:  # imported as app.aggregate (tests) or run as a script (the job)
+    from app import capacity as capacity_mod
     from app import clif_now as clif_now_mod
 except ImportError:  # pragma: no cover
+    import capacity as capacity_mod
     import clif_now as clif_now_mod
 
 PRESSORS = [
@@ -482,11 +484,14 @@ def patient_table(
         # probes give it none, rep_based.apply_probes): that is "not a new event",
         # like a support that is running, and not missing data.
         skipped[name] = (none & ~excluded & ~flag) | uncertain
+    # vasoactive agents running at the cut: only raw CLIF can count them
+    agents = [(clif or {}).get(sid, {}).get("vasoactives") for sid in ids] or [None] * n
     return {
         "p": p,
         "on": on,
         "stopped": stopped,
         "skipped": skipped,
+        "vasoactives": [None if v is None else int(v) for v in agents],
         "unknown": unknown,
     }
 
@@ -596,6 +601,153 @@ def life_support_block(tab: dict) -> dict:
     }
 
 
+STAFFING = {  # the board's staffing rule (docs/CONTRACT.md "staffing")
+    "nurse_ratio": 2,  # patients per nurse, for everyone not 1:1
+    "one_to_one_crrt": True,  # a patient on CRRT has a nurse alone
+    "one_to_one_vasoactives": 2,  # ...and one on this many vasoactives (0 = off)
+    "rt_ratio": 6,  # ventilated patients per respiratory therapist
+}
+
+
+def add_staffing_args(ap: argparse.ArgumentParser) -> None:
+    ap.add_argument(
+        "--nurse-ratio",
+        type=int,
+        default=STAFFING["nurse_ratio"],
+        help="patients per nurse for those not 1:1 (default 2)",
+    )
+    ap.add_argument(
+        "--one-to-one-vasoactives",
+        type=int,
+        default=STAFFING["one_to_one_vasoactives"],
+        help="vasoactive infusions at which a patient is 1:1 (default 2; 0 = never)",
+    )
+    ap.add_argument(
+        "--no-one-to-one-crrt",
+        action="store_true",
+        help="a patient on CRRT is not 1:1 (default: 1:1)",
+    )
+    ap.add_argument(
+        "--rt-ratio",
+        type=int,
+        default=STAFFING["rt_ratio"],
+        help="ventilated patients per respiratory therapist (default 6)",
+    )
+
+
+def staffing_rules(a) -> dict:
+    """the rule set from parsed arguments (add_staffing_args)"""
+    if a.nurse_ratio < 1 or a.rt_ratio < 1 or a.one_to_one_vasoactives < 0:
+        raise SystemExit("staffing ratios must be whole numbers of 1 or more")
+    return {
+        "nurse_ratio": a.nurse_ratio,
+        "one_to_one_crrt": not a.no_one_to_one_crrt,
+        "one_to_one_vasoactives": a.one_to_one_vasoactives,
+        "rt_ratio": a.rt_ratio,
+    }
+
+
+def _ceil_div(n, d: int):
+    return -(-n // d)
+
+
+def _through(q: dict, f) -> dict:
+    """p10 / p50 / p90 of f(count) for a non-decreasing f: the quantiles map through"""
+    return {k: int(f(q[k])) for k in ("p10", "p50", "p90")}
+
+
+def staffing_blocks(
+    tab: dict, rules: dict | None = None, pending: bool = False
+) -> tuple[dict, dict]:
+    """(staffing_now, staffing_next_24h) for forecast.json.
+
+    Now: a patient is 1:1 when on CRRT or on `one_to_one_vasoactives` or more
+    vasoactive infusions at the cut (the count comes from raw CLIF; without it no
+    patient is 1:1 for vasoactives and `vasoactives_known` is false). nurses =
+    1:1 patients + ceil(the others / nurse_ratio); rt = ceil(ventilated / rt_ratio).
+
+    Next 24 h (exact Poisson-binomial, like the unit counts): 1:1 = those 1:1 now
+    plus patients who start CRRT; rt = ceil((ventilated now + IMV starts) /
+    rt_ratio). Approximations: every bed stays filled (no one leaves or stops a
+    support), and a second vasoactive started in the window is not forecast, so
+    only patients already at the vasoactive count now are 1:1 for that reason.
+
+    A support whose state at the cut is unknown (raw CLIF gave no answer) is never
+    counted as off: `unknown` gives the stays per support, and the counts that
+    depend on it are null now and unavailable for the next 24 h (CRRT: the nurse
+    counts, when CRRT decides the ratio; IMV: `vented` and `rt`)."""
+    r = {**STAFFING, **(rules or {})}
+    on = tab["on"]
+    n = int(on["imv"].size)
+    agents = tab.get("vasoactives") or [None] * n
+    known = n > 0 and all(v is not None for v in agents)
+    many = np.array(
+        [
+            bool(r["one_to_one_vasoactives"])
+            and v is not None
+            and v >= r["one_to_one_vasoactives"]
+            for v in agents
+        ],
+        bool,
+    )
+    alone = many | (on["crrt"] if r["one_to_one_crrt"] else np.zeros(n, bool))
+    vented = int(on["imv"].sum())
+    nurses = lambda k: k + _ceil_div(n - k, r["nurse_ratio"])  # noqa: E731
+    rts = lambda v: _ceil_div(v, r["rt_ratio"])  # noqa: E731
+    k = int(alone.sum())
+    unk = tab.get("unknown") or {}
+    unknown = {s: int(np.sum(unk[s])) if s in unk else 0 for s in ("crrt", "imv")}
+    # an unknown CRRT state matters only for a stay that is not 1:1 already
+    no_nurses = bool(
+        r["one_to_one_crrt"]
+        and "crrt" in unk
+        and (np.asarray(unk["crrt"]) & ~many).any()
+    )
+    no_rt = unknown["imv"] > 0
+    now = {
+        "nurses": None if no_nurses else int(nurses(k)),
+        "one_to_one": None if no_nurses else k,
+        "one_to_two": None if no_nurses else n - k,
+        "rt": None if no_rt else int(rts(vented)),
+        "vented": None if no_rt else vented,
+        "vasoactives_known": known,
+        "unknown": unknown,
+        "rules": r,
+    }
+
+    def no_data(support: str, relevant: np.ndarray) -> bool:
+        """a stay whose start would change the count has no score: no count, since
+        a missing score is never a 0 (stays that cannot change it do not matter)"""
+        sk = tab["skipped"][SUPPORT_RESOURCE[support]]
+        return pending or bool((sk & relevant).any())
+
+    nxt = {"nurses": dict(NO_COUNTS), "rt": dict(NO_COUNTS)}
+    # CRRT matters only when it could move someone to 1:1 (not everyone is already)
+    crrt_matters = bool(r["one_to_one_crrt"]) and not alone.all()
+    if (
+        not pending
+        and not no_nurses
+        and (not crrt_matters or not no_data("crrt", ~alone))
+    ):
+        p = tab["p"]["crrt"] if r["one_to_one_crrt"] else np.zeros(n)
+        starts = pmf_quantiles(pb_pmf(np.where(alone, 0.0, np.nan_to_num(p))))
+        nxt["nurses"] = {
+            "available": True,
+            **_through(starts, lambda s: nurses(k + s)),
+            "one_to_one": _through(starts, lambda s: k + s),
+        }
+    if not no_rt and not no_data("imv", ~on["imv"]):
+        starts = pmf_quantiles(pb_pmf(tab["p"]["ventilator"]))
+        nxt["rt"] = {
+            "available": True,
+            **_through(starts, lambda s: rts(vented + s)),
+            "vented": _through(starts, lambda s: vented + s),
+        }
+    for v in nxt.values():
+        v.pop("expected", None)
+    return now, nxt
+
+
 CAPACITY_MAX = 50  # life-support patients a 25-bed unit could plausibly hold
 
 
@@ -609,31 +761,105 @@ def _count_like(v, lo: float = 0, hi: float = CAPACITY_MAX) -> bool:
     )
 
 
-def read_capacity(path: pathlib.Path | None) -> dict | None:
-    """the charge nurse's capacity file {life_support_patients, vents_free, set_at,
-    set_by_role}; None when absent or unusable (the typical yardstick then applies).
-    life_support_patients must be a number 0..50 (not a bool or a string); anything
-    else prints one "unreadable" line and falls back to the typical yardstick."""
+def _capacity_raw(path: pathlib.Path | None):
+    """the capacity file as parsed JSON; None when absent or not JSON"""
     if not path or not pathlib.Path(path).is_file():
         return None
     try:
-        raw = json.loads(pathlib.Path(path).read_text())
-        cap = raw["life_support_patients"]
-        ok = _count_like(cap)
-    except (ValueError, KeyError, TypeError, OSError):
-        ok = False
-    if not ok:
-        print("capacity file unreadable: using the typical yardstick")
+        return json.loads(pathlib.Path(path).read_text())
+    except (ValueError, OSError):
+        return None
+
+
+def read_capacity(path: pathlib.Path | None) -> dict | None:
+    """the charge nurse's capacity file {life_support_patients, vents_free,
+    vents_total, crrt_total, set_at, set_by_role}; None when absent or without a
+    usable staffing number (the typical yardstick then applies).
+    life_support_patients must be a number 0..50 (not a bool or a string); anything
+    else prints one "unreadable" line and falls back to the typical yardstick,
+    unless the file only carries machine totals (`read_machine_totals`)."""
+    if not path or not pathlib.Path(path).is_file():
+        return None
+    return _capacity_of(_capacity_raw(path))
+
+
+def _capacity_of(raw) -> dict | None:
+    """`read_capacity` on an already parsed capacity file"""
+    tot = capacity_mod.totals(raw)
+    cap = raw.get("life_support_patients") if isinstance(raw, dict) else None
+    if not _count_like(cap):
+        machines_only = cap is None and (
+            tot["vents_total"] is not None
+            or tot["crrt_total"] is not None
+            or isinstance(raw, dict)
+            and (
+                capacity_mod.whole(raw.get("nurses_on_shift")) is not None
+                or capacity_mod.whole(raw.get("rt_on_shift")) is not None
+            )
+        )
+        if not machines_only:
+            print("capacity file unreadable: using the typical yardstick")
         return None
     vents = raw.get("vents_free")
     return {
         "life_support_patients": int(cap) if cap == int(cap) else cap,
-        "vents_free": vents if _count_like(vents, 0, 1e6) else None,
+        "vents_free": vents
+        if _count_like(vents, 0, 1e6) and tot["vents_total"] is None
+        else None,  # a total wins: free is derived from it
+        "vents_total": tot["vents_total"],
+        "crrt_total": tot["crrt_total"],
         "set_at": raw.get("set_at") if isinstance(raw.get("set_at"), str) else None,
         "set_by_role": raw.get("set_by_role")
         if isinstance(raw.get("set_by_role"), str)
         else None,
     }
+
+
+def read_machine_totals(path: pathlib.Path | None) -> dict:
+    """{"vents_total", "crrt_total", "vents_free"} from the capacity file: whole
+    numbers 0..50 or None (an absent, broken or older file reads as not set)"""
+    return capacity_mod.totals(_capacity_raw(path))
+
+
+def machine_yardsticks(tab: dict, totals: dict, pending: bool = False) -> dict | None:
+    """ventilators and CRRT machines against the unit's totals, as the page's cards:
+    free = total - in use at the cut (an entered ventilators-free number wins);
+    flagged = beds not on that support whose chance of starting it is FLAG_AT or
+    more; SHORT when flagged > free, AT LIMIT when flagged == free and > 0, else
+    ON TRACK. None when no total is set; a support without a total is None. With no
+    forecast (pending, or a bed that could start it has no score) `flagged`, `words`
+    and `level` are null: in use and free stay real. When raw CLIF cannot say whether
+    a stay is on the support, `in_use` is null too, and so is `free` unless the team
+    entered a number free: an unknown state is never counted as off."""
+    out = {}
+    for s in capacity_mod.MACHINES:
+        on = tab["on"][s]
+        unk = (tab.get("unknown") or {}).get(s)
+        in_use = None if unk is not None and np.any(unk) else int(on.sum())
+        free = capacity_mod.free(s, totals, in_use)
+        if free is None and totals.get(capacity_mod.MACHINES[s]) is None:
+            out[s] = None
+            continue
+        name = SUPPORT_RESOURCE[s]
+        p, sk = tab["p"][name], tab["skipped"][name]
+        entry = {
+            "total": totals.get(capacity_mod.MACHINES[s]),
+            "in_use": in_use,
+            "free": free,
+            "flag_at": capacity_mod.FLAG_AT,
+            "flagged": None,
+            "short_by": None,
+            "words": None,
+            "level": None,
+        }
+        if not (pending or free is None or sk.any()):  # a missing score is never 0
+            flagged = int((~on & (np.nan_to_num(p, nan=0.0) >= entry["flag_at"])).sum())
+            w, lv = capacity_mod.words(flagged, free)
+            entry.update(
+                flagged=flagged, short_by=max(0, flagged - free), words=w, level=lv
+            )
+        out[s] = entry
+    return out if any(v is not None for v in out.values()) else None
 
 
 def typical_life_support_rate(labels: pl.DataFrame) -> float | None:
@@ -845,6 +1071,7 @@ def build_forecast(
     forecast_state: str = READY,
     clif: dict | None = None,
     unit_name: str = UNIT_NAME,
+    staffing: dict | None = None,
 ) -> dict:
     """forecast.json (docs/CONTRACT.md) from a probe-score table; unit scope.
     clif_now: raw CLIF folder; what is on at the cut then comes from it (`clif`: the
@@ -878,6 +1105,14 @@ def build_forecast(
         print("no train_for_inference.parquet: typical yardstick left out")
     ls = life_support_block(tab)
     pending = forecast_state == PENDING
+    cap_raw = _capacity_raw(capacity)  # one read: totals and cap never disagree
+    totals = capacity_mod.totals(cap_raw)
+    staff_now, staff_next = staffing_blocks(tab, staffing, pending)
+    cap = None
+    if cap_raw is not None or (capacity and pathlib.Path(capacity).is_file()):
+        cap = _capacity_of(cap_raw)  # a broken file still says "unreadable"
+    if cap and cap["vents_free"] is None:  # derived from the ventilator total
+        cap["vents_free"] = capacity_mod.free("imv", totals, ls["now_by"]["imv"])
     partial = not ls["expected_new_patients"].get("available", True)
     if pending:  # no model: nothing is expected, nothing is 0
         resources = {
@@ -908,9 +1143,12 @@ def build_forecast(
         else yardstick(
             ls,
             unit.height,
-            read_capacity(capacity),
+            cap,
             typical_life_support_rate(labels) if labels is not None else None,
         ),
+        "machines": machine_yardsticks(tab, totals, pending),
+        "staffing_now": staff_now,
+        "staffing_next_24h": staff_next,
         "check_first": []
         if pending
         else check_first(unit, tab, read_room_map(stage_csv)),
@@ -971,6 +1209,7 @@ def main_rep(a) -> None:
         ward=ward,
         clif_now=a.clif_now,
         unit_name=a.unit_name,
+        staffing=staffing_rules(a),
     )
     write_json(a.out, forecast)
     ls = forecast["life_support"]  # counts only
@@ -1006,7 +1245,8 @@ def main() -> None:
     ap.add_argument(
         "--capacity",
         type=pathlib.Path,
-        help="capacity JSON {life_support_patients, vents_free, set_at, set_by_role}; "
+        help="capacity JSON {life_support_patients, vents_free, vents_total, "
+        "crrt_total, set_at, set_by_role}; "
         "when it exists the yardstick is ON TRACK / TIGHT / SHORT against it",
     )
     ap.add_argument(
@@ -1060,6 +1300,7 @@ def main() -> None:
         default="rep",
         help="rep: probe probabilities (the board's method); mc: sampled futures",
     )
+    add_staffing_args(ap)
     a = ap.parse_args()
     if a.score == "rep":
         return main_rep(a)

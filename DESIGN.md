@@ -315,7 +315,7 @@ A cool grey ground, white cards, near-black ink and one blue; amber, red and gre
 
 ### Neutral
 - **Board Grey** (`board`): the page ground, the sticky tab bar, and the text colour on ink-filled controls.
-- **Board Grey 2** (`board-2`): the segmented switch trough, control hover, the Not improving tile ground, the asker's chat bubble, the unlevelled level chip.
+- **Board Grey 2** (`board-2`): the segmented switch trough, control hover, the Still on support tile ground, the asker's chat bubble, the unlevelled level chip.
 - **Card White** (`surface`): cards, tiles, controls, the bead on the range bar.
 - **Ink** (`ink`): text, everything that is running now, selected controls, the free-capacity line.
 - **Ink 2** (`ink-2`): secondary text, labels, ranges, the Steady word.
@@ -344,7 +344,7 @@ Night values carry the same names with a `night-` prefix. On the night board blu
 ### Hierarchy
 - **Lead numeral** (800, 2.75rem, 1.05): the two counts on the Life support lead card.
 - **Room heading** (700, 2.5rem, 1.05, -0.02em): the room number on the room page; 2rem on phone.
-- **Numeral** (800, 2rem, 1.05): counts on support cards, room numbers in the Worry first rail and on wall screens.
+- **Numeral** (800, 2rem, 1.05): counts on support cards, room numbers on wall screens.
 - **Room number** (800, 1.75rem, 1): the room number on a bed tile; 1.5rem on phone.
 - **Headline** (700, 1.375rem, 1.15): the unit name in the header.
 - **Title** (700, 1.125rem, 1.2): section and card headings, the counts in the strain summary pill.
@@ -365,7 +365,7 @@ All sizes are rem. From 1800px the root is 120%, so every size and space on a wa
 
 One centred column, max 92rem, with a 1.5rem gutter (1rem on phone). The header is a single wrapping row: unit name and run line, then the strain summary pill, Night board, role, Update the unit, Ask. Below it the tab bar is sticky at the top with the one-line key at its right.
 
-- **Bed board:** the Worry first rail, then All rooms. The room grid is five across, four below 1200px, three at 960px and below, two at 560px and below, with a .75rem gap (.5rem on phone, .625rem on wall screens). With the chat docked the grid becomes auto-fill at a 12.5rem minimum.
+- **Bed board:** the priority rail, then All rooms. The room grid is five across, four below 1200px, three at 960px and below, two at 560px and below, with a .75rem gap (.5rem on phone, .625rem on wall screens). With the chat docked the grid becomes auto-fill at a 12.5rem minimum.
 - **Unit strain:** the Life support lead card (two columns, one at 960px and below), then support cards in an auto-fill grid at an 18.5rem minimum with a 1rem gap. The card for the reader's role is ordered first.
 - **Room page:** two cards, 1.2fr and 1fr, stacking at 960px and below.
 - **Chat:** a launcher fixed 1.5rem from the bottom right (a 3.25rem circle); the page keeps 6.5rem of bottom padding so it never rests on content at the end of the page. The panel is 25rem by 37.5rem (at most 80vh) in the same corner; at 560px and below it is a bottom sheet at 85% of the height.
@@ -388,7 +388,7 @@ Nearly flat. Depth is one soft two-layer shadow under white cards on a grey grou
 
 Soft rounded rectangles on a stepped scale: cards 1rem, tiles and chat bubbles .75rem, the tab trough .8125rem around .625rem tabs, controls .625rem, status chips .3125rem, legend swatches .25rem. Pills (999px) are for the strain summary, the ward tag and suggested questions. Circles are for the ten-dot arrays and the bead on the range bar.
 
-Borders carry meaning. A 1px hairline is the default. A 2px green border is Leaving, a 3px ink border is Not improving, a 2px amber or red border is a card whose status is not ON TRACK or USUAL. A 1.5px dashed border is the "updating" tag. Thicker borders reduce padding by the same amount so tiles stay aligned.
+Borders carry meaning. A 1px hairline is the default. A 2px green border is Leaving, a 3px ink border is Still on support, a 2px amber or red border is a card whose status is not ON TRACK or USUAL. A 1.5px dashed border is the "updating" tag. Thicker borders reduce padding by the same amount so tiles stay aligned.
 
 ## Components
 
@@ -403,14 +403,18 @@ A button, min-height 5.75rem, radius .75rem, with the card shadow. Top row: room
 
 - **Worsening:** full blue fill (`level-high`), text in `on-level-high`, solid triangle.
 - **Watch:** light blue fill (`level-medium`), outline triangle.
-- **Not improving:** board-2 ground, 3px ink border, two horizontal bars.
+- **Still on support:** board-2 ground, 3px ink border, two horizontal bars.
 - **Leaving:** white, 2px green border, the bed-with-arrow icon and the word in green.
 - **Steady:** white, a small dot, the word in ink-2 at 600.
 
-**Now -> Next 24 h strip.** Two captioned columns joined by an arrow (see Strip captions). NOW: solid icons for the life support running at 07:00, or "no support". NEXT 24 H: an outline icon and its percentage for each new support at 20% or more; a plus in a ring with the combined chance when no single support reaches 20%; the bed with an arrow and its percentage when leaving is 60% or more, and from 20% for a bed on life support; "leaving <20%" on a Not improving bed; "nothing new" otherwise.
+**Now -> Next 24 h strip.** Two captioned columns joined by an arrow (see Strip captions). NOW: solid icons for the life support running at 07:00, or "no support". NEXT 24 H: an outline icon and its percentage for each new support at 20% or more; a plus in a ring with the combined chance when no single support reaches 20%; the bed with an arrow and its percentage when leaving is 60% or more, and from 20% for a bed on life support; "leaving <20%" on a Still on support bed; "nothing new" otherwise.
 
-### Worry first rail
-Not a card. A Title heading and two groups set straight on the ground, closed by a hairline: Worsening, then Not improving, each with its shape, word and count. The tiles are the same bed tiles, slightly taller (6.25rem) with a 2rem room number, in an auto-fill grid at a 12rem minimum. When no room qualifies, one ink-2 line says so.
+> **Bed status removed (2026-11-14).** The Bed board no longer has Worsening / Watch / Still on support / Leaving statuses, status colours on tiles, or the "Bed colours" settings. An event (a new ventilator, vasopressor or CRRT, death, discharge) shows on a bed's card as a circle icon with its chance when it is at or above that event's threshold in Settings. When a new life support or death is at its threshold, the person icon on the bed's tile turns red and pulses (the circle icons keep their own colours and do not pulse); discharge alone does not. The plus-in-a-ring combined chance is gone from the board. Where the text below still describes statuses or tile colours, this note wins.
+
+> **What the page draws (D25, J.C. 2026-11-15).** The board page is Dema's final design (ICU-Twin `55df710`) with bug fixes only: no bed statuses, no Worry first rail, no Staffing card, no 1:1 tag, no role picker. A bed tile is a person icon, the bed number, the name, life support now and the events at their Settings thresholds as circle icons with a chance; the person icon turns red and pulses when a new life support or death is at its threshold. Unit strain is an alert line (what is short, the three highest-risk beds) and one event card per event. Settings (the gear) holds the board appearance, the thresholds and the capacity form; a bed opens a pop-up with five predictions, 12 hours of vitals and the last events. Staffing and capacity maths live in the backend and the form. Sections below that describe statuses, the rail or the Staffing card record the earlier design.
+
+### Priority rail
+Removed (2026-11-14). There is no row above All rooms. Each bed tile carries Dema's person figure from Unit strain left of the bed number, as one flat tint (no level fill). In Next 24 h the figure turns red and pulses (beat and halo, 1.2s; still under reduced motion) when a new life support or death is at its threshold in Settings; the circle icons keep their own colours. In Now the figure is solid ink on a bed on life support, and a bed on two or more supports (Critical, named in the key) has a red border.
 
 ### Status chip
 Dema's status chip. Capitals at Label 800 with 0.05em tracking, radius .3125rem, 1.5px border. ON TRACK and USUAL: surface with a green border and green word. TIGHT and BUSY: amber-bg fill, amber-edge border, amber word. SHORT and VERY BUSY: red fill, on-red word. Not ready: line border, ink-2 word at 600, no tracking. The word is always shown.
@@ -438,7 +442,7 @@ One inline SVG sprite, drawn for this board on a 24 grid: `currentColor`, 1.75 s
 - **Vasopressor:** a syringe with a drop.
 - **CRRT:** a capped haemofilter with blood lines and arrows.
 - **Leaving:** a bed with an outward arrow.
-- **Trajectory shapes:** solid triangle (Worsening), outline triangle (Watch), two bars (Not improving), dot (Steady).
+- **Trajectory shapes:** solid triangle (Worsening), outline triangle (Watch), two bars (Still on support), dot (Steady).
 - **Marks:** plus in a ring (combined chance), ring (no support now), dash (nothing new).
 - **Interface:** arrow, chevron, moon, chat, bed grid and strain bars, on the same grid and stroke. The person figure is Dema's.
 
@@ -446,7 +450,7 @@ One inline SVG sprite, drawn for this board on a 24 grid: `currentColor`, 1.75 s
 A 3px outline in `focus` with a 2px offset and a .5rem radius on every focusable element. On the person figure the ring is drawn around the silhouette with a 3px offset.
 
 ### Motion
-State changes only: a .2s ease-out on the board colour swap, a .15s ease-out 1px lift on tile and figure hover, a .15s chevron turn. Nothing pulses or loops. Reduced motion removes all of it.
+State changes: a .2s ease-out on the board colour swap, a .15s ease-out 1px lift on tile and figure hover, a .15s chevron turn, and the board sliding in from the side it was swiped from. One loop, Dema's: the person figure pulses (a 1.2s beat with a red halo; on Unit strain also an expanding ring) on a bed whose new life support or death is at its threshold and on the three highest-risk beds. Reduced motion removes all of it.
 
 ### Product title and unit chip
 The H1 is the product, "ICU Lookahead", with the descriptor "ICU forecast · next 24 hours" beside it at 1rem / 600 in secondary ink. The unit ("Medical ICU · 25 beds") is a pill chip in the sub-line next to the data-source tag and is read from the forecast, never written into the page.
@@ -455,7 +459,7 @@ The H1 is the product, "ICU Lookahead", with the descriptor "ICU forecast · nex
 "Flag beds at" in secondary ink, then a three-part segmented control (50%, 25%, 10%; surface ground, line border, radius .625rem, 2.75rem tall; the chosen part is blue with its on-colour) and an outlined "Thresholds" button. The popover under it (surface, line border, radius 1rem, floating shadow, 24rem wide) has one row per line: icon and name, a 2.75rem − and + stepper, the value at 800, and the beds it catches; then a custom field for all supports and Reset. Hidden in Now. Credit: Dema (deetherese).
 
 ### Person figure, highest risk and leavers (Dema's)
-A figure at the next step above its line takes a red fill, a red-tinted base and a soft radial red halo behind it; the halo is static (no pulse, no ring animation), and its percentage is red at 800. Leavers fill in secondary ink (grey), not green. A leaver on life support carries 1.125rem round device badges at its top right. This is the one place red marks a bed; tiles never use it.
+A figure at the next step above its line takes a red fill, a red-tinted base and a soft radial red halo behind it; on the three highest-risk beds the figure beats and the halo and a red ring pulse (1.2s), and its percentage is red at 800. Leavers fill in secondary ink (grey), not green. A leaver on life support carries 1.125rem round device badges at its top right. On the Bed board the same red marks a tile's person icon when a new life support or death is at its threshold.
 
 ### Capacity bar and labels (Dema's)
 When a machine total is set the card's bar is the whole total (in use + free): a solid run for in use now, a lighter run to in use plus flagged beds, an ink tick at each with its number, "N total" at the right end. It is blue while it fits and red when it passes the total. Labels appear only when they matter: SHORT (solid red chip, 2px red card border), AT LIMIT (amber chip, amber border). The same alert is repeated once in the header strain line. Cards grow with the beds they hold so the row stays even.
@@ -470,13 +474,19 @@ A pill-shaped two-state switch beside the tabs and on the room page, visually li
 Room, sex and age, and 1.75rem solid icons with their names. Weight is the number of supports running: none is a white tile that reads "No life support"; one sits on the tinted ground (`board-2`); two or more adds the 3px ink border and reads "2 supports". No blue appears in Now.
 
 ### Strip captions
-In Next 24 h every tile and the room page carry two captioned columns joined by the arrow: **NOW** over the solid icons (or "no support") and **NEXT 24 H** over the forecast items (or "nothing new", or "leaving <20%" on a Not improving bed). Captions are Label size, 700, capitals, in the tile's secondary ink. On a phone the two columns become two labelled rows and the arrow is dropped. In the Worry first rail and on the room page each forecast item also shows its name ("Vasopressor 43%").
+In Next 24 h every tile and the room page carry two captioned columns joined by the arrow: **NOW** over the solid icons (or "no support") and **NEXT 24 H** over the forecast items (or "nothing new", or "leaving <20%" on a Still on support bed). Captions are Label size, 700, capitals, in the tile's secondary ink. On a phone the two columns become two labelled rows and the arrow is dropped. On the room page each forecast item also shows its name ("Vasopressor 43%").
 
 ### Chat widget
 A launcher (a 3.25rem ink circle with the chat icon in board colour, floating shadow, accessible name "Ask ICU Lookahead") and a non-modal panel (surface, line border, radius 1rem, the same floating shadow, no scrim). Header: "Ask ICU Lookahead", a context pill button ("Unit" or "Room 12", `board-2` fill), and minimise and close as 2.75rem icon buttons. Suggested questions are stacked pills shown only while the conversation is empty. The team's messages sit right on `board-2`; answers sit left with a rule border, numbers at 800 and room numbers as blue underlined links. "Thinking…" carries an outlined Stop button. The input is a textarea that grows to four lines beside a 2.75rem send button that is `board-2` when disabled and ink when it can send. A blue dot on the launcher means the forecast changed since the chat was last open. On a phone the sheet has a short handle bar at its top edge.
 
 ### Figure legend (tooltip)
 One element for the whole page: ink fill, board text, .8125rem / 600, radius .5rem, at most 19rem wide, floating shadow, `pointer-events: none`. It appears 150ms after hover, at once on keyboard focus, and on touch by tap or long-press; it leaves at once. It sits above its target, or below when there is no room, and is clamped to the viewport. Text only, two short lines at most, the same wording as the key and "How this forecast was made" (one `DEF` map in the page builds all three). It adds to the visible labels and never replaces them.
+
+### Staffing card and the 1:1 tag
+Not on the page (D25): staffing stays in the backend and the chat. The earlier design, kept for reference: The Staffing card leads the Unit strain row: the nurse icon, "Staffing", the ratio rule as its subtitle, then two blocks side by side (Nurses, Respiratory therapists), each a small heading with its drawn icon, the number needed now in ink, the next 24 h number in blue with its range, the number on shift when entered, and one split line ("1:1 × 3 · 1:2 × 22"). SHORT and AT LIMIT use the same chips as capacity. On a bed, 1:1 is a quiet outlined tag (Label size, 700, radius .3125rem, the tile's own ink) in the top row; a 1:2 bed carries nothing. The nurse (cap with a cross) and respiratory therapist (figure with lungs) icons belong to the same family: 24 grid, 1.75 stroke.
+
+### Stale forecast
+A forecast a day old or more turns the run line into an amber chip ("Forecast from yesterday 07:00 · update the unit") and adds an amber "From yesterday" chip to the header strain line. Amber here means "not today's", the one use outside TIGHT / BUSY / AT LIMIT.
 
 ### Forecast not ready
 When the forecast is not ready (`pending-model`) the board is all ink: Now content only, no blue, no statuses. One sentence, "Forecast not ready yet: the model is still being prepared.", leads the sub-heading in bold; the flag control drops to 55% opacity and is disabled. No placeholder numbers are drawn.

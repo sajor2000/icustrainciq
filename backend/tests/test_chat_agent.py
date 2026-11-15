@@ -587,6 +587,94 @@ def test_life_support_and_capacity_tools(env, tmp_path):
     f, a = env([tc("get_capacity"), text("ok")])
     a.ask("capacity?", "bed manager")
     assert '"vents_free":3' in tool_msgs(f)[0]["content"]
+    # machine totals: free = total - on now, and the forecast's words come along
+    fc = json.loads((tmp_path / "forecast.json").read_text())
+    fc["life_support"]["now_by"] = {"imv": 5, "vasopressor": 1, "crrt": 2}
+    fc["machines"] = {
+        "imv": {"flagged": 4, "words": "SHORT", "short_by": 1},
+        "crrt": None,
+    }
+    (tmp_path / "forecast.json").write_text(json.dumps(fc))
+    (tmp_path / "capacity.json").write_text(
+        json.dumps({"vents_total": 8, "crrt_total": 2})
+    )
+    f, a = env([tc("get_capacity"), text("ok")])
+    a.ask("are we short of ventilators?", "respiratory therapy")
+    got = tool_msgs(f)[0]["content"]
+    assert '"vents_total":8' in got and '"vents_free":3' in got
+    assert '"crrt_total":2' in got and '"crrt_free":0' in got and "SHORT" in got
+
+
+def test_get_capacity_status_follows_the_current_totals(env, tmp_path):
+    fc = json.loads((tmp_path / "forecast.json").read_text())
+    fc["life_support"]["now_by"] = {"imv": 2, "vasopressor": 1, "crrt": 0}
+    # the saved forecast was made against 2 free ventilators: 3 flagged, so SHORT
+    fc["machines"] = {
+        "imv": {
+            "total": 4,
+            "in_use": 2,
+            "free": 2,
+            "flagged": 3,
+            "short_by": 1,
+            "words": "SHORT",
+            "level": "red",
+        },
+        "crrt": None,
+    }
+    (tmp_path / "forecast.json").write_text(json.dumps(fc))
+    # the team then set 8 ventilators: 6 free, so the same 3 flagged are ON TRACK
+    (tmp_path / "capacity.json").write_text(json.dumps({"vents_total": 8}))
+    f, a = env([tc("get_capacity"), text("ok")])
+    a.ask("are we short of ventilators?", "respiratory therapy")
+    got = json.loads(tool_msgs(f)[0]["content"])["tool_result"]
+    assert got["vents_free"] == 6
+    m = got["machines"]["imv"]
+    assert (m["free"], m["short_by"], m["words"], m["level"]) == (
+        6,
+        0,
+        "ON TRACK",
+        "ok",
+    )
+    assert m["total"] == 8 and m["flagged"] == 3
+    # no forecast count of flagged beds: the status stays null, never guessed
+    fc["machines"]["imv"]["flagged"] = None
+    (tmp_path / "forecast.json").write_text(json.dumps(fc))
+    f, a = env([tc("get_capacity"), text("ok")])
+    a.ask("are we short of ventilators?", "respiratory therapy")
+    m = json.loads(tool_msgs(f)[0]["content"])["tool_result"]["machines"]["imv"]
+    assert m["words"] is None and m["level"] is None and m["free"] == 6
+
+
+def test_get_capacity_reports_a_total_with_no_saved_machine_entry(env, tmp_path):
+    fc = json.loads((tmp_path / "forecast.json").read_text())
+    fc["life_support"]["now_by"] = {"imv": 5, "vasopressor": 1, "crrt": 1}
+    fc["machines"] = {"imv": None, "crrt": None}  # saved before any total was set
+    (tmp_path / "forecast.json").write_text(json.dumps(fc))
+    (tmp_path / "capacity.json").write_text(json.dumps({"vents_total": 8}))
+    f, a = env([tc("get_capacity"), text("ok")])
+    a.ask("how many ventilators are free?", "respiratory therapy")
+    m = json.loads(tool_msgs(f)[0]["content"])["tool_result"]["machines"]
+    assert (m["imv"]["total"], m["imv"]["free"], m["imv"]["in_use"]) == (8, 3, 5)
+    assert m["imv"]["flagged"] is None and m["imv"]["words"] is None
+    assert m["crrt"] is None  # no crrt total
+
+
+def test_staffing_tool(env, tmp_path):
+    f, a = env([tc("get_staffing"), text("ok")])
+    a.ask("How many nurses do we need tonight?", "ICU nurse")
+    assert "pending run" in tool_msgs(f)[0]["content"]  # an older forecast file
+    fc = json.loads((tmp_path / "forecast.json").read_text())
+    fc["staffing_now"] = {"nurses": 14, "one_to_one": 3, "one_to_two": 22, "rt": 1}
+    fc["staffing_next_24h"] = {
+        "nurses": {"available": True, "p10": 14, "p50": 15, "p90": 16},
+        "rt": {"available": False, "p10": None, "p50": None, "p90": None},
+    }
+    (tmp_path / "forecast.json").write_text(json.dumps(fc))
+    f, a = env([tc("get_staffing"), text("ok")])
+    out = a.ask("How many nurses do we need tonight?", "ICU nurse")
+    got = json.loads(tool_msgs(f)[0]["content"])["tool_result"]
+    assert got["now"]["nurses"] == 14 and got["next_24h"]["nurses"]["p90"] == 16
+    assert got["unavailable"] == ["rt"] and out["trace"] == ["get_staffing"]
 
 
 def test_unit_forecast_has_five_rows_and_check_first_no_strain(env):
@@ -1024,3 +1112,48 @@ def test_combined_forecast_label_follows_its_own_availability():
     ls = aggregate.build_forecast(df, "m", clif=clif)["life_support"]
     answer = ev.tool_answer("get_life_support", {"life_support": ls})
     assert "New life-support forecast: unavailable." in answer
+
+
+def test_rendered_answer_carries_machine_totals_and_staffing():
+    """the merged chat: the answer the user reads is rendered from the tool result,
+    so the machine totals (PR 18) and the staffing counts must be in that text"""
+    cap = {
+        "life_support_patients": 12,
+        "vents_total": 8,
+        "vents_free": 3,
+        "crrt_total": 2,
+        "crrt_free": 0,
+        "nurses_on_shift": 14,
+        "rt_on_shift": None,
+        "machines": {
+            "imv": {"flagged": 2, "words": "ON TRACK", "short_by": 0},
+            "crrt": {"flagged": 1, "words": "SHORT", "short_by": 1},
+        },
+    }
+    got = ev.tool_answer("get_capacity", cap)
+    assert "Life-support capacity: 12." in got and "Ventilators free: 3 of 8." in got
+    assert "CRRT machines free: 0 of 2." in got and "Nurses on shift: 14." in got
+    assert (
+        "CRRT: 1 flagged, SHORT by 1." in got
+        and "Ventilators: 2 flagged, ON TRACK." in got
+    )
+    assert "Respiratory therapists on shift" not in got  # not entered: not listed
+    # nothing entered: the two base lines say so, nothing else is invented
+    bare = ev.tool_answer("get_capacity", {"note": "not set"})
+    assert bare == "Life-support capacity: not set. Ventilators free: not set."
+    staff = {
+        "now": {"nurses": 14, "one_to_one": 3, "one_to_two": 22, "rt": None},
+        "next_24h": {
+            "nurses": {"available": True, "p10": 14, "p50": 15, "p90": 16},
+            "rt": {"available": False, "p10": None, "p50": None, "p90": None},
+        },
+    }
+    got = ev.tool_answer("get_staffing", staff)
+    assert "Nurses needed now: 14 (3 at 1:1, 22 at 1:2)." in got
+    assert "Nurses needed in the next 24 hours: 15 (80% range 14 to 16)." in got
+    assert "Respiratory therapists needed now: unknown." in got
+    assert "Respiratory therapists needed in the next 24 hours: No estimate." in got
+    assert "unit's ratio rule" in got
+    assert ev.tool_answer("get_staffing", {"error": "pending run"}) == (
+        "Requested evidence is unavailable."
+    )

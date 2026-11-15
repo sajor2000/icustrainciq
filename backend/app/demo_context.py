@@ -415,6 +415,7 @@ def build_context(
     capacity=None,
     names=None,
     unit_name=None,
+    staffing=None,
 ):
     """Build both views from this same selected frame and stable private room map.
 
@@ -492,6 +493,7 @@ def build_context(
             baseline=baseline,
             capacity=capacity,
             unit_name=unit_name,
+            staffing=staffing,
         )
     demographics = rooms.demographics(clif, ids)
     if set(demographics) != set(ids):

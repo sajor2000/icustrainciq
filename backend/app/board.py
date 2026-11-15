@@ -12,8 +12,10 @@ GET  /api/context      one validated published envelope when --context is config
 GET  /api/forecast     forecast.json (unit counts only), or {"resources": {}, "note": ...}
 GET  /api/rooms        rooms.json next to the forecast (open demo ward; a real ward only with --real-ward)
 GET  /api/runs         dispatcher status: next 07:00, running update, last per scope, demo clock
-GET  /api/capacity     {"life_support_patients", "vents_free", "updated_at"} (null = not set)
-POST /api/capacity     {"life_support_patients": 0..50, "vents_free": 0..50, "role"} -> capacity.json
+GET  /api/capacity     {"life_support_patients", "vents_total", "vents_free", "crrt_total", "crrt_free",
+                       "updated_at", "set_by_role"} (null = not set; free = total - on now)
+POST /api/capacity     {"role", and any of "life_support_patients", "vents_total", "crrt_total",
+                       "nurses_on_shift", "rt_on_shift": whole numbers 0..50} -> capacity.json (merged: a key left out keeps its saved value, null clears it)
 POST /api/rerun        {"role", "scope": "unit" | "room", "room"?: 1..25} -> dispatcher
 POST /api/ask          {"question","role","room?","seen_made_at?"} -> {"answer","trace"?,"made_at"}
 
@@ -45,6 +47,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 try:
+    from app import capacity as capacity_mod
     from app.chat_agent import (
         PATIENT_ID,
         PATIENT_ID_REFUSAL,
@@ -62,6 +65,7 @@ try:
     from app.demo_context import ContextUnavailable, load_context
     from app.evidence import forecast_answer
 except ImportError:  # run as `python app/board.py`
+    import capacity as capacity_mod
     from chat_agent import (
         PATIENT_ID,
         PATIENT_ID_REFUSAL,
@@ -81,7 +85,7 @@ except ImportError:  # run as `python app/board.py`
 
 log = logging.getLogger("board")
 STATIC = pathlib.Path(__file__).with_name("static") / "index.html"
-CAPACITY_MAX = 50
+CAPACITY_MAX = capacity_mod.CAPACITY_MAX
 BODY_CAP = 4096
 SOCKET_TIMEOUT_S = 10  # a slow or stalled client cannot hold a handler thread
 REFUSED = {"ok": False, "reason": "request refused"}
@@ -169,32 +173,55 @@ def make_handler(
         real_ward=real_ward,
     )
 
+    def capacity_forecast() -> dict:
+        """the forecast the free machines are worked out from: the one the page is
+        served. In context mode that is the context's forecast (nothing when the
+        context is unavailable), never the standalone forecast.json"""
+        if context_path is None and not require_real_data:
+            return load()
+        try:
+            if context_path is None:
+                raise ContextUnavailable("A context is required")
+            context = load_context(context_path)
+            if require_real_data and context["source"]["kind"] != "mimic-iv":
+                raise ContextUnavailable("A MIMIC-IV context is required")
+        except ContextUnavailable:
+            return {}
+        return context["forecast"]
+
     def read_capacity() -> dict:
         try:
             cap = json.loads(capacity_path.read_text())
         except (OSError, ValueError):
             cap = {}
+        cap = cap if isinstance(cap, dict) else {}
         return {
-            "life_support_patients": cap.get("life_support_patients"),
-            "vents_free": cap.get("vents_free"),
+            **capacity_mod.view(cap, capacity_forecast()),
             "updated_at": cap.get("updated_at"),
+            "set_by_role": cap.get("set_by_role"),
         }
 
     def set_capacity(req: dict) -> tuple[int, dict]:
         role = str(req.get("role", ""))
         if role not in ROLES:
             return 400, {"ok": False, "reason": "choose your role"}
-        ls, vf = req.get("life_support_patients"), req.get("vents_free")
-        if not (
-            _int_in_range(ls) and (vf is None or _int_in_range(vf))
-        ):  # vents free is optional
+        keys = (
+            "life_support_patients",
+            "vents_total",
+            "crrt_total",
+            "nurses_on_shift",
+            "rt_on_shift",
+        )
+        given = {k: req[k] for k in keys if k in req}  # absent = keep what is saved
+        # each key is optional and null clears it; one of them must be there
+        if not given or not all(v is None or _int_in_range(v) for v in given.values()):
             return 400, {
                 "ok": False,
                 "reason": f"enter whole numbers from 0 to {CAPACITY_MAX}",
             }
         cap = {
-            "life_support_patients": ls,
-            "vents_free": vf,
+            **{k: None for k in keys},
+            **given,  # as entered: free machines are derived when the file is read
             "updated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
             "set_by_role": role,  # role only, never a name (aggregate.py shows "set by")
         }
@@ -202,6 +229,14 @@ def make_handler(
         tmp = capacity_path.with_name(capacity_path.name + ".tmp")
         try:
             with cap_lock:
+                try:  # keys this request leaves out keep the saved value
+                    prev = json.loads(capacity_path.read_text())
+                except (OSError, ValueError):
+                    prev = {}
+                prev = prev if isinstance(prev, dict) else {}
+                for k in keys:
+                    if k not in given and _int_in_range(prev.get(k)):
+                        cap[k] = prev[k]
                 tmp.write_text(json.dumps(cap))
                 os.replace(
                     tmp, capacity_path
@@ -210,7 +245,8 @@ def make_handler(
             return 500, {"ok": False, "reason": f"could not save ({type(e).__name__})"}
         # privacy: time and role only; the numbers are not logged
         log.info("capacity set at=%s role=%s", cap["updated_at"], role)
-        return 200, {"ok": True, "capacity": cap}
+        shown = {**cap, **capacity_mod.view(cap, capacity_forecast())}  # free machines
+        return 200, {"ok": True, "capacity": shown}
 
     def origin_ok(origin: str | None, host: str | None, fwd_host: str | None) -> bool:
         """no Origin (non-browser client) passes; otherwise it must be this site"""

@@ -229,6 +229,80 @@ def life_support_answer(result: dict) -> str:
     return "Current support and life-support forecast are unavailable."
 
 
+def capacity_answer(result: dict) -> str:
+    """what the team entered: the staffing number, the machine totals with what is
+    free, the staff on shift, and each machine's status against the flagged beds.
+    A number that was not entered is "not set" (the two base lines) or left out."""
+
+    def free(key: str, total_key: str) -> str:
+        text = _count_text(result.get(key), "not set")
+        total = result.get(total_key)
+        if text != "not set" and type(total) is int and total >= 0:
+            text += f" of {total}"
+        return text
+
+    parts = [
+        "Life-support capacity: "
+        + _count_text(result.get("life_support_patients"), "not set")
+        + ".",
+        f"Ventilators free: {free('vents_free', 'vents_total')}.",
+    ]
+    if type(result.get("crrt_free")) is int:
+        parts.append(f"CRRT machines free: {free('crrt_free', 'crrt_total')}.")
+    for key, label in (
+        ("nurses_on_shift", "Nurses on shift"),
+        ("rt_on_shift", "Respiratory therapists on shift"),
+    ):
+        if type(result.get(key)) is int:
+            parts.append(f"{label}: {_count_text(result[key], 'not set')}.")
+    machines = result.get("machines")
+    machines = machines if isinstance(machines, dict) else {}
+    for key, label in (("imv", "Ventilators"), ("crrt", "CRRT")):
+        entry = machines.get(key)
+        if not isinstance(entry, dict) or entry.get("words") not in (
+            "SHORT",
+            "AT LIMIT",
+            "ON TRACK",
+        ):
+            continue
+        flagged, short = entry.get("flagged"), entry.get("short_by")
+        if type(flagged) is not int or flagged < 0:
+            continue
+        status = entry["words"]
+        if status == "SHORT" and type(short) is int and short > 0:
+            status += f" by {short}"
+        parts.append(f"{label}: {flagged} flagged, {status}.")
+    return " ".join(parts)
+
+
+def staffing_answer(result: dict) -> str:
+    """nurses and respiratory therapists the unit's ratio rule asks for, now and in
+    the next 24 h; a count the forecast does not carry is unknown, never zero"""
+    now = result.get("now")
+    now = now if isinstance(now, dict) else {}
+    nxt = result.get("next_24h")
+    nxt = nxt if isinstance(nxt, dict) else {}
+    lines = []
+    for key, label in (("nurses", "Nurses"), ("rt", "Respiratory therapists")):
+        text = _count_text(now.get(key))
+        a, b = now.get("one_to_one"), now.get("one_to_two")
+        if key == "nurses" and text != "unknown" and type(a) is int and type(b) is int:
+            text += f" ({a} at 1:1, {b} at 1:2)"
+        lines.append(f"{label} needed now: {text}.")
+        q = nxt.get(key)
+        q = q if isinstance(q, dict) else {}
+        vals = [q.get(k) for k in ("p10", "p50", "p90")]
+        if q.get("available") is not False and all(
+            type(v) is int and v >= 0 for v in vals
+        ):
+            text = f"{vals[1]} (80% range {vals[0]} to {vals[2]})"
+        else:
+            text = "No estimate"
+        lines.append(f"{label} needed in the next 24 hours: {text}.")
+    lines.append("Counts follow the unit's ratio rule; they are not a staffing order.")
+    return "\n".join(lines)
+
+
 def tool_answer(name: str, result: dict) -> str:
     if name == "list_runs":
         return runs_answer(result)
@@ -316,13 +390,9 @@ def tool_answer(name: str, result: dict) -> str:
             else ""
         )
     if name == "get_capacity":
-        return " ".join(
-            f"{label}: {_count_text(result.get(key), 'not set')}."
-            for key, label in (
-                ("life_support_patients", "Life-support capacity"),
-                ("vents_free", "Ventilators free"),
-            )
-        )
+        return capacity_answer(result)
+    if name == "get_staffing":
+        return staffing_answer(result)
     if name == "explain_method":
         return result.get("text") or "Method definition unavailable."
     return "Requested evidence is unavailable."

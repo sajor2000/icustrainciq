@@ -57,10 +57,9 @@ async def shots(browser):
     first3 = "[...document.querySelectorAll('#grid > *')].slice(0, 3)"
     # 940 px is the narrowest three-across layout where no name in these tiles is cut short
 
-    # Bed board, Next 24 h: rooms 1 to 3, then the first Worry first tile
+    # Bed board, Next 24 h: rooms 1 to 3
     ctx, page = await open_board(browser, 940, "#synthetic")
     await crop(page, "beds-next", first3)
-    await crop(page, "worry-1", "[document.querySelector('#rail button')]")
     await ctx.close()
 
     # The header strain line with tonight's machines set: 6 ventilators, 3 CRRT machines, staffing covers 14
@@ -74,6 +73,8 @@ async def shots(browser):
     await page.click("#setclose")
     await page.wait_for_timeout(300)
     await crop(page, "strain-line", "[document.getElementById('alerts')]", pad=5)
+    # One event card on Unit strain: the top of the ventilator card (on now, free, predicted new, unit forecast, usage bar)
+    await crop(page, "event-card", "[document.querySelector('.wc[data-k=\"imv\"]')]", pad=5, max_height=200)   # down to the usage bar
     await ctx.close()
 
 

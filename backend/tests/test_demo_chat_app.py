@@ -732,3 +732,26 @@ def test_board_real_ward_flag_and_workflows_agree():
     line = next(x for x in twin.splitlines() if "--dispatcher http://dispatcher" in x)
     assert "--real-ward" not in dispatcher.render_ward(line)  # open demo: no flag
     assert "--real-ward" in dispatcher.render_ward(line, real_ward=True)
+
+
+def test_capacity_follows_the_context_forecast_in_context_mode(tmp_path):
+    """CodeRabbit PR 20 (third review): with --context the forecast the page shows
+    is the context's. Free machines come from it (5 ventilated, 8 ventilators: 3
+    free), never from a standalone forecast.json that says 1."""
+    context = synthetic_context()
+    now_by = {"imv": 5, "vasopressor": 1, "crrt": 0}
+    context["forecast"]["life_support"] = {"now_patients": 6, "now_by": now_by}
+    publish(tmp_path / "context.json", context)
+    stale = {"life_support": {"now_by": {**now_by, "imv": 1}}}
+    (tmp_path / "forecast.json").write_text(json.dumps(stale))
+    (tmp_path / "capacity.json").write_text(json.dumps({"vents_total": 8}))
+    with running_board(tmp_path, context_path=tmp_path / "context.json") as base:
+        assert request(base, "/api/capacity")[1]["vents_free"] == 3
+        code, saved = request(
+            base, "/api/capacity", {"role": "ICU nurse", "vents_total": 9}
+        )
+        assert code == 200 and saved["capacity"]["vents_free"] == 4
+    # the context is gone: nothing says what is in use, so nothing is free
+    (tmp_path / "context.json").unlink()
+    with running_board(tmp_path, context_path=tmp_path / "context.json") as base:
+        assert request(base, "/api/capacity")[1]["vents_free"] is None

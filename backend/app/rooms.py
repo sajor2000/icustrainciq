@@ -238,6 +238,8 @@ def room_entries(
                     },
                     "ecmo": None,  # no ecmo/mcs token: not available
                 },
+                # vasoactive infusions running at the cut (raw CLIF only, else null)
+                "on_now_detail": {"vasoactives": tab["vasoactives"][i]},
                 "on_life_support": (
                     None
                     if known_supports < 2 <= known_supports + unknown_supports
