@@ -15,6 +15,7 @@ A bed board for one ICU. It shows the life support each patient is on now and fo
 | [`README.md`](README.md) | the overview and screenshots |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | what runs where, tech stack, endpoints, data boundary, every figure |
 | [`docs/RESULTS.md`](docs/RESULTS.md) | held-out results per task |
+| [`docs/ICU_TWIN_DELTA.md`](docs/ICU_TWIN_DELTA.md) | every difference from the team's ICU-Twin repo, why, and a safe order to port it (for the ICU-Twin agent) |
 | [`backend/docs/RUNBOOK.md`](backend/docs/RUNBOOK.md) | set up, publish code and relaunch on the cluster |
 | [`backend/README.md`](backend/README.md), [`backend/docs/CONTRACT.md`](backend/docs/CONTRACT.md) | the backend and the JSON shapes |
 | [`backend/docs/CHAT_AGENT.md`](backend/docs/CHAT_AGENT.md), [`backend/docs/LOOKAHEAD_DEMO.md`](backend/docs/LOOKAHEAD_DEMO.md), [`CHATBOT_HANDOFF.md`](CHATBOT_HANDOFF.md) | the chat: its tools, the shared ICU snapshot, its workflows and next steps |

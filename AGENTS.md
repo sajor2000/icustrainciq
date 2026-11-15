@@ -2,7 +2,7 @@
 
 Read this if you are a coding agent about to change this repo.
 
-Start with `HANDOFF.md`, then `docs/ARCHITECTURE.md` (what runs where) and `backend/docs/RUNBOOK.md` (how it runs on the cluster). Board contract: `docs/FRONTEND_SPEC.md`. Decisions: `docs/DECISIONS.md`. Model training: github.com/vaishvikc/ICU-Twin.
+Start with `HANDOFF.md`, then `docs/ARCHITECTURE.md` (what runs where) and `backend/docs/RUNBOOK.md` (how it runs on the cluster). Board contract: `docs/FRONTEND_SPEC.md`. Decisions: `docs/DECISIONS.md`. Model training: github.com/vaishvikc/ICU-Twin; what this repo changed against it, and how to port it: `docs/ICU_TWIN_DELTA.md`.
 
 | Area | Rule |
 |---|---|
