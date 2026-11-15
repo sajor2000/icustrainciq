@@ -132,33 +132,33 @@ section{margin-top:7px}
     <p class="event"><b>Team 7 · CLIF</b> · CIQ × NVIDIA × Lenovo Local AI Hackathon · Chicago · Nov 14–15, 2026<br>J.C. Rojas, MD, MS · Kaveri Chhikara, MS · Vaishvik Chaudhari, MS<br>Dema Therese, MS · Zewei ('Whiskey') Liao, MS</p>
   </header>
 
-  <p class="lead pad">Five predictions for every ICU patient, for the next 24 hours, and what the whole unit will need, <span>from a model we trained and run on two computers inside the hospital.</span></p>
+  <p class="lead pad">Five 24-hour predictions for every patient in an intensive care unit (ICU), summed into what the unit will need, <span>from a model we trained and run inside the hospital.</span></p>
 
   <section class="three pad">
     <div>
       <h2>The problem</h2>
-      <p>A small or rural ICU has few ventilators and dialysis machines, no data-science team and no cloud for patient data. It learns it is short when it already is; help is a transfer hours away.</p>
+      <p>A small or rural ICU has a few life-support machines (ventilators, dialysis), no data-science team, and patient data that cannot leave the building. It learns it is short too late; help is a transfer hours away.</p>
     </div>
     <div>
       <h2>What we built</h2>
-      <p>A bed board for 07:00 rounds: each bed's life support now and the chance of what starts by tomorrow, added up against the unit's machines. A chat answers in plain words.</p>
+      <p>A bed board for the 07:00 team meeting: each patient's life support now, the probability of each event in the next 24 h, and the unit totals against the machines on hand. An LLM chat answers questions about it.</p>
     </div>
     <div>
       <h2>What is new for healthcare AI</h2>
-      <ul class="new"><li><b>Speaks EHR, not English:</b> our own model, trained from scratch on two desk-side GPUs.</li><li><b>One pass, many outcomes:</b> small classifiers read its hidden layer; no retraining.</li><li><b>Patient to unit:</b> chances add up to resource strain a day ahead.</li><li><b>Private, portable:</b> runs locally on a hospital's own clinical data.</li></ul>
+      <ul class="new"><li><b>A language model of health records:</b> a decoder pretrained from scratch on clinical-event tokens, not text.</li><li><b>One pass, many outcomes:</b> linear probes on the last hidden state; no retraining.</li><li><b>Patient to unit:</b> probabilities sum into machine demand a day ahead.</li><li><b>On-prem:</b> trains and runs on the hospital's own hardware.</li></ul>
     </div>
   </section>
 
   <section class="pad" aria-label="The five predictions">
     <span class="cap">The five predictions <em>the chance each happens in the next 24 hours, on every bed</em></span>
     <div class="five">
-      <div class="p"><svg class="ic" style="color:var(--vent)"><use href="#i-vent"/></svg><p class="t"><b>Ventilator start</b></p><p class="what">a breathing machine · for respiratory therapy</p><p class="score">AUROC <b>0.78</b></p></div>
-      <div class="p"><svg class="ic" style="color:var(--press)"><use href="#i-pump"/></svg><p class="t"><b>Vasopressor start</b></p><p class="what">holds blood pressure up · for pharmacy</p><p class="score">AUROC <b>0.77</b></p></div>
-      <div class="p"><svg class="ic" style="color:var(--crrt)"><use href="#i-crrt"/></svg><p class="t"><b>CRRT start</b></p><p class="what">continuous dialysis · for the ICU team</p><p class="score">AUROC <b>0.88</b></p></div>
-      <div class="p"><svg class="ic"><use href="#i-leave"/></svg><p class="t"><b>Leaves the ICU</b></p><p class="what">to a ward or step-down · for bed managers</p><p class="score">AUROC <b style="white-space:nowrap">0.80<span class="dim" style="font-weight:600"> / </span>0.89</b></p></div>
-      <div class="p unit"><svg class="ic" style="color:var(--ink-2)"><use href="#i-person"/></svg><p class="t"><b>Death</b></p><p class="what">a unit count, never on a bed</p><p class="score">AUROC <b>0.93</b></p></div>
+      <div class="p"><svg class="ic" style="color:var(--vent)"><use href="#i-vent"/></svg><p class="t"><b>Ventilator start</b></p><p class="what">a machine breathes for the patient</p><p class="score">AUROC <b>0.78</b></p></div>
+      <div class="p"><svg class="ic" style="color:var(--press)"><use href="#i-pump"/></svg><p class="t"><b>Vasopressor start</b></p><p class="what">an IV drug that raises blood pressure</p><p class="score">AUROC <b>0.77</b></p></div>
+      <div class="p"><svg class="ic" style="color:var(--crrt)"><use href="#i-crrt"/></svg><p class="t"><b>CRRT start</b></p><p class="what">a machine does the kidneys' work</p><p class="score">AUROC <b>0.88</b></p></div>
+      <div class="p"><svg class="ic"><use href="#i-leave"/></svg><p class="t"><b>Leaves the ICU</b></p><p class="what">moves to a lower-care ward, freeing the bed</p><p class="score">AUROC <b style="white-space:nowrap">0.80<span class="dim" style="font-weight:600"> / </span>0.89</b></p></div>
+      <div class="p unit"><svg class="ic" style="color:var(--ink-2)"><use href="#i-person"/></svg><p class="t"><b>Death</b></p><p class="what">shown as a unit count only</p><p class="score">AUROC <b>0.93</b></p></div>
     </div>
-    <p class="note" style="white-space:nowrap">AUROC on past ICU patients the model never saw: 0.5 is a coin toss, 1.0 perfect. Leaving the ICU combines ward and step-down.</p>
+    <p class="note" style="white-space:nowrap">Held-out test AUROC (patients never seen in training). Leaves the ICU = two probes, ward and step-down.</p>
   </section>
 
   <section class="pad" aria-label="Screens from the board">
@@ -171,9 +171,9 @@ section{margin-top:7px}
   <section class="pad" aria-label="The model">
     <span class="cap">The model we trained, and how it predicts</span>
     <ol class="steps">
-      <li><b><i>1</i>It speaks EHR, not English</b>Its 1,231 words are events from the health record (labs, vitals, drugs, machines); it learned to guess the next one. 36M parameters, trained from scratch.</li>
-      <li><b><i>2</i>Read its hidden layer</b>One pass over each patient's first 24 h in the ICU; its last hidden layer holds 384 numbers that sum up the patient.</li>
-      <li><b><i>3</i>Six small classifiers</b>Logistic regressions fitted on past patients turn them into five chances. NVIDIA Nemotron 3 Nano explains them in English.</li>
+      <li><b><i>1</i>Pretrain on health records</b>Decoder-only transformer, 36M parameters, from scratch, next-token objective. Its 1,231 tokens are clinical events: binned labs and vital signs, drugs, devices, time gaps.</li>
+      <li><b><i>2</i>Embed each patient</b>One forward pass over the patient's first 24 h in the ICU. The last layer's hidden state at the final token (384-d) is the patient embedding.</li>
+      <li><b><i>3</i>Probe, then explain</b>Six logistic-regression probes on the embedding give 24-h event probabilities. Nemotron 3 Nano explains them via tool calls; it predicts nothing.</li>
     </ol>
   </section>
 
