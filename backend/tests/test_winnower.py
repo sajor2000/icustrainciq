@@ -177,8 +177,9 @@ def test_counts_only_keeps_outcome_rates_out_of_the_log(tmp_path, caplog):
     import yaml
     from typer.testing import CliRunner
 
-    from icutwin.common import logger
     from icutwin.scoring import winnower
+
+    logger = winnower.logger  # the object the winnower itself logs to
 
     lookup = {"BOS": 1, "RESP//device_category//imv": 2, "EOS": 3}
     pl.DataFrame(
@@ -206,6 +207,8 @@ def test_counts_only_keeps_outcome_rates_out_of_the_log(tmp_path, caplog):
         )
     )
     level = logger.level  # another test may have quietened the shared logger
+    logger.setLevel("WARNING")
+    logger.info("warm the level cache")  # setLevel must still take effect after this
     logger.setLevel("INFO")
     logger.addHandler(caplog.handler)
     try:

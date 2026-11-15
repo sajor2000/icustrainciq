@@ -158,7 +158,7 @@ def state_at(
     from icutwin.scoring import winnower
 
     logger.setLevel("WARNING")  # the per-split outcome rates are small cells here
-    winnower.winnow(root, WINNOW_CFG, offset_hours or None)
+    winnower.winnow(root, WINNOW_CFG, offset_hours or None, counts_only=True)
     ids = list(room_of)
     df = aggregate.pending_scores(root, ids)
     kept = df[HOSP].to_list()
