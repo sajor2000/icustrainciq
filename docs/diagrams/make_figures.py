@@ -1,4 +1,4 @@
-"""Write the Lookahead figures (HTML with inline SVG) in the board's design system.
+"""Write the ICU Lookahead figures (HTML with inline SVG) in the board's design system.
 
     python3 docs/diagrams/make_figures.py            # writes docs/diagrams/*.html
     python3 docs/diagrams/make_figures.py --night <dir>   # night-board copies, for the project page's dark theme
@@ -180,7 +180,7 @@ class Fig:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lookahead · {esc(self.title)}</title>
+  <title>ICU Lookahead · {esc(self.title)}</title>
   <style>
     *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
     body {{ font-family: {FONT}; background: {BOARD}; color: {INK}; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 1.5rem; }}
@@ -218,7 +218,7 @@ class Fig:
 def stack():
     f = Fig("stack", 1200, 576, "How we used the hackathon stack",
             "A clinician's browser reaches two Lenovo ThinkStation PGX machines run by CIQ Fuzzball. One GPU serves NVIDIA Nemotron 3 Nano on vLLM for the chat; the other runs the patient model the team trained. Fuzzball services serve the board and start jobs; Fuzzball volumes hold the patient data, the model and the results.",
-            "Lookahead · the hackathon stack", "Two Lenovo machines, CIQ Fuzzball, one NVIDIA model and one of our own", big=True)
+            "ICU Lookahead · the hackathon stack", "Two Lenovo machines, CIQ Fuzzball, one NVIDIA model and one of our own", big=True)
     f.zone(264, 48, 920, 456, "2 × Lenovo ThinkStation PGX · NVIDIA GB10 · run by CIQ Fuzzball 4.3")
     f.node(16, 112, 208, 104, "card", "Clinician", "Browser", ["the board page"], icon="person")
     f.node(304, 112, 376, 104, "card", "Fuzzball services", "Board server + dispatcher",
@@ -243,7 +243,7 @@ def stack():
 def flow():
     f = Fig("flow", 1200, 304, "What happens at 07:00",
             "Chart data up to 07:00 goes to the team's patient model, which reads each patient once and keeps its last layer; five small classifiers turn that into five chances; the board shows them; the chat answers from the board. Update the unit starts the same run as a Fuzzball job.",
-            "Lookahead · the 07:00 run", "From the chart to the board, once each morning", big=True)
+            "ICU Lookahead · the 07:00 run", "From the chart to the board, once each morning", big=True)
     xs = [12, 252, 492, 732, 972]
     f.node(xs[0], 40, 216, 128, "card", "Each patient", "Chart data",
            ["labs · vitals · drugs", "machines, up to 07:00"], icon="person")
@@ -269,7 +269,7 @@ def flow():
 def architecture():
     f = Fig("architecture", 1280, 600, "Technical architecture",
             "The board page talks to one service, the board server. The board server asks Nemotron for chat answers and asks the dispatcher to start or report runs. The dispatcher starts the t7-forecast job, which reads the read-only volumes and writes forecast files to twin-store, where the board server reads them.",
-            "Lookahead · architecture", "One door into the two machines; everything else stays inside")
+            "ICU Lookahead · architecture", "One door into the two machines; everything else stays inside")
     f.zone(288, 32, 976, 496, "2 × Lenovo PGX (GB10) · CIQ Fuzzball 4.3 · patient rows stay inside")
     f.node(24, 232, 216, 96, "card", "Clinician's browser", "Board page", ["one HTML file, over HTTPS"], icon="person")
     f.node(328, 72, 240, 96, "nvidia", "GPU 1 · service", "Nemotron 3 Nano", ["NVIDIA, on vLLM, used as is"])
@@ -277,7 +277,7 @@ def architecture():
     f.node(328, 392, 240, 96, "card", "CPU · service", "Dispatcher", ["07:00 clock, one run at once"])
     f.node(656, 72, 240, 96, "card", "Run once, in order", "Setup workflows", ["t7-code → t7-fit → t7-ward"])
     f.node(656, 392, 240, 96, "model", "GPU 2 · job", "t7-forecast", ["runs our patient model"])
-    f.node(992, 232, 240, 96, "store", "Volume · to create", "twin-store", ["everything Lookahead writes"])
+    f.node(992, 232, 240, 96, "store", "Volume · to create", "twin-store", ["everything ICU Lookahead writes"])
     f.node(992, 392, 240, 96, "store", "Volumes · read only", "mimic_clif · hfcache", ["patients, model, weights"])
     f.arrow([(240, 280), (328, 280)])
     f.arrow([(448, 232), (448, 168)], label="Asks", at=(448, 200), side="right")
@@ -295,7 +295,7 @@ def architecture():
 def workflow():
     f = Fig("workflow", 1280, 420, "How to run it on the cluster",
             "Seven steps in order: create the twin-store volume, then run t7-code, t7-fit, t7-ward and t7-twin, open the board, and start the first forecast from it. The demo patients and the trained model are already on the cluster.",
-            "Lookahead · run order", "One volume to create, then five workflows in order")
+            "ICU Lookahead · run order", "One volume to create, then five workflows in order")
     xs = [24, 344, 664, 984]
     y1, y2, h = 40, 208, 112
     f.node(xs[0], y1, 272, h, "card", "1 · To do first", "Create twin-store",
@@ -322,7 +322,7 @@ def workflow():
 def api():
     f = Fig("api", 1280, 620, "API map",
             "The board page makes four GET calls and three POST calls to the board server. Reads come from files on twin-store and from the dispatcher's status; writes go to the dispatcher to start a run, to Nemotron for a chat answer, and to twin-store for tonight's capacity.",
-            "Lookahead · API", "Four reads, three writes, one rule for every POST")
+            "ICU Lookahead · API", "Four reads, three writes, one rule for every POST")
     f.node(24, 120, 184, 352, "card", "Browser", "Board page", ["same origin only"], icon="person")
     f.node(304, 56, 528, 224, "card", "4 GETs · no headers needed", "Read", rows=[
         ("GET /api/forecast", "unit counts with ranges", False),
@@ -351,7 +351,7 @@ def api():
 def trigger():
     f = Fig("trigger", 1280, 624, "Update the unit, from click to refreshed board",
             "The board page posts a rerun to the board server, which passes it to the dispatcher. The dispatcher starts the forecast job through Fuzzball. The job writes rooms.json and forecast.json to twin-store. The page polls the run state, then asks for the forecast and the rooms; the board server reads both files, and the board is redrawn.",
-            "Lookahead · Update the unit", "One button, one POST, one Fuzzball job")
+            "ICU Lookahead · Update the unit", "One button, one POST, one Fuzzball job")
     xs = [136, 388, 640, 892, 1144]
     f.zone(272, 16, 988, 116, "2 × Lenovo PGX (GB10) · CIQ Fuzzball")
     heads = [("card", "Browser", "Board page", "Update the unit"),
