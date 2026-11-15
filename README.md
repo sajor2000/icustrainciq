@@ -71,6 +71,17 @@ python3 -m http.server 8000        # open http://localhost:8000/mockups/command-
 - **[`backend/README.md`](backend/README.md):** the backend, module by module
 - **Design system:** [`DESIGN.md`](DESIGN.md) is the one source for the board, the figures and the project page
 - **Model training:** [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin)
-- **Team and credits:** team7. Cluster cards, bed figures, the flag-line toggle and the capacity model are Dema's (deetherese) design.
+- **Runbook:** [`backend/docs/RUNBOOK.md`](backend/docs/RUNBOOK.md): set up, publish code and relaunch the board on the cluster (`backend/scripts/launch.sh`)
+
+## Team 7 - CLIF
+
+All four are members of the [CLIF Consortium](https://clif-icu.com/team); the roles and institutions in the second column are as listed there.
+
+| Name | CLIF Consortium | On this project |
+|---|---|---|
+| J.C. Rojas, MD | Founding Vice-Chair, Steering Committee · Rush University | Product, board and chat, Fuzzball workflows, docs ([sajor2000](https://github.com/sajor2000)) |
+| Kaveri Chhikara, MS | Vice-chair for Software Development, Steering Committee · UChicago Medicine | Forecast pipeline on the cluster, dispatcher, launch script and runbook |
+| Vaishvik Chaudhari, MS | Vice-chair and Technical Lead, Steering Committee · Rush University | The patient model: tokenizer, training, the ICU + 24 h cut, probes ([vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin)) |
+| Dema Therese, MS | UChicago Medicine | Board design: bed tiles coloured by status, event cards, bed pop-up with vitals, settings, the capacity model |
 
 Demo data only: the mockup uses made-up patients, and names on the board are fictional. Lookahead is a research prototype, not a medical device; it supports decisions and recommends no treatment.

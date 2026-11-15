@@ -54,7 +54,7 @@ jobs:
       tar -xzf /work/code.tar.gz -C /work/src-publish --strip-components=1
       SRC=/work/src-publish/backend
       for f in app/board.py app/dispatcher.py app/rooms.py app/aggregate.py app/stage_ward.py app/ward_check.py \
-               app/static/index.html icutwin/common.py examples/winnow_24h.yaml examples/probe_tasks.yaml \
+               app/static/index.html icutwin/common.py examples/probe_tasks.yaml \
                fuzzball/t7-forecast.fz clif_demo/clif_hospitalization.parquet requirements/t7-model.txt; do
         test -f "$SRC/$f" || { echo "commit $CODE_REF has no backend/$f: wrong repo or commit"; exit 1; }
       done

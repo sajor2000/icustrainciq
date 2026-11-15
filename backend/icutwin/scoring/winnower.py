@@ -76,14 +76,11 @@ class Winnower:
             # arrival); keep stays that are still running at the cut and, when
             # `stay_until_cut` is set, have no other matching token (e.g. a transfer
             # out of the ICU) between arrival and the cut.
-            # HARDWARE/DEMO PIVOT (for Vaishvik): `offset_s` (default 0) is added to
-            # `duration_s` so the live demo can move the cut later ("demo clock",
-            # docs/LIVE_DEMO.md); stays whose record ends before the new cut drop out.
-            # duration_s + offset_s must stay above 0: a cut at or before ICU arrival
-            # is refused.
+            # Demo clock (docs/LIVE_DEMO.md): `offset_s` (default 0) is added to
+            # `duration_s` to move the cut later; the cut must stay after ICU arrival.
             spec = th.after_first_occurrence
             after_s = spec.duration_s + spec.get("offset_s", 0)
-            if after_s <= 0:  # the cut would not be after ICU arrival
+            if after_s <= 0:
                 raise ValueError(
                     f"threshold duration_s + offset_s = {after_s} s: the cut must "
                     "fall after ICU arrival (a demo-clock offset cannot undo the 24 h)"
@@ -100,9 +97,9 @@ class Winnower:
             df = (
                 df.filter(pl.col("tokens").list.contains(toi))
                 .with_columns(first_i=first)
-                .with_columns(arrival_s=pl.col("s_elapsed").list.get(pl.col("first_i")))
-                .with_columns(cut_s=pl.col("arrival_s") + after_s)
-                .filter(pl.col("cut_s") > pl.col("arrival_s"))
+                .with_columns(
+                    cut_s=pl.col("s_elapsed").list.get(pl.col("first_i")) + after_s
+                )
                 .filter(pl.col("s_total_duration") > pl.col("cut_s"))
                 .with_columns(
                     last_valid=(pl.col("s_elapsed") - pl.col("cut_s"))
@@ -123,24 +120,31 @@ class Winnower:
                 df = df.filter(~left)
             # `cut_s` (seconds from the first token) stays in the output: app/rooms.py
             # reads it to place recent events relative to the cut
-            return df.drop("first_i", "arrival_s")
+            return df.drop("first_i")
         if "horizon_s" in self.cfg or "duration_s" in th:
             # run duration-based thresholding
             horizon_s = self.cfg.get("horizon_s", self.cfg.threshold.duration_s)
             return df.filter(pl.col("s_total_duration") > horizon_s).with_columns(
                 last_valid=pl.col("s_elapsed")
                 .list.eval(pl.element() < horizon_s)
-                .list.sum()
+                .list.sum(),
+                cut_s=pl.lit(float(horizon_s)),
             )
         elif "first_occurrence" in self.cfg.get("threshold", {}):
             # run first-occurrence-based thresholding
             toi = self.lookup[self.cfg.threshold.first_occurrence]
-            return df.filter(pl.col("tokens").list.contains(toi)).with_columns(
-                last_valid=pl.col("tokens")
-                .list.eval(pl.element() == toi)
-                .list.arg_max()
-                + pl.lit(1)
-                # place the triggering token into the past; it is known
+            return (
+                df.filter(pl.col("tokens").list.contains(toi))
+                .with_columns(
+                    last_valid=pl.col("tokens")
+                    .list.eval(pl.element() == toi)
+                    .list.arg_max()
+                    + pl.lit(1)
+                    # place the triggering token into the past; it is known
+                )
+                .with_columns(
+                    cut_s=pl.col("s_elapsed").list.get(pl.col("last_valid") - 1)
+                )
             )
         else:
             raise NotImplementedError("Please check the thresholding configuration.")
@@ -157,31 +161,22 @@ class Winnower:
                 pl.col("tokens").list.len() - pl.col("last_valid")
             ),
         )  # split into past and future
-        if self.cfg.get("horizon_after_threshold_s") is not None:
-            df = (
-                df.with_columns(
-                    s_elapsed_thresh=pl.col("times")
-                    .list.tail(
-                        pl.col("tokens_future").list.len() + 1
-                    )  # include threshold time
-                    .list.eval((pl.element() - pl.element().first()).dt.total_seconds())
-                )
-                .with_columns(
-                    valid_future_count=pl.col("s_elapsed_thresh")
-                    .list.eval(pl.element() <= self.cfg.horizon_after_threshold_s)
-                    .list.sum()
-                    - pl.lit(1)  # threshold token was counted, drop it
-                )
-                .with_columns(
-                    tokens_future=pl.col("tokens_future").list.head(
-                        "valid_future_count"
-                    )
-                )
+        if "horizon_after_threshold_s" in self.cfg:
+            # the window is [cut, cut + horizon): counted from the cut itself (e.g.
+            # 07:00 to 07:00), not from the last token before it
+            end = pl.col("cut_s") + self.cfg.horizon_after_threshold_s
+            df = df.with_columns(
+                valid_future_count=(pl.col("s_elapsed") - end)
+                .list.eval(pl.element() < 0)
+                .list.sum()
+                - pl.col("last_valid")
+            ).with_columns(
+                tokens_future=pl.col("tokens_future").list.head("valid_future_count")
             )
         # derived labels, cut exactly as the tokens they come from
         hit = lambda n: pl.col(f"{n}_hit")
         future = lambda n: hit(n).list.tail(hit(n).list.len() - pl.col("last_valid"))
-        if self.cfg.get("horizon_after_threshold_s") is not None:
+        if "horizon_after_threshold_s" in self.cfg:
             future = lambda n, f=future: f(n).list.head("valid_future_count")
         return df.with_columns(
             **{

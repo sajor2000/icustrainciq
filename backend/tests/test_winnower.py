@@ -6,6 +6,7 @@ import polars as pl
 import pytest
 from omegaconf import OmegaConf
 
+from icutwin.common import merge_config
 from icutwin.scoring.winnower import Winnower
 
 LOOKUP = {"BOS": 1, "LAB_RES//potassium//L1": 2, "ADT//TRANSFER_IN//icu": 3, "EOS": 4}
@@ -50,7 +51,7 @@ def test_labels_split_past_future(tmp_path):
     # a label must not change the cut: same past length as tokens
     assert df["tokens_past"].list.len().to_list() == [2, 2]
 
-    # horizon 1h, counted from the last past token: b's 26h hit drops out
+    # horizon 1h, counted from the 24h cut: b's 26h hit drops out
     cfg.horizon_after_threshold_s = 3600
     df = Winnower(tmp_path, cfg, LOOKUP).prepare_winnowed_frame().collect()
     assert df.sort("hospitalization_id")["LABEL//hyperk_init_future"].to_list() == [
@@ -85,6 +86,10 @@ def test_cut_24h_after_icu_arrival(tmp_path):
         ("c", 12, "EOS"),
         ("d", 0, "BOS"),  # never in the ICU
         ("d", 40, "EOS"),
+        ("e", 0, "BOS"),  # ICU at 1 h, quiet until 48 h: cut 25 h, window to 49 h
+        ("e", 1, "ADT//TRANSFER_IN//icu"),
+        ("e", 48, "RESP//device_category//imv"),  # 23 h after the cut: future
+        ("e", 60, "EOS"),
     ]
     pl.DataFrame(
         {
@@ -111,27 +116,20 @@ def test_cut_24h_after_icu_arrival(tmp_path):
         }
     )
     df = Winnower(tmp_path, cfg, lookup).prepare_winnowed_frame().collect()
-    assert df["hospitalization_id"].to_list() == ["a"]
-    assert df["tokens_past"].list.len().to_list() == [3]
-    assert df["RESP//device_category//imv_past"].to_list() == [True]
-    assert df["RESP//device_category//imv_future"].to_list() == [True]
+    df = df.sort("hospitalization_id")
+    assert df["hospitalization_id"].to_list() == ["a", "e"]
+    assert df["tokens_past"].list.len().to_list() == [3, 2]
+    assert df["RESP//device_category//imv_past"].to_list() == [True, False]
+    # the 24 h window starts at the cut, not at e's last token before it (2 h)
+    assert df["RESP//device_category//imv_future"].to_list() == [True, True]
 
 
-def test_shipped_24h_override_is_accepted():
-    # hardware pivot: examples/winnow_24h.yaml used to be refused as "unknown option"
-    # (horizon_after_threshold_s was only a comment in winnowing.yaml), which stopped
-    # t7-smoke and t7-build at the winnow step
-    import pathlib
-
-    from icutwin.common import merge_config
-
-    cfg = merge_config(
-        "winnowing.yaml",
-        pathlib.Path(__file__).parent.parent / "examples/winnow_24h.yaml",
-    )
-    assert cfg.horizon_after_threshold_s == 86400
+def test_default_is_24h_after_icu_arrival():
+    """D3: the shipped config cuts 24 h after ICU arrival, labels the next 24 h"""
+    cfg = merge_config("winnowing.yaml", None)
     assert cfg.threshold.after_first_occurrence.token == "ADT//TRANSFER_IN//icu"
-    assert merge_config("winnowing.yaml", None).horizon_after_threshold_s is None
+    assert cfg.threshold.after_first_occurrence.duration_s == 86400
+    assert cfg.horizon_after_threshold_s == 86400
 
 
 def _after_icu_cfg(offset_s):

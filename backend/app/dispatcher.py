@@ -203,7 +203,9 @@ DEFAULT_CLIF_DIR = "/store/code/clif_demo"  # the open demo, in the code tree
 # only read. 19 CLIF tables, the id file and the made-up names (docs/FUZZBALL_VALIDATION.md).
 COHORT_CLIF_DIR = "/data/dashboard_data"
 COHORT_WARD_IDS = f"{COHORT_CLIF_DIR}/dashboard_patients_unit25.parquet"
-COHORT_NAMES = f"{COHORT_CLIF_DIR}/name.parquet"
+COHORT_NAMES = "fake"  # fake_names.for_ward keys off the room number, so it covers every
+#                      staged stay and cannot go stale when the cohort changes (a
+#                      name.parquet made for an older ward left 24 of 25 unnamed)
 
 
 def workflow_id(out: str) -> str:

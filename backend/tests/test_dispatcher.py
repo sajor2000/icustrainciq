@@ -659,7 +659,9 @@ def render_any(name: str, **ward) -> str:
 
 
 def test_every_fuzzfile_is_covered_by_these_tests():
-    assert {f.stem for f in FUZZ.glob("*.fz")} == set(ORDER)
+    # t7-build is main's training workflow (multinode, no timeout), not one the
+    # dispatcher starts; main owns its rules
+    assert {f.stem for f in FUZZ.glob("*.fz")} - {"t7-build"} == set(ORDER)
 
 
 def test_every_fuzzfile_renders_to_yaml_with_pinned_images_and_no_token_left():
@@ -770,7 +772,7 @@ def test_ward_tokens_default_to_the_open_demo_and_point_at_the_cohort_on_request
     assert line().rstrip().endswith("--port 9000  || true")
     assert (
         "--port 9000 --real-ward --clif-dir /data/dashboard_data "
-        "--names /data/dashboard_data/name.parquet || true"
+        "--names fake || true"  # the generator: keyed by room, covers every staged stay
     ) in line(**COHORT, names=d.COHORT_NAMES)
     # the folder never points into the repo's code tree for a real ward
     assert "/store/code/clif_demo" not in t
@@ -1071,7 +1073,10 @@ def test_twin_services_cannot_fail_the_workflow_by_exiting(tmp_path):
         assert not re.search(r"^\s*exec python", s, re.M), name  # a loop, not exec
         assert "while true; do" in s, name
     boot = twin["dispatcher"]["script"]
-    assert boot.count("degraded ") >= 4 and "--unavailable" in boot
+    # every way the boot can fail degrades instead of exiting: no /dev/shm room,
+    # CLI download, checksum. (A fourth guarded an apt install the dispatcher no
+    # longer does -- it fetches the CLI with python.)
+    assert boot.count("degraded ") >= 3 and "--unavailable" in boot
     bash = shutil.which("bash")
     if bash:  # the script parses
         assert subprocess.run([bash, "-n"], input=boot.encode()).returncode == 0

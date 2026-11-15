@@ -381,7 +381,8 @@ class ChatAgent:
                         "source": data.get("source"),
                         "ward": data.get("ward"),
                         "made_at": data.get("made_at"),
-                        "room": r,
+                        # vital values stay on the room view: the chat gets none
+                        "room": {k: v for k, v in r.items() if k != "vitals_12h"},
                     }
             return {"error": f"pending run: no data for room {room}"}
         if name == "request_forecast_run":

@@ -13,7 +13,7 @@ readable events from the last 12 h. Output holds room numbers, never stay ids.
 
 Usage (after icutwin-winnow and icutwin-extract on the stage ward):
   python app/rooms.py <stage tokenized_output> --model <mdl-dir> \\
-      --probes <probes dir> --stay-ids stage_ward.csv --out rooms.json
+      --probes <probe-<model>.joblib> --stay-ids stage_ward.csv --out rooms.json
   ... --room 7 [--recount --forecast forecast.json]   # room scope
   ... --demo-clock-hours 6                              # recorded for --recount
   ... --real-ward [--demographics <real CLIF folder>]   # a real MIMIC-IV ward
@@ -191,6 +191,7 @@ def room_entries(
     clif: dict | None = None,
     pending: bool = False,
     names: dict[str, dict] | None = None,
+    vitals: dict[str, dict] | None = None,
 ) -> list[dict]:
     """one rooms.json entry per scored stay that has a room; clif = what is on at the
     cut from raw CLIF (app/clif_now.py), else the tokenized at-cut flags. pending
@@ -246,6 +247,8 @@ def room_entries(
                 "level": None if pending else aggregate.level_of(float(any_p[i])),
                 "out": dep is not None and dep >= aggregate.OUT_TAG,
                 "past_12h": events.get(sid, []),
+                # hourly vitals before the cut (app/clif_now.py), only with --clif-now
+                **({"vitals_12h": vitals[sid]} if vitals and sid in vitals else {}),
             }
         )
     return sorted(entries, key=lambda e: e["room"])
@@ -255,7 +258,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("tokenized_output", type=pathlib.Path, help="stage ward folder")
     ap.add_argument("--model", type=pathlib.Path, required=True, help="mdl-<run>/")
-    ap.add_argument("--probes", type=pathlib.Path, help="folder from --save-probes")
+    ap.add_argument(
+        "--probes", type=pathlib.Path, help="probe-<model>.joblib (t7-fit)"
+    )
     ap.add_argument(
         "--stay-ids", type=pathlib.Path, required=True, help="stage_ward.csv"
     )
@@ -266,8 +271,8 @@ def main() -> None:
     ap.add_argument(
         "--no-apply",
         action="store_true",
-        help="use the existing scores-rep-based file (icutwin-rep-score "
-        "--apply-probes already ran)",
+        help="use the existing scores-rep-based file (rep_based.apply_probes "
+        "already ran)",
     )
     ap.add_argument(
         "--cut-time",
@@ -393,6 +398,13 @@ def main() -> None:
         if a.clif_now
         else None
     )
+    vitals = (
+        aggregate.clif_now_mod.vitals_for_stays(
+            a.clif_now, df[HOSP].to_list(), a.demo_clock_hours
+        )
+        if a.clif_now
+        else None
+    )
     demo = demographics(a.demographics, df[HOSP].to_list())
     names, name_counts = fake_names.names_for(
         a.names, room_of, {s: d["sex"] for s, d in demo.items()}
@@ -406,6 +418,7 @@ def main() -> None:
         demo,
         clif,
         names=names,
+        vitals=vitals,
     )
 
     if room is None:

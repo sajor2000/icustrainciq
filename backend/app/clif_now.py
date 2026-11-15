@@ -22,6 +22,7 @@ the winnower sets it, `stay_cuts`), not the site's wall-clock 07:00.
 """
 
 import datetime as dt
+import math
 import pathlib
 
 import polars as pl
@@ -217,6 +218,54 @@ def stay_cuts(
         )
     shift = dt.timedelta(hours=24 + float(demo_clock_hours))
     return {i: arrival[i] + shift for i in ids}
+
+
+VITALS = ("heart_rate", "map", "spo2", "respiratory_rate")  # the room view's four
+VITALS_HOURS = 12
+
+
+def vitals_before_cut(clif_dir, stays: dict) -> dict[str, dict]:
+    """{id: {vital: [{"h": 1..12, "v": value}]}} for the room view: the hourly median
+    of each of VITALS in the 12 h up to each stay's cut, most recent first. `h` is
+    hours before the cut, rounded up and at least 1 (as rooms.json `past_12h`), so
+    no date of the source data is written. Hours with no reading are left out; a
+    stay with none is not in the result. {} when the folder has no vitals table."""
+    f = pathlib.Path(clif_dir) / "clif_vitals.parquet"
+    if not stays or not f.exists():
+        return {}
+    cols = [HOSP, "recorded_dttm", "vital_category", "vital_value"]
+    lf = _read(clif_dir, "vitals", cols, ["recorded_dttm"]).filter(
+        pl.col("vital_category").is_in(VITALS)
+        & pl.col("vital_value").is_not_null()
+        # an infinite or NaN reading would make the hourly median non-finite, and
+        # rooms.json would then not be JSON
+        & pl.col("vital_value").cast(pl.Float64, strict=False).is_finite()
+    )
+    span = dt.timedelta(hours=VITALS_HOURS)
+    ago = (pl.col("cut") - pl.col("recorded_dttm")).dt.total_seconds()
+    rows = (
+        _window(lf, _cuts_frame(stays).lazy(), "recorded_dttm", span)
+        .with_columns(
+            (ago / 3600).ceil().clip(1, VITALS_HOURS).cast(pl.Int32).alias("h")
+        )
+        .group_by(HOSP, "vital_category", "h")
+        .agg(pl.col("vital_value").median().alias("v"))
+        .sort(HOSP, "vital_category", "h")
+        .collect()
+    )
+    out: dict[str, dict] = {}
+    for sid, cat, hh, v in rows.iter_rows():
+        if v is None or not math.isfinite(v):
+            continue
+        series = out.setdefault(sid, {}).setdefault(cat, [])
+        series.append({"h": int(hh), "v": round(float(v), 1)})
+    return out
+
+
+def vitals_for_stays(clif_dir, ids: list[str], demo_clock_hours: float = 0) -> dict:
+    """vitals_before_cut at each stay's own cut (`stay_cuts`)"""
+    ids = list(dict.fromkeys(ids))
+    return vitals_before_cut(clif_dir, stay_cuts(clif_dir, ids, demo_clock_hours))
 
 
 def running_for_stays(clif_dir, ids: list[str], demo_clock_hours: float = 0) -> dict:

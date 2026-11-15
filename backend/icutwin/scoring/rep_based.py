@@ -2,7 +2,11 @@
 
 """
 representation-based predictions on held-out data: a logistic-regression probe
-on icutwin-extract features, fit on train; writes scores-rep-based-<model>.parquet
+on icutwin-extract features, fit on train; writes scores-rep-based-<model>.parquet,
+probe-<model>.joblib and metrics-rep-based-<model>.json (held-out AUROC / AUPRC /
+Brier with bootstrap 95% CIs, calibration, train counts). The probe file gets a
+probe-<model>.meta.json beside it with the model's weights checksum, so
+`apply_probes` (the board's stage ward) refuses probes fit on other weights.
 
 Based on cotorra's rep-based scorer (github.com/bbj-lab/cotorra); see
 ACKNOWLEDGMENTS.md.
@@ -13,9 +17,10 @@ import fnmatch
 import hashlib
 import json
 import pathlib
-import re
+import time
 from typing import Annotated, Optional
 
+import joblib
 import numpy as np
 import polars as pl
 import polars.selectors as cs
@@ -37,18 +42,6 @@ class EstimatorType(str, enum.Enum):
 
 
 SPLITS = ("train", "tuning", "held_out")
-# HARDWARE/DEMO PIVOT (for Vaishvik): the winnower's `at_cut` columns say what is
-# running at the cut. A support that was started and stopped before the cut is off,
-# so apply_probes scores it again (the probe was fit on never-started stays, so
-# that score is an extrapolation) instead of leaving it NaN like `_past` does.
-AT_CUT = {
-    "RESP//device_category//imv": "LABEL//imv_at_cut",
-    "LABEL//pressor_init": "LABEL//pressor_at_cut",
-    "LABEL//crrt_init": "LABEL//crrt_at_cut",
-}
-MANIFEST = "manifest.json"
-
-
 CUT_COLS = ("last_valid", "cut_s")  # a stay's cut, stored by the winnower and extractor
 
 
@@ -73,13 +66,13 @@ def weights_digest(model_home) -> str | None:
     return h.hexdigest()
 
 
-def scores_meta_path(scores: pathlib.Path) -> pathlib.Path:
-    return scores.with_suffix(".meta.json")
+def scores_meta_path(path: pathlib.Path) -> pathlib.Path:
+    return path.with_suffix(".meta.json")
 
 
-def write_scores_meta(scores: pathlib.Path, model_home) -> None:
-    """provenance beside a scores file: which weights it was made with"""
-    scores_meta_path(scores).write_text(
+def write_scores_meta(path: pathlib.Path, model_home) -> None:
+    """provenance beside a scores or probe file: which weights it was made with"""
+    scores_meta_path(path).write_text(
         json.dumps(
             {
                 "model": pathlib.Path(model_home).name,
@@ -89,19 +82,19 @@ def write_scores_meta(scores: pathlib.Path, model_home) -> None:
     )
 
 
-def verify_scores(scores: pathlib.Path, model_home) -> None:
-    """refuse a scores file that was not made with this model's weights"""
-    meta = scores_meta_path(scores)
+def verify_scores(path: pathlib.Path, model_home) -> None:
+    """refuse a scores or probe file that was not made with this model's weights"""
+    meta = scores_meta_path(path)
     if not meta.is_file():
         raise ValueError(
-            f"{scores.name} has no {meta.name}: it was not made by "
-            "icutwin-rep-score --apply-probes for this model; score again"
+            f"{path.name} has no {meta.name}: it was not made for this model; "
+            "run icutwin-rep-score again"
         )
     got = json.loads(meta.read_text())
     if got.get("weights_sha256") != weights_digest(model_home):
         raise ValueError(
-            f"{scores.name} was made with other weights than {model_home}: "
-            "score again with icutwin-rep-score --apply-probes"
+            f"{path.name} was made with other weights than {model_home}: "
+            "run icutwin-rep-score again"
         )
 
 
@@ -153,26 +146,18 @@ def check_features_current(root, model_name: str, stay_ids=None) -> None:
         )
 
 
-def probe_file(token: str) -> str:
-    """saved-probe file name: ADT//TRANSFER_IN//icu -> ADT__TRANSFER_IN__icu.joblib"""
-    return re.sub(r"[^A-Za-z0-9_-]", "_", token.replace("//", "__")) + ".joblib"
-
-
 class RepBasedScorer:
     def __init__(
-        self,
-        root,
-        lookup,
-        model_home,
-        cfg,
-        estimator_type="logistic-CV-z",
-        save_probes=None,
+        self, root, lookup, model_home, cfg, estimator_type="logistic-CV-z", probe=None
     ):
         self.root, self.cfg = root, cfg
-        # hardware pivot for the live demo: keep each fitted probe so the stage ward
-        # is scored with the probe fit on MIMIC training stays, never refit on it
-        self.save_probes = pathlib.Path(save_probes) if save_probes else None
-        self.manifest = {}
+        # fitted probe per task; loaded from `probe` (inference only) or fit on train
+        if probe:  # as apply_probes: never a probe made with other weights
+            verify_scores(pathlib.Path(probe), model_home)
+        self.probes = joblib.load(probe) if probe else {}
+        self.fit_info = {}  # training side of each fit, for the metrics file
+        self.fit = probe is None
+        self.splits = ("train", "held_out") if self.fit else ("held_out",)
         self.model_home = pathlib.Path(model_home)
         self.model_name = self.model_home.name
         self.estimator_type = estimator_type
@@ -186,7 +171,7 @@ class RepBasedScorer:
                     .to_series()
                     .to_list()
                 )
-                for s in ("train", "held_out")
+                for s in self.splits
             }
         except FileNotFoundError as e:
             raise FileNotFoundError(
@@ -194,7 +179,7 @@ class RepBasedScorer:
             ) from e
         self.labels = {
             s: pl.scan_parquet(root / f"{s}_for_inference.parquet")
-            for s in ("train", "held_out")
+            for s in self.splits
         }
         # vocab tokens, plus winnower-derived labels (flag columns, not tokens)
         cols = self.labels["held_out"].collect_schema().names()
@@ -247,43 +232,39 @@ class RepBasedScorer:
             case _:
                 raise ValueError(f"unknown estimator {self.estimator_type!r}")
 
-    def score_label(self, target_token):
+    def fit_label(self, target_token):
+        """fit on train stays where the event has not happened before the cut"""
         cols = (~pl.col(f"{target_token}_past"), f"{target_token}_future")
         train_valid, train_label = (
             self.labels["train"].select(*cols).collect().to_numpy().T
         )
         train_valid = train_valid.astype(bool)
-        n_held_out = self.labels["held_out"].select(pl.len()).collect().item()
-        if len(set(train_label[train_valid].astype(int))) < 2:  # rare outcome
-            logger.warning(f"{target_token}: one class in train, scores left NaN")
-            self.manifest[target_token] = {
-                "file": None,
-                "n_train": int(train_valid.sum()),
-            }
-            return np.full(n_held_out, np.nan)
-        mdl = self.make_model()
-        mdl.fit(
-            X=self.features["train"][train_valid],
-            y=train_label[train_valid].astype(int),
-        )
-        self.manifest[target_token] = {
-            "file": probe_file(target_token),
+        y = train_label[train_valid].astype(int)
+        info = self.fit_info[target_token] = {
             "n_train": int(train_valid.sum()),
-            "positives": int(train_label[train_valid].astype(int).sum()),
+            "n_train_pos": int(y.sum()),
         }
-        if self.save_probes:
-            import joblib
+        if len(set(y)) < 2:  # rare outcome
+            logger.warning(f"{target_token}: one class in train, scores left NaN")
+            return None
+        mdl = self.make_model()
+        mdl.fit(X=self.features["train"][train_valid], y=y)
+        est = mdl[-1] if isinstance(mdl, skl.pipeline.Pipeline) else mdl
+        if hasattr(est, "scores_"):  # CV estimators: chosen C, its mean fold AUROC
+            info["C"] = float(est.C_)
+            info["cv_roc_auc"] = float(est.scores_.mean(axis=0).max())
+        return mdl
 
-            self.save_probes.mkdir(parents=True, exist_ok=True)
-            joblib.dump(mdl, self.save_probes / probe_file(target_token))
-        # demo pivot: a support stopped before the cut is off, so score it; the probe
-        # was fit on never-started stays (see AT_CUT)
-        ho_cols = self.labels["held_out"].collect_schema().names()
-        running = AT_CUT.get(target_token)
-        ho_mask = ~pl.col(running) if running in ho_cols else cols[0]
-        held_out_valid = (
+    def score_label(self, target_token):
+        if self.fit:
+            self.probes[target_token] = self.fit_label(target_token)
+        mdl = self.probes.get(target_token)
+        n_held_out = self.labels["held_out"].select(pl.len()).collect().item()
+        if mdl is None:
+            return np.full(n_held_out, np.nan)
+        held_out_valid = (  # already happened before the cut: no probability
             self.labels["held_out"]
-            .select(ho_mask)
+            .select(~pl.col(f"{target_token}_past"))
             .collect()
             .to_numpy()
             .ravel()
@@ -302,7 +283,7 @@ class RepBasedScorer:
             for tt in self.grokked_outcome_tokens
         }
 
-    def save_all(self, verbose: bool = True):
+    def save_all(self, n_samples: int = 10_000):
         out = self.root / f"scores-rep-based-{self.model_name}.parquet"
         (
             df_res := self.labels["held_out"]
@@ -311,69 +292,60 @@ class RepBasedScorer:
             .with_columns(pl.from_dict(self.score()))
         ).write_parquet(out)
         logger.info(out.name)
-        write_scores_meta(out, self.model_home)
-        if self.save_probes:
-            (self.save_probes / MANIFEST).write_text(
-                json.dumps(
-                    {
-                        "model": self.model_name,
-                        "weights_sha256": weights_digest(self.model_home),
-                        "estimator": str(self.estimator_type),
-                        "features": int(self.features["train"].shape[1]),
-                        "tokens": self.manifest,
-                    },
-                    indent=2,
-                )
-            )
-            logger.info(f"{len(self.manifest)} probes saved")
-        if verbose:
-            summarize_preds(logger, df_res, self.grokked_outcome_tokens)
+        if self.fit:
+            probe = self.root / f"probe-{self.model_name}.joblib"
+            joblib.dump({k: v for k, v in self.probes.items() if v is not None}, probe)
+            write_scores_meta(probe, self.model_home)
+            logger.info(probe.name)
+        held_out = summarize_preds(
+            logger, df_res, self.grokked_outcome_tokens, n_samples
+        )
+        out = self.root / f"metrics-rep-based-{self.model_name}.json"
+        report = {
+            "model": self.model_name,
+            "estimator": str(self.estimator_type),
+            "eval_split": "held_out",
+            "bootstrap_samples": n_samples,
+            "created": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "tasks": {
+                tt: {**self.fit_info.get(tt, {}), **held_out.get(tt, {}).get("rep", {})}
+                for tt in self.grokked_outcome_tokens
+            },
+        }
+        out.write_text(json.dumps(report, indent=2))
+        logger.info(out.name)
 
 
 def rep_score(
-    tokenized_output,
-    model_home,
-    config=None,
-    estimator="logistic-CV-z",
-    save_probes=None,
+    tokenized_output, model_home, config=None, estimator="logistic-CV-z", probe=None
 ):
     cfg = merge_config("scoring.yaml", config)
     root = pathlib.Path(tokenized_output).expanduser().resolve()
     RepBasedScorer(
-        root, load_vocab(root)["lookup"], model_home, cfg, estimator, save_probes
+        root, load_vocab(root)["lookup"], model_home, cfg, estimator, probe
     ).save_all()
 
 
 def apply_probes(
-    tokenized_output, model_home, probes_dir, stay_ids=None, out_name=None
+    tokenized_output, model_home, probe, stay_ids=None, out_name=None
 ) -> pathlib.Path:
-    """score another cohort (the stage ward) with probes saved by a training run.
+    """score another cohort (the stage ward) with a saved probe-<model>.joblib.
 
     Reads features-<split>-<model>.parquet and <split>_for_inference.parquet for
     every split that has both (icutwin-extract and icutwin-winnow on that cohort),
-    keeps `stay_ids` (hospitalization ids) when given, applies each saved probe
-    and writes scores-rep-based-<model>.parquet in the same layout fitting writes.
-    Nothing is fit here; a task whose probe was skipped in training stays NaN.
-    `out_name` (live-demo pivot, for Vaishvik) writes to another file name in the
-    folder, so a one-room rescore does not overwrite the whole ward's scores.
+    keeps `stay_ids` when given, applies each saved probe and writes
+    scores-rep-based-<model>.parquet (or `out_name`, so a one-room rescore does not
+    overwrite the ward's scores). Nothing is fit here. Same rule as fitting: an
+    event already seen before the cut gets no probability; a task with no probe
+    (one class in train) stays NaN.
     """
-    import joblib
-
     root = pathlib.Path(tokenized_output).expanduser().resolve()
-    probes = pathlib.Path(probes_dir).expanduser().resolve()
+    probe = pathlib.Path(probe).expanduser().resolve()
     model_name = pathlib.Path(model_home).name
-    manifest = json.loads((probes / MANIFEST).read_text())
-    if manifest["model"] != model_name:
-        raise ValueError(
-            f"probes were fit for {manifest['model']}, not {model_name}; refit them"
-        )
-    if manifest.get("weights_sha256") != weights_digest(model_home):
-        raise ValueError(
-            f"probes were fit on other weights than {model_home} (checksum differs "
-            "or none was recorded); refit them with icutwin-rep-score --save-probes"
-        )
+    verify_scores(probe, model_home)
+    probes = joblib.load(probe)
     check_features_current(root, model_name, stay_ids)
-    parts = []
+    labels, xs = [], []
     for s in SPLITS:
         f, lab = (
             root / f"features-{s}-{model_name}.parquet",
@@ -381,38 +353,31 @@ def apply_probes(
         )
         if not (f.is_file() and lab.is_file()):
             continue
-        ids = pl.read_parquet(f, columns=["hospitalization_id"])
-        x = pl.read_parquet(f, columns=["features"]).to_series().to_list()
-        feats = pl.DataFrame(
-            {"hospitalization_id": ids.to_series(), "_x": list(range(len(x)))}
-        )
-        labels = (
+        feats = pl.read_parquet(f, columns=["hospitalization_id", "features"])
+        if not feats.height:
+            continue
+        # features rows may not follow the label order (a --stay-ids re-extract)
+        lab_df = (
             pl.read_parquet(lab)
             .select(~cs.by_dtype(pl.List))
-            .join(feats, on="hospitalization_id", how="inner")
+            .join(feats.with_row_index("_x"), on="hospitalization_id", how="inner")
         )
-        parts.append(
-            (labels, np.vstack(x) if x else np.empty((0, manifest["features"])))
-        )
-    if not parts:
+        x = np.vstack(feats["features"].to_list())
+        labels.append(lab_df.drop("_x", "features"))
+        xs.append(x[lab_df["_x"].to_numpy()])
+    if not labels:
         raise FileNotFoundError("no features-*/for_inference pair; run extract first")
-    labels = pl.concat([p[0].drop("_x") for p in parts], how="diagonal")
-    xs = np.vstack([p[1][p[0]["_x"].to_numpy()] for p in parts])
+    labels, xs = pl.concat(labels, how="diagonal"), np.vstack(xs)
     if stay_ids is not None:
         keep = labels["hospitalization_id"].is_in(list(stay_ids)).to_numpy()
         labels, xs = labels.filter(pl.Series(keep)), xs[keep]
     scores = {}
-    for token, meta in manifest["tokens"].items():
+    for token, mdl in probes.items():
         past = f"{token}_past"
         col = np.full(labels.height, np.nan)
-        if meta["file"] and past in labels.columns and labels.height:
-            running = AT_CUT.get(token)
-            if running in labels.columns:  # off at the cut = forecastable again
-                valid = ~labels[running].to_numpy().astype(bool)
-            else:
-                valid = ~labels[past].to_numpy().astype(bool)
+        if past in labels.columns and labels.height:
+            valid = ~labels[past].to_numpy().astype(bool)
             if valid.any():
-                mdl = joblib.load(probes / meta["file"])
                 col[valid] = mdl.predict_proba(xs[valid])[:, 1]
         scores[f"{token}_rep_score"] = col
     out = root / (out_name or f"scores-rep-based-{model_name}.parquet")
@@ -440,15 +405,16 @@ def cli(
     estimator: Annotated[
         EstimatorType, typer.Option("--estimator", "-e")
     ] = EstimatorType.logistic_cv_z,
-    save_probes: Annotated[
+    probe: Annotated[
         Optional[pathlib.Path],
-        typer.Option("--save-probes", help="folder to keep the fitted probes in"),
+        typer.Option("--probe", "-p", help="saved probe-<model>.joblib: score only"),
     ] = None,
     apply_from: Annotated[
         Optional[pathlib.Path],
         typer.Option(
             "--apply-probes",
-            help="do not fit: score this folder's features with probes saved earlier",
+            help="probe-<model>.joblib: score another cohort's features (every "
+            "split, no metrics, no fit), e.g. the stage ward",
         ),
     ] = None,
     stay_ids: Annotated[
@@ -458,7 +424,9 @@ def cli(
         ),
     ] = None,
 ):
-    """Fit a logistic probe on train features, score held_out (or apply probes)."""
+    """Fit a logistic probe on train features (saved as probe-<model>.joblib),
+    score held_out, write metrics-rep-based-<model>.json; with --probe, reuse a
+    saved probe and skip the fit; with --apply-probes, score another cohort."""
     if apply_from:
         keep = None
         if stay_ids:
@@ -467,7 +435,7 @@ def cli(
             )["hospitalization_id"].to_list()
         apply_probes(tokenized_output, model_home, apply_from, keep)
         return
-    rep_score(tokenized_output, model_home, config, estimator.value, save_probes)
+    rep_score(tokenized_output, model_home, config, estimator.value, probe)
 
 
 def main():
