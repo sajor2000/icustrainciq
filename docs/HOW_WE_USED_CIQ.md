@@ -85,6 +85,25 @@ One forecast for the 25-patient ward takes about 78 seconds, from load to score.
 
 Volumes as Fuzzball lists them (provisioner `team7`): `mimic_clif` 200 GB, `twin-store` 20 GB, `hfcache` (no fixed size reported).
 
+### Which node ran each step
+
+Fuzzball places each step; these are the hosts it recorded (read only, 2026-11-15). Node A is CIQ-CHI-SPARK13 (192.168.99.22), node B is CIQ-CHI-SPARK14 (192.168.99.23); each is a Lenovo ThinkStation PGX with one NVIDIA GB10 (20 Arm cores, about 128 GB, one GPU).
+
+| Workflow | Step | Node |
+|---|---|---|
+| Job 1 `job_1_data_move` | `copy-in` (alpine) | A |
+| Job 2 `job-2-tokenize` | `tokenize` | B |
+| Job 3 `job-3-train ep2-20261114c` | `setup` | A |
+| | `train` (DDP, one rank and one GPU per node) | A and B |
+| Job 3.1 `job-3-1-package ep2-20261114c` | `package`, `loadtest` | A |
+| Job 4 `job4-probe-20261114d` | `winnow` | A |
+| | `extract` (one GPU per node) | A and B |
+| | `probe` (fit on CPU) | B |
+| Job 5 `t7-launch` (Nov 15 run) | `load`, `infer` (GPU) | B |
+| | `score` | A |
+| | service `board` | A |
+| | service `nemotron` (GPU) | B |
+
 ## How to run it
 
 From the ICU-Twin checkout, with the Fuzzball MCP or CLI (`workflows/job_5_launch/README.md`):

@@ -30,11 +30,9 @@
 {\large\itshape\color{sec} From bench to bedside}
 \end{minipage}\hfill
 \begin{minipage}[b]{0.61\textwidth}\raggedleft\sffamily\fontsize{7.6}{9.4}\selectfont\color{sec}
-\textbf{\color{ink}Team 7 \textperiodcentered{} CLIF} \textperiodcentered{} CIQ $\times$ NVIDIA $\times$ Lenovo Local AI Hackathon\\
-Chicago, Nov 14--15, 2026\\
-J.C. Rojas, MD, MS (Rush University) \textperiodcentered{} Kaveri Chhikara, MS (UChicago Medicine)\\
-Vaishvik Chaudhari, MS (Rush University) \textperiodcentered{} Dema Therese, MS (UChicago Medicine)\\
-Zewei (`Whiskey') Liao, MS (UChicago Medicine)
+\textbf{\color{ink}Team 7 \textperiodcentered{} CLIF} \textperiodcentered{} CIQ $\times$ NVIDIA $\times$ Lenovo Local AI Hackathon \textperiodcentered{} Chicago, Nov 14--15, 2026\\
+Rush University: J.C. Rojas, MD, MS \textperiodcentered{} Vaishvik Chaudhari, MS\\
+UChicago Medicine: Kaveri Chhikara, MS \textperiodcentered{} Dema Therese, MS \textperiodcentered{} Zewei (`Whiskey') Liao, MS
 \end{minipage}
 
 \vspace{2pt}{\color{ink}\rule{\textwidth}{1.1pt}}\vspace{3pt}
@@ -53,24 +51,25 @@ A bed board the ICU nurse and doctor read at 7 am, before rounds (the daily team
 
 \vspace{2pt}
 {\sffamily\bfseries\color{blue}\small THE FIVE PREDICTIONS\hfill\normalfont\itshape\color{sec} each is the chance it happens in the next 24 hours\par}\vspace{1pt}
-\begin{center}\includegraphics[width=0.88\linewidth]{img/five-cards.png}\end{center}\vspace{-8pt}
+{\par\vspace{3pt}\centering \includegraphics[width=0.78\linewidth]{img/five-cards.png}\par\vspace{2pt}}
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
 AUROC: area under the receiver operating characteristic curve (1.0 is perfect), on held-out patients never seen in training.}
 
 \vspace{5pt}
 {\sffamily\bfseries\color{blue}\small WHAT IS NEW: A NEMOTRON BACKBONE TRAINED FROM SCRATCH\hfill\normalfont\itshape\color{sec} GEM (generative event model): 36M params, 1,231-token vocab\par}\vspace{2pt}
-\begin{center}\includegraphics[width=0.8\linewidth]{../diagrams/model-steps.png}\end{center}
+{\par\vspace{3pt}\centering \includegraphics[width=0.6\linewidth]{../diagrams/model-steps.png}\par\vspace{2pt}}
 \vspace{-6pt}
 
 
 \vspace{2pt}
-{\sffamily\bfseries\color{blue}\small HOW WE USED THE CIQ STACK\hfill\normalfont\itshape\color{sec} every Fuzzball job on two Lenovo PGX workstations, one NVIDIA GB10 chip (Arm CPU + GPU) each\par}
-\begin{center}
-\includegraphics[width=0.74\linewidth]{../diagrams/architecture-print.png}
-\end{center}
+{\sffamily\bfseries\color{blue}\small HOW WE USED THE CIQ STACK \textperiodcentered{} 1 TRAINING\hfill\normalfont\itshape\color{sec} run once on both NVIDIA GB10 workstations, node by node\par}
+{\par\vspace{3pt}\centering \includegraphics[width=0.62\linewidth]{../diagrams/arch-train.png}\par\vspace{2pt}}
+
+{\sffamily\bfseries\color{blue}\small 2 ICU HORIZON LIVE\hfill\normalfont\itshape\color{sec} what Fuzzball runs for the bed board and the chat, node by node\par}
+{\par\vspace{3pt}\centering \includegraphics[width=0.62\linewidth]{../diagrams/arch-live.png}\par\vspace{2pt}}
 \vspace{-4pt}
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
-\textbf{\color{ink}Fuzzball:} Orchestrate schedules, Substrate runs the containers, VAST Data storage holds the volumes; we drove it with the Fuzzball MCP (Model Context Protocol) server. \textbf{\color{ink}Tracks:} multi-node training (PyTorch DDP: distributed data parallel) \textperiodcentered{} inference (chat on llama.cpp, an open-source LLM server) \textperiodcentered{} scientific AI \textperiodcentered{} cluster scheduling.\par}
+\textbf{\color{ink}Fuzzball:} Orchestrate schedules, Substrate runs the containers, driven by its MCP (Model Context Protocol) server. DDP: PyTorch distributed data parallel. llama.cpp: an open-source LLM server.\par}
 
 \vfill
 {\color{ink}\rule{\textwidth}{0.9pt}}\\[2pt]

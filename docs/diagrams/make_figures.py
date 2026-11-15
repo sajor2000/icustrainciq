@@ -330,18 +330,18 @@ def architecture_print():
     xs, w, h, ys = (40, 270, 500, 730, 960), 200, 128, (72, 248, 424)
     cx = [x + w // 2 for x in xs]
     r1, r2, r3 = ys
-    f.node(xs[0], r1, w, h, "card", "Job 1 · CPU", "Move data", ["CLIF records in", "alpine image", "1 core · 2 GiB"])
+    f.node(xs[0], r1, w, h, "card", "Job 1 · CPU · Node A", "Move data", ["CLIF records in", "alpine image", "1 core · 2 GiB"])
     f.node(xs[1], r1, w, h, "card", "Job 2 · CPU", "Tokenize", ["events into tokens", "uv Python image", "20 cores · 110 GiB"])
-    f.node(xs[2], r1, w, h, "model", "Job 3 · 2 nodes × GPU", "Train the GEM", ["Nemotron backbone", "from scratch, DDP", "20 cores, 110 GiB ea."])
-    f.node(xs[3], r1, w, h, "card", "Job 3.1 · CPU", "Package", ["save checkpoint", "load test passes", "2 cores · 4 GiB"])
+    f.node(xs[2], r1, w, h, "model", "Job 3 · 2 GPUs · A + B", "Train the GEM", ["Nemotron backbone,", "1 DDP rank per node", "20 cores, 110 GiB ea."])
+    f.node(xs[3], r1, w, h, "card", "Job 3.1 · CPU · Node A", "Package", ["save checkpoint", "load test passes", "2 cores · 4 GiB"])
     f.node(xs[4], r1, w, h, "card", "Job 4 · 2 GPUs, CPU", "Fit probes", ["embed on 2 × GB10", "fit 6 probes on CPU", "20 cores · 90 GiB"])
     f.node(xs[0], r2, w, h, "card", "Fuzzball", "Object cache", ["code, data in", "logs, counts out", "never overwrites"])
     f.node(xs[1], r2, w, h, "store", "VAST volume · 200 GB", "mimic_clif", ["CLIF records,", "tokens, GEM, probes", "read-only in job 5"])
     f.node(xs[2], r2, w, h, "forecast", "VAST volume · 20 GB", "twin-store", ["staged ward,", "rooms.json,", "forecast.json"])
     f.node(xs[4], r2, w, h, "store", "VAST volume", "hfcache", ["Nemotron E4B", "4-bit GGUF weights", "pinned revision"])
-    f.node(xs[0], r3, w, h, "card", "Job 5 · CPU", "Load", ["vocab gate, inputs", "2 cores · 8 GB", "ran 7 s"])
+    f.node(xs[0], r3, w, h, "card", "Job 5 · CPU · Node B", "Load", ["vocab gate, inputs", "2 cores · 8 GB", "ran 7 s"])
     f.node(xs[1], r3, w, h, "model", "Job 5 · 1 GPU", "Infer", ["GEM + probes, 25 pts", "8 cores · 48 GB", "ran 35 s"])
-    f.node(xs[2], r3, w, h, "card", "Job 5 · CPU", "Score", ["beds, unit totals", "4 cores · 16 GB", "ran 33 s"])
+    f.node(xs[2], r3, w, h, "card", "Job 5 · CPU · Node A", "Score", ["beds, unit totals", "4 cores · 16 GB", "ran 33 s"])
     f.node(xs[3], r3, w, h, "card", "Service · CPU", "Bed board", ["python:3.12-slim", "port 8080 to HTTPS", "2 cores · 4 GB"])
     f.node(xs[4], r3, w, h, "nvidia", "Service · 1 GPU", "Nemotron chat", ["Bolt E4B, llama.cpp", "64k-token context", "8 cores · 32 GB"])
     m1, m3 = r1 + h // 2, r3 + h // 2
@@ -358,6 +358,63 @@ def architecture_print():
     f.arrow([(xs[2] + w, 312), (cx[3], 312), (cx[3], r3)], BLUE, label="Forecast", at=(780, 312))
     f.arrow([(cx[4], r2 + h), (cx[4], r3)], label="Weights", at=(cx[4], 400), side="right")
     f.caption("Each box: one Fuzzball job or service, its image and its request.", 612)
+    f.write()
+
+
+# =============================================================== print: split architecture, training and the live app
+def arch_train():
+    f = Fig("arch-train", 1200, 436, "Training on CIQ Fuzzball, run once",
+            "Training ran once as four CIQ Fuzzball workflows on two Lenovo ThinkStation PGX workstations, each with one NVIDIA GB10 (20 Arm cores, 128 GB, one GPU). Job 1 copies CLIF records in through the object cache (1 core, 2 GiB). Job 2 tokenizes them into the custom 1,231-token vocabulary (20 cores, 110 GiB). Job 3 trains the GEM, an NVIDIA Nemotron 3.5 Bolt E4B backbone, from scratch with PyTorch distributed data parallel on two nodes with one GPU each (20 cores, 110 GiB per node). Job 3.1 packages and load-tests the checkpoint (2 cores, 4 GiB). Job 4 embeds patients on both GPUs and fits six probes on CPU (20 cores, 90 GiB). Tokens, the GEM and the probes are saved on the 200 GB mimic_clif VAST volume.",
+            "ICU Horizon · training", "Training: jobs 1 to 4, run once", big=True)
+    f.t_title = 17
+    f.zone(16, 40, 1168, 336, label="Train once · Node A = SPARK13, Node B = SPARK14 · NVIDIA GB10: 20 Arm cores, 128 GB, 1 GPU each")
+    xs, w, h, r1, r2 = (40, 270, 500, 730, 960), 200, 128, 72, 248
+    cx = [x + w // 2 for x in xs]
+    f.node(xs[0], r1, w, h, "card", "Job 1 · CPU · Node A", "Move data", ["CLIF records in", "alpine image", "1 core · 2 GiB"])
+    f.node(xs[1], r1, w, h, "card", "Job 2 · CPU · Node B", "Tokenize", ["custom 1,231-token", "vocabulary", "20 cores · 110 GiB"])
+    f.node(xs[2], r1, w, h, "model", "Job 3 · 2 GPUs · A + B", "Train the GEM", ["Nemotron backbone,", "1 DDP rank per node", "20 cores, 110 GiB ea."])
+    f.node(xs[3], r1, w, h, "card", "Job 3.1 · CPU · Node A", "Package", ["save checkpoint", "load test passes", "2 cores · 4 GiB"])
+    f.node(xs[4], r1, w, h, "card", "Job 4 · 2 GPUs · A + B", "Fit probes", ["embed on both GPUs,", "fit 6 probes on B", "20 cores · 90 GiB"])
+    f.node(xs[0], r2, w, 104, "card", "Fuzzball", "Object cache", ["the only way in", "or out"])
+    f.node(xs[1], r2, 660, 104, "store", "VAST volume · 200 GB", "mimic_clif", ["CLIF records, tokens, the GEM checkpoint and the six probes"])
+    m1 = r1 + h // 2
+    for i in range(4):
+        f.arrow([(xs[i] + w, m1), (xs[i + 1], m1)])
+    f.arrow([(cx[0], r2), (cx[0], r1 + h)], label="Data in", at=(cx[0], 224), side="right")
+    f.arrow([(cx[1], r1 + h), (cx[1], r2)], label="Tokens", at=(cx[1], 224), side="right")
+    f.arrow([(cx[2], r1 + h), (cx[2], r2)], BLUE, label="GEM", at=(cx[2], 224), side="right")
+    f.arrow([(cx[4], r1 + h), (cx[4], 300), (930, 300)], label="Probes", at=(cx[4], 252), side="right")
+    f.caption("Each box: one Fuzzball job, the node Fuzzball placed it on, and its request.", 412)
+    f.write()
+
+
+def arch_live():
+    f = Fig("arch-live", 1200, 476, "ICU Horizon live on CIQ Fuzzball",
+            "The live app is one CIQ Fuzzball workflow, job 5 (t7-launch), on the same two NVIDIA GB10 workstations. Load checks the code, the GEM and the 25 patients (2 cores, 8 GB, 7 s). Infer runs the GEM and its probes on one GPU (8 cores, 48 GB, 35 s). Score adds up beds and the unit (4 cores, 16 GB, 33 s) and writes the forecast to the 20 GB twin-store VAST volume. Two services stay up: the bed board (python 3.12, 2 cores, 4 GB) serves clinicians over HTTPS, and the chat, NVIDIA Nemotron 3.5 Bolt E4B in 4-bit on llama.cpp (one GPU, 8 cores, 32 GB, weights on hfcache), answers questions through tools.",
+            "ICU Horizon · live app", "The live app: job 5 and two services", big=True)
+    f.t_title = 17
+    f.zone(16, 40, 1168, 376, label="ICU Horizon live · job 5 (t7-launch) · Node A = SPARK13, Node B = SPARK14 · CIQ Fuzzball 4.3")
+    xs, w, h, r1, r2 = (40, 270, 500, 730, 960), 200, 128, 72, 264
+    cx = [x + w // 2 for x in xs]
+    f.node(xs[0], r1, w, h, "card", "Fuzzball", "Object cache", ["code in,", "counts out", "never overwrites"])
+    f.node(xs[1], r1, w, h, "store", "VAST · read only", "mimic_clif", ["the GEM, probes,", "25 patients'", "CLIF records"])
+    f.node(xs[2], r1, w, h, "forecast", "VAST volume · 20 GB", "twin-store", ["staged ward,", "rooms.json,", "forecast.json"])
+    f.node(xs[4], r1, w, h, "store", "VAST volume", "hfcache", ["Nemotron E4B", "4-bit GGUF weights", "pinned revision"])
+    f.node(xs[0], r2, w, h, "card", "Job 5 · CPU · Node B", "Load", ["vocab gate, inputs", "2 cores · 8 GB", "ran 7 s"])
+    f.node(xs[1], r2, w, h, "model", "Job 5 · GPU · Node B", "Infer", ["GEM + probes,", "8 cores · 48 GB", "ran 35 s"])
+    f.node(xs[2], r2, w, h, "card", "Job 5 · CPU · Node A", "Score", ["beds, unit totals", "4 cores · 16 GB", "ran 33 s"])
+    f.node(xs[3], r2, w, h, "card", "Service · CPU · A", "Bed board", ["HTTPS to clinicians", "python:3.12-slim", "2 cores · 4 GB"])
+    f.node(xs[4], r2, w, h, "nvidia", "Service · GPU · B", "Nemotron chat", ["Bolt E4B, llama.cpp", "64k-token context", "8 cores · 32 GB"])
+    m2 = r2 + h // 2
+    f.arrow([(xs[0] + w, m2), (xs[1], m2)])
+    f.arrow([(xs[1] + w, m2), (xs[2], m2)])
+    f.arrow([(xs[3] + w, m2), (xs[4], m2)])
+    f.arrow([(cx[0], r1 + h), (cx[0], r2)], label="Code in", at=(cx[0], 232), side="right")
+    f.arrow([(cx[1], r1 + h), (cx[1], r2)], label="GEM", at=(cx[1], 232), side="right")
+    f.arrow([(cx[2], r2), (cx[2], r1 + h)], BLUE, label="Writes", at=(cx[2], 232), side="right")
+    f.arrow([(xs[2] + w, 136), (cx[3], 136), (cx[3], r2)], BLUE, label="Forecast", at=(780, 136))
+    f.arrow([(cx[4], r1 + h), (cx[4], r2)], label="Weights", at=(cx[4], 232), side="right")
+    f.caption("Node: where Fuzzball placed each step in the Nov 15 run. The board and chat stay up.", 452)
     f.write()
 
 
@@ -550,7 +607,7 @@ def results_auroc():
     f.write()
 
 
-FIGURES = (stack, flow, architecture, architecture_print, model_steps, workflow, api, trigger, data_boundary, results_auroc)
+FIGURES = (stack, flow, architecture, architecture_print, model_steps, arch_train, arch_live, workflow, api, trigger, data_boundary, results_auroc)
 
 if __name__ == "__main__":
     if "--night" in sys.argv:

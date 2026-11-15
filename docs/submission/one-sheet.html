@@ -72,8 +72,8 @@ section{margin-top:6px}
 .steps b i{font-style:normal;color:var(--blue);margin-right:4px}
 
 /* the stack: ink band */
-.arch img{display:block;width:81%;margin:0 auto;height:auto;border-radius:8px}
-.steps-fig img{display:block;width:77%;margin:0 auto;height:auto;border-radius:.5rem}
+.arch img{display:block;width:62%;margin:0 auto 4px;height:auto;border-radius:8px}
+.steps-fig img{display:block;width:70%;margin:0 auto;height:auto;border-radius:.5rem}
 .arch-note{margin-top:4px;font-size:11px;line-height:1.38;color:var(--ink-2)}
 .arch-note b{color:var(--ink)}
 
@@ -119,7 +119,7 @@ section{margin-top:6px}
     </div>
     <div>
       <h2>What is new for healthcare AI</h2>
-      <ul class="new"><li><b>GEM (generative event model):</b> an NVIDIA Nemotron 3.5 Bolt E4B backbone trained from scratch (no pretrained weights): 36M parameters, custom 1,231-token ICU vocabulary.</li><li><b>One pass, many outcomes:</b> linear probes on the last hidden state; no retraining.</li><li><b>Patient to unit:</b> probabilities sum into machine demand a day ahead.</li><li><b>On-premises:</b> the hospital's own hardware.</li></ul>
+      <ul class="new"><li><b>GEM (generative event model):</b> NVIDIA Nemotron E4B backbone, trained from scratch: 36M parameters, custom 1,231-token ICU vocabulary.</li><li><b>One pass, many outcomes:</b> linear probes on the hidden state.</li><li><b>Patient to unit:</b> sums into machine demand.</li><li><b>On-premises:</b> the hospital's own hardware.</li></ul>
     </div>
   </section>
 
@@ -140,10 +140,12 @@ section{margin-top:6px}
     <img src="../diagrams/model-steps.png" alt="The GEM in four steps: 1, train the GEM from scratch: an NVIDIA Nemotron 3.5 Bolt E4B backbone with a custom vocabulary of 1,231 ICU event tokens; 2, highlighted, read its hidden layer: one pass per patient gives a 384-dimensional embedding; 3, six logistic-regression probes give 24-hour event probabilities; 4, the Nemotron E4B chat explains the forecast through tools and predicts nothing.">
   </section>
 
-  <section class="pad arch" aria-label="Architecture">
-    <span class="cap">How we used the CIQ stack <em>every Fuzzball job on two Lenovo PGX workstations, each one NVIDIA GB10 (Arm CPU + GPU)</em></span>
-    <img src="../diagrams/architecture-print.png" alt="Every Fuzzball job on two Lenovo PGX machines. Train once: job 1 moves data in (CPU), job 2 tokenizes (CPU), job 3 trains the GEM on two GPUs, job 3.1 packages it (CPU), job 4 fits six probes (two GPUs, then CPU), saved to the mimic_clif VAST volume. Job 5: load (CPU), infer with the GEM and probes (one GPU), score (CPU) to the twin-store VAST volume; the bed board service (CPU) reads it and NVIDIA Nemotron 3.5 Bolt E4B on llama.cpp (one GPU, weights on hfcache) answers chat.">
-    <p class="arch-note"><b>Fuzzball:</b> Orchestrate schedules jobs, images and VAST Data storage volumes; Substrate runs the containers (NVIDIA NGC PyTorch; llama.cpp, an open-source LLM server); we drove it with the Fuzzball MCP (Model Context Protocol) server and command line. <b>Tracks:</b> multi-node training (job 3, PyTorch DDP: distributed data parallel) · inference · scientific AI · cluster scheduling.</p>
+  <section class="pad arch" aria-label="How we used the CIQ stack">
+    <span class="cap">How we used the CIQ stack · 1 Training <em>run once on both NVIDIA GB10 workstations</em></span>
+    <img src="../diagrams/arch-train.png" alt="Training on CIQ Fuzzball, run once: job 1 moves CLIF records in on node A (CPU); job 2 tokenizes them into the custom 1,231-token vocabulary on node B (CPU); job 3 trains the GEM, a Nemotron backbone, from scratch on both nodes with one DDP rank and one GPU each; job 3.1 packages the checkpoint on node A; job 4 embeds patients on both GPUs and fits six probes on node B. Tokens, the GEM and the probes are saved on the 200 GB mimic_clif VAST volume.">
+    <span class="cap">2 ICU Horizon live <em>what Fuzzball runs for the bed board and the chat</em></span>
+    <img src="../diagrams/arch-live.png" alt="ICU Horizon live, job 5 on CIQ Fuzzball: load (CPU, node B), infer with the GEM and probes (GPU, node B, 35 s), score (CPU, node A) writes the forecast to twin-store; the bed board service (CPU, node A) serves clinicians over HTTPS; the Nemotron 3.5 Bolt E4B chat on llama.cpp (GPU, node B) answers questions, with weights on hfcache.">
+    <p class="arch-note"><b>Fuzzball:</b> Orchestrate schedules, Substrate runs the containers (NVIDIA NGC PyTorch; llama.cpp, an open-source LLM server), driven by its MCP (Model Context Protocol) server. DDP: PyTorch distributed data parallel.</p>
   </section>
 
   <footer class="foot pad">
