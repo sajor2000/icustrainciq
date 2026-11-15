@@ -4,8 +4,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lookahead · the ICU's next 24 hours, on two local machines</title>
-<meta name="description" content="Lookahead is a bed board that tells a small ICU at 07:00 what the next 24 hours will need. It runs on two Lenovo ThinkStation PGX machines under CIQ Fuzzball, with NVIDIA Nemotron 3 Nano for chat and a patient model the team trained.">
+<title>ICU Lookahead · see the next 24 hours of your ICU</title>
+<meta name="description" content="ICU Lookahead is a bed board that tells a small ICU at 07:00 what the next 24 hours will need. It runs on two Lenovo ThinkStation PGX machines under CIQ Fuzzball, with NVIDIA Nemotron 3 Nano for chat and a patient model the team trained.">
 <meta name="color-scheme" content="light dark">
 <style>
 :root{
@@ -161,7 +161,7 @@ footer p{max-width:80ch}
 
 <header class="top">
   <div class="wrap">
-    <a class="mark" href="#top">Lookahead</a>
+    <a class="mark" href="#top">ICU Lookahead</a>
     <nav aria-label="Sections">
       <a href="#problem">Problem</a>
       <a href="#stack">Stack</a>
@@ -180,8 +180,8 @@ footer p{max-width:80ch}
 <div class="hero">
   <div class="wrap cols">
     <div>
-      <h1>The ICU's next 24 hours, on two local machines</h1>
-      <p class="lede">Lookahead is a bed board for one intensive care unit. At 07:00 it shows who is on life support now, who is likely to need it by tomorrow, and whether the unit has the machines and staff for that.</p>
+      <h1>See the next 24 hours of your ICU. On machines you own.</h1>
+      <p class="lede">ICU Lookahead is a bed board for one intensive care unit. At 07:00 it shows who is on life support now, who is likely to need it by tomorrow, and whether the unit has the machines and staff for that.</p>
       <div class="actions">
         <a class="btn primary" href="#board">See the board <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         <a class="btn" href="submission/one-sheet.pdf">One-page summary (PDF)</a>
@@ -198,7 +198,7 @@ footer p{max-width:80ch}
   <div class="wrap">
     <h2>A small ICU finds out it is short when it already is</h2>
     <p>A small or rural hospital has one ICU, a few ventilators and dialysis machines, no data-science team and no cloud contract for patient data. When the unit runs short of a machine or a nurse, the nearest help is a transfer hours away.</p>
-    <p>Lookahead answers one question each morning, in time to act on it: what will this unit need in the next 24 hours? It runs inside the building on two desk-size machines, so patient data never leaves.</p>
+    <p>ICU Lookahead answers one question each morning, in time to act on it: what will this unit need in the next 24 hours? It runs inside the building on two desk-size machines, so patient data never leaves.</p>
     <dl class="key">
       <div><dt>ICU</dt><dd>The intensive care unit: the sickest patients in the hospital, one nurse to one or two beds.</dd></div>
       <div><dt>Life support</dt><dd>A machine or drug that does the work of a failing organ.</dd></div>
@@ -297,8 +297,8 @@ footer p{max-width:80ch}
         <figcaption><b>One room.</b> The five predictions for one patient, each as a percentage, and the last events the model read.</figcaption>
       </figure>
       <figure>
-        <div class="shot"><img loading="lazy" src="screenshots/chat-widget.png" width="1440" height="900" alt="The Ask Lookahead chat panel beside the board"></div>
-        <figcaption><b>Ask Lookahead.</b> NVIDIA Nemotron 3 Nano answers from the forecast on screen. It can start an update when asked; it never predicts.</figcaption>
+        <div class="shot"><img loading="lazy" src="screenshots/chat-widget.png" width="1440" height="900" alt="The Ask ICU Lookahead chat panel beside the board"></div>
+        <figcaption><b>Ask ICU Lookahead.</b> NVIDIA Nemotron 3 Nano answers from the forecast on screen. It can start an update when asked; it never predicts.</figcaption>
       </figure>
       <figure>
         <div class="shot"><img loading="lazy" src="screenshots/pending.png" width="1440" height="1432" alt="The board before a forecast exists"></div>
@@ -401,7 +401,7 @@ footer p{max-width:80ch}
 
 <footer>
   <div class="wrap">
-    <p>Demo data only. The mockup uses made-up patients and the names on the board are fictional. Lookahead is a research prototype, not a medical device; it supports decisions and recommends no treatment.</p>
+    <p>Demo data only. The mockup uses made-up patients and the names on the board are fictional. ICU Lookahead is a research prototype, not a medical device; it supports decisions and recommends no treatment.</p>
   </div>
 </footer>
 </body>

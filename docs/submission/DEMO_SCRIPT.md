@@ -1,4 +1,4 @@
-# Lookahead: five-minute demo script
+# ICU Lookahead: five-minute demo script
 
 Team7 · CIQ × NVIDIA Local AI Hackathon · Chicago · Nov 14–15, 2026
 
@@ -53,7 +53,7 @@ Room numbers and percentages below are from the demo data (`#synthetic`). On the
 
 | Time | On screen | Click | Say |
 |---|---|---|---|
-| 0:00 | One-sheet (tab 4), top half | nothing | "An ICU is the hospital unit for the sickest patients. Life support keeps them alive: a breathing machine, drugs that hold blood pressure up, a dialysis machine. A small or rural hospital has only a few of these machines. If three patients need a breathing machine tonight and two are free, one is transferred hours away, and the staff find out when it happens. That hospital has no data-science team and no cloud contract for patient data. Lookahead tells them at 7 am, on two machines the hospital owns." |
+| 0:00 | One-sheet (tab 4), top half | nothing | "An ICU is the hospital unit for the sickest patients. Life support keeps them alive: a breathing machine, drugs that hold blood pressure up, a dialysis machine. A small or rural hospital has only a few of these machines. If three patients need a breathing machine tonight and two are free, one is transferred hours away, and the staff find out when it happens. That hospital has no data-science team and no cloud contract for patient data. ICU Lookahead tells them at 7 am, on two machines the hospital owns." |
 | 0:30 | Live board (tab 1), Bed board | the **Now** side of the **Now \| Next 24 h** switch | "This is the unit at 7 am. Every tile is a bed. Now shows only what is running: this patient is on a breathing machine and a blood-pressure drug, this one is on nothing. This part is not a prediction. It is read straight from the chart tables." |
 | 1:00 | same | point at the header line: "N on life support now" | "Ten patients on life support this morning. That is today's workload. The question is tomorrow's." |
 | 1:15 | Bed board | **Next 24 h** | "Same beds, next 24 hours. Each bed reads left to right: what is on now, then what may start, as a percentage. And one colour per bed: red is worsening, amber is watch, green is leaving." |
@@ -66,11 +66,11 @@ Room numbers and percentages below are from the demo data (`#synthetic`). On the
 | 3:15 | Unit strain | **Update the unit** (header) | "This button starts a real job on the cluster. The board never touches a GPU itself." If the board refuses ("Updated N minutes ago. You can update again at HH:MM"), say: "It refuses a second run inside 20 minutes, by design," and go straight to the diagram. |
 | 3:25 | Diagram (tab 3) | nothing | "The board asks a small dispatcher service. The dispatcher starts a CIQ Fuzzball workflow: a check, one pass of our model on a GPU, then scoring. Fuzzball places it on the free GPU, writes the results to a volume, and the board redraws. The same job runs by itself at 7 am every day. [FILL: 'It takes about N seconds.'] Patient rows stay on Fuzzball volumes inside these two machines." |
 | 3:50 | Live board (tab 1) | nothing; show the "updating" tag, or the new "Updated HH:MM" | "The last forecast stays on screen while the new one runs." |
-| 4:00 | Bed board | the **Ask Lookahead** button (bottom right), then the suggested question **"Who should we worry about first?"** | "Anyone on the team can ask in plain words. This answer comes from the second model, and it names the rooms. Click a room number and you are there." |
+| 4:00 | Bed board | the **Ask ICU Lookahead** button (bottom right), then the suggested question **"Who should we worry about first?"** | "Anyone on the team can ask in plain words. This answer comes from the second model, and it names the rooms. Click a room number and you are there." |
 | 4:20 | Chat open | **Close** (the X) | (no words) |
 | 4:30 | One-sheet (tab 4), the dark diagram | point at the two model boxes | "Two models. The patient model is ours, trained from scratch on these two machines. It reads a chart as a sequence of events, the way a language model reads words. That is what is new: one pass per patient and five small classifiers, not thousands of simulated futures. The chat model is NVIDIA Nemotron, used as it is. It only reads the forecast." |
 | 4:50 | One-sheet, bottom | point at "In the real world" | "On patients it never saw, AUROC is 0.77 to 0.93. Every step is a Fuzzball workflow file, and the data is in CLIF, an open format, so another hospital can rerun it on its own records. Nothing leaves the building." |
-| 5:00 | One-sheet | stop | "Lookahead. Thank you." |
+| 5:00 | One-sheet | stop | "ICU Lookahead. Thank you." |
 
 Timing notes: the 4:30 and 4:50 lines are about 60 and 40 words, 40 seconds together at a steady pace, so start the 4:30 line by 4:20 (the chat close at 4:20 has no words). If you are behind at 3:15, skip the 1:55 threshold beat, not the Fuzzball beat. Detail that no longer fits is for questions: the last-layer vector, the GPU split in service, the per-event AUROC table (`docs/RESULTS.md`), training on one GPU against two [FILL], and the next step, a prospective check on one site's data.
 
