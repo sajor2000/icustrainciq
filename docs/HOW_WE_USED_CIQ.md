@@ -38,7 +38,7 @@ Two Lenovo ThinkStation PGX machines, each with one NVIDIA GB10, run CIQ Fuzzbal
 | **Object cache** (`fuzzball://group/...`) | The only way in or out. In: `staging/clif_parquet.tar` (job 1) and `staging/icutwin_code.tar` (jobs 2 to 5). Out: logs, metrics and summaries under a new `Run` or `Tag` folder per run (it never overwrites) |
 | **Ingress / egress** on volumes | Code and data come in through `ingress`; logs, `MANIFEST.json`, `probe_metrics.json` and the launch summary leave through `egress` when the workflow ends |
 | **Jobs with `depends-on`** | Each workflow is a chain: job 5 is `load` → `infer` → `score`, then the services |
-| **`multinode`, `implementation: generic`** | Job 3 trains with PyTorch DDP (`torch.distributed.run --nnodes 2`), job 4 extracts patient vectors on both GPUs, half the stays each |
+| **`multinode`, `implementation: generic`** | Job 3 trains as a distributed workflow on both nodes (`torch.distributed.run --nnodes 2`), job 4 extracts patient vectors on both GPUs, half the stays each |
 | **GPU requests** (`devices: nvidia.com/gpu: 1`) | One GPU per job or service; `exclusive: true` on training and on Nemotron. Job 5's `infer` is not exclusive: in 4.3 that would reserve a whole node |
 | **Services** (`persist: true`) | Job 5's `board` and `nemotron` stay up after the jobs finish |
 | **Readiness probes** | `nemotron`: HTTP `/v1/models` on 8000. `board`: TCP on 8080 |
@@ -52,7 +52,7 @@ Two Lenovo ThinkStation PGX machines, each with one NVIDIA GB10, run CIQ Fuzzbal
 |---|---|---|---|---|
 | **1 · Data move** | `copy-in` | CPU, 1 core, `alpine:3.20` | object cache `staging/clif_parquet.tar` | `mimic_clif:/clif/` (16 CLIF tables) |
 | **2 · Tokenize** | `tokenize` | CPU, 20 cores, 110 GiB, `uv` image | `mimic_clif:/clif/` | `mimic_clif:/tokenized_output/` (train, tuning, held-out; the demo cohort removed) |
-| **3 · Train** | `setup` (1 GPU), `train` (`multinode` 2 × 1 GPU, 20 cores, 110 GiB) | 2 GPUs, DDP, up to 12 h | tokens | `mimic_clif:/model_output/<Run>/` checkpoints |
+| **3 · Train** | `setup` (1 GPU), `train` (`multinode` 2 × 1 GPU, 20 cores, 110 GiB) | 2 GPUs, distributed workflow, up to 12 h | tokens | `mimic_clif:/model_output/<Run>/` checkpoints |
 | **3.1 · Package** | `package` (CPU), `loadtest` (CPU) | CPU | the newest checkpoint | `mimic_clif:/model_output/final/` (weights, `vocab.yaml`, `MANIFEST.json`); prints `LOADTEST OK` |
 | **4 · Probe** | `winnow` (CPU), `extract` (`multinode` 2 × 1 GPU), `probe` (CPU) | 2 GPUs | `final/`, tokens | `final/probe.joblib`, `final/probe_metrics.json` (held-out AUROC, AUPRC, Brier) |
 | **5 · Launch** (`t7-launch`) | `load` (2 cores, 8 GB), `infer` (1 GPU, 8 cores, 48 GB), `score` (4 cores, 16 GB), services `nemotron` (1 GPU, 8 cores, 32 GB) and `board` (2 cores, 4 GB) | 1 GPU at a time | `mimic_clif:/dashboard_data/` (25 stays, read only), `final/`, `twin-store:/train/probe-final.joblib` | `twin-store:/rooms.json`, `twin-store:/forecast.json`, object cache `launch/<Tag>/summary.txt` |
@@ -75,7 +75,7 @@ Read from Fuzzball as team 7 on 2026-11-15 (read only; nothing was started, stop
 |---|---|---|
 | `job_1_data_move` | Nov 14, 15:20, 40 s | finished |
 | `job-2-tokenize` | Nov 14, 17:38 to 17:45 | finished |
-| `job-3-train ep2-20261114c` (2 GPUs, DDP) | Nov 14, 19:11 to 20:13 | stopped by the team after about an hour; checkpoint kept |
+| `job-3-train ep2-20261114c` (2 GPUs, generic multinode) | Nov 14, 19:11 to 20:13 | stopped by the team after about an hour; checkpoint kept |
 | `job-3-1-package ep2-20261114c` | Nov 14, 20:19 to 20:20 | finished |
 | `job4-probe-20261114d` (2 GPUs, then CPU) | Nov 14, 21:38 to 22:13 | finished |
 | `t7-fb-nemotron-persistent` | Nov 14, 18:14 | finished: Nemotron weights on `hfcache` |
@@ -94,7 +94,7 @@ Fuzzball places each step; these are the hosts it recorded (read only, 2026-11-1
 | Job 1 `job_1_data_move` | `copy-in` (alpine) | A |
 | Job 2 `job-2-tokenize` | `tokenize` | B |
 | Job 3 `job-3-train ep2-20261114c` | `setup` | A |
-| | `train` (DDP, one rank and one GPU per node) | A and B |
+| | `train` (generic multinode, one rank and one GPU per node) | A and B |
 | Job 3.1 `job-3-1-package ep2-20261114c` | `package`, `loadtest` | A |
 | Job 4 `job4-probe-20261114d` | `winnow` | A |
 | | `extract` (one GPU per node) | A and B |

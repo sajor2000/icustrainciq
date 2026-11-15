@@ -24,7 +24,7 @@ A general language model would split the same line into about 14 word pieces; we
 | Data | MIMIC-IV in CLIF, split into train, tuning and held-out patients; the demo cohort removed from every split (job 2), checked again before training (job 3) |
 | Size | 16 layers, hidden size 384, 6 attention heads, 4,096-event context, **36,232,032 parameters** (job 3.1 load test) |
 | Design | The layer pattern of NVIDIA Nemotron 3.5 Bolt E4B (Gemma 4 text): five sliding-window layers then one full-attention layer, shared key/value layers, logit softcapping. Our vocabulary and our sizes; trained from scratch, no pretrained weights |
-| Hardware | Both NVIDIA GB10s at once: PyTorch DDP across the two Lenovo machines, as a Fuzzball `multinode` job (job 3) |
+| Hardware | Both NVIDIA GB10s at once: a distributed workflow across the two Lenovo machines with Fuzzball's generic `multinode` (job 3) |
 
 Nobody told the model about ventilators or death. It learned the order of ICU events. To guess the next event well, it has to keep track of how sick the patient is and where things are heading.
 
