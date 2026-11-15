@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<!-- Design source: DESIGN.md (section "Diagrams"). Written by docs/diagrams/make_figures.py; edit there, then export the PNG. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ICU Horizon · Training on CIQ Fuzzball, run once</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #F6F7F9; color: #111827; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 1.5rem; }
+    .frame { max-width: 1320px; width: 100%; min-width: 0; }
+    .eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #5B6474; margin-bottom: 0.5rem; }
+    h1 { font-size: 1.375rem; font-weight: 700; line-height: 1.15; margin-bottom: 1.5rem; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { width: 100%; min-width: 1280px; display: block; }
+    @media print { .diagram-container { overflow: visible; } svg { min-width: 0; } }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">ICU Horizon · training</p>
+    <h1>Training: one workflow on both GPUs</h1>
+    <div class="diagram-container">
+    <svg viewBox="0 0 1280 456" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="slide-train-title slide-train-desc">
+      <title id="slide-train-title">Training on CIQ Fuzzball, run once</title>
+      <desc id="slide-train-desc">Run once on two Lenovo ThinkStation PGX workstations, each one NVIDIA GB10. Job 1 moves CLIF records in on node A; job 2 tokenizes them into the 1,231-token vocabulary on node B; job 3 trains the GEM from scratch on both GPUs with PyTorch DDP; job 3.1 packages it on node A; job 4 fits six linear probes on both GPUs. Everything is saved on the 200 GB mimic_clif VAST volume.</desc>
+      <defs><marker id="slide-train-arrow-ink" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#111827"/></marker><marker id="slide-train-arrow-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2563EB"/></marker><marker id="slide-train-arrow-ink2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5B6474"/></marker></defs>
+      <rect width="100%" height="100%" fill="#F6F7F9"/>
+      <rect x="12" y="32" width="1256" height="364" rx="16" fill="none" stroke="#111827" stroke-width="1.5" stroke-dasharray="6 5"/><rect x="32" y="21" width="570" height="22" fill="#F6F7F9"/><text x="40" y="39" fill="#111827" font-size="18" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start" letter-spacing="0.05em">RUN ONCE · 2 × NVIDIA GB10 · CIQ FUZZBALL 4.3</text>
+      <path d="M 252,140 L 284,140" fill="none" stroke="#111827" stroke-width="1.5" marker-end="url(#slide-train-arrow-ink)"/>
+      <path d="M 500,140 L 532,140" fill="none" stroke="#111827" stroke-width="1.5" marker-end="url(#slide-train-arrow-ink)"/>
+      <path d="M 748,140 L 780,140" fill="none" stroke="#111827" stroke-width="1.5" marker-end="url(#slide-train-arrow-ink)"/>
+      <path d="M 996,140 L 1028,140" fill="none" stroke="#111827" stroke-width="1.5" marker-end="url(#slide-train-arrow-ink)"/>
+      <path d="M 640,216 L 640,280" fill="none" stroke="#2563EB" stroke-width="1.5" marker-end="url(#slide-train-arrow-blue)"/>
+      <path d="M 1136,216 L 1136,318 Q 1136,326 1128,326 L 996,326" fill="none" stroke="#111827" stroke-width="1.5" marker-end="url(#slide-train-arrow-ink)"/>
+      <rect x="648" y="234" width="50" height="22" rx="2" fill="#F6F7F9"/><text x="673.0" y="252" fill="#2563EB" font-size="18" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="middle" letter-spacing="0.05em">GEM</text>
+      <rect x="1144" y="234" width="89" height="22" rx="2" fill="#F6F7F9"/><text x="1188.5" y="252" fill="#5B6474" font-size="18" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="middle" letter-spacing="0.05em">PROBES</text>
+      <rect x="36" y="64" width="216" height="152" rx="12" fill="#FFFFFF" stroke="#CDD3DC" stroke-width="1"/><text x="52" y="96" fill="#5B6474" font-size="18" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start" letter-spacing="0.05em">JOB 1 · CPU</text><text x="52" y="134" fill="#111827" font-size="30" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">Move data</text><text x="52" y="163" fill="#5B6474" font-size="22" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">CLIF records</text><text x="52" y="192" fill="#5B6474" font-size="22" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">in · node A</text>
+      <rect x="284" y="64" width="216" height="152" rx="12" fill="#FFFFFF" stroke="#CDD3DC" stroke-width="1"/><text x="300" y="96" fill="#5B6474" font-size="18" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start" letter-spacing="0.05em">JOB 2 · CPU</text><text x="300" y="134" fill="#111827" font-size="30" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">Tokenize</text><text x="300" y="163" fill="#5B6474" font-size="22" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">1,231 tokens</text><text x="300" y="192" fill="#5B6474" font-size="22" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">node B</text>
+      <rect x="532" y="64" width="216" height="152" rx="12" fill="#2563EB" stroke="#2563EB" stroke-width="1"/><text x="548" y="96" fill="#FFFFFF" font-size="18" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start" letter-spacing="0.05em">JOB 3 · 2 GPUS</text><text x="548" y="134" fill="#FFFFFF" font-size="30" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">Train GEM</text><text x="548" y="163" fill="#FFFFFF" font-size="22" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">DDP, nodes</text><text x="548" y="192" fill="#FFFFFF" font-size="22" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">A + B</text>
+      <rect x="780" y="64" width="216" height="152" rx="12" fill="#FFFFFF" stroke="#CDD3DC" stroke-width="1"/><text x="796" y="96" fill="#5B6474" font-size="18" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start" letter-spacing="0.05em">JOB 3.1 · CPU</text><text x="796" y="134" fill="#111827" font-size="30" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">Package</text><text x="796" y="163" fill="#5B6474" font-size="22" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">load test</text><text x="796" y="192" fill="#5B6474" font-size="22" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">node A</text>
+      <rect x="1028" y="64" width="216" height="152" rx="12" fill="#FFFFFF" stroke="#CDD3DC" stroke-width="1"/><text x="1044" y="96" fill="#5B6474" font-size="18" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start" letter-spacing="0.05em">JOB 4 · 2 GPUS</text><text x="1044" y="134" fill="#111827" font-size="30" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">Fit probes</text><text x="1044" y="163" fill="#5B6474" font-size="22" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">6 linear</text><text x="1044" y="192" fill="#5B6474" font-size="22" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">probes</text>
+      <rect x="284" y="280" width="712" height="92" rx="12" fill="#EEF0F4" stroke="#CDD3DC" stroke-width="1"/><text x="300" y="312" fill="#5B6474" font-size="18" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start" letter-spacing="0.05em">VAST VOLUME · 200 GB</text><text x="300" y="350" fill="#111827" font-size="30" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">mimic_clif</text>
+      <text x="16" y="436" fill="#5B6474" font-size="20" font-weight="400" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="start">Each box is one Fuzzball job; node A = SPARK13, node B = SPARK14.</text>
+    </svg>
+    </div>
+  </div>
+</body>
+</html>

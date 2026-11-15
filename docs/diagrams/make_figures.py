@@ -449,6 +449,80 @@ def ehr_to_tokens():
     f.write()
 
 
+# =============================================================== slides: 16:9 figures with the presentation type ramp
+def _slide_fonts(f):
+    """Projected in a room: about 1.3x on a 1920-px slide, so names ~38px and details ~28px there."""
+    f.t_title, f.t_sub, f.t_tag, f.t_label, f.t_zone, f.t_cap = 30, 22, 18, 18, 18, 20
+
+
+def slide_ehr():
+    f = Fig("slide-ehr", 1280, 336, "From EHR tables to five predictions",
+            "Charted EHR values (heart rate, PEEP, norepinephrine) become tokens in a custom 1,231-token vocabulary; the GEM, an NVIDIA Nemotron E4B backbone trained from scratch, reads them once and its 384-number hidden state feeds six linear probes that give five 24-hour chances. Values are illustrative.",
+            "ICU Horizon · the model", "From EHR tables to five predictions", big=True)
+    _slide_fonts(f)
+    ws = (212, 420, 236, 236); g = 40
+    xs = []; x = 24
+    for w in ws:
+        xs.append(x); x += w + g
+    y, h = 24, 248
+    f.node(xs[0], y, ws[0], h, "card", "EHR table", "Charted", ["08:00", "HR 118", "PEEP 10", "norepi 0.12"])
+    f.node(xs[1], y, ws[1], h, "forecast", "1,231-token vocab", "Event tokens", ["CLCK//08", "VITAL//heart_rate//B8", "RESP//peep_set//B6", "MED_CON//norepinephrine//B4"])
+    f.node(xs[2], y, ws[2], h, "model", "From scratch", "GEM", ["Nemotron E4B", "backbone, 36M", "one pass gives", "384-d state"])
+    f.node(xs[3], y, ws[3], h, "card", "6 linear probes", "24-h chances", ["Ventilator", "Vasopressor", "CRRT", "To ward", "Death"])
+    m = y + h // 2
+    for i in range(3):
+        f.arrow([(xs[i] + ws[i], m), (xs[i + 1], m)], BLUE if i == 1 else None)
+    f.caption("One value becomes one token; ten bins per measure. Values illustrative.", 316, key=False)
+    f.write()
+
+
+def slide_train():
+    f = Fig("slide-train", 1280, 456, "Training on CIQ Fuzzball, run once",
+            "Run once on two Lenovo ThinkStation PGX workstations, each one NVIDIA GB10. Job 1 moves CLIF records in on node A; job 2 tokenizes them into the 1,231-token vocabulary on node B; job 3 trains the GEM from scratch on both GPUs with PyTorch DDP; job 3.1 packages it on node A; job 4 fits six linear probes on both GPUs. Everything is saved on the 200 GB mimic_clif VAST volume.",
+            "ICU Horizon · training", "Training: one workflow on both GPUs", big=True)
+    _slide_fonts(f)
+    f.zone(12, 32, 1256, 364, label="Run once · 2 × NVIDIA GB10 · CIQ Fuzzball 4.3")
+    xs, w, h, r1, r2 = (36, 284, 532, 780, 1028), 216, 152, 64, 280
+    cx = [x + w // 2 for x in xs]
+    f.node(xs[0], r1, w, h, "card", "Job 1 · CPU", "Move data", ["CLIF records", "in · node A"])
+    f.node(xs[1], r1, w, h, "card", "Job 2 · CPU", "Tokenize", ["1,231 tokens", "node B"])
+    f.node(xs[2], r1, w, h, "model", "Job 3 · 2 GPUs", "Train GEM", ["DDP, nodes", "A + B"])
+    f.node(xs[3], r1, w, h, "card", "Job 3.1 · CPU", "Package", ["load test", "node A"])
+    f.node(xs[4], r1, w, h, "card", "Job 4 · 2 GPUs", "Fit probes", ["6 linear", "probes"])
+    f.node(xs[1], r2, 712, 92, "store", "VAST volume · 200 GB", "mimic_clif", [])
+    m1 = r1 + h // 2
+    for i in range(4):
+        f.arrow([(xs[i] + w, m1), (xs[i + 1], m1)])
+    f.arrow([(cx[2], r1 + h), (cx[2], r2)], BLUE, label="GEM", at=(cx[2], 248), side="right")
+    f.arrow([(cx[4], r1 + h), (cx[4], 326), (996, 326)], label="Probes", at=(cx[4], 248), side="right")
+    f.caption("Each box is one Fuzzball job; node A = SPARK13, node B = SPARK14.", 436, key=False)
+    f.write()
+
+
+def slide_live():
+    f = Fig("slide-live", 1280, 496, "ICU Horizon live: how the chat gets its context",
+            "Job 5 runs the GEM on one GPU and writes the forecast to the twin-store VAST volume. The board's chat agent reads the forecast and passes it to NVIDIA Nemotron as tool results; Nemotron's only volume holds its weights. The ICU team uses the board in a browser. Everything runs on two hospital-owned NVIDIA GB10 computers under CIQ Fuzzball.",
+            "ICU Horizon · live app", "Live: how the chat gets its context", big=True)
+    _slide_fonts(f)
+    f.zone(12, 32, 1256, 404, label="Private by design · 2 hospital-owned NVIDIA GB10 · CIQ Fuzzball")
+    xs, w, h, r1, r2 = (36, 344, 652, 960), 260, 148, 64, 256
+    cx = [x + w // 2 for x in xs]
+    f.node(xs[0], r1, w, h, "model", "Job 5 · GPU", "GEM infers", ["one pass per", "patient, 35 s"])
+    f.node(xs[1], r1, w, h, "forecast", "VAST volume", "twin-store", ["the forecast", "rooms, unit"])
+    f.node(xs[2], r1, w, h, "card", "Service · CPU", "Board + chat", ["runs the", "chat's tools"])
+    f.node(xs[3], r1, w, h, "card", "HTTPS", "ICU team", ["nurse, doctor", "at 7 am"], icon="person")
+    f.node(xs[2], r2, w, h, "nvidia", "NVIDIA · GPU", "Nemotron", ["sees tool results", "only"])
+    f.node(xs[3], r2, w, h, "store", "VAST volume", "hfcache", ["Nemotron", "weights"])
+    m1, m2 = r1 + h // 2, r2 + h // 2
+    f.arrow([(xs[0] + w, m1), (xs[1], m1)], BLUE)
+    f.arrow([(xs[1] + w, m1), (xs[2], m1)], BLUE)
+    f.arrow([(xs[2] + w, m1), (xs[3], m1)])
+    f.arrow([(cx[2] - 40, r1 + h), (cx[2] - 40, r2)], BLUE, label="Tool results", at=(cx[2] - 40, 236), side="left")
+    f.arrow([(xs[3], m2), (xs[2] + w, m2)])
+    f.caption("Nemotron never reads patient records; it knows each patient only from the GEM's forecast.", 476, key=False)
+    f.write()
+
+
 # =============================================================== print: the model in four steps (Steps type)
 def model_steps():
     steps = [("01", "Train from scratch", ["Nemotron backbone,", "1,231-token vocab"], False),
@@ -639,7 +713,7 @@ def results_auroc():
     f.write()
 
 
-FIGURES = (stack, flow, architecture, architecture_print, model_steps, arch_train, arch_live, ehr_to_tokens, workflow, api, trigger, data_boundary, results_auroc)
+FIGURES = (stack, flow, architecture, architecture_print, model_steps, arch_train, arch_live, ehr_to_tokens, slide_ehr, slide_train, slide_live, workflow, api, trigger, data_boundary, results_auroc)
 
 if __name__ == "__main__":
     if "--night" in sys.argv:
