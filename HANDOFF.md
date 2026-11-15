@@ -76,7 +76,7 @@ Storage in one line: `mimic_clif` is only read (cohort, model, training tokens);
 |---|---|
 | Board design, Dema's figure and threshold toggle, forecast-not-ready state | Done, on `main` |
 | Final page served by the backend (`backend/app/static/index.html`) | Done |
-| Backend services, life support at 07:00 from raw CLIF, cohort pipeline, fictional names | Done; 249 tests pass, ruff clean |
+| Backend services, life support at 07:00 from raw CLIF, cohort pipeline, fictional names | Done; 282 tests pass, ruff clean |
 | Workflow files match the real cluster; `t7-code` publishes this repo's `backend/` | Done; all six ready files pass `fuzzball workflow validate` once `twin-store` exists (checked with a stand-in volume) |
 | Anything of ours run on the real cluster | **Not done.** Only read-only calls and the two small jobs that placed `name.parquet` |
 | Model predictions on the 25 demo patients | Waiting for steps 2 to 9. Until then the board shows the Now side and "forecast not ready" |

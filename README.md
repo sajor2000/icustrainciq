@@ -17,9 +17,9 @@ ICU Lookahead answers one question each morning: who is on life support now, who
 ![Two Lenovo machines run by CIQ Fuzzball: one GPU serves NVIDIA Nemotron 3 Nano, the other runs our patient model](docs/diagrams/stack.png)
 
 - **Lenovo ThinkStation PGX × 2, each with an NVIDIA GB10.** The whole product runs on these two desk-size machines. Nothing is in the cloud.
-- **CIQ Fuzzball 4.3.** Workflows fit the classifiers, stage the unit and run each forecast. Services keep the board server, the dispatcher and the chat model up. Volumes hold the patient data, the model and the results. The board's "Update the unit" button starts a Fuzzball job.
+- **CIQ Fuzzball 4.3.** Workflows publish the code (`t7-code`), stage the unit (`t7-ward`) and run each forecast (`t7-forecast`). Services keep the board server, the dispatcher and the chat model up (`t7-twin`). Three volumes: `mimic_clif` (patient data and the trained model, only read), `hfcache` (Nemotron weights) and `twin-store` (code, the staged unit, results). The board's "Update the unit" button starts a Fuzzball job.
 - **NVIDIA Nemotron 3 Nano on vLLM.** It answers questions in the chat. We use it as it is; we did not train it. It reads the forecast and predicts nothing.
-- **Our patient model.** We trained it on the two machines, across both GPUs, on MIMIC-IV in CLIF format. It runs in the forecast job on the second GPU.
+- **Our patient model.** We trained it on the two machines, across both GPUs, on MIMIC-IV in CLIF format. It runs in the forecast job on one GPU while Nemotron holds the other.
 
 Two models, two jobs: ours knows ICU data and makes the forecast; NVIDIA's knows language and explains it.
 
@@ -28,12 +28,12 @@ Two models, two jobs: ours knows ICU data and makes the forecast; NVIDIA's knows
 ![Chart data, our patient model, five classifiers, the board, the chat](docs/diagrams/flow.png)
 
 - **Trained a patient model** that reads a chart as a sequence of events. At 07:00 it reads each patient once; we keep its last layer.
-- **Fitted five small classifiers** on that layer: ventilator, vasopressor, CRRT, leaving the ICU, death, each as a chance for the next 24 hours.
-- **Built the board**: every bed shows now, then the next 24 hours, with one status; "Worry first" lists the beds to see first; Unit strain adds the patients up with a range and compares them with tonight's machines and staff.
+- **Fitted five small classifiers** on that layer: ventilator, vasopressor, CRRT, leaving the ICU, death, each as a chance for the next 24 hours. Training fits them once, beside the model (job 4), and the forecast applies the saved file; it never refits. The cohort is ICU patients, cut 24 hours after ICU arrival.
+- **Built the board** (Dema's final design): every bed shows life support now, then the next 24 hours. An event shows in a circle with its chance once it reaches the threshold set in Settings, and the bed's person icon turns red and pulses when a new life support or death reaches it. A bed opens a pop-up with its five chances and the last 12 hours of vital signs. Unit strain has one card per event, with the unit forecast and its range, against the ventilators and CRRT machines the unit has. Now and Next 24 h switch with a swipe. Names on the tiles are generated and fictional.
 - **Built the services**: a board server, a dispatcher that starts the 07:00 run and the on-request runs, and a chat agent that answers from the forecast through tools.
-- **Wrote the Fuzzball workflows**: setup (`t7-code`, `t7-fit`, `t7-ward`), services (`t7-twin`) and the forecast (`t7-forecast`), as ready-to-run files in `backend/fuzzball/ready/`. The six files on the run path passed `fuzzball workflow validate` against the live cluster, with a stand-in for the one volume still to create.
-- **Tested it**: 249 backend tests pass (`cd backend && uv run --extra dev --extra model pytest -q`).
-- **Where it stands**: the demo patients and the trained model are on the cluster. Nothing of ours has run end to end on the cluster yet; the board runs today on a laptop with made-up data. The run list is in [`HANDOFF.md`](HANDOFF.md).
+- **Wrote the Fuzzball workflows**: publish the code (`t7-code`), stage the unit (`t7-ward`), the forecast (`t7-forecast`: a check, one model pass on one GPU, scoring) and the services (`t7-twin`), as ready-to-run files in `backend/fuzzball/ready/`. `t7-fit` stays only as a fallback for when training's job 4 has not run. One script, `backend/scripts/launch.sh`, runs what is needed and prints the board's link.
+- **Tested it**: 282 backend tests pass (`cd backend && uv run --extra dev --extra model pytest -q`).
+- **Where it stands**: the demo patients and the trained model are on the cluster, and the launch path is one script. The steps, what each leaves on the cluster and the failures already met there are in the [runbook](backend/docs/RUNBOOK.md). The board also runs on a laptop with made-up data.
 
 ## How well it predicts
 
@@ -41,9 +41,9 @@ On held-out patients (cut at ICU arrival + 24 h, event in the next 24 h): AUROC 
 
 ## The board
 
-![Bed board, Next 24 h: each bed shows now, then the forecast](docs/screenshots/beds-next.png)
+![Bed board, Next 24 h: each bed shows life support now, then the events at their thresholds; a red person icon marks a bed with a new life support or death at its threshold](docs/screenshots/beds-next.png)
 
-| Now: life support running at 07:00 | Unit strain: the unit added up |
+| Now: life support running at 07:00 | Unit strain: one card per event, against the unit's machines |
 |---|---|
 | ![Bed board, Now](docs/screenshots/beds-now.png) | ![Unit strain, Next 24 h](docs/screenshots/strain-next.png) |
 
@@ -60,6 +60,13 @@ python3 -m http.server 8000        # open http://localhost:8000/mockups/command-
 
 # 3. The board server on example data (own terminal; it keeps running)
 (cd backend && uv run python app/board.py --forecast ../examples/forecast.json --static ../mockups/command-center.html --port 8080)
+
+# 4. On the cluster, from backend/ with the fuzzball CLI logged in (backend/docs/RUNBOOK.md)
+bash scripts/launch.sh             # start what is missing, wait for the board, print its HTTPS link
+bash scripts/launch.sh --forecast  # run a fresh forecast first
+bash scripts/launch.sh --link      # print the link of the running board
+bash scripts/launch.sh --restart   # stop t7-twin and start it again
+bash scripts/launch.sh --all       # publish code, stage the unit, forecast, then the board
 ```
 
 ## More
@@ -82,6 +89,6 @@ All four are members of the [CLIF Consortium](https://clif-icu.com/team); the ro
 | J.C. Rojas, MD | Founding Vice-Chair, Steering Committee · Rush University | Product, board and chat, Fuzzball workflows, docs ([sajor2000](https://github.com/sajor2000)) |
 | Kaveri Chhikara, MS | Vice-chair for Software Development, Steering Committee · UChicago Medicine | Forecast pipeline on the cluster, dispatcher, launch script and runbook |
 | Vaishvik Chaudhari, MS | Vice-chair and Technical Lead, Steering Committee · Rush University | The patient model: tokenizer, training, the ICU + 24 h cut, probes ([vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin)) |
-| Dema Therese, MS | UChicago Medicine | Board design: bed tiles coloured by status, event cards, bed pop-up with vitals, settings, the capacity model |
+| Dema Therese, MS | UChicago Medicine | Board design: person icon at the Settings thresholds, event cards, bed pop-up with 12-hour vitals, settings panel, Now/Next swipe, the capacity model |
 
 Demo data only: the mockup uses made-up patients, and names on the board are fictional. ICU Lookahead is a research prototype, not a medical device; it supports decisions and recommends no treatment.

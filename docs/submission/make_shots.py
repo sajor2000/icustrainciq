@@ -73,6 +73,8 @@ async def shots(browser):
     await page.click("#setclose")
     await page.wait_for_timeout(300)
     await crop(page, "strain-line", "[document.getElementById('alerts')]", pad=5)
+    # One event card on Unit strain: the top of the ventilator card (on now, free, predicted new, unit forecast, usage bar)
+    await crop(page, "event-card", "[document.querySelector('.wc[data-k=\"imv\"]')]", pad=5, max_height=200)   # down to the usage bar
     await ctx.close()
 
 

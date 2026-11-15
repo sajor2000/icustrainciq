@@ -252,7 +252,7 @@ def flow():
     f.node(xs[2], 40, 216, 128, "forecast", None, "Five classifiers",
            ["ventilator, vasopressor", "CRRT, leaving, death"], icons=["vent", "pump", "crrt", "leave"])
     f.node(xs[3], 40, 216, 128, "card", "The board", "Now → Next 24 h",
-           ["Worry first", "Unit strain"], icon="beds")
+           ["Bed board", "Unit strain"], icon="beds")
     f.node(xs[4], 40, 216, 128, "nvidia", "NVIDIA, used as is", "Chat",
            ["Nemotron 3 Nano answers", "from the board"], icon="chat")
     f.arrow([(228, 112), (252, 112)])
@@ -275,9 +275,9 @@ def architecture():
     f.node(328, 72, 240, 96, "nvidia", "GPU 1 · service", "Nemotron 3 Nano", ["NVIDIA, on vLLM, used as is"])
     f.node(328, 232, 240, 96, "card", "CPU · service", "Board server", ["page, API and chat agent"])
     f.node(328, 392, 240, 96, "card", "CPU · service", "Dispatcher", ["07:00 clock, one run at once"])
-    f.node(656, 72, 240, 96, "card", "Run once, in order", "Setup workflows", ["t7-code → t7-fit → t7-ward"])
+    f.node(656, 72, 240, 96, "card", "Run once, in order", "Setup workflows", ["t7-code → t7-ward"])
     f.node(656, 392, 240, 96, "model", "GPU 2 · job", "t7-forecast", ["runs our patient model"])
-    f.node(992, 232, 240, 96, "store", "Volume · to create", "twin-store", ["everything ICU Lookahead writes"])
+    f.node(992, 232, 240, 96, "store", "Volume · written", "twin-store", ["everything ICU Lookahead writes"])
     f.node(992, 392, 240, 96, "store", "Volumes · read only", "mimic_clif · hfcache", ["patients, model, weights"])
     f.arrow([(240, 280), (328, 280)])
     f.arrow([(448, 232), (448, 168)], label="Asks", at=(448, 200), side="right")
@@ -286,7 +286,7 @@ def architecture():
     f.arrow([(992, 280), (568, 280)], BLUE, label="Forecast files", at=(780, 280))
     f.arrow([(896, 420), (944, 420), (944, 304), (992, 304)], BLUE, label="Writes", at=(944, 362), side="left")
     f.arrow([(992, 460), (896, 460)], label="Reads", at=(944, 460), side="below")
-    f.arrow([(896, 120), (1112, 120), (1112, 232)], label="Code · probes", at=(1004, 120))
+    f.arrow([(896, 120), (1112, 120), (1112, 232)], label="Code · ward", at=(1004, 120))
     f.caption("The board server is the only door into the two machines. Ink is a call; blue is the forecast.", 572)
     f.write()
 
@@ -294,19 +294,19 @@ def architecture():
 # =============================================================== detail: how to run it on the cluster
 def workflow():
     f = Fig("workflow", 1280, 420, "How to run it on the cluster",
-            "Seven steps in order: create the twin-store volume, then run t7-code, t7-fit, t7-ward and t7-twin, open the board, and start the first forecast from it. The demo patients and the trained model are already on the cluster.",
-            "ICU Lookahead · run order", "One volume to create, then five workflows in order")
+            "Seven steps in order: create the twin-store volume once, then run t7-code, t7-ward, t7-forecast and t7-twin, and open the board's link. scripts/launch.sh --all runs the four workflows in order. The demo patients, the trained model and the classifiers fitted in training are already on the cluster.",
+            "ICU Lookahead · run order", "One volume, then four workflows; one script runs them")
     xs = [24, 344, 664, 984]
     y1, y2, h = 40, 208, 112
-    f.node(xs[0], y1, 272, h, "card", "1 · To do first", "Create twin-store",
-           ["fuzzball volume create team7", "twin-store --size 50GiB"], chip="todo")
-    f.node(xs[1], y1, 272, h, "card", "2 · Ready", "t7-code", ["publishes the code", "and the Python packages"], chip="ready")
-    f.node(xs[2], y1, 272, h, "card", "3 · Ready · one GPU", "t7-fit", ["fits the five classifiers,", "once per model"], chip="ready")
-    f.node(xs[3], y1, 272, h, "card", "4 · Ready", "t7-ward", ["checks the cohort,", "stages the 25 rooms"], chip="ready")
-    f.node(xs[3], y2, 272, h, "card", "5 · Ready · GPU 1", "t7-twin", ["board server, dispatcher,", "Nemotron 3 Nano"], chip="ready")
-    f.node(xs[2], y2, 272, h, "card", "6 · Ready", "Open the board", ["fuzzball workflow connect", "--name board --endpoint web"], chip="ready")
-    f.node(xs[1], y2, 272, h, "forecast", "7 · Last · GPU 2", "First forecast", ["press Update the unit on the board,", "or wait for 07:00"], chip="ready")
-    f.node(xs[0], y2, 272, h, "store", "0 · Done", "Already on the cluster", ["25 demo patients, trained model,", "on mimic_clif (read only)"], chip="done")
+    f.node(xs[0], y1, 272, h, "card", "1 · One time", "Create twin-store",
+           ["fuzzball volume create team7", "twin-store --size 20GB"], chip="ready")
+    f.node(xs[1], y1, 272, h, "card", "2 · CPU", "t7-code", ["publishes the code", "and the Python packages"], chip="ready")
+    f.node(xs[2], y1, 272, h, "card", "3 · CPU", "t7-ward", ["checks the cohort,", "stages the 25 rooms"], chip="ready")
+    f.node(xs[3], y1, 272, h, "forecast", "4 · One GPU", "t7-forecast", ["one pass per patient, then the", "classifiers saved in training"], chip="ready")
+    f.node(xs[3], y2, 272, h, "card", "5 · The other GPU", "t7-twin", ["board server, dispatcher,", "Nemotron 3 Nano"], chip="ready")
+    f.node(xs[2], y2, 272, h, "card", "6 · Last", "Open the board", ["the script prints the link;", "launch.sh --link shows it again"], chip="ready")
+    f.node(xs[1], y2, 272, h, "card", "Day to day", "scripts/launch.sh", ["--forecast for fresh numbers,", "--restart to restart the board"], chip="ready")
+    f.node(xs[0], y2, 272, h, "store", "0 · Done", "Already on the cluster", ["25 demo patients, trained model", "and its classifiers (read only)"], chip="done")
     yc1, yc2 = y1 + h // 2, y2 + h // 2
     f.arrow([(296, yc1), (344, yc1)])
     f.arrow([(616, yc1), (664, yc1)])
@@ -314,7 +314,7 @@ def workflow():
     f.arrow([(1120, y1 + h), (1120, y2)])
     f.arrow([(984, yc2), (936, yc2)])
     f.arrow([(664, yc2), (616, yc2)])
-    f.caption("Nothing has run end to end yet. Steps 2 to 5 are files in backend/fuzzball/ready/; each waits for the one before it.", 392)
+    f.caption("bash scripts/launch.sh --all runs steps 2 to 5 in order and prints the link. The files are in backend/fuzzball/ready/.", 392)
     f.write()
 
 

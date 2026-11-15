@@ -186,10 +186,10 @@ footer p{max-width:80ch}
         <a class="btn primary" href="#board">See the board <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         <a class="btn" href="submission/one-sheet.pdf">One-page summary (PDF)</a>
       </div>
-      <p class="where"><svg class="ic" aria-hidden="true"><use href="#i-beds"/></svg><span>Team7 at the CIQ × NVIDIA × Lenovo Local AI Hackathon, Chicago, Nov 14–15, 2026. Built and tested on a laptop with made-up patients; not yet run end to end on the cluster.</span></p>
+      <p class="where"><svg class="ic" aria-hidden="true"><use href="#i-beds"/></svg><span>Team7 at the CIQ × NVIDIA × Lenovo Local AI Hackathon, Chicago, Nov 14–15, 2026. Runs on the two-machine cluster from one launch script, and on a laptop with made-up patients.</span></p>
     </div>
     <figure class="shot">
-      <img src="screenshots/beds-next.png" width="2880" height="3440" alt="The bed board: 25 rooms, each showing life support running now and what may start in the next 24 hours, with the rooms to worry about first on top">
+      <img src="screenshots/beds-next.png" width="2880" height="2368" alt="The bed board: 25 beds, each showing life support running now and the events that may start in the next 24 hours; a red person icon marks a bed with a new life support or death at its threshold">
     </figure>
   </div>
 </div>
@@ -219,9 +219,9 @@ footer p{max-width:80ch}
     </figure>
     <ul class="parts">
       <li><b>Lenovo ThinkStation PGX × 2, each with an NVIDIA GB10</b><span>The whole product runs on these two desk-size machines. Nothing is in the cloud.</span></li>
-      <li><b>CIQ Fuzzball 4.3</b><span>Workflows fit the classifiers, stage the unit and run each forecast. Services keep the board server, the dispatcher and the chat model up. Volumes hold the data, the model and the results. The board's "Update the unit" button starts a Fuzzball job.</span></li>
+      <li><b>CIQ Fuzzball 4.3</b><span>Workflows publish the code (<code>t7-code</code>), stage the unit (<code>t7-ward</code>) and run each forecast (<code>t7-forecast</code>). Services keep the board server, the dispatcher and the chat model up (<code>t7-twin</code>). Three volumes: <code>mimic_clif</code> (patient data and the trained model, only read), <code>hfcache</code> (Nemotron weights) and <code>twin-store</code> (code, the staged unit, results). The board's "Update the unit" button starts a Fuzzball job.</span></li>
       <li><b>NVIDIA Nemotron 3 Nano on vLLM</b><span>Answers questions in the chat. We use it as it is; we did not train or tune it. It reads the forecast and predicts nothing.</span></li>
-      <li><b>Our patient model</b><span>Trained by us on the two machines, across both GPUs, on MIMIC-IV in CLIF format. It runs in the forecast job on the second GPU.</span></li>
+      <li><b>Our patient model</b><span>Trained by us on the two machines, across both GPUs, on MIMIC-IV in CLIF format. It runs in the forecast job on one GPU while Nemotron holds the other.</span></li>
     </ul>
   </div>
 </section>
@@ -236,7 +236,7 @@ footer p{max-width:80ch}
     <ol class="steps">
       <li><div><b>It learns the language of the ICU.</b><span>We trained the model to read a chart as a sequence of events (labs, vital signs, drugs, machines) and predict the next event, the way a language model predicts the next word.</span></div></li>
       <li><div><b>We take its last layer.</b><span>At 07:00 the model runs once over each patient's chart so far. We keep the output of its last layer: one list of numbers that summarises the patient's state.</span></div></li>
-      <li><div><b>Five small classifiers read that summary.</b><span>One for each event that matters in the next 24 hours: starting a ventilator, starting a vasopressor, starting CRRT, leaving the ICU, and death. Each gives a percentage. They are fitted on past patients whose outcomes are known.</span></div></li>
+      <li><div><b>Five small classifiers read that summary.</b><span>One for each event that matters in the next 24 hours: starting a ventilator, starting a vasopressor, starting CRRT, leaving the ICU, and death. Each gives a percentage. They are fitted once in training, beside the model, on past patients whose outcomes are known; the forecast applies the saved file.</span></div></li>
       <li><div><b>The patients are added up.</b><span>The board turns the percentages into what the unit will need, with a likely range.</span></div></li>
     </ol>
     <h3>Two models, two jobs</h3>
@@ -274,39 +274,39 @@ footer p{max-width:80ch}
 <section id="board">
   <div class="wrap">
     <h2>The board</h2>
-    <p class="lede">Ink means now. Blue means the next 24 hours. Every bed carries one status word, and every count carries its range.</p>
+    <p class="lede">Each bed shows now, then the next 24 hours. An event appears once it reaches the threshold the team sets, and every unit count carries its range.</p>
     <div class="gallery">
       <figure class="wide">
-        <div class="shot"><img loading="lazy" src="screenshots/beds-next.png" width="2880" height="3440" alt="Bed board, Next 24 h view"></div>
-        <figcaption><b>Bed board, Next 24 h.</b> One tile per room. Solid icons are the life support running at 07:00; outline icons with a percentage are what may start by tomorrow. "Worry first" at the top lists the rooms most likely to get sicker.</figcaption>
+        <div class="shot"><img loading="lazy" src="screenshots/beds-next.png" width="2880" height="2368" alt="Bed board, Next 24 h view"></div>
+        <figcaption><b>Bed board, Next 24 h.</b> One tile per bed. Solid icons are the life support running at 07:00; circled icons with a percentage are the events at or above their threshold. When a new life support or death reaches its threshold, the bed's person icon turns red and pulses. Now and Next 24 h switch with a swipe.</figcaption>
       </figure>
       <figure>
-        <div class="shot"><img loading="lazy" src="screenshots/beds-now.png" width="1440" height="1432" alt="Bed board, Now view"></div>
-        <figcaption><b>Bed board, Now.</b> Only what is running at 07:00, with the sickest rooms first. Nothing here is a forecast.</figcaption>
+        <div class="shot"><img loading="lazy" src="screenshots/beds-now.png" width="1440" height="977" alt="Bed board, Now view"></div>
+        <figcaption><b>Bed board, Now.</b> Only what is running at 07:00. Nothing here is a forecast.</figcaption>
       </figure>
       <figure>
         <div class="shot"><img loading="lazy" src="screenshots/strain-next.png" width="1440" height="1109" alt="Unit strain, Next 24 h view"></div>
-        <figcaption><b>Unit strain.</b> The patients added up: how many are on life support now, how many more are expected and the likely range, with one word that compares it with tonight's staffing or a typical day.</figcaption>
+        <figcaption><b>Unit strain.</b> The patients added up, one card per event: on now, beds at the threshold, and the unit forecast with its likely range. The line on top names the highest-risk beds.</figcaption>
       </figure>
       <figure>
-        <div class="shot"><img loading="lazy" src="screenshots/strain-short.png" width="1440" height="1508" alt="Unit strain reading SHORT against tonight's capacity"></div>
-        <figcaption><b>When the unit will be short.</b> The team enters tonight's ventilators and CRRT machines. If the forecast is over that number, the word changes to TIGHT or SHORT.</figcaption>
+        <div class="shot"><img loading="lazy" src="screenshots/strain-short.png" width="1440" height="1109" alt="Unit strain reading SHORT against tonight's capacity"></div>
+        <figcaption><b>When the unit will be short.</b> The team enters the unit's ventilators and CRRT machines in Settings. When more beds are flagged than machines are free, the card reads SHORT; with none spare, AT LIMIT.</figcaption>
       </figure>
       <figure>
-        <div class="shot"><img loading="lazy" src="screenshots/room-page.png" width="1440" height="760" alt="A room page with five predictions"></div>
-        <figcaption><b>One room.</b> The five predictions for one patient, each as a percentage, and the last events the model read.</figcaption>
+        <div class="shot"><img loading="lazy" src="screenshots/room-page.png" width="1440" height="900" alt="A bed pop-up with five predictions"></div>
+        <figcaption><b>One bed.</b> A pop-up with the five predictions for one patient, each as a percentage, the last events the model read and, on the cluster, the last 12 hours of vital signs.</figcaption>
       </figure>
       <figure>
         <div class="shot"><img loading="lazy" src="screenshots/chat-widget.png" width="1440" height="900" alt="The Ask ICU Lookahead chat panel beside the board"></div>
         <figcaption><b>Ask ICU Lookahead.</b> NVIDIA Nemotron 3 Nano answers from the forecast on screen. It can start an update when asked; it never predicts.</figcaption>
       </figure>
       <figure>
-        <div class="shot"><img loading="lazy" src="screenshots/pending.png" width="1440" height="1432" alt="The board before a forecast exists"></div>
+        <div class="shot"><img loading="lazy" src="screenshots/pending.png" width="1440" height="977" alt="The board before a forecast exists"></div>
         <figcaption><b>Before the first forecast.</b> The board shows the Now side and says the forecast is not ready. It never shows made-up numbers.</figcaption>
       </figure>
       <figure class="third">
-        <div class="shot"><img loading="lazy" src="screenshots/thresholds.png" width="1440" height="700" alt="The Flag beds at control"></div>
-        <figcaption><b>The team sets the line.</b> "Flag beds at 50%, 25% or 10%" decides how likely an event must be before a bed is flagged.</figcaption>
+        <div class="shot"><img loading="lazy" src="screenshots/thresholds.png" width="1440" height="900" alt="The Settings panel: event thresholds and capacity"></div>
+        <figcaption><b>The team sets the line.</b> In Settings, "Flag beds at 50%, 25% or 10%" and a threshold per event decide how likely an event must be before it shows on a bed.</figcaption>
       </figure>
       <figure class="third">
         <div class="shot"><img loading="lazy" src="screenshots/night.png" width="1440" height="900" alt="The night board"></div>
@@ -334,8 +334,8 @@ footer p{max-width:80ch}
     <p class="lede">One service faces the browser. Everything else stays inside the two machines.</p>
 
     <h3>What talks to what</h3>
-    <p>The browser talks to the board server. The board server reads the forecast files, asks Nemotron for chat answers, and asks the dispatcher to start or report runs. The dispatcher starts the forecast job, which runs our patient model on the second GPU. One volume is written, <code>twin-store</code>; two are only read, <code>mimic_clif</code> (demo patients and the patient model) and <code>hfcache</code> (Nemotron weights).</p>
-    <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/architecture.png"><img loading="lazy" src="diagrams/architecture.png" width="2560" height="1200" alt="Architecture: board page, board server, Nemotron 3 Nano, dispatcher, setup workflows, the t7-forecast job, and the volumes twin-store, mimic_clif and hfcache"></picture></div></figure>
+    <p>The browser talks to the board server. The board server reads the forecast files, asks Nemotron for chat answers, and asks the dispatcher to start or report runs. The dispatcher starts the forecast job, which runs our patient model on the second GPU. One volume is written, <code>twin-store</code> (code, the staged unit, the classifiers saved in training, results); two are only read, <code>mimic_clif</code> (demo patients and the patient model) and <code>hfcache</code> (Nemotron weights).</p>
+    <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/architecture.png"><img loading="lazy" src="diagrams/architecture.png" width="2560" height="1200" alt="Architecture: board page, board server, Nemotron 3 Nano, dispatcher, the setup workflows t7-code and t7-ward, the t7-forecast job, and the volumes twin-store, mimic_clif and hfcache"></picture></div></figure>
 
     <h3>The API</h3>
     <p>Four reads and three writes. Every POST must carry a JSON content type and the header <code>X-Lookahead: 1</code> from the same origin; anything else gets 403.</p>
@@ -350,21 +350,22 @@ footer p{max-width:80ch}
 <section id="run">
   <div class="wrap">
     <h2>Run it on the cluster</h2>
-    <p class="lede">Nothing of ours has run end to end on the cluster yet. This is the list, in order, with where each step stands.</p>
-    <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/workflow.png"><img loading="lazy" src="diagrams/workflow.png" width="2560" height="840" alt="Run order: create twin-store, then t7-code, t7-fit, t7-ward, t7-twin, the first forecast, and open the board. The demo patients and the trained model are already on the cluster."></picture></div><figcaption>The figure shows the workflow order. The list below is the handoff list, which adds two housekeeping steps, so its numbers differ.</figcaption></figure>
+    <p class="lede">One script runs the chain and prints the board's link. Each step is a Fuzzball workflow file.</p>
+    <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/workflow.png"><img loading="lazy" src="diagrams/workflow.png" width="2560" height="842" alt="Run order: create twin-store once, then t7-code, t7-ward, t7-forecast and t7-twin, and open the board's link. scripts/launch.sh runs the four workflows. The demo patients, the trained model and its classifiers are already on the cluster."></picture></div></figure>
+<pre>bash scripts/launch.sh             # from backend/: start what is missing, wait for the board, print its HTTPS link
+bash scripts/launch.sh --forecast  # run a fresh forecast first
+bash scripts/launch.sh --link      # print the link of the running board
+bash scripts/launch.sh --restart   # stop t7-twin and start it again
+bash scripts/launch.sh --all       # publish code, stage the unit, forecast, then the board</pre>
     <ol class="run">
-      <li><span>The 25 demo patients and their fictional names are on the cluster, in <code>mimic_clif:/dashboard_data/</code>.</span><span class="chip done">Done</span></li>
-      <li><span>Create the one missing volume: <code>fuzzball volume create team7 twin-store --size 50GiB</code>.</span><span class="chip next">Ready to run</span></li>
-      <li><span>Merge to <code>main</code>, run <code>scripts/make_ready.sh</code> in <code>backend/</code>, and commit <code>fuzzball/ready/</code>.</span><span class="chip next">Ready to run</span></li>
-      <li><span>Publish the code and the Python packages: <code>ready/t7-code.fz</code> (CPU only).</span><span class="chip">Waits for 2 and 3</span></li>
-      <li><span>Confirm that our code loads the trained model in <code>mimic_clif:/model_output/final/</code>. <code>t7-fit</code> checks this first.</span><span class="chip">Found, not loaded yet</span></li>
-      <li><span><code>ready/t7-fit.fz</code>: features and the five classifiers, once per model (one GPU).</span><span class="chip">Waits for 4</span></li>
-      <li><span><code>ready/t7-ward.fz</code>: checks the cohort and the names, stages the 25 rooms.</span><span class="chip">Waits for 6</span></li>
-      <li><span><code>ready/t7-twin.fz</code>: board server, dispatcher, Nemotron (one GPU).</span><span class="chip">Waits for 4</span></li>
-      <li><span>First unit forecast: press "Update the unit" on the board, or start <code>ready/t7-forecast-unit.fz</code> by hand.</span><span class="chip">Waits for 7</span></li>
-      <li><span>Open the board: <code>fuzzball workflow connect --name board --endpoint web &lt;t7-twin id&gt;</code>.</span><span class="chip">Waits for 8</span></li>
+      <li><span>Once: create the volume the product writes to, <code>fuzzball volume create team7 twin-store --size 20GB</code>. <code>mimic_clif</code> (patients, model) and <code>hfcache</code> (Nemotron weights) are only read.</span><span class="chip">One time</span></li>
+      <li><span><code>t7-code</code>: publishes the pinned commit to <code>/store/code</code> and the Python packages to <code>/store/py</code>.</span><span class="chip">CPU</span></li>
+      <li><span><code>t7-ward</code>: checks the cohort (ICU patients, cut 24 hours after ICU arrival) and stages the 25 rooms in <code>/store/stage</code>. Names on the tiles are generated per room number and fictional.</span><span class="chip">CPU</span></li>
+      <li><span><code>t7-forecast</code>: a check, one model pass per patient, then scoring with the classifiers training saved (<code>/store/train/probe-final.joblib</code>). It writes <code>rooms.json</code>, then <code>forecast.json</code>. <code>t7-fit</code> is only a fallback for when training's job 4 has not run.</span><span class="chip">One GPU</span></li>
+      <li><span><code>t7-twin</code>: board server, dispatcher and Nemotron 3 Nano. The board's endpoint is plain HTTP inside the cluster; Fuzzball's proxy serves it as an HTTPS link.</span><span class="chip">One GPU</span></li>
+      <li><span>The script waits for the board (up to 20 minutes while Nemotron loads), prints the link and opens it.</span><span class="chip">The link</span></li>
     </ol>
-    <p style="margin-top:1rem">The live list is in <a href="https://github.com/sajor2000/icustrainciq/blob/main/HANDOFF.md">HANDOFF.md</a>. Each step is <code>fuzzball workflow validate &lt;file&gt; &amp;&amp; fuzzball workflow start &lt;file&gt; --name &lt;name&gt;</code>.</p>
+    <p style="margin-top:1rem">Steps, checks and the failures already met on the cluster are in the <a href="https://github.com/sajor2000/icustrainciq/blob/main/backend/docs/RUNBOOK.md">runbook</a>. Two GPUs in total: Nemotron holds one, a forecast uses the other.</p>
     <h3>Run it on a laptop</h3>
 <pre>python3 -m http.server 8000        # then open http://localhost:8000/mockups/command-center.html#synthetic
 (cd backend &amp;&amp; uv run --extra dev --extra model pytest -q)
