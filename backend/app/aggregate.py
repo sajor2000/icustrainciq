@@ -576,8 +576,10 @@ def life_support_block(tab: dict) -> dict:
     # a patient already on one support is not a *new* life-support patient, so the
     # new-patient distribution only runs over patients on none of the three
     new = unit_counts(np.where(any_on, 0.0, p_any))
-    if any(tab["skipped"][SUPPORT_RESOURCE[s]].any() for s in SUPPORTS):
-        # a support without a score for some stay: the combined count is unknown
+    if any((tab["skipped"][SUPPORT_RESOURCE[s]] & ~any_on).any() for s in SUPPORTS):
+        # a support without a score for a stay that is on none of the three: the
+        # combined count is unknown. A patient already on a support cannot be a new
+        # life-support patient, so a gap in that patient's scores changes nothing.
         new = _counts_or_none(np.full(any_on.size, np.nan))
     return {
         "now_patients": None if unknown_patients.any() else int(any_on.sum()),

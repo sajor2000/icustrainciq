@@ -372,6 +372,12 @@ def test_a_stay_that_left_the_icu_or_died_before_the_cut_is_not_present(tmp_path
         "early": False,  # the cut is before this ICU arrival
     }
     assert run_cohort.present_at_cut(d, {}) == {}
+    # CodeRabbit PR #16: the interval is in <= cut < out. Back in the ICU exactly at
+    # the cut is present; leaving exactly at the cut is not.
+    assert run_cohort.present_at_cut(d, {"back": h(20), "left": h(20)}) == {
+        "back": True,
+        "left": False,
+    }
 
 
 def test_demo_clock_moves_every_stay_and_drops_ended_ones(demo_run, capsys):

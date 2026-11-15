@@ -183,7 +183,10 @@ def test_workflow_board_cli_enables_https_proxy_and_publish_env_is_self_containe
     assert env["CLIF_DIR"] == "/context/clif"
     assert "HOME" not in env
     assert "--no-extract" in forecast["jobs"]["publish"]["script"]
-    assert "--ward-ids /context/cohort_ids.csv" in forecast["jobs"]["publish"]["script"]
+    script = forecast["jobs"]["publish"]["script"]
+    assert "--ward-ids /context/cohort_ids.csv" in script
+    # CodeRabbit PR #16: the ward token already carries the option; once, with its path
+    assert script.count("--ward-ids") == 1 and "--ward-ids --" not in script
     assert "--names fake" in forecast["jobs"]["publish"]["script"]
     assert not forecast["jobs"]["extract"]["resource"].get("exclusive")
     assert forecast["jobs"]["extract"]["resource"]["cpu"]["cores"] == 8

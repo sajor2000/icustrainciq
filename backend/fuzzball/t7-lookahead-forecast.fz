@@ -61,7 +61,7 @@ jobs:
       CUT=@CUT@
       # --no-extract applies saved probes to the GPU features; no second CPU forward pass.
       python /store/code/scripts/run_cohort.py "$CLIF_DIR" \
-        --ward-ids @WARD_IDS@ --tokenized-output "$ROOT" \
+        @WARD_IDS@ --tokenized-output "$ROOT" \
         --model /store/model/mdl-icutwin --probes /store/probes/probe-mdl-icutwin.joblib --no-extract \
         --work /context --out /context --context-out /context/context.json \
         --cut-time "$CUT" --tz America/Chicago --data-tz US/Eastern \

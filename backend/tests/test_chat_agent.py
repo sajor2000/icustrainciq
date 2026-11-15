@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import pytest
 
 from app import chat_agent as ca
+from app import evidence as ev
 
 FORECAST = {
     "made_at": "2026-11-14T06:52:00",
@@ -952,3 +953,50 @@ def test_run_status_answer_renders_what_the_dispatcher_returned(
     for line in never:
         assert line not in answer, answer
     assert "t7-forecast" not in answer and "all is fine" not in answer
+
+
+def test_unit_answer_names_the_rooms_to_check_first():
+    """CodeRabbit PR #16: the evidence has them; the rendered answer dropped them"""
+    base = {"resources": {"ventilator": {"p10": 1, "p50": 2, "p90": 3}}}
+    render = lambda cf: ev.tool_answer("get_unit_forecast", {**base, "check_first": cf})  # noqa: E731
+    assert "Rooms to check first: 20, 12, 7." in render([20, 12, 7])
+    rows = [{"room": 7, "any_life_support": 0.62, "level": "high"}, {"room": 99}]
+    assert "Rooms to check first: 7." in render(rows)
+    for none in ([], "pending run", None, [True, "x", 0]):  # counts-only: empty
+        assert "check first" not in render(none)
+
+
+def test_life_support_answer_includes_the_yardstick():
+    """CodeRabbit PR #16: asked about the yardstick, the answer had only the counts"""
+    ls = {
+        "now_patients": 10,
+        "expected_new_patients": {"p10": 3, "p50": 5, "p90": 8},
+        "expected_by": {
+            k: {"p10": 1, "p50": 2, "p90": 4} for k in ("imv", "vasopressor", "crrt")
+        },
+    }
+    load = {"p10": 13, "p50": 15, "p90": 18}
+    render = lambda y: ev.tool_answer(
+        "get_life_support", {"life_support": ls, "yardstick": y}
+    )  # noqa: E731
+    typical = {
+        "kind": "typical",
+        "words": "BUSY",
+        "typical": {"life_support_patients": 12, "load": load},
+    }
+    assert (
+        "Against a typical day: BUSY. Now plus new 15 (80% range 13 to 18); "
+        "a typical day has 12." in render(typical)
+    )
+    cap = {
+        "kind": "capacity",
+        "words": "SHORT",
+        "capacity": {"life_support_patients": 14, "load": load},
+    }
+    assert (
+        "Against tonight's staffing: SHORT. Now plus new 15 (80% range 13 to 18); "
+        "staffing covers 14." in render(cap)
+    )
+    for absent in (None, "pending run", {"kind": "typical", "words": "do x"}, {}):
+        assert "Yardstick: unavailable." in render(absent)
+    assert "Forecast: 5 new life-support patients" in render(None)

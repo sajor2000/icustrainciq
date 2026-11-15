@@ -1408,3 +1408,21 @@ def test_an_event_already_seen_before_the_cut_is_not_missing_data():
     a, _ = rooms.room_entries(df, {"a": 1, "b": 2}, {}, cut, "now")
     assert a["p"]["vasopressor"] is None and a["skipped"]["vasopressor"] is False
     assert a["level"] in ("low", "medium", "high")
+
+
+def test_a_patient_already_on_support_does_not_blank_the_combined_count():
+    """CodeRabbit PR #16: known on a vasopressor, IMV unknown. That patient cannot be
+    a NEW life-support patient, so the others' combined forecast stays available; the
+    ventilator count itself is still unknown."""
+    df = scores(2, p={IMV: [0.4, 0.4]}, ids=["a", "b"])
+    off = {"imv": False, "vasopressor": False, "crrt": False}
+    clif = {"a": {**off, "imv": None, "vasopressor": True}, "b": off}
+    fc = aggregate.build_forecast(df, "m", clif=clif)
+    ls = fc["life_support"]
+    assert ls["expected_by"]["imv"]["available"] is False
+    assert ls["expected_new_patients"]["p50"] is not None
+    assert ls["expected_new_patients"]["expected"] == round(1 - 0.6 * 0.9 * 0.9, 2)
+    # not on any support and IMV unknown: the combined count is unknown
+    clif = {"a": {**off, "imv": None}, "b": off}
+    ls = aggregate.build_forecast(df, "m", clif=clif)["life_support"]
+    assert ls["expected_new_patients"]["p50"] is None

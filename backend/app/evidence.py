@@ -117,6 +117,138 @@ def runs_answer(status: dict) -> str:
     return "\n".join(lines)
 
 
+def check_first_line(result: dict) -> str:
+    """the rooms the forecast says to check first (room numbers only); nothing when
+    the list is empty, as it is for a counts-only ward"""
+    rooms = []
+    listed = result.get("check_first")
+    for entry in listed if isinstance(listed, list) else []:
+        room = entry.get("room") if isinstance(entry, dict) else entry
+        if type(room) is int and 1 <= room <= 25 and room not in rooms:
+            rooms.append(room)
+    if not rooms:
+        return ""
+    return "\nRooms to check first: " + ", ".join(map(str, rooms[:3])) + "."
+
+
+YARDSTICK_WORDS = {
+    "capacity": ("tonight's staffing", ("ON TRACK", "TIGHT", "SHORT")),
+    "typical": ("a typical day", ("USUAL", "BUSY", "VERY BUSY")),
+}
+
+
+def yardstick_line(yardstick) -> str:
+    """the unit's load against tonight's staffing or a typical day, from the
+    forecast's own yardstick; anything else is unavailable"""
+    missing = "\nYardstick: unavailable."
+    if not isinstance(yardstick, dict) or yardstick.get("kind") not in YARDSTICK_WORDS:
+        return missing
+    kind = yardstick["kind"]
+    against, words = YARDSTICK_WORDS[kind]
+    side = yardstick.get(kind)
+    load = side.get("load") if isinstance(side, dict) else None
+    mark = side.get("life_support_patients") if isinstance(side, dict) else None
+    values = (
+        [load.get(k) for k in ("p10", "p50", "p90")] if isinstance(load, dict) else []
+    )
+    if (
+        yardstick.get("words") not in words
+        or len(values) != 3
+        or any(type(v) is not int or v < 0 for v in values)
+        or not values[0] <= values[1] <= values[2]
+        or type(mark) not in (int, float)
+        or not math.isfinite(mark)
+        or mark < 0
+    ):
+        return missing
+    covers = (
+        f"staffing covers {mark:g}"
+        if kind == "capacity"
+        else f"a typical day has {mark:g}"
+    )
+    return (
+        f"\nAgainst {against}: {yardstick['words']}. Now plus new {values[1]} "
+        f"(80% range {values[0]} to {values[2]}); {covers}."
+    )
+
+
+def life_support_answer(result: dict) -> str:
+    support = result.get("life_support") or {}
+    support = support if isinstance(support, dict) else {}
+    if "now_patients" in support:
+        now = support["now_patients"]
+        observed = f"Observed life-support patients: {_count_text(now)}."
+        known, unknown = (
+            support.get("now_known_patients"),
+            support.get("now_unknown_patients"),
+        )
+        if (
+            type(now) is not int
+            and type(known) is int
+            and type(unknown) is int
+            and unknown > 0
+        ):
+            observed = (
+                f"Observed life-support patients: at least {known}; "
+                f"support status unknown for {unknown} rooms."
+            )
+        if result.get("forecast_state") == "pending-model":
+            return (
+                observed + "\nNew life-support forecast: No estimate (model pending)."
+            )
+        future = support.get("expected_new_patients")
+        values = (
+            [future.get(k) for k in ("p10", "p50", "p90")]
+            if isinstance(future, dict)
+            else []
+        )
+        if (
+            len(values) == 3
+            and future.get("available") is not False
+            and all(type(v) is int and v >= 0 for v in values)
+            and values[0] <= values[1] <= values[2]
+        ):
+            by = support.get("expected_by")
+            complete = isinstance(by, dict) and all(
+                isinstance(by.get(key), dict)
+                and by[key].get("available") is not False
+                and all(
+                    type(by[key].get(k)) is int and by[key][k] >= 0
+                    for k in ("p10", "p50", "p90")
+                )
+                and by[key]["p10"] <= by[key]["p50"] <= by[key]["p90"]
+                for key in ("imv", "vasopressor", "crrt")
+            )
+            return (
+                observed
+                + (
+                    "\nForecast: "
+                    if complete
+                    else "\nAvailable-support lower-bound forecast: "
+                )
+                + f"{values[1]} new life-support patients "
+                + f"(80% range {values[0]} to {values[2]})."
+                + (
+                    ""
+                    if complete
+                    else " Full any-support forecast unavailable: "
+                    "supporting probabilities are missing."
+                )
+            )
+        return observed + "\nNew life-support forecast: unavailable."
+    values = [support.get(k) for k in ("p10", "p50", "p90")]
+    if (
+        all(type(v) is int and v >= 0 for v in values)
+        and values[0] <= values[1] <= values[2]
+    ):
+        return (
+            f"Reported life-support forecast: {values[1]} "
+            f"(80% range {values[0]} to {values[2]}). "
+            "Current observed support is unavailable."
+        )
+    return "Current support and life-support forecast are unavailable."
+
+
 def tool_answer(name: str, result: dict) -> str:
     if name == "list_runs":
         return runs_answer(result)
@@ -130,7 +262,7 @@ def tool_answer(name: str, result: dict) -> str:
             if result.get("forecast_state") == "pending-model"
             else "Unit forecast · next 24 hours:\n"
         )
-        return heading + forecast_answer(result)
+        return heading + forecast_answer(result) + check_first_line(result)
     if name == "get_room":
         room = result.get("room") or {}
         if not isinstance(room, dict):
@@ -196,81 +328,13 @@ def tool_answer(name: str, result: dict) -> str:
             )
         return "\n".join(lines)
     if name == "get_life_support":
-        support = result.get("life_support") or {}
-        support = support if isinstance(support, dict) else {}
-        if "now_patients" in support:
-            now = support["now_patients"]
-            observed = f"Observed life-support patients: {_count_text(now)}."
-            known, unknown = (
-                support.get("now_known_patients"),
-                support.get("now_unknown_patients"),
-            )
-            if (
-                type(now) is not int
-                and type(known) is int
-                and type(unknown) is int
-                and unknown > 0
-            ):
-                observed = (
-                    f"Observed life-support patients: at least {known}; "
-                    f"support status unknown for {unknown} rooms."
-                )
-            if result.get("forecast_state") == "pending-model":
-                return (
-                    observed
-                    + "\nNew life-support forecast: No estimate (model pending)."
-                )
-            future = support.get("expected_new_patients")
-            values = (
-                [future.get(k) for k in ("p10", "p50", "p90")]
-                if isinstance(future, dict)
-                else []
-            )
-            if (
-                len(values) == 3
-                and future.get("available") is not False
-                and all(type(v) is int and v >= 0 for v in values)
-                and values[0] <= values[1] <= values[2]
-            ):
-                by = support.get("expected_by")
-                complete = isinstance(by, dict) and all(
-                    isinstance(by.get(key), dict)
-                    and by[key].get("available") is not False
-                    and all(
-                        type(by[key].get(k)) is int and by[key][k] >= 0
-                        for k in ("p10", "p50", "p90")
-                    )
-                    and by[key]["p10"] <= by[key]["p50"] <= by[key]["p90"]
-                    for key in ("imv", "vasopressor", "crrt")
-                )
-                return (
-                    observed
-                    + (
-                        "\nForecast: "
-                        if complete
-                        else "\nAvailable-support lower-bound forecast: "
-                    )
-                    + f"{values[1]} new life-support patients "
-                    + f"(80% range {values[0]} to {values[2]})."
-                    + (
-                        ""
-                        if complete
-                        else " Full any-support forecast unavailable: "
-                        "supporting probabilities are missing."
-                    )
-                )
-            return observed + "\nNew life-support forecast: unavailable."
-        values = [support.get(k) for k in ("p10", "p50", "p90")]
-        if (
-            all(type(v) is int and v >= 0 for v in values)
-            and values[0] <= values[1] <= values[2]
-        ):
-            return (
-                f"Reported life-support forecast: {values[1]} "
-                f"(80% range {values[0]} to {values[2]}). "
-                "Current observed support is unavailable."
-            )
-        return "Current support and life-support forecast are unavailable."
+        return life_support_answer(result) + (
+            yardstick_line(result.get("yardstick"))
+            if isinstance(result.get("life_support"), dict)
+            and "now_patients" in result["life_support"]
+            and result.get("forecast_state") != "pending-model"
+            else ""
+        )
     if name == "get_capacity":
         return " ".join(
             f"{label}: {_count_text(result.get(key), 'not set')}."

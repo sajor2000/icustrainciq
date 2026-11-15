@@ -291,7 +291,7 @@ def present_at_cut(clif_dir: pathlib.Path, cuts: dict) -> dict[str, bool]:
     ).filter(pl.col("location_category").str.to_lowercase() == "icu")
     in_icu = set(
         adt.join(c, on=HOSP)
-        .filter(pl.col("in_dttm") < pl.col("cut"))
+        .filter(pl.col("in_dttm") <= pl.col("cut"))  # in <= cut < out
         .filter(pl.col("out_dttm").is_null() | (pl.col("out_dttm") > pl.col("cut")))
         .select(HOSP)
         .unique()
