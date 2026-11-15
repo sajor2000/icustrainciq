@@ -878,8 +878,8 @@ details.more summary:hover{color:var(--blue)}
     seenMadeAt=typeof f.made_at==="string"?f.made_at:null; setZone();
     if(capLocal && capLocal.forMadeAt===seenMadeAt) applyCapLocal();      // our recompute holds until the next forecast
   }
-  async function loadAll(){ const [f,r]=await Promise.all([getJSON("/api/forecast"), getJSON("/api/rooms")]);
-    if(!f||typeof f!=="object"||!r||typeof r!=="object") throw new Error("shape"); setData(f,r); }
+  async function loadAll(){ const [f,r,c]=await Promise.all([getJSON("/api/forecast"), getJSON("/api/rooms"), getJSON("/api/capacity").catch(()=>null)]);
+    if(!f||typeof f!=="object"||!r||typeof r!=="object") throw new Error("shape"); setData(f,r); serverMachines(c); }
   const sleep = ms => new Promise(res=>setTimeout(res,ms));
   async function loadRetry(tries=3){ for(let i=0;i<tries;i++){ try{ await loadAll(); return true; }catch(e){ if(i<tries-1) await sleep((FAST?150:600)*Math.pow(3,i)); } } return false; }
   function useSynthetic(){ const d=new Date(); d.setHours(7,0,0,0); if(d.getTime()>Date.now()) d.setDate(d.getDate()-1);   // the morning cut: the most recent 07:00
@@ -1340,6 +1340,7 @@ details.more summary:hover{color:var(--blue)}
     if(lastRoomRunAt===undefined) lastRoomRunAt=ra||null; else if(ra && ra!==lastRoomRunAt){ lastRoomRunAt=ra; need=true; }
     let changed=false;
     if(need){ try{ await loadAll(); changed=true; }catch(e){ /* keep the last data on screen */ } }
+    else { try{ if(serverMachines(await getJSON("/api/capacity"))) changed=true; }catch(e){ /* keep the totals on screen */ } }   // every refresh: totals saved on another device
     if(run && !busy){
       const moved = changed && sigOf()!==run.before;
       if(moved || run.idle>=2){       // grace of two quiet polls: the dispatcher can report idle just before the files land
@@ -1355,29 +1356,40 @@ details.more summary:hover{color:var(--blue)}
 
   /* ---------- capacity ---------- */
   /* Capacity as machine totals (Dema's model): total ventilators and CRRT machines on the unit; free = total - in use now.
-     The totals live on this device (lookahead-machines). The staffing number is optional and, when given, is POSTed as before
-     with the totals sent as vents_total and crrt_total (a derived vents_free is never sent); the device copy is kept only when the save works. */
-  let machines = {imv:null, crrt:null};
+     Served live, the totals are the server's: GET /api/capacity on load and on every refresh, and its value wins (even null); the device
+     copy (lookahead-machines) is used when the server leaves the key out and in #synthetic. A save POSTs vents_total and crrt_total
+     (null when a saved total is blanked; a derived vents_free is never sent); the device copy changes only when the save works. */
+  let machines = {imv:null, crrt:null}, capSeq = 0, capDone = 0, capBusy = 0;
+  const MKEY = {imv:"vents_total", crrt:"crrt_total"};
   try{ const m=JSON.parse(localStorage.getItem("lookahead-machines")||"null"); if(m && typeof m==="object") for(const k of ["imv","crrt"]) if(Number.isInteger(m[k]) && m[k]>=0 && m[k]<=50) machines[k]=m[k]; }catch(e){ /* no storage */ }
   const saveMachines = () => { try{ localStorage.setItem("lookahead-machines", JSON.stringify(machines)); }catch(e){ /* storage blocked: totals last for this page */ } };
   const inUse = k => RM.rooms.filter(r=>r.on_now[k]).length;
   function machFree(k){ if(k!=="imv" && k!=="crrt") return null; if(machines[k]!=null) return Math.max(0, machines[k]-inUse(k));
     const y=Y(); return k==="imv" && y && y.kind==="capacity" && y.vf!=null ? y.vf : null; }      // a ventilators-free number saved on the server still counts
   function paintCapForm(){ $("cap-vt").value = machines.imv==null ? "" : machines.imv; $("cap-ct").value = machines.crrt==null ? "" : machines.crrt; }
+  /* the server's totals win when it sends the key (even null); true when a total changed. Skipped while a save is in flight. */
+  function serverMachines(c){ if(c && typeof c==="object" && c.capacity && typeof c.capacity==="object") c=c.capacity;
+    if(!c || typeof c!=="object" || capBusy) return false; let ch=false;
+    for(const k of ["imv","crrt"]) if(hasOwn(c,MKEY[k])){ const v=c[MKEY[k]], n = Number.isInteger(v) && v>=0 && v<=50 ? v : null; if(n!==machines[k]){ machines[k]=n; ch=true; } }
+    if(ch){ saveMachines(); const a=document.activeElement; if(!a || (a.id!=="cap-vt" && a.id!=="cap-ct")) paintCapForm(); }
+    return ch; }
+  const postCap = async body => { capBusy++; try{ return LIVE ? await postJSON("/api/capacity", body) : await api.capacity(body); }
+    catch(err){ return {ok:false,reason:"The board server did not answer. Try again in a moment."}; } finally{ capBusy--; } };
   $("capform").onsubmit=async e=>{ e.preventDefault();
     const ls=$("cap-ls").value.trim(), vt=$("cap-vt").value.trim(), ct=$("cap-ct").value.trim(), ok=v=>/^\d{1,2}$/.test(v) && +v<=50, msg=$("capmsg");
     for(const [v,id,what] of [[vt,"cap-vt","Ventilators on the unit"],[ct,"cap-ct","CRRT machines on the unit"],[ls,"cap-ls","Life-support patients tonight's staffing covers"]])
       if(v!=="" && !ok(v)){ msg.textContent=`${what} must be a whole number from 0 to 50, or left empty.`; $(id).focus(); return; }
     if(ls==="" && vt==="" && ct==="" && machines.imv==null && machines.crrt==null){ msg.textContent="Enter the ventilators or CRRT machines on the unit, or the patients tonight's staffing covers."; $("cap-vt").focus(); return; }
-    const newM={imv:vt===""?null:+vt, crrt:ct===""?null:+ct};
-    if(ls===""){ machines=newM; saveMachines(); renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device."; return; }
+    const newM={imv:vt===""?null:+vt, crrt:ct===""?null:+ct}, seq=++capSeq, body={role:role()};   // POST /api/capacity
+    const commit=()=>{ if(seq>capDone){ capDone=seq; machines=newM; saveMachines(); } };   // an older save that answers late never overwrites a newer one
+    for(const k of ["imv","crrt"]){ if(newM[k]!=null) body[MKEY[k]]=newM[k]; else if(machines[k]!=null) body[MKEY[k]]=null; }   // a blanked total goes as null (the server clears it); a box that was never set is left out
+    if(ls!=="") body.life_support_patients=+ls;
+    if(ls==="" && (!LIVE || Object.keys(body).length===1)){ commit(); renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device."; return; }
     const vfN = newM.imv==null ? null : Math.max(0, newM.imv-inUse("imv"));   // local view only; never sent (free = total - in use, worked out by the server)
-    const body={life_support_patients:+ls, role:role()}; if(newM.imv!=null) body.vents_total=newM.imv; if(newM.crrt!=null) body.crrt_total=newM.crrt;   // POST /api/capacity
-    let rs;
-    if(LIVE){ try{ rs=await postJSON("/api/capacity", body); }catch(err){ rs={ok:false,reason:"The board server did not answer. Try again in a moment."}; } }
-    else rs=await api.capacity(body);
+    const rs=await postCap(body);
     if(!rs.ok){ msg.textContent="Not saved. "+(str(rs.reason,200)||"Try again in a moment."); return; }
-    machines=newM; saveMachines();   // the device copy of the totals only when the save worked
+    commit();   // the device copy of the totals only when the save worked
+    if(ls===""){ renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved."; return; }
     const sv=rs.capacity||{}, setAt=typeof sv.set_at==="string"?sv.set_at:typeof sv.updated_at==="string"?sv.updated_at:iso(Date.now());
     viewTyp=false;
     if(LIVE){ try{ await loadAll(); }catch(err){ /* keep the last forecast */ }
@@ -1387,7 +1399,10 @@ details.more summary:hover{color:var(--blue)}
       if(hasFc()) FC.yardstick=genYardstick(FC,cap); }
     renderStrain(); if(room!==null) renderRoom(); noteChange();
     msg.textContent="Saved."; };
-  $("capreset").onclick=()=>{ machines={imv:null, crrt:null}; saveMachines(); paintCapForm(); $("cap-ls").value="";
+  $("capreset").onclick=async()=>{ const seq=++capSeq;
+    if(LIVE){ const rs=await postCap({role:role(), vents_total:null, crrt_total:null}); if(!rs.ok){ $("capmsg").textContent="Not saved. "+(str(rs.reason,200)||"Try again in a moment."); return; } }   // the server's totals win on refresh, so they are cleared there too
+    if(seq<capDone) return; capDone=seq;
+    machines={imv:null, crrt:null}; saveMachines(); paintCapForm(); $("cap-ls").value="";
     if(!LIVE){ cap={...NOCAP}; try{ localStorage.removeItem("lookahead-capacity"); }catch(err){ /* storage blocked */ } if(hasFc()) FC.yardstick=genYardstick(FC,cap); }
     viewTyp=false; renderStrain(); if(room!==null) renderRoom();
     $("capmsg").textContent = LIVE ? "Machine totals cleared. The staffing number saved on the server stays until it is set again." : "Capacity cleared."; };
@@ -1437,7 +1452,7 @@ details.more summary:hover{color:var(--blue)}
     if(/\b(update|re-?run|refresh)\b.{0,24}\b(unit|forecast|board)\b/.test(t)) return startUpdate("unit");
     if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
     if(/summari[sz]e/.test(t)) return summary();
-    if(room && R(room) && /(why is this|what is forecast for this) (?:room|bed)/.test(t)){ const r=R(room); return `Bed ${room}: ${flagged(r)?"flagged, at or above a threshold":"nothing at its threshold"}. ${flowWords(r)}`; }
+    if(room && R(room) && /(why is this|what is forecast for this) (?:room|bed)/.test(t)){ const r=R(room); return `Bed ${room}: ${flagged(r)?"flagged, at or above a threshold":"no new life support or death at its threshold"}. ${flowWords(r)}`; }
     if(room && R(room) && /(what changed|last 12)/.test(t)){ const ph=R(room).past_12h.slice(0,3); return ph.length ? `Bed ${room}, last 12 hours: ${ph.map(x=>`${x.h!=null?x.h+" h ago, ":""}${x.text}`).join("; ")}.` : `Bed ${room}: nothing recorded in the last 12 hours.`; }
     if(room && R(room) && /chance of leaving/.test(t)){ const v=R(room).p.icu_departure; return v==null ? `Bed ${room}: no estimate for leaving the ICU.` : `Bed ${room}: ${inTen(v)} chance of leaving the ICU in the next 24 hours.`; }
     if(/likely to leave/.test(t)){ const o=RM.rooms.filter(r=>r.p.icu_departure!=null&&r.p.icu_departure>=lines.leave).sort((a,b)=>b.p.icu_departure-a.p.icu_departure);
