@@ -205,11 +205,10 @@ h1,h2,h3,p{margin:0}
 .bed .av{flex:none;align-self:center;width:1.875rem;height:1.97rem}
 .bed .av svg{display:block;width:100%;height:100%;fill:color-mix(in srgb,var(--ink-2) 40%,var(--surface))}
 .bed.on .av svg{fill:color-mix(in srgb,var(--ink) 62%,var(--surface))}
-/* a bed with a new life support or death at its threshold in Settings: the person figure goes solid ink. Only the three highest-risk beds
-   (.top) also carry a still neutral ring; it breathes slowly only where motion is welcome and the Settings Pulse option is on (see the pulse rules at the end of the pulse block) */
-.bed.hit .av{position:relative;isolation:isolate}
-.bed.hit .av svg{fill:var(--ink)}
-.bed.hit.top .av::after{content:"";position:absolute;inset:-.25rem;z-index:-1;border-radius:50%;border:2px solid color-mix(in srgb,var(--ink) 50%,transparent)}
+/* a bed with a new life support or death at its threshold in Settings: the person figure turns red and pulses (beat and halo as on Unit strain) */
+.bed.hit .av{position:relative;isolation:isolate;animation:beat 1.2s ease-in-out infinite}
+.bed.hit .av svg{fill:var(--red)}
+.bed.hit .av::after{content:"";position:absolute;inset:-.4375rem;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--red) 55%,transparent) 35%,transparent);animation:watchp 1.2s ease-in-out infinite}
 .bedhead{font-size:1.25rem;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin:.5rem 0 .75rem}
 .viewsub{font-size:.875rem;color:var(--ink-2);margin:0 0 .75rem}
 .viewsub b{color:var(--ink);font-weight:700}
@@ -306,16 +305,13 @@ h1,h2,h3,p{margin:0}
 .pp.out .av .fill{fill:var(--ink-2)}
 /* the highest-risk beds (Dema's): tinted red, with a pulsing halo and ring */
 .pp{position:relative}
-.pp.w .av{isolation:isolate}
+.pp.w .av{isolation:isolate;animation:beat 1.2s ease-in-out infinite}
 .pp.w:hover .av{transform:none}
-.pp.w .av::after{content:"";position:absolute;inset:-.375rem;z-index:-1;border-radius:50%;border:2px solid color-mix(in srgb,var(--ink) 50%,transparent)}
-/* the pulse, subdued: a slow, small breath of the neutral ring on the three highest-risk beds only, never the figure, never red.
-   Off under reduced motion, in the night board (a still ring stays) and when Settings > Pulse is off. The word and the fill carry the status. */
-@keyframes breathe{0%,100%{opacity:.35}50%{opacity:1}}
-@media (prefers-reduced-motion:no-preference){
-  :root:not([data-pulse="off"]):not([data-board="night"]) .bed.hit.top .av::after,
-  :root:not([data-pulse="off"]):not([data-board="night"]) .pp.w .av::after{animation:breathe 4s ease-in-out infinite}
-}
+.pp.w .av::after{content:"";position:absolute;inset:-.6875rem;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--red) 85%,transparent) 35%,transparent);animation:watchp 1.2s ease-in-out infinite}
+.pp.w .av::before{content:"";position:absolute;inset:-.1875rem;z-index:-1;border-radius:50%;border:2.5px solid var(--red);animation:ring 1.2s ease-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}45%{transform:scale(1.12)}}
+@keyframes ring{0%{opacity:.95;transform:scale(.7)}100%{opacity:0;transform:scale(1.55)}}
+@keyframes watchp{0%,100%{opacity:.2;transform:scale(.8)}45%{opacity:1;transform:scale(1.15)}}
 .pp.w .av .base{fill:color-mix(in srgb,var(--red) 38%,var(--surface))}
 .pp.w .av .fill{fill:var(--red)}
 .pp.w .pc{color:var(--red);font-weight:800}
@@ -577,7 +573,6 @@ details.more summary:hover{color:var(--blue)}
     <p class="seti">An event is flagged on a bed when its chance is at or above that event's threshold: the event's circle icon then shows on the bed's card. When a new life support or death is at its threshold, the bed's person icon turns red and pulses (discharge alone does not).</p>
     <div class="thrpop" id="thrpop" hidden></div>
     <div class="flag" id="flag"><span class="fl" id="flag-l">Flag beds at</span><div class="fseg" id="fseg" role="group" aria-labelledby="flag-l"><button type="button" data-p="50" aria-pressed="false">50%</button><button type="button" data-p="25" aria-pressed="true">25%</button><button type="button" data-p="10" aria-pressed="false">10%</button></div></div>
-    <label class="seti" for="pulseopt" style="display:flex;gap:.625rem;align-items:center;min-height:2.75rem"><input id="pulseopt" type="checkbox" checked> Slow ring on the three highest-risk beds (off when your device asks for less motion)</label>
     <h3 class="seth" id="cap-h">Capacity</h3>
     <p class="seti">Total machines on the unit. Free = total minus in use now. Leave a box blank if it is not set.</p>
     <div class="capbox" id="capbox">
@@ -1175,7 +1170,7 @@ details.more summary:hover{color:var(--blue)}
   const rn = n => { const r=R(n); return `bed ${n}${r&&r.name?` (${r.name.display})`:""}`; };
   function bedTile(r){
     const who=[r.sex,r.age].filter(Boolean).join(" "), b=document.createElement("button");
-    b.type="button"; b.className="bed"+(flagged(r)?" hit":"")+(flagged(r)&&topBeds().includes(r.room)?" top":""); b.dataset.room=r.room; b.dataset.level=r.level||"none"; b.dataset.state=flagged(r)?"flagged":"clear"; b.dataset.ftip=flowWords(r);
+    b.type="button"; b.className="bed"+(flagged(r)?" hit":""); b.dataset.room=r.room; b.dataset.level=r.level||"none"; b.dataset.state=flagged(r)?"flagged":"clear"; b.dataset.ftip=flowWords(r);
     b.setAttribute("aria-label",`Bed ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${flowWords(r)}`);
     { const on=onList(r), it=(tip,icon,v)=>`<span class="nx"${T(tip)}>${icon}<small>${esc(pct(v))}</small></span>`;
       let next = nextList(r).map(k=>it(DEF.start(k,r.p[k]),cb(ic(k,false)),r.p[k])).join("");
@@ -1358,7 +1353,7 @@ details.more summary:hover{color:var(--blue)}
   /* ---------- capacity ---------- */
   /* Capacity as machine totals (Dema's model): total ventilators and CRRT machines on the unit; free = total - in use now.
      The totals live on this device (lookahead-machines). The staffing number is optional and, when given, is POSTed as before
-     with the totals sent as vents_total and crrt_total (a derived vents_free is never sent); the device copy is kept only when the save works. */
+     with vents_free derived from the ventilator total; the API is unchanged (a CRRT total has no field yet). */
   let machines = {imv:null, crrt:null};
   try{ const m=JSON.parse(localStorage.getItem("lookahead-machines")||"null"); if(m && typeof m==="object") for(const k of ["imv","crrt"]) if(Number.isInteger(m[k]) && m[k]>=0 && m[k]<=50) machines[k]=m[k]; }catch(e){ /* no storage */ }
   const saveMachines = () => { try{ localStorage.setItem("lookahead-machines", JSON.stringify(machines)); }catch(e){ /* storage blocked: totals last for this page */ } };
@@ -1371,15 +1366,14 @@ details.more summary:hover{color:var(--blue)}
     for(const [v,id,what] of [[vt,"cap-vt","Ventilators on the unit"],[ct,"cap-ct","CRRT machines on the unit"],[ls,"cap-ls","Life-support patients tonight's staffing covers"]])
       if(v!=="" && !ok(v)){ msg.textContent=`${what} must be a whole number from 0 to 50, or left empty.`; $(id).focus(); return; }
     if(ls==="" && vt==="" && ct==="" && machines.imv==null && machines.crrt==null){ msg.textContent="Enter the ventilators or CRRT machines on the unit, or the patients tonight's staffing covers."; $("cap-vt").focus(); return; }
-    const newM={imv:vt===""?null:+vt, crrt:ct===""?null:+ct};
-    if(ls===""){ machines=newM; saveMachines(); renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device."; return; }
-    const vfN = newM.imv==null ? null : Math.max(0, newM.imv-inUse("imv"));   // local view only; never sent (free = total - in use, worked out by the server)
-    const body={life_support_patients:+ls, role:role()}; if(newM.imv!=null) body.vents_total=newM.imv; if(newM.crrt!=null) body.crrt_total=newM.crrt;   // POST /api/capacity
+    machines={imv:vt===""?null:+vt, crrt:ct===""?null:+ct}; saveMachines();
+    if(ls===""){ renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device."; return; }
+    const vfN = machines.imv==null ? null : Math.max(0, machines.imv-inUse("imv"));
+    const body={life_support_patients:+ls, role:role()}; if(vfN!=null) body.vents_free=vfN;   // POST /api/capacity
     let rs;
     if(LIVE){ try{ rs=await postJSON("/api/capacity", body); }catch(err){ rs={ok:false,reason:"The board server did not answer. Try again in a moment."}; } }
     else rs=await api.capacity(body);
-    if(!rs.ok){ msg.textContent="Not saved. "+(str(rs.reason,200)||"Try again in a moment."); return; }
-    machines=newM; saveMachines();   // the device copy of the totals only when the save worked
+    if(!rs.ok){ msg.textContent=str(rs.reason,200)||"Capacity was not saved."; return; }
     const sv=rs.capacity||{}, setAt=typeof sv.set_at==="string"?sv.set_at:typeof sv.updated_at==="string"?sv.updated_at:iso(Date.now());
     viewTyp=false;
     if(LIVE){ try{ await loadAll(); }catch(err){ /* keep the last forecast */ }
@@ -1518,9 +1512,6 @@ details.more summary:hover{color:var(--blue)}
 
   /* ---------- theme ---------- */
   const themeBtns=$("setmenu").querySelectorAll("button[data-t]");
-  { const po=$("pulseopt"); let on=true; try{ on=localStorage.getItem("lookahead-pulse")!=="off"; }catch(e){ /* no storage */ }
-    const paintP=()=>{ po.checked=on; if(on) delete document.documentElement.dataset.pulse; else document.documentElement.dataset.pulse="off"; };
-    po.onchange=()=>{ on=po.checked; try{ localStorage.setItem("lookahead-pulse",on?"on":"off"); }catch(e){ /* storage blocked */ } paintP(); }; paintP(); }
   function setTheme(t){ document.documentElement.dataset.board=t; for(const b of themeBtns) b.setAttribute("aria-pressed",String(b.dataset.t===t)); }
   for(const b of themeBtns) b.onclick=()=>setTheme(b.dataset.t);
 
