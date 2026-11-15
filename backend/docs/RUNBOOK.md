@@ -4,7 +4,7 @@ Read this if you need to start ICU Lookahead on the cluster, publish new code to
 
 How to get the dashboard running from nothing, and how to bring it back after a
 break. Companion to [`LIVE_DEMO.md`](LIVE_DEMO.md) (what to say) and
-[`FUZZBALL_TEST_PLAN.md`](FUZZBALL_TEST_PLAN.md) (what to check).
+[`FUZZBALL_TEST_PLAN.md`](../../docs/archive/FUZZBALL_TEST_PLAN.md) (what to check).
 
 The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. This is the procedure that was used.
 
@@ -164,7 +164,7 @@ need both volumes, `mimic_clif` at `/data` and `twin-store` at `/store`, and the
 published code (`PYTHONPATH=/store/py:/store/code`). The laptop has neither. Run
 them inside a job that mounts both: a one-line CPU job, or a shell in a running job
 that already mounts them (`fuzzball workflow exec`), as
-[`FUZZBALL_TEST_PLAN.md`](FUZZBALL_TEST_PLAN.md) section 5 does for clean-up. No
+[`FUZZBALL_TEST_PLAN.md`](../../docs/archive/FUZZBALL_TEST_PLAN.md) section 5 does for clean-up. No
 workflow file in this repo does this step yet; job 4 in vaishvikc/ICU-Twin is the
 owner of the probe.
 

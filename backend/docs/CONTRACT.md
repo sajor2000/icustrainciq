@@ -2,7 +2,7 @@
 
 Read this if you build against `forecast.json`, `rooms.json` or the board's API and need the exact fields.
 
-Changes with PR #20: capacity gains `vents_total`, `crrt_total`, `nurses_on_shift` and `rt_on_shift`. This file describes the shapes on `main`.
+This file describes the shapes on `main`. Capacity carries `vents_total`, `crrt_total`, `nurses_on_shift` and `rt_on_shift` (PR #20, merged).
 
 ## Selected-cohort publication
 
@@ -13,7 +13,9 @@ forecast_state, forecast, rooms, provenance}`. `source.kind` is `mimic-iv` for t
 approved private cohort; `--require-real-data` refuses a missing, invalid or
 open-demo context. Missing dataset versions remain unknown. The provenance
 records the actual model/probe fingerprints for ready forecasts; a pending
-publication has no model fingerprints or invented estimates.
+publication has no model fingerprints or invented estimates. A board started
+without `--context` answers `GET /api/context` with `200 {"available": false,
+"context_mode": false}`; the page then reads `/api/forecast` and `/api/rooms`.
 
 `forecast` and `rooms` carry matching publication/cohort identities. Existing
 `GET /api/forecast` and `/api/rooms` return those projections. `POST /api/ask`

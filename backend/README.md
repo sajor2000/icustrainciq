@@ -39,7 +39,8 @@ Chat grounding, on `main`: `app/demo_context.py` builds the shared ICU snapshot,
 | [`docs/LIVE_DEMO.md`](docs/LIVE_DEMO.md) | the demo-day plan |
 | [`docs/CLUSTER_FACTS.md`](docs/CLUSTER_FACTS.md) | hardware, scheduler and storage facts, dated |
 | [`docs/FUZZBALL_VALIDATION.md`](docs/FUZZBALL_VALIDATION.md) | validation record and storage map, dated |
-| [`docs/COMPUTE_PLAN.md`](docs/COMPUTE_PLAN.md), [`docs/FUZZBALL_43_REVIEW.md`](docs/FUZZBALL_43_REVIEW.md), [`docs/FUZZBALL_TEST_PLAN.md`](docs/FUZZBALL_TEST_PLAN.md) | planning records written before the first run, dated |
+| [`docs/COMPUTE_PLAN.md`](docs/COMPUTE_PLAN.md) | planning record written before the first run, dated |
+| [`../docs/archive/FUZZBALL_43_REVIEW.md`](../docs/archive/FUZZBALL_43_REVIEW.md), [`../docs/archive/FUZZBALL_TEST_PLAN.md`](../docs/archive/FUZZBALL_TEST_PLAN.md) | archived: the pre-run review of the workflow files against the Fuzzball 4.3 docs, and the pre-run test plan |
 
 ## Run on the cluster
 
@@ -74,7 +75,7 @@ Open http://localhost:8080. Every POST needs `Content-Type: application/json` an
 The open demo ward, with no model:
 
 ```bash
-python app/stage_ward.py clif_demo --out /tmp/ids.csv
+uv run --extra model python app/stage_ward.py clif_demo --out /tmp/ids.csv
 uv run --extra model python scripts/run_cohort.py clif_demo --ward-ids /tmp/ids.csv --names fake --out /tmp/out --work /tmp/work
 uv run python app/board.py --forecast /tmp/out/forecast.json --host 127.0.0.1 --port 8080
 ```
@@ -87,6 +88,6 @@ uv run python app/board.py --forecast /tmp/out/forecast.json --host 127.0.0.1 --
 | `--model <dir> --probes <probe>` | Adds the predictions. Needs the trained weights and the probe |
 | `--real-ward` | Real MIMIC-IV rooms. Local machines only; always serve with `--host 127.0.0.1` |
 | `--demo-clock-hours 6` | Moves every patient six hours on, on that patient's own clock |
-| `--cut-table 0,24,48,72` | Prints how many rooms remain and how many are on each support at each clock. Counts only; writes nothing |
+| `--cut-table 0,24,48,72` | Prints how many rooms remain and how many are on each support at each clock. Counts only, and no forecast JSON is written. It still changes the `--work` folder: the roster files are rewritten and, unless tokens are reused, `tokenized_output` is removed and rebuilt, so point `--work` at a folder you can lose |
 
 Every script prints counts only: never a row, an id, a date of the data or a name. Patient data, model weights and probes are never stored in this repo.
