@@ -946,7 +946,7 @@
       "Ink is now, blue is the next 24 hours.",
       "Pictures before words: one drawn icon family, solid for running, outline for expected.",
       "Every bed is drawn as a change: Now, an arrow, Next 24 h.",
-      "Chances are counts out of ten, never percentages.",
+      "Chances are whole percentages (\"23%\"), \"<5%\" when very small, on every screen (D14).",
       "Two boards (day, night) with the same grammar; wall screens scale the root to 120% from 1800px.",
       "Two tabs only: Bed board (default) and Unit strain."
     ],
@@ -968,7 +968,7 @@
       },
       {
         "name": "The Count Rule",
-        "body": "A chance is \"N in 10\" on tiles and figures, \"about N in 10\" on the room page, \"fewer than 1 in 10\" below one, and \"No estimate\" when it is null. No percentage sign appears anywhere.",
+        "body": "A chance is a whole percentage on every screen (\"23%\"), \"<5%\" when very small, and \"No estimate\" when it is null (D14).",
         "section": "typography"
       },
       {
@@ -994,7 +994,7 @@
       "Do credit Dema (deetherese) wherever the cluster card, person figure, range bar, status chip or segmented switch is reused."
     ],
     "donts": [
-      "Don't show a percentage anywhere.",
+      "Don't write a chance as \"N in 10\"; use the whole percentage.",
       "Don't let death colour or mark a bed. It is a plain count on Unit strain and a plain row on the room page.",
       "Don't use red for anything but SHORT and VERY BUSY, or amber for anything but TIGHT and BUSY.",
       "Don't signal status by colour alone.",

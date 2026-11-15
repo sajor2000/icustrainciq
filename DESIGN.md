@@ -294,7 +294,7 @@ Credit. The cluster cards, the person figure that fills with a bed's chance (a h
 - Ink is now, blue is the next 24 hours.
 - Pictures before words: one drawn icon family, solid for running, outline for expected.
 - Every bed is drawn as a change: Now, an arrow, Next 24 h.
-- Chances are counts out of ten, never percentages.
+- Chances are whole percentages ("23%"), "<5%" when very small, on every screen (D14).
 - Two boards (day, night) with the same grammar; wall screens scale the root to 120% from 1800px.
 - Two tabs only: Bed board (default) and Unit strain.
 

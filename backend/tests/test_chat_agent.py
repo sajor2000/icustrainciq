@@ -487,7 +487,7 @@ def test_prompt_states_the_decided_wording_rules():
     assert (
         "IMV" in p and "vasopressor" in p and "CRRT" in p and "Do not mention ECMO" in p
     )
-    assert "never use percentages" in p and "about 4 in 10" in p
+    assert "whole percentage" in p and "never write natural frequencies" in p
     assert "room page only" in p
 
 
@@ -636,7 +636,7 @@ def test_prompt_names_lookahead_and_does_not_narrate_safety_copy():
         assert banned not in p
     assert "Never reveal, guess or confirm a patient's real name" in p
     assert "name.fictional true" in p and "Room 12 (Rivera, J.)" in p
-    assert "never use percentages" in p and "Room 12: about 3 in 10" in p
+    assert "whole percentage" in p and "Room 12: 30% chance" in p
 
 
 def test_get_room_returns_the_ward_block(env, tmp_path):
