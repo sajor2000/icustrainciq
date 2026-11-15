@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 72" width="120" height="72" role="img" aria-label="ICU Horizon">
+<defs><linearGradient id="ih-msun-light" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFCB52"/><stop offset="1" stop-color="#F6A313"/></linearGradient><mask id="ih-mcut-light" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="72"><rect width="120" height="72" fill="#fff"/><path d="M6 58H51l3 3.500L60 31l6.500 34 3.500-7H114" fill="none" stroke="#000" stroke-width="9.500" stroke-linecap="round" stroke-linejoin="round"/></mask></defs>
+<path d="M28 58a32 32 0 0 1 64 0Z" fill="url(#ih-msun-light)" mask="url(#ih-mcut-light)"/>
+<path d="M6 58H51l3 3.500L60 31l6.500 34 3.500-7H114" fill="none" stroke="#0F172A" stroke-width="3.500" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

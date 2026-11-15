@@ -36,6 +36,7 @@ section{margin-top:6px}
 
 /* masthead */
 .mast{padding-top:.17in;display:flex;align-items:flex-end;gap:16px}
+.mast h1 .logo{display:block;width:240px;height:auto}
 .mast h1{font-size:34px;line-height:1;font-weight:800;letter-spacing:-.035em;white-space:nowrap}
 .mast .tag{font-size:17px;line-height:1.3;font-weight:600;letter-spacing:-.015em;margin-top:3px;color:var(--ink-2)}
 .mast .event{margin-left:auto;text-align:right;font-size:11px;line-height:1.4;color:var(--ink-2);font-weight:600}
@@ -102,10 +103,10 @@ section{margin-top:6px}
 
   <header class="mast pad">
     <div>
-      <h1>ICU Horizon</h1>
+      <h1><img class="logo" src="../brand/icu-horizon-logo-light.svg" alt="ICU Horizon" width="240" height="39"></h1>
       <p class="tag">From bench to bedside</p>
     </div>
-    <p class="event"><b>Team 7 · CLIF</b> · CIQ × NVIDIA × Lenovo Local AI Hackathon · Chicago · Nov 14–15, 2026<br>J.C. Rojas, MD, MS · Kaveri Chhikara, MS · Vaishvik Chaudhari, MS<br>Dema Therese, MS · Zewei ('Whiskey') Liao, MS</p>
+    <p class="event"><b>Team 7 · CLIF</b> · CIQ × NVIDIA × Lenovo Local AI Hackathon<br>Chicago · Nov 14–15, 2026<br>J.C. Rojas, MD, MS · Kaveri Chhikara, MS · Vaishvik Chaudhari, MS<br>Dema Therese, MS · Zewei ('Whiskey') Liao, MS</p>
   </header>
 
   <p class="lead pad">Five 24-hour predictions for every patient in an intensive care unit (ICU), summed into what the unit will need, <span>from a model we trained and run inside the hospital.</span></p>
@@ -113,7 +114,7 @@ section{margin-top:6px}
   <section class="three pad">
     <div>
       <h2>The problem</h2>
-      <p>In spring 2020, COVID-19 hospitals feared running out of ventilators and wrote rules for who would get one.<sup>1,2</sup> A small or rural ICU lives with that strain: few machines, no data-science team, and data that cannot leave the building.</p>
+      <p>Resource-constrained ICUs have only a few life-support machines. When those run out, patients must be transferred, often hours away. These units have no data-science team, and their data cannot leave the building, so they learn they are short too late.</p>
     </div>
     <div>
       <h2>What we built</h2>
@@ -155,7 +156,7 @@ section{margin-top:6px}
 
   <footer class="foot pad">
     <div class="in">
-      <span><sup>1</sup> Ranney ML et al. N Engl J Med 2020;382:e41. <sup>2</sup> Truog RD et al. N Engl J Med 2020;382:1973–5. <b>Data:</b> CLIF-MIMIC, our electronic health record (EHR) dataset: MIMIC-IV, a public de-identified ICU database, in CLIF (Common Longitudinal ICU data Format), <a href="https://clif-icu.com"><b>clif-icu.com</b></a>. Code: <a href="https://github.com/vaishvikc/ICU-Twin"><b>github.com/vaishvikc/ICU-Twin</b></a>. Research prototype; not a medical device.</span>
+      <span><b>Data:</b> CLIF-MIMIC, our electronic health record (EHR) dataset: MIMIC-IV, a public de-identified ICU database, in CLIF (Common Longitudinal ICU data Format), <a href="https://clif-icu.com"><b>clif-icu.com</b></a>. Code: <a href="https://github.com/vaishvikc/ICU-Twin"><b>github.com/vaishvikc/ICU-Twin</b></a>. Research prototype; not a medical device.</span>
       <span class="last">Nothing leaves the building.</span>
     </div>
   </footer>
