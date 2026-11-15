@@ -16,7 +16,10 @@ POST /run           {"role": ..., "scope": "unit" | "room", "room": 1..25 (room 
 Two scopes (docs/DECISIONS.md D9): "unit" refreshes the unit counts and every room,
 "room" refreshes one stage-ward room. Fuzzball 4.3 Fuzzfiles have no parameters and
 `workflow start` has no --set, so the dispatcher renders a copy of the template for
-each run (@SCOPE@, @ROOM@, @HOURS@) and starts that copy.
+each run (@SCOPE@, @ROOM@, @HOURS@, @CUT@) and starts that copy. @CUT@ is the replay
+cut itself (the last 07:00 at dispatch plus the demo-clock hours): it is fixed here, with
+@HOURS@, so a job that ends after the next 07:00 cannot pair this request's offset with
+the next day's morning.
 
 Guards, because the team has exactly two GPUs: one run at a time (any scope, plus
 t7-build, t7-smoke and t7-fit; two requests at once cannot both start, because a started
@@ -74,7 +77,14 @@ log = logging.getLogger("dispatcher")
 # t7-smoke and t7-fit hold a GPU too; t7-ward holds none but rewrites the stage tokens an update
 # reads; t7-code swaps the code and packages they import. t7-twin (the services) does not.
 GPU_WORKFLOW = re.compile(r"^t7-(\w+-)?(build|forecast|smoke|fit|ward|code)")
-ROLES = {"ICU nurse", "ICU physician", "pharmacy", "respiratory therapy", "bed manager"}
+ROLES = {
+    "ICU team",
+    "ICU nurse",
+    "ICU physician",
+    "pharmacy",
+    "respiratory therapy",
+    "bed manager",
+}
 SCOPES = ("unit", "room")
 ROOMS = range(1, 26)
 # Fuzzball 4.3 stage/workflow statuses (docs: "Checking Workflow Status"): Pending, Started, Finished,
@@ -91,6 +101,10 @@ FAILED_STATES = frozenset(
 PENDING_STATES = frozenset({"PENDING", "UNSPECIFIED", "QUEUED", ""})
 WORKFLOW_ID = re.compile(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", re.I)
 TOKEN = re.compile(r"@[A-Z][A-Z0-9_]*@")  # a template token nobody filled
+NEEDS_WARD_IDS = (
+    "# needs: ward-ids"  # a template's own header line (lookahead forecast)
+)
+CUT_TOKEN = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}")
 TERMINAL = frozenset({"FINISHED", *FAILED_STATES})
 LIST_TIMEOUT_S = 20
 START_TIMEOUT_S = 60
@@ -103,7 +117,9 @@ SCHEDULE_WINDOW_S = 600  # the 07:00 run retries for 10 minutes
 # than the three jobs' timeouts together), is stopped and /status says why.
 PENDING_LIMIT_S = 300
 RUN_LIMIT_S = 45 * 60
-FORECAST_NAME = re.compile(r"^t7-forecast-(?:room\d+-)?(\d{2})(\d{2})-(\d{2})(\d{2})$")
+FORECAST_NAME = re.compile(
+    r"^t7-(?:lookahead-)?forecast-(?:(?:unit|room\d+)-)?(\d{2})(\d{2})-(\d{2})(\d{2})$"
+)
 BODY_CAP = 1024
 SOCKET_TIMEOUT_S = 10
 CA = "/run/fuzzball-substrate/trusted-certs/root-ca.crt"
@@ -148,6 +164,17 @@ def last_cut(now: dt.datetime, at: str = MORNING) -> dt.datetime:
 def demo_clock_hours(now: dt.datetime, at: str = MORNING) -> float:
     """hours elapsed since the morning cut, to 0.1 h; this offset moves the ward's cut"""
     return round(_elapsed(now, last_cut(now, at)).total_seconds() / 360) / 10
+
+
+def replay_cut(now: dt.datetime, hours: float, at: str = MORNING) -> str:
+    """the replay cut of a run dispatched at `now`: the morning cut at or before `now`
+    plus the demo-clock hours, as an ISO time with its UTC offset. Worked out once, at
+    dispatch; the job receives it and never asks the clock again."""
+    cut = last_cut(now, at)
+    if cut.tzinfo is None:  # a naive clock (tests): the machine's own zone
+        cut = cut.astimezone()
+    moved = cut.astimezone(dt.timezone.utc) + dt.timedelta(hours=float(hours))
+    return moved.astimezone(cut.tzinfo).isoformat(timespec="seconds")
 
 
 def demo_clock_label(hours: float, at: str = MORNING) -> str:
@@ -203,7 +230,9 @@ DEFAULT_CLIF_DIR = "/store/code/clif_demo"  # the open demo, in the code tree
 # only read. 19 CLIF tables, the id file and the made-up names (docs/FUZZBALL_VALIDATION.md).
 COHORT_CLIF_DIR = "/data/dashboard_data"
 COHORT_WARD_IDS = f"{COHORT_CLIF_DIR}/dashboard_patients_unit25.parquet"
-COHORT_NAMES = "fake"  # fake_names.for_ward keys off the room number, so it covers every
+COHORT_NAMES = (
+    "fake"  # fake_names.for_ward keys off the room number, so it covers every
+)
 #                      staged stay and cannot go stale when the cohort changes (a
 #                      name.parquet made for an older ward left 24 of 25 unnamed)
 
@@ -232,6 +261,7 @@ def render_template(
     names: str = "",
     code_ref: str = "",
     code_sha256: str = "",
+    cut: str = "",
 ) -> str:
     """every token of any Fuzzfile in fuzzball/, in one place: the dispatcher's
     per-run copies and scripts/render_fz.py (people) both come through here.
@@ -250,6 +280,13 @@ def render_template(
         .replace("@ROOM@", str(int(room or 0)))
         .replace("@HOURS@", f"{float(hours):g}")
     )
+    if "@CUT@" in text:  # the replay cut, fixed when the run is dispatched
+        if not CUT_TOKEN.fullmatch(str(cut)):
+            raise ValueError(
+                "cut must be an ISO time with a UTC offset, e.g. "
+                "2026-11-14T07:00:00-06:00"
+            )
+        text = text.replace("@CUT@", cut)
     if code_ref:
         text = text.replace("@CODE_REF@", code_ref)
     if code_sha256:
@@ -551,14 +588,16 @@ class Dispatcher:
 
     # ---- starting a run ----------------------------------------------------------
     def render(
-        self, scope: str, room: int | None, hours: float, name: str
+        self, scope: str, room: int | None, hours: float, name: str, cut: str = ""
     ) -> pathlib.Path:
-        """a per-run copy of the template with the run's scope, room, demo clock and ward mode"""
+        """a per-run copy of the template with the run's scope, room, demo clock, replay
+        cut and ward mode"""
         text = render_template(
             self.fuzzfile.read_text(),
             scope=scope,
             room=room,
             hours=hours,
+            cut=cut,
             real_ward=self.real_ward,
             clif_dir=self.clif_dir,
             ward_ids=self.ward_ids,
@@ -595,6 +634,16 @@ class Dispatcher:
                 "started": False,
                 "reason": "No room data yet. Update the unit first, then a single room.",
             }
+        try:  # a template that cannot run without the roster says so in its header
+            needs_ids = NEEDS_WARD_IDS in self.fuzzfile.read_text()
+        except OSError:
+            needs_ids = False
+        if needs_ids and not self.ward_ids:
+            return {
+                "started": False,
+                "reason": "This forecast needs the ward's id file: start the "
+                "dispatcher with --ward-ids.",
+            }
         try:  # slow call first, outside the lock
             wfs = self.workflows()
             if self.stop_stuck(wfs):  # a run that waited too long no longer blocks
@@ -625,8 +674,9 @@ class Dispatcher:
                 }
             now = self.clock()
             hours = 0.0 if trigger == "schedule" else demo_clock_hours(now, self.at)
-            tag = f"room{room}-" if scope == "room" else ""
-            name = f"t7-forecast-{tag}{now:%m%d-%H%M}"
+            cut = replay_cut(now, hours, self.at)  # with the hours: one anchor day
+            tag = f"room{room}" if scope == "room" else "unit"
+            name = f"t7-lookahead-forecast-{tag}-{now:%m%d-%H%M}"
             token = f"pending:{name}"
             self.inflight[token] = {
                 "name": name,
@@ -635,7 +685,7 @@ class Dispatcher:
                 "pending": True,
             }
         try:  # the CLI call runs without the lock; the pending entry blocks a second start
-            path = self.render(scope, room, hours, name)
+            path = self.render(scope, room, hours, name, cut)
             wid = workflow_id(self._cli("workflow", "start", str(path), "--name", name))
         except Exception as e:
             with self.lock:
@@ -1026,6 +1076,8 @@ def main() -> None:
         sys.stdout.write(
             render_template(
                 a.render_only.read_text(),
+                # rendered by hand at hour 0: this morning's cut, fixed now
+                cut=replay_cut(dt.datetime.now(zoneinfo.ZoneInfo(a.tz)), 0, a.at),
                 real_ward=a.real_ward,
                 clif_dir=a.clif_dir,
                 ward_ids=a.ward_ids,

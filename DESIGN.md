@@ -286,7 +286,7 @@ components:
 
 The unit is read from three metres as icons, figures and numbers, with almost no sentences. A charge nurse at 07:00 sees which rooms to worry about and what the unit will be short of in the next 24 hours without reading a paragraph. The ground is a cool grey, the cards are white with soft corners, and there is one blue. Everything on the board is either ink or blue: ink means now, blue means forecast.
 
-Colour outside that pair is rationed to meaning. Amber appears only for TIGHT and BUSY, red only for SHORT and VERY BUSY, green only for Leaving and for ON TRACK and USUAL. Every status is carried three ways at once, by a fill or border, a drawn shape and a word. There are two boards, day and night, and both are first-class: they swap custom properties and nothing else.
+Colour outside that pair is rationed to meaning. Amber appears for TIGHT and BUSY, red for SHORT and VERY BUSY and the highest-risk person figure, and green for Leaving borders and labels and for ON TRACK and USUAL. Leaving figures fill in secondary ink (grey). Every status is carried three ways at once, by a fill or border, a drawn shape and a word. There are two boards, day and night, and both are first-class: they swap custom properties and nothing else.
 
 Credit. The cluster cards, the person figure that fills with a bed's chance (a head-and-shoulders path, two stacked SVGs with a clip-path inset), the range bar with an ink line for free capacity, the status chip, the card radius, hairline and shadow language and the segmented view switch come from Dema's (GitHub: deetherese) design on the `alternative` branch (`origin/alternative`, `mockups/command-center.html`). The blue acuity scale comes from the earlier board at commit 65b36c6. The icon family was drawn for this board; no icon was copied or adapted from an external set.
 
@@ -294,7 +294,7 @@ Credit. The cluster cards, the person figure that fills with a bed's chance (a h
 - Ink is now, blue is the next 24 hours.
 - Pictures before words: one drawn icon family, solid for running, outline for expected.
 - Every bed is drawn as a change: Now, an arrow, Next 24 h.
-- Chances are counts out of ten, never percentages.
+- Chances are whole percentages ("23%"), "<5%" when very small, and "No estimate" when null.
 - Two boards (day, night) with the same grammar; wall screens scale the root to 120% from 1800px.
 - Two tabs only: Bed board (default) and Unit strain.
 
@@ -307,7 +307,7 @@ A cool grey ground, white cards, near-black ink and one blue; amber, red and gre
 - **Watch Blue** (`level-medium`, night `night-level-medium`): the light step of the acuity scale. Fills Watch tiles and Medium level chips, with `on-level-medium` text.
 
 ### Secondary
-- **Leaving Green** (`ok`): the 2px border and status word of a Leaving bed, the fill of a leaving figure, and the border and word of the ON TRACK and USUAL chips. Nowhere else.
+- **Leaving Green** (`ok`): the 2px border and status word of a Leaving bed, and the border and word of the ON TRACK and USUAL chips. Leaving figures fill in secondary ink (grey).
 
 ### Tertiary
 - **Tight Amber** (`amber` text on `amber-bg`, edged `amber-edge`): the TIGHT and BUSY chip, and the 2px border of the card that carries it.
@@ -329,7 +329,7 @@ Night values carry the same names with a `night-` prefix. On the night board blu
 ### Named Rules
 **The Ink and Blue Rule.** Ink means now, blue means forecast. A count, icon or figure in ink is happening at 07:00; the same thing in blue is expected in the next 24 hours. Never use blue for decoration or for a link.
 
-**The Rationed Colour Rule.** Amber only for TIGHT and BUSY. Red only for SHORT and VERY BUSY. Green only for Leaving and for ON TRACK and USUAL. Red never marks a bed.
+**The Rationed Colour Rule.** Amber for TIGHT and BUSY. Red for SHORT and VERY BUSY and the highest-risk person figure. Green for Leaving borders and labels and for ON TRACK and USUAL. Red never fills a bed tile; leaving figures fill in secondary ink (grey).
 
 **The Three Carriers Rule.** Status is never colour alone. Each status has a fill or border, a shape and a word.
 
@@ -509,7 +509,7 @@ Cluster cards, bed figures, risk-threshold toggle and capacity model: Dema (deet
 
 ### Don't:
 - **Don't** let death colour or mark a bed. It is a plain count on Unit strain and a plain row on the room page.
-- **Don't** use red for anything but SHORT and VERY BUSY, or amber for anything but TIGHT and BUSY.
+- **Don't** use red outside SHORT, VERY BUSY and the highest-risk person figure; never fill a bed tile red.
 - **Don't** signal status by colour alone.
 - **Don't** use signal-bar glyphs or letter tags (V, P, C) for supports.
 - **Don't** add pulsing or looping animation.

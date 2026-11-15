@@ -61,7 +61,7 @@ jobs:
       python /store/code/app/stage_ward.py "$CLIF" --out "$NEW/stage_ward.csv" --ward-ids /data/dashboard_data/dashboard_patients_unit25.parquet --real-ward   # seed 20261114; prints counts only
       printf 'clif_path: %s\ntimezone: US/Eastern\nfiletype: parquet\n' "$CLIF" > site.yaml
       python -c "from icutwin.tokenizer.cli import main; main()" pipeline site.yaml                   # -> $NEW/tokenized_output
-      python -c "from icutwin.scoring.winnower import main; main()" tokenized_output
+      python -c "from icutwin.scoring.winnower import main; main()" tokenized_output --counts-only   # a ward of 25: no outcome rates in the log
       # the ward's vocabulary must equal the training one, or the token ids would not match the model
       cmp "$NEW/tokenized_output/vocab.yaml" /data/tokenized_output/vocab.yaml && echo "vocab: identical"
       # swap: the old stage (tokens, features, per-stay scores of the previous ward) goes away whole

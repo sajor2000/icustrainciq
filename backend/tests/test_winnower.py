@@ -167,3 +167,42 @@ def test_offset_cannot_put_the_cut_before_icu_arrival(tmp_path):
     ok = Winnower(tmp_path, _after_icu_cfg(-82800), lookup)  # cut 1 h after arrival
     df = ok.prepare_winnowed_frame().collect()
     assert df["cut_s"].to_list() == [2 * 3600 + 3600]
+
+
+def test_counts_only_keeps_outcome_rates_out_of_the_log(tmp_path, caplog):
+    """CodeRabbit PR #16: a small ward's outcome rates are clinical values; the
+    workflows that winnow one ask for counts only"""
+    import test_lookahead as tl
+    import yaml
+    from typer.testing import CliRunner
+
+    from icutwin.scoring import winnower
+
+    logger = winnower.logger  # the object the winnower itself logs to
+    lookup = tl._timeline(tmp_path)  # two stays, cut 24 h after ICU arrival
+    for split in ("train", "tuning"):
+        pl.DataFrame({"x": [1]}).write_parquet(tmp_path / f"tokens_{split}.parquet")
+    (tmp_path / "vocab.yaml").write_text(yaml.safe_dump({"lookup": lookup}))
+    cfg = tmp_path / "w.yaml"
+    cfg.write_text(
+        yaml.safe_dump(
+            {"outcome_tokens": ["RESP//device_category//imv"], "splits": ["held_out"]}
+        )
+    )
+    level = logger.level  # another test may have quietened the shared logger
+    logger.setLevel("WARNING")
+    logger.info("warm the level cache")  # setLevel must still take effect after this
+    logger.setLevel("INFO")
+    logger.addHandler(caplog.handler)
+    try:
+        for flag, rates in (([], True), (["--counts-only"], False)):
+            caplog.clear()
+            args = [str(tmp_path), "-c", str(cfg), *flag]
+            done = CliRunner().invoke(winnower.app, args)
+            assert done.exit_code == 0, done.output
+            assert "held_out: " in caplog.text and "stays" in caplog.text
+            assert ("_future" in caplog.text) == rates
+            assert ("_past" in caplog.text) == rates
+    finally:
+        logger.removeHandler(caplog.handler)
+        logger.setLevel(level)

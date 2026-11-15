@@ -279,11 +279,35 @@ def ward_from_ids(
     counts only); every id must be in `clif_dir`/clif_hospitalization.parquet."""
     ids = read_ward_ids(ward_ids)
     rooms = rooms_from_ids(ids, seed)
+    given = (
+        pl.read_parquet(ward_ids)
+        if pathlib.Path(ward_ids).suffix.lower() == ".parquet"
+        else pl.read_csv(ward_ids, schema_overrides={HOSP: pl.String})
+    )
+    if "room" in given.columns:
+        rooms = given.select(
+            pl.col("room").cast(pl.Int64), pl.col(HOSP).cast(pl.String)
+        )
+        if (
+            rooms.height != len(ids)
+            or rooms["room"].null_count()
+            or set(rooms["room"]) != set(range(1, len(ids) + 1))
+            or rooms[HOSP].n_unique() != len(ids)
+        ):
+            raise SystemExit("Given room map must contain unique slots and stays")
+        rooms = rooms.with_columns(pl.lit(None, dtype=pl.Int64).alias("score")).sort(
+            "room"
+        )
     ward = aggregate.check_ward(dict(zip(rooms[HOSP], rooms["room"])), real_ward)
     hosp = pathlib.Path(clif_dir) / "clif_hospitalization.parquet"
     if not hosp.is_file():
         raise SystemExit(f"required table {hosp.name} not found in {hosp.parent.name}/")
-    known = set(pl.read_parquet(hosp, columns=[HOSP])[HOSP].cast(pl.String))
+    known = set(
+        pl.scan_parquet(hosp)
+        .select(pl.col(HOSP).cast(pl.String))
+        .filter(pl.col(HOSP).is_in(ids))
+        .collect()[HOSP]
+    )
     missing = sum(i not in known for i in ids)
     if missing:
         raise SystemExit(

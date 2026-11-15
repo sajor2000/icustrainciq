@@ -48,6 +48,14 @@ class Logger(logging.Logger):
         if not self.handlers:
             self.addHandler(RichHandler(show_path=False, markup=False))
 
+    def setLevel(self, level) -> None:
+        """This logger is made directly, not through logging.getLogger, so the logging
+        manager does not know it and does not clear its level cache: without this, a
+        level set after the first message has no effect (a WARNING level meant to keep
+        outcome rates out of a log would still let INFO through)."""
+        super().setLevel(level)
+        self._cache.clear()
+
 
 class Configurable:
     """
