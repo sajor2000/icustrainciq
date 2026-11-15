@@ -209,8 +209,10 @@ def stay_cuts(
     not in clif_hospitalization (counts only, never ids)."""
     clif = pathlib.Path(clif_dir)
     hosp = set(
-        pl.read_parquet(clif / "clif_hospitalization.parquet", columns=[HOSP])[HOSP]
-        .cast(pl.String)
+        pl.scan_parquet(clif / "clif_hospitalization.parquet")
+        .select(pl.col(HOSP).cast(pl.String))
+        .filter(pl.col(HOSP).is_in(ids))
+        .collect()[HOSP]
         .to_list()
     )
     missing = sum(i not in hosp for i in ids)
@@ -289,3 +291,36 @@ def running_for_stays(clif_dir, ids: list[str], demo_clock_hours: float = 0) -> 
     """running_at_cut at each stay's own cut (`stay_cuts`)"""
     ids = list(dict.fromkeys(ids))
     return running_at_cut(clif_dir, stay_cuts(clif_dir, ids, demo_clock_hours))
+
+
+def present_at_cut(clif_dir: pathlib.Path, cuts: dict) -> dict[str, bool]:
+    """per stay, on its own clock: is its cut after ICU arrival, inside an ICU stay
+    of clif_adt (in <= cut < out) and before hospital discharge? A stay that left
+    the ICU, died or was discharged before the cut is not present."""
+    if not cuts:
+        return {}
+    c = _cuts_frame(cuts).lazy()
+    adt = _read(
+        clif_dir,
+        "adt",
+        [HOSP, "in_dttm", "out_dttm", "location_category"],
+        ["in_dttm", "out_dttm"],
+    ).filter(pl.col("location_category").str.to_lowercase() == "icu")
+    in_icu = set(
+        adt.join(c, on=HOSP)
+        .filter(pl.col("in_dttm") <= pl.col("cut"))  # in <= cut < out
+        .filter(pl.col("out_dttm").is_null() | (pl.col("out_dttm") > pl.col("cut")))
+        .select(HOSP)
+        .unique()
+        .collect()[HOSP]
+    )
+    hosp = _read(
+        clif_dir, "hospitalization", [HOSP, "discharge_dttm"], ["discharge_dttm"]
+    )
+    gone = set(
+        hosp.join(c, on=HOSP)
+        .filter(pl.col("discharge_dttm") <= pl.col("cut"))
+        .select(HOSP)
+        .collect()[HOSP]
+    )
+    return {str(k): (str(k) in in_icu and str(k) not in gone) for k in cuts}

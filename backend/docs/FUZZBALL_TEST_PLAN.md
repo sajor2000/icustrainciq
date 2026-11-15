@@ -1,11 +1,21 @@
 # First run on real Fuzzball: test plan
 
-> **Updated 2026-11-14 (storage change).** Paths in this file were brought in line with the workflow files; where an older paragraph still disagrees, `FUZZBALL_VALIDATION.md` and `../../HANDOFF.md` ("To run it on the cluster") win.
-> - One volume to create, `twin-store`, not three: `clif_work` and `tooling` are gone. Packages are at `/store/py`, the stage ward at `/store/stage`, training features at `/store/train`.
-> - `mimic_clif` is mounted at `/data` and only read: the model is `/data/model_output/final`, the training tokens `/data/tokenized_output`, the cohort `/data/dashboard_data`.
-> - The cohort is **already on the cluster**; there is no copy step.
-> - Code is published by `t7-code` from this repo (`backend/`), not by `t7-build` or `t7-smoke`. There is no `t7-build` in this repo: read it as "training" (ICU-Twin repo, workflows `job-3-*`).
-> - Do not render by hand or with `sed`: start the files in `fuzzball/ready/` (`scripts/make_ready.sh`).
+Read this if you are checking a first run on the cluster step by step and want the expected result of each check; it is a dated plan written 2026-11-14 before the first run, so use [`RUNBOOK.md`](RUNBOOK.md) to run the app and [`../../docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) for the overview.
+
+**Status:** The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Statements below that nothing had run describe the time of writing.
+
+Superseded since this plan: "nothing in this plan has been run" was true when written; [`RUNBOOK.md`](RUNBOOK.md) is the team's later launch procedure. Step 2 (`t7-fit`) is now the fallback, not a required step. Read `t7-build` as training (vaishvikc/ICU-Twin, `workflows/job_3_train`). Start the files in `fuzzball/ready/` (`scripts/make_ready.sh`); do not render by hand or with `sed`. Where a paragraph below disagrees with this table, the table wins.
+
+| Topic | Current state (code on `main`) |
+|---|---|
+| How to run | `scripts/launch.sh` first ([`RUNBOOK.md`](RUNBOOK.md)); the manual workflow steps are the fallback |
+| Volumes | `twin-store` is the one volume ICU Lookahead writes (code, packages, stage ward, forecast files). `mimic_clif` is only read, at `/data`. `hfcache` holds the Nemotron weights. `clif_work` and `tooling` are not used |
+| Probe | Fitted by job 4 in vaishvikc/ICU-Twin and staged at `/store/train/probe-final.joblib` with `probe-final.meta.json`. `t7-fit` is the fallback |
+| Names | Generated per room number by `app/fake_names.py` (`--names fake`). `name.parquet` is no longer read |
+| Code on the cluster | Published by `t7-code` from this repo's `backend/` at a pinned commit. Training (`job_2` to `job_4`) is in vaishvikc/ICU-Twin; there is no `t7-build` here |
+| Schedule and cut | One run at 07:00; each patient is cut 24 h after ICU arrival; five predictions on the board |
+
+## Scope of this plan
 
 For the team, to run **only after training (`t7-build`) has finished**. Written 2026-11-14 from the files in this repo and the Fuzzball 4.3 documentation. **Nothing in this plan has been run on the cluster.** No `fuzzball` command and no MCP call was made while writing it, because the model was training.
 
@@ -52,11 +62,11 @@ If `extract` is still Pending after 2 minutes:
 |---|---|---|
 | Training has ended | `fuzzball workflow list --order-by -created` | `t7-build` Finished. No other `t7-*` workflow Pending or Started |
 | Our two nodes | `fuzzball node list` | both healthy, 20 cores, about 128 GB, `nvidia.com/gpu: 1` each |
-| Volumes | `fuzzball volume list` | `mimic_clif`, `hfcache` and `twin-store` exist (`twin-store` is the one to create: `FUZZBALL_VALIDATION.md`) |
+| Volumes | `fuzzball volume list` | `mimic_clif`, `hfcache` and `twin-store` exist (`twin-store` is created once: `RUNBOOK.md`, section 1) |
 | Model and code published | job log of `t7-code`; `FUZZBALL_VALIDATION.md` for the model | `t7-code` prints the commit and the file count for `/store/code` and the size of `/store/py`; the model is `/data/model_output/final` |
 | The code on `twin-store` is this commit | whoever publishes code | `/store/code/fuzzball/t7-ward.fz` and `/store/code/app/ward_check.py` exist (they are new) |
 | `--name` exists | `fuzzball workflow start --help` | the flag is listed |
-| The cohort is on the volume (only for the final cohort) | done 2026-11-14 | `/data/dashboard_data/` (volume `mimic_clif`) holds the tables, the id file and `name.parquet`; `t7-ward` job `load` checks it |
+| The cohort is on the volume (only for the final cohort) | done 2026-11-14 | `/data/dashboard_data/` (volume `mimic_clif`) holds the tables and the id file (`name.parquet` is there too but no longer read); `t7-ward` job `load` checks it |
 | Local tests | `cd backend && uv run --extra dev --extra model pytest -q` | all pass; they cover every Fuzzfile's rendering, YAML, images, job order |
 
 **How `/store/code` gets updated:** `t7-code` (`fuzzball/ready/t7-code.fz`) publishes `backend/` of one pinned commit of this repo and the hash-locked packages. Run it first and after every merge (`scripts/make_ready.sh`, then start it): every workflow below runs the code on the volume, not your checkout.
@@ -111,7 +121,7 @@ Skip it when `t7-build` has already published a model: its `seed` job then does 
 | Success | all Finished; `prefetch` log ends with the size of `/cache/hf`; `seed` log says "seeded" or "a model is already published; not seeding" |
 | Fails early | "CODE_REF / CODE_SHA256 not set" or "code tarball does not match": render again with the right values |
 
-### Step 2: `t7-fit` (once per model)
+### Step 2: `t7-fit` (fallback: only when job 4 has not staged a probe)
 
 Run it **before** `t7-twin` is up: its `stage` and `extract` jobs together ask for 24 cores.
 
@@ -142,7 +152,7 @@ fuzzball workflow validate fuzzball/ready/t7-ward.fz && fuzzball workflow start 
 
 ### Step 4: `t7-twin`
 
-For the cohort use `fuzzball/ready/t7-twin.fz`: its dispatcher line already ends with `--real-ward --clif-dir /data/dashboard_data --names fake` (generated names keyed by room number, so every staged room has one; `name.parquet` is no longer read). No hand edit.
+For the cohort use `fuzzball/ready/t7-twin.fz`: its dispatcher line already ends with `--real-ward --clif-dir /data/dashboard_data --names fake` (generated names keyed by room number, so every staged room has one; `name.parquet` is no longer read), and its board line with `--real-ward` (without it the board serves a real ward counts-only: no rooms, no room chat). No hand edit.
 
 ```bash
 fuzzball workflow validate fuzzball/t7-twin.fz
@@ -200,7 +210,7 @@ Open a room, press "Update this room" (needs the unit run first). A new `t7-fore
 |---|---|
 | Stop one workflow | `fuzzball workflow stop <id>` (asynchronous: it reads Started for a moment, then Canceled) |
 | A forecast that hangs | the dispatcher stops it after 5 minutes pending or 45 minutes in all; by hand: `workflow stop` |
-| Back to the open demo ward | render `t7-ward.fz` with no options, start it, remove `--real-ward --clif-dir ... --names ...` from the dispatcher line, restart `t7-twin`, update the unit |
+| Back to the open demo ward | render `t7-ward.fz` with no options, start it, remove `--real-ward --clif-dir ... --names ...` from the dispatcher line and `--real-ward` from the board line, restart `t7-twin`, update the unit |
 | Take the cohort off the cluster | delete `/data/dashboard_data/`, `/store/stage/tokenized_output/`, `/store/stage/stage_ward.csv`, then `/store/rooms.json` and `/store/forecast.json` (they hold the cohort's room entries), from a one-line CPU job or `fuzzball workflow exec` in a running job that mounts both volumes. Then restage the open demo ward |
 | Rendered copies | `/store/rendered/` keeps the last 30; `/tmp/*.fz` on the laptop can go |
 | Old probes | `t7-fit` overwrites `/store/train/probe-final.joblib`; probes are tied to the weights by checksum, so a new model needs a new `t7-fit` |

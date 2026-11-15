@@ -23,6 +23,7 @@ other stays' rows in the features file. Each row also stores its cut (`last_vali
 Based on cotorra's extractor (github.com/bbj-lab/cotorra); see ACKNOWLEDGMENTS.md.
 """
 
+import json
 import pathlib
 import time
 from typing import Annotated, Optional
@@ -36,6 +37,12 @@ from transformers import AutoModelForCausalLM
 
 from icutwin.common import logger, merge_config
 from icutwin.model.decoder import ExactPrefix, load_split, stay_offsets
+from icutwin.scoring.provenance import (
+    features_digest,
+    features_meta_path,
+    weights_digest,
+    write_features_meta,
+)
 
 SPLITS = ("train", "tuning", "held_out")
 
@@ -186,9 +193,14 @@ class Extractor:
                 .with_columns(features=pl.Series(list(feats)))
                 .join(stored_cuts(src), on="hospitalization_id", how="left")
             )
-            if stay_ids is not None:
+            # rows kept from an earlier extract must come from these same weights:
+            # a file made with other weights (or with none recorded) is replaced
+            if stay_ids is not None and features_digest(out) == weights_digest(
+                self.model_home
+            ):
                 new = merge_features(out, new)
             new.write_parquet(out)
+            write_features_meta(out, self.model_home)  # which weights made it
             logger.info(
                 f"{split}: {order.height:,} stays, {width}-token windows, "
                 f"median probe {cuts['cut'].median() if cuts.height else 0:.0f} "
@@ -204,8 +216,18 @@ def merge_shards(root: pathlib.Path, model_name: str, n: int):
         parts = [root / f"{name}-{k}of{n}.parquet" for k in range(n)]
         df = pl.read_parquet(parts).sort("row").drop("row")
         df.write_parquet(root / f"{name}.parquet")
+        # the joined file names the weights only when every part names the same ones
+        digests = {features_digest(part) for part in parts}
+        meta = features_meta_path(root / f"{name}.parquet")
+        if len(digests) == 1 and None not in digests:
+            meta.write_text(
+                json.dumps({"model": model_name, "weights_sha256": digests.pop()})
+            )
+        else:
+            meta.unlink(missing_ok=True)
         for part in parts:
             part.unlink()
+            features_meta_path(part).unlink(missing_ok=True)
         logger.info(f"{split}: {n} parts, {df.height:,} stays -> {name}.parquet")
 
 

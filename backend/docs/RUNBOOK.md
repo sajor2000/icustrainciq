@@ -1,8 +1,12 @@
-# Runbook: setting up and relaunching Lookahead on the cluster
+# Runbook: setting up and relaunching ICU Lookahead on the cluster
+
+Read this if you need to start ICU Lookahead on the cluster, publish new code to it, or bring it back after a break.
 
 How to get the dashboard running from nothing, and how to bring it back after a
 break. Companion to [`LIVE_DEMO.md`](LIVE_DEMO.md) (what to say) and
 [`FUZZBALL_TEST_PLAN.md`](FUZZBALL_TEST_PLAN.md) (what to check).
+
+The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. This is the procedure that was used.
 
 Everything runs from `backend/` in this repo (`cd backend` first) on a laptop with the `fuzzball` CLI logged in.
 
@@ -13,7 +17,7 @@ This runbook is Kaveri's, written in [vaishvikc/ICU-Twin](https://github.com/vai
 ## 0. What lives where
 
 The cluster keeps state between workflows, so most days you do **not** repeat
-the setup — you only relaunch (§3).
+the setup: you only relaunch (§3).
 
 | On the cluster | Holds | Set up by | Survives |
 |---|---|---|---|
@@ -66,7 +70,7 @@ PATH="$PWD/.venv/bin:$PATH" bash scripts/make_ready.sh $(git rev-parse HEAD)
 > The render script needs Python 3.10+; the `PATH` prefix points it at the
 > project venv. Without it you get `TypeError: unsupported operand type(s) for |`.
 
-**Check the ingress before starting anything** — this one line is the guard
+**Check the ingress before starting anything**: this one line is the guard
 against publishing the wrong repo:
 
 ```bash
@@ -82,7 +86,7 @@ fuzzball workflow start fuzzball/ready/t7-code.fz --name t7-fc-code
 ```
 
 `t7-code` is CPU-only and safe beside training, but **not** beside a forecast,
-`t7-fit` or `t7-ward` — it swaps the code they import.
+`t7-fit` or `t7-ward`: it swaps the code they import.
 
 ---
 
@@ -115,7 +119,7 @@ Variants:
 bash scripts/launch.sh --link
 ```
 
-Prints the link of the already-running board — use this if you close the tab
+Prints the link of the already-running board. Use this if you close the tab
 mid-demo. It starts nothing.
 
 ```bash
@@ -179,7 +183,7 @@ write_scores_meta(Path("/store/train/probe-final.joblib"), Path("/data/model_out
 ```
 
 **Two GPUs total.** Nemotron holds one for the whole demo, the forecast uses the
-other — so a forecast and the board coexist, but nothing else GPU-bound does.
+other, so a forecast and the board coexist, but nothing else GPU-bound does.
 
 ---
 

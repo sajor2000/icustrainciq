@@ -31,6 +31,7 @@ import json
 import math
 import pathlib
 
+import numpy as np
 import polars as pl
 import yaml
 
@@ -123,7 +124,7 @@ def past_events(
         want = [HOSP, "tokens_past", "s_elapsed_past"] + (
             ["cut_s"] if "cut_s" in cols else []
         )
-        df = pl.read_parquet(f, columns=want).filter(pl.col(HOSP).is_in(ids))
+        df = pl.scan_parquet(f).select(want).filter(pl.col(HOSP).is_in(ids)).collect()
         for row in df.iter_rows(named=True):
             toks, secs = row["tokens_past"], row["s_elapsed_past"]
             cut = row.get("cut_s")
@@ -131,6 +132,8 @@ def past_events(
             seen, picked = set(), []
             for tid, s in zip(reversed(toks), reversed(secs)):
                 age = cut - s
+                if age < 0:  # later records are never recent history
+                    continue
                 if age > LOOKBACK_S:
                     break
                 text = token_text(words.get(int(tid), ""))
@@ -160,12 +163,17 @@ def demographics(clif: pathlib.Path | None, stay_ids: list[str]) -> dict[str, di
     Ages of 90 and over show as "90+"."""
     if clif is None:
         return {}
-    h = pl.read_parquet(
-        clif / "clif_hospitalization.parquet",
-        columns=["hospitalization_id", "patient_id", "age_at_admission"],
-    ).filter(pl.col("hospitalization_id").is_in(stay_ids))
-    pt = pl.read_parquet(
-        clif / "clif_patient.parquet", columns=["patient_id", "sex_category"]
+    h = (
+        pl.scan_parquet(clif / "clif_hospitalization.parquet")
+        .select("hospitalization_id", "patient_id", "age_at_admission")
+        .filter(pl.col("hospitalization_id").is_in(stay_ids))
+        .collect()
+    )
+    pt = (
+        pl.scan_parquet(clif / "clif_patient.parquet")
+        .select("patient_id", "sex_category")
+        .filter(pl.col("patient_id").is_in(h["patient_id"].to_list()))
+        .collect()
     )
     out = {}
     for sid, age, sex in (
@@ -201,15 +209,21 @@ def room_entries(
     p, on, stopped, sk = tab["p"], tab["on"], tab["stopped"], tab["skipped"]
     any_p = aggregate.p_any_life_support(p)
     ids = df[HOSP].to_list()
+    # A support without a score (its probe was skipped, or what runs now is unknown)
+    # leaves the combined forecast unknown: never 0 and "low" from the other two.
+    no_any = np.any(
+        [sk[aggregate.SUPPORT_RESOURCE[s]] for s in aggregate.SUPPORTS], axis=0
+    )
     entries = []
     for i, sid in enumerate(ids):
         if sid not in room_of:
             continue
-        dep = _num(p["icu_departure"][i])
+        dep = None if pending else _num(p["icu_departure"][i])
+        known_supports = sum(on[k][i] for k in aggregate.SUPPORTS)
+        unknown_supports = sum(tab["unknown"][k][i] for k in aggregate.SUPPORTS)
         entries.append(
             {
                 "room": room_of[sid],
-                # an invented name (app/fake_names.py), only when names were given
                 **({"name": names[sid]} if names and sid in names else {}),
                 "age": (demo or {}).get(sid, {}).get("age"),
                 "sex": (demo or {}).get(sid, {}).get("sex"),
@@ -218,14 +232,19 @@ def room_entries(
                 "window": aggregate.window_for(cut),
                 "scope": "room",
                 "on_now": {
-                    "imv": bool(on["imv"][i]),
-                    "vasopressor": bool(on["vasopressor"][i]),
-                    "crrt": bool(on["crrt"][i]),
+                    **{
+                        s: None if tab["unknown"][s][i] else bool(on[s][i])
+                        for s in aggregate.SUPPORTS
+                    },
                     "ecmo": None,  # no ecmo/mcs token: not available
                 },
                 # vasoactive infusions running at the cut (raw CLIF only, else null)
                 "on_now_detail": {"vasoactives": tab["vasoactives"][i]},
-                "on_life_support": bool(sum(on[k][i] for k in aggregate.SUPPORTS) >= 2),
+                "on_life_support": (
+                    None
+                    if known_supports < 2 <= known_supports + unknown_supports
+                    else bool(known_supports >= 2)
+                ),
                 "stopped_before_cut": {
                     "imv": bool(stopped["imv"][i]),
                     "vasopressor": bool(stopped["vasopressor"][i]),
@@ -239,14 +258,18 @@ def room_entries(
                     "death": bool(sk["death"][i]),
                 },
                 "p": {
-                    "imv": _num(p["ventilator"][i]),
-                    "vasopressor": _num(p["vasopressor"][i]),
-                    "crrt": _num(p["crrt"][i]),
+                    "imv": None if pending else _num(p["ventilator"][i]),
+                    "vasopressor": None if pending else _num(p["vasopressor"][i]),
+                    "crrt": None if pending else _num(p["crrt"][i]),
                     "icu_departure": dep,
-                    "death": _num(p["death"][i]),
+                    "death": None if pending else _num(p["death"][i]),
                 },
-                "any_life_support": None if pending else _num(any_p[i]),
-                "level": None if pending else aggregate.level_of(float(any_p[i])),
+                "any_life_support": None if pending or no_any[i] else _num(any_p[i]),
+                "level": None
+                if pending
+                else "unavailable"
+                if no_any[i]
+                else aggregate.level_of(float(any_p[i])),
                 "out": dep is not None and dep >= aggregate.OUT_TAG,
                 "past_12h": events.get(sid, []),
                 # hourly vitals before the cut (app/clif_now.py), only with --clif-now
@@ -260,9 +283,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("tokenized_output", type=pathlib.Path, help="stage ward folder")
     ap.add_argument("--model", type=pathlib.Path, required=True, help="mdl-<run>/")
-    ap.add_argument(
-        "--probes", type=pathlib.Path, help="probe-<model>.joblib (t7-fit)"
-    )
+    ap.add_argument("--probes", type=pathlib.Path, help="probe-<model>.joblib (t7-fit)")
     ap.add_argument(
         "--stay-ids", type=pathlib.Path, required=True, help="stage_ward.csv"
     )

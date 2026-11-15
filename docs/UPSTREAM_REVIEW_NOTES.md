@@ -1,5 +1,7 @@
 # Upstream review notes
 
+> Status after merging origin/main 12c063b: this file was written before PR 16 merged. Some patches are already on main (for example the winnow log quieting, as `--counts-only`). Check each patch against main before pasting it.
+
 CodeRabbit reviewed PRs 14, 16 and 19 on sajor2000/icustrainciq. The findings below sit in teammates' code (ICU-Twin), so we did not change it here. Each section is a message ready to paste, with the patch text. Patch files are named as in the triage folder; diff paths are repo-relative to sajor2000/icustrainciq. Nothing in this file has been sent yet.
 
 ## Kaveri (Fuzzball workflows, launch.sh, runbook, clif_now)

@@ -23,9 +23,15 @@ def _df(p_crrt=0.0, p_imv=0.0):
 
 
 def _clif(agents):
+    # a complete raw-CLIF answer (an unknown state is no data, never filled from tokens)
     return {
-        i: {"imv": None, "vasopressor": n > 0, "crrt": None, "vasoactives": n}
-        for i, n in zip(IDS, agents)
+        i: {
+            "imv": k in (1, 2, 3),
+            "vasopressor": n > 0,
+            "crrt": k == 0,
+            "vasoactives": n,
+        }
+        for k, (i, n) in enumerate(zip(IDS, agents))
     }
 
 

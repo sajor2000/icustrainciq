@@ -65,9 +65,12 @@ services:
       (apt-get -qq update && apt-get -qq install -y tzdata) >/dev/null 2>&1 || true
       # Never exit nonzero: on Fuzzball 4.3.1 a service that exits with an error fails the WHOLE workflow
       # (release notes v4.3.1), which would take Nemotron and the dispatcher down with the board. Restart instead.
+      # The ward flag at the end of the board line is a TEMPLATE token (scripts/render_fz.py): nothing for the open
+      # demo ward, "--real-ward" for the cohort. Without it the board serves a real MIMIC-IV ward counts-only: no
+      # rooms, no room chat (docs/DECISIONS.md D19).
       while true; do
         python /store/code/app/board.py --forecast /store/forecast.json --nemotron http://nemotron:8000 \
-          --dispatcher http://dispatcher:9000 --port 8080 --behind-proxy || true
+          --dispatcher http://dispatcher:9000 --port 8080 --behind-proxy --real-ward || true
         echo "BOARD EXITED: restarting in 5 s"; sleep 5
       done
 
