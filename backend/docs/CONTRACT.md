@@ -1,4 +1,8 @@
-# Lookahead JSON contract
+# ICU Lookahead JSON contract
+
+Read this if you build against `forecast.json`, `rooms.json` or the board's API and need the exact fields.
+
+Changes with PR #20: capacity gains `vents_total`, `crrt_total`, `nurses_on_shift` and `rt_on_shift`. This file describes the shapes on `main`.
 
 ## Selected-cohort publication
 

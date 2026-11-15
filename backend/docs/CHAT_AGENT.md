@@ -1,5 +1,9 @@
 # Shared ICU chat
 
+Read this if you want to know how the chat picks its tools, what it refuses, and where its answers come from.
+
+This file describes the chat on `main`: `app/chat_agent.py` (the bounded tool loop), `app/evidence.py` (answers rendered from evidence) and `app/demo_context.py` (the shared ICU snapshot). The team ran ICU Lookahead end to end on the cluster with `scripts/launch.sh`; the chat-grounding workflows `t7-lookahead-prepare`, `-forecast` and `-chat` have not been run on the cluster yet.
+
 Lookahead is one assistant for the whole ICU team. The default view is **Whole ICU team**; an optional focus changes ordering and suggested questions. It does not select a different model, patient population, prediction set or permission level. Role labels are advisory attribution, not authentication.
 
 ## Prediction contract
@@ -45,8 +49,8 @@ The current app may attach a validated invented display name with `fictional: tr
 
 ## Data and verification limits
 
-Real-MIMIC room context reaches the local model only in real-ward mode and only for the room asked about (docs/DECISIONS.md D19); otherwise a real ward is counts-only. External coding agents receive code, synthetic fixtures and aggregate verification only. This patch does not read clinical rows or establish that real room and unit files share a validated roster, cut or immutable publication manifest. That producer contract and its local real-data acceptance remain prerequisites for grounded real-MIMIC comparisons.
+Real-MIMIC room context reaches the local model only in real-ward mode and only for the room asked about (docs/DECISIONS.md D19); otherwise a real ward is counts-only. External coding agents receive code, synthetic fixtures and aggregate verification only. The chat-grounding code does not read clinical rows or establish that real room and unit files share a validated roster, cut or immutable publication manifest. That producer contract and its local real-data acceptance remain prerequisites for grounded real-MIMIC comparisons.
 
 Logs contain approved role labels, allowlisted tool names, timing and operational metadata. They do not contain questions, answers, clinical tool bodies or arbitrary model tool-name text. Application logging tests do not establish model-server or proxy logging configuration.
 
-All changes and tests in this patch are local. Fuzzball execution and configuration are frozen at the user's request. No model inference, clinical calibration or real-MIMIC acceptance is claimed by the synthetic software tests.
+All chat-grounding changes and tests are local. Fuzzball execution and configuration are frozen at the user's request. No model inference, clinical calibration or real-MIMIC acceptance is claimed by the synthetic software tests.
