@@ -332,7 +332,7 @@ def architecture_print():
     r1, r2, r3 = ys
     f.node(xs[0], r1, w, h, "card", "Job 1 · CPU", "Move data", ["CLIF records in", "alpine image", "1 core · 2 GiB"])
     f.node(xs[1], r1, w, h, "card", "Job 2 · CPU", "Tokenize", ["events into tokens", "uv Python image", "20 cores · 110 GiB"])
-    f.node(xs[2], r1, w, h, "model", "Job 3 · 2 nodes × GPU", "Train the GEM", ["PyTorch DDP, NGC", "36M params, scratch", "20 cores, 110 GiB ea."])
+    f.node(xs[2], r1, w, h, "model", "Job 3 · 2 nodes × GPU", "Train the GEM", ["Nemotron backbone", "from scratch, DDP", "20 cores, 110 GiB ea."])
     f.node(xs[3], r1, w, h, "card", "Job 3.1 · CPU", "Package", ["save checkpoint", "load test passes", "2 cores · 4 GiB"])
     f.node(xs[4], r1, w, h, "card", "Job 4 · 2 GPUs, CPU", "Fit probes", ["embed on 2 × GB10", "fit 6 probes on CPU", "20 cores · 90 GiB"])
     f.node(xs[0], r2, w, h, "card", "Fuzzball", "Object cache", ["code, data in", "logs, counts out", "never overwrites"])
@@ -363,13 +363,13 @@ def architecture_print():
 
 # =============================================================== print: the model in four steps (Steps type)
 def model_steps():
-    steps = [("01", "Train the GEM", ["36M-param decoder, from", "scratch, 1,231 ICU tokens"], False),
+    steps = [("01", "Train from scratch", ["Nemotron E4B backbone,", "custom 1,231-token vocab"], False),
              ("02", "Read its hidden layer", ["one pass per patient:", "384-d patient embedding"], True),
              ("03", "Six linear probes", ["logistic regressions give", "24-h event probabilities"], False),
              ("04", "Explain, not predict", ["Nemotron E4B chat reads", "the forecast via tools"], False)]
     W, H = 1200, 248
     f = Fig("model-steps", W, H, "The GEM in four steps",
-            "Four steps, left to right. One: train the GEM, a generative event model, a 36-million-parameter decoder trained from scratch on 1,231 ICU event tokens. Two, highlighted: one forward pass per patient; the last hidden layer is a 384-dimensional patient embedding. Three: six logistic-regression probes turn the embedding into 24-hour event probabilities. Four: the NVIDIA Nemotron 3.5 Bolt E4B chat explains the forecast through read-only tools and predicts nothing.",
+            "Four steps, left to right. One: train the GEM, a generative event model built on the NVIDIA Nemotron 3.5 Bolt E4B backbone, from scratch, on a custom vocabulary of 1,231 ICU event tokens. Two, highlighted: one forward pass per patient; the last hidden layer is a 384-dimensional patient embedding. Three: six logistic-regression probes turn the embedding into 24-hour event probabilities. Four: the NVIDIA Nemotron 3.5 Bolt E4B chat explains the forecast through read-only tools and predicts nothing.",
             "ICU Horizon · the model", "The GEM in four steps", big=True)
     n, stage_w = len(steps), 260
     x0 = (W - n * stage_w) // 2
