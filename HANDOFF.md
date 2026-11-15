@@ -37,13 +37,15 @@ Old plans are in [`docs/archive/`](docs/archive/README.md).
 
 Names and affiliations as listed by the [CLIF Consortium](https://clif-icu.com/team).
 
-| Name | Affiliation | Owns | Decides (in `ICU_TWIN_DELTA.md`) |
-|---|---|---|---|
-| J.C. Rojas, MD | Rush University | product, board and chat, Fuzzball workflows, docs | docs, chat, the final call |
-| Kaveri Chhikara, MS | UChicago Medicine | forecast pipeline on the cluster, dispatcher, `launch.sh`, runbook | workflows and backend |
-| Vaishvik Chaudhari, MS | Rush University | the patient model: tokenizer, training, the ICU + 24 h cut, probes | scoring and training |
-| Dema Therese, MS | UChicago Medicine | board design and the capacity model | the page |
-| Zewei ('Whiskey') Liao, MS | UChicago Medicine | team member | |
+| Name | Affiliation |
+|---|---|
+| J.C. Rojas, MD, MS | Rush University |
+| Kaveri Chhikara, MS | UChicago Medicine |
+| Vaishvik Chaudhari, MS | Rush University |
+| Dema Therese, MS | UChicago Medicine |
+| Zewei ('Whiskey') Liao, MS | UChicago Medicine |
+
+We built it together; there are no per-person roles.
 
 ## Where the code is
 
@@ -122,4 +124,3 @@ Not for the demo. Afterwards, and only with the team's go-ahead:
 | 4 | ECMO: one cohort patient has ECMO records; the board leaves ECMO out |
 | 5 | Coming off life support is not forecast. A "comes off support" prediction would need a new model task |
 | 6 | The page proposals not applied: the page's blue and three type sizes against DESIGN.md (`docs/UI_REVIEW_FOR_DEMA.md` section 3). The standard flag lines 20 / 40 / 60 are applied (D26, PR #24) |
-| 7 | Demo stays in the training token files: `exclude_demo` filters `splits.parquet` only (`docs/ICU_TWIN_DELTA.md`, row for Vaishvik) |
