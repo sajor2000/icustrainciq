@@ -22,10 +22,16 @@ def _df(p_crrt=0.0, p_imv=0.0):
     )
 
 
-def _clif(agents):
+def _clif(agents, unknown=()):
+    # raw CLIF answers for every stay (a null answer is "unknown", never the tokens)
     return {
-        i: {"imv": None, "vasopressor": n > 0, "crrt": None, "vasoactives": n}
-        for i, n in zip(IDS, agents)
+        i: {
+            "imv": None if "imv" in unknown and j == 7 else j in (1, 2, 3),
+            "vasopressor": n > 0,
+            "crrt": None if "crrt" in unknown and j == 7 else j == 0,
+            "vasoactives": n,
+        }
+        for j, (i, n) in enumerate(zip(IDS, agents))
     }
 
 
@@ -44,6 +50,29 @@ def test_staffing_now_rule():
     rules = {"nurse_ratio": 3, "one_to_one_crrt": False, "rt_ratio": 2}
     now, _ = aggregate.staffing_blocks(aggregate.patient_table(_df()), rules)
     assert (now["one_to_one"], now["nurses"], now["rt"]) == (0, 3, 2)
+
+
+def test_staffing_never_counts_an_unknown_support_as_off():
+    # pat-7's CRRT state is unknown: the nurse count would be a floor, so it is null
+    tab = aggregate.patient_table(_df(0.1, 0.1), clif=_clif([0] * 8, ("crrt",)))
+    now, nxt = aggregate.staffing_blocks(tab)
+    assert now["unknown"] == {"crrt": 1, "imv": 0}
+    assert now["nurses"] is None and now["one_to_one"] is None
+    assert now["one_to_two"] is None and (now["vented"], now["rt"]) == (3, 1)
+    assert nxt["nurses"]["available"] is False and nxt["nurses"]["p50"] is None
+    assert nxt["rt"]["available"] is True
+    # CRRT does not decide the ratio: the unknown CRRT state does not matter
+    now, nxt = aggregate.staffing_blocks(tab, {"one_to_one_crrt": False})
+    assert now["nurses"] == 4 and nxt["nurses"]["available"] is True
+    # pat-7's ventilator state is unknown: no RT count, the nurse count stands
+    tab = aggregate.patient_table(_df(0.1, 0.1), clif=_clif([0] * 8, ("imv",)))
+    now, nxt = aggregate.staffing_blocks(tab)
+    assert now["unknown"] == {"crrt": 0, "imv": 1}
+    assert (now["vented"], now["rt"]) == (None, None) and now["nurses"] == 5
+    assert nxt["rt"]["available"] is False and nxt["nurses"]["available"] is True
+    # nothing unknown: zero counts, and a table without the key (older callers)
+    now, _ = aggregate.staffing_blocks(aggregate.patient_table(_df()))
+    assert now["unknown"] == {"crrt": 0, "imv": 0}
 
 
 def test_staffing_next_24h_is_exact_and_null_when_pending():
@@ -129,6 +158,29 @@ def test_known_nursing_estimate_is_kept_when_crrt_cannot_change_staffing():
     clif["pat-1"]["vasoactives"] = 0
     _, nxt = aggregate.staffing_blocks(aggregate.patient_table(df, clif=clif))
     assert nxt["nurses"]["available"] is False and nxt["nurses"]["p50"] is None
+
+
+def test_crrt_scores_count_only_for_patients_whose_assignment_can_change():
+    """CodeRabbit PR 20 (second review): the only CRRT score belongs to a patient
+    who is 1:1 already; the two who could move to 1:1 have none, so the nurse count
+    for the next 24 h is unknown, not the count now"""
+    ids = ["pat-0", "pat-1", "pat-2"]
+    df = scores(3, p={CRRT: np.array([0.5, np.nan, np.nan])}, ids=ids)
+    clif = {
+        i: {"imv": False, "vasopressor": n > 0, "crrt": False, "vasoactives": n}
+        for i, n in zip(ids, [2, 0, 0])
+    }
+    now, nxt = aggregate.staffing_blocks(aggregate.patient_table(df, clif=clif))
+    assert now["nurses"] == 2  # one 1:1, two at 1:2
+    assert nxt["nurses"]["available"] is False and nxt["nurses"]["p50"] is None
+    # one of the two has a score, the other does not: still no count (never as 0)
+    df = scores(3, p={CRRT: np.array([0.5, 0.5, np.nan])}, ids=ids)
+    _, nxt = aggregate.staffing_blocks(aggregate.patient_table(df, clif=clif))
+    assert nxt["nurses"]["available"] is False
+    # both have one: the count is back, and the 1:1 patient's score is not used
+    df = scores(3, p={CRRT: np.array([np.nan, 1.0, 1.0])}, ids=ids)
+    _, nxt = aggregate.staffing_blocks(aggregate.patient_table(df, clif=clif))
+    assert nxt["nurses"]["available"] is True and nxt["nurses"]["p50"] == 3
 
 
 def test_one_capacity_snapshot_per_forecast(tmp_path, monkeypatch):

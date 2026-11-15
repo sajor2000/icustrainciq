@@ -802,7 +802,7 @@ details.more summary:hover{color:var(--blue)}
 
   /* ---------- validation: nothing from the server reaches the page unchecked ---------- */
   const LV = ["low","medium","high"];
-  const vq = o => !!o && fin(o.p10) && fin(o.p50) && fin(o.p90);
+  const vq = o => !!o && o.available!==false && fin(o.p10) && fin(o.p50) && fin(o.p90);
   const naq = o => !!o && o.available===false;   // the probe for this event was skipped: no estimate, never 0 (docs/CONTRACT.md)
   const vqn = o => vq(o) || naq(o);
   const str = (s,n=120) => typeof s==="string" ? s.slice(0,n) : "";
@@ -817,26 +817,32 @@ details.more summary:hover{color:var(--blue)}
   function cleanRoom(r){
     if(!r || typeof r!=="object" || !Number.isInteger(r.room) || r.room<1) return null;
     const on0=r.on_now||{}, p0=r.p||{}, sb=r.stopped_before_cut||{}, pr=v=>fin(v)&&v>=0&&v<=1?v:null;
-    const on_now={imv:on0.imv===true, vasopressor:on0.vasopressor===true, crrt:on0.crrt===true};
+    const observed=v=>typeof v==="boolean"?v:null;
+    const on_now={imv:observed(on0.imv), vasopressor:observed(on0.vasopressor), crrt:observed(on0.crrt)};
     const p={}; for(const k of [...SUP,"icu_departure","death"]) p[k]=pr(p0[k]);
     const w=r.window||{};
-    return {room:r.room,
+    const clean={room:r.room, present:r.present!==false,
       age:(typeof r.age==="string"||fin(r.age)) && /^\d{1,3}\+?$/.test(String(r.age)) ? String(r.age) : null,
       sex:r.sex==="F"||r.sex==="M" ? r.sex : null,
       name:cleanName(r.name),
       level:LV.includes(r.level) ? r.level : null,
       on_now, p, out:r.out===true,
-      on_life_support:typeof r.on_life_support==="boolean" ? r.on_life_support : SUP.filter(k=>on_now[k]).length>=2,
+      on_life_support:typeof r.on_life_support==="boolean" ? r.on_life_support : SUP.filter(k=>on_now[k]===true).length>=2?true:SUP.some(k=>on_now[k]===null)?null:false,
       stopped_before_cut:{imv:sb.imv===true, vasopressor:sb.vasopressor===true, crrt:sb.crrt===true},
       updated_at:str(r.updated_at,40), cut_time:str(r.cut_time,40), window:{start:str(w.start,40), end:str(w.end,40)},
       past_12h:(Array.isArray(r.past_12h)?r.past_12h:[]).filter(x=>x&&typeof x.text==="string").slice(0,8).map(x=>({h:fin(x.h)&&x.h!==0?Math.abs(x.h):null, text:x.text.slice(0,200)})),
       vitals_12h:vitalsOf(r.vitals_12h)};
+    if(!clean.present){ clean.age=clean.sex=clean.name=clean.level=clean.on_life_support=null; clean.out=false; clean.past_12h=[]; clean.vitals_12h=null; for(const k of SUP){ clean.on_now[k]=null; clean.stopped_before_cut[k]=false; } for(const k of Object.keys(clean.p)) clean.p[k]=null; }
+    return clean;
   }
   const cleanRooms = list => (Array.isArray(list)?list:[]).map(cleanRoom).filter(Boolean).sort((a,b)=>a.room-b.room).filter((x,i,a)=>!i||x.room!==a[i-1].room);
   const cfRooms = () => { const c=FC&&FC.check_first; return Array.isArray(c) ? c.map(x=>typeof x==="object"&&x?x.room:x).filter(n=>Number.isInteger(n)&&n>=1) : null; };   // objects from the backend, bare numbers from older files
   /* pending-model: no model or probes yet. The Now side (running supports, names, counts) is real; nothing forecast is shown or computed. */
   const isPending = () => !!FC && typeof FC==="object" && FC.forecast_state==="pending-model";
-  const hasNow = () => { const ls=FC&&FC.life_support, nb=ls&&ls.now_by; return !!ls && fin(ls.now_patients) && !!nb && fin(nb.imv) && fin(nb.vasopressor) && fin(nb.crrt); };
+  const hasNow = () => !!(FC?.life_support && (fin(FC.life_support.now_patients)||fin(FC.life_support.now_known_patients)));
+  const nowCount = () => fin(FC?.life_support?.now_patients)?String(FC.life_support.now_patients):fin(FC?.life_support?.now_known_patients)?`At least ${FC.life_support.now_known_patients}`:"Unknown";
+  const nowDetail = () => FC?.life_support?.now_unknown_patients>0?`Support status unknown for ${FC.life_support.now_unknown_patients} rooms.`:"";
+  const supportCount = k => fin(FC?.life_support?.now_by?.[k])?String(FC.life_support.now_by[k]):fin(FC?.life_support?.now_known_by?.[k])?`At least ${FC.life_support.now_known_by[k]}`:"Unknown";
   const nowMode = () => when==="now" || isPending();
   const PEND_LINE = "Forecast not ready yet: the model is still being prepared.";
   function hasFc(){ const f=FC; if(!f||typeof f!=="object"||!f.life_support) return false;
@@ -861,12 +867,12 @@ details.more summary:hover{color:var(--blue)}
   /* Served by app/board.py (http/https) the page reads GET /api/forecast and /api/rooms and every action is a real call; a failed load retries and keeps the last good data.
      Only file:// or #synthetic uses the built-in generator (badge "Demo data"). */
   const LIVE = /^https?:$/.test(location.protocol) && !flag("synthetic");
-  let FC = null, RM = {made_at:null, rooms:[], ward:null}, DEMO_LABEL = "", seenMadeAt = null, lastRoomRunAt, pollTimer = null;
+  let FC = null, RM = {made_at:null, rooms:[], ward:null}, CONTEXT=null, contextMode=null, DEMO_LABEL = "", seenMadeAt = null, lastRoomRunAt, pollTimer = null;
   let run = null, offline = false, failN = 0, viewTyp = false, capLocal = null, room = null, pastOpen = false;
   const R = n => RM.rooms.find(r=>r.room===n);
   const setZone = () => { const r0=RM.rooms[0]||{}, c=[FC&&FC.cut_time, FC&&FC.window&&FC.window.start, r0.cut_time, r0.window&&r0.window.start].map(offMin).filter(v=>v!=null); ZONE = c.length?c[0]:null; };
   const getJSON = async (url, ms=3000) => { const c=new AbortController(), t=setTimeout(()=>c.abort(),ms);
-    try{ const r=await fetch(url,{signal:c.signal,cache:"no-store"}); if(!r.ok) throw new Error(r.status); return await r.json(); } finally{ clearTimeout(t); } };
+    try{ const r=await fetch(url,{signal:c.signal,cache:"no-store"}); if(!r.ok){ const e=new Error(r.status); e.status=r.status; throw e; } return await r.json(); } finally{ clearTimeout(t); } };
   /* every POST: same origin, Content-Type application/json and X-Lookahead: 1 (the server refuses anything else with 403 "request refused") */
   const postJSON = async (url, body, ms=8000, c=new AbortController()) => { const t=setTimeout(()=>c.abort(),ms);
     try{ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json","X-Lookahead":"1"},body:JSON.stringify(body),signal:c.signal});
@@ -874,12 +880,22 @@ details.more summary:hover{color:var(--blue)}
       if(!r.ok){ j.ok=false; if(!j.started) j.started=false; if(!j.reason) j.reason=r.status===403?"request refused":`The board server answered ${r.status}.`; }
       return j; } finally{ clearTimeout(t); } };
   function setData(f, r){
-    FC=f; RM={made_at:typeof r.made_at==="string"?r.made_at:null, rooms:cleanRooms(r.rooms), note:str(r.note,200), ward:r.ward};
+    FC=f; RM={made_at:typeof r.made_at==="string"?r.made_at:null, rooms:cleanRooms(r.rooms), note:str(r.note,200), ward:r.ward, snapshot_id:r.snapshot_id, cohort_id:r.cohort_id, forecast_state:r.forecast_state};
     seenMadeAt=typeof f.made_at==="string"?f.made_at:null; setZone();
     if(capLocal && capLocal.forMadeAt===seenMadeAt) applyCapLocal();      // our recompute holds until the next forecast
   }
-  async function loadAll(){ const [f,r,c]=await Promise.all([getJSON("/api/forecast"), getJSON("/api/rooms"), getJSON("/api/capacity").catch(()=>null)]);
-    if(!f||typeof f!=="object"||!r||typeof r!=="object") throw new Error("shape"); setData(f,r); serverMachines(c); }
+  async function loadAll(preloaded=null){
+    const cap=getJSON("/api/capacity").catch(()=>null);      // the machine totals saved on the server, on every load
+    if(contextMode!==false){ try{ const c=preloaded||await getJSON("/api/context");
+        if(c.schema_version!==1 || !c.forecast || !c.rooms || c.snapshot_id!==c.forecast.snapshot_id || c.snapshot_id!==c.rooms.snapshot_id || c.cohort_id!==c.forecast.cohort_id || c.cohort_id!==c.rooms.cohort_id) throw new Error("context shape");
+        contextMode=true; CONTEXT=c; setData(c.forecast,c.rooms); seenMadeAt=c.published_at; serverMachines(await cap); return;
+      }catch(e){ if(e.status===404 && contextMode!==true) contextMode=false; else throw e; }
+    }
+    const [f,r]=await Promise.all([getJSON("/api/forecast"), getJSON("/api/rooms")]);
+    if(!f||typeof f!=="object"||!r||typeof r!=="object") throw new Error("shape");
+    if(f.snapshot_id && r.snapshot_id && (f.snapshot_id!==r.snapshot_id || f.cohort_id!==r.cohort_id)) throw new Error("snapshot mismatch");
+    setData(f,r); serverMachines(await cap);
+  }
   const sleep = ms => new Promise(res=>setTimeout(res,ms));
   async function loadRetry(tries=3){ for(let i=0;i<tries;i++){ try{ await loadAll(); return true; }catch(e){ if(i<tries-1) await sleep((FAST?150:600)*Math.pow(3,i)); } } return false; }
   function useSynthetic(){ const d=new Date(); d.setHours(7,0,0,0); if(d.getTime()>Date.now()) d.setDate(d.getDate()-1);   // the morning cut: the most recent 07:00
@@ -916,8 +932,8 @@ details.more summary:hover{color:var(--blue)}
     if(k) el.dataset.tip=DEF.ward[k]; else delete el.dataset.tip; el.hidden = !k; el.textContent = k==="synthetic"?"Demo data":k==="mimic-iv"?"MIMIC-IV · local":k==="open-demo"?"MIMIC-IV Demo":"";
     el.removeAttribute("title");
     const u=$("unit"), un=FC ? [FC.unit_name, FC.unit].find(x=>typeof x==="string"&&x.trim()) : null;      // the unit comes from the forecast (unit_name), never from the page
-    u.hidden=!FC; u.textContent = FC ? [un?str(un,40):"ICU", fin(FC.beds)?`${Math.round(FC.beds)} beds`:""].filter(Boolean).join(" · ") : "";
-    for(const e of document.querySelectorAll(".wardnote")) e.textContent = k==="mimic-iv" ? "Stage ward: MIMIC-IV patients." : k==="open-demo" ? "Stage ward: MIMIC-IV Demo patients." : "Demo patients.";
+    u.hidden=!FC; u.textContent = FC ? [un?str(un,40):"ICU", fin(FC.beds)?CONTEXT?`${Math.round(FC.beds)} patients · ${RM.rooms.length} rooms`:`${Math.round(FC.beds)} beds`:""].filter(Boolean).join(" · ") : "";
+    for(const e of document.querySelectorAll(".wardnote")) e.textContent = (k==="mimic-iv" ? "Stage ward: MIMIC-IV patients." : k==="open-demo" ? "Stage ward: MIMIC-IV Demo patients." : "Demo patients.")+" Retrospective research replay, not a live hospital census.";
     document.title = "Lookahead · ICU forecast, next 24 hours";
   }
 
@@ -957,6 +973,7 @@ details.more summary:hover{color:var(--blue)}
   const worseLine = v => lines.worse!=null ? Math.max(lines.worse, Math.min(.99, v+.01)) : upLine(v);      // where High starts on the room page, for a flag line v
   const P = v => Math.round(v*100)+"%";
   const DEF = {
+    unknown:"No estimate: a complete model forecast is unavailable", ended:"Not in the ICU at this replay time",
     get flag(){ return `Flag beds at ${P(lines.base)}: a bed is flagged when its chance is ${P(lines.base)} or more`; },
     none:"No life support running at 07:00", get same(){ return `No new life support at ${P(lines.base)} or more`; },
     dead:v=>`${pct(v)} chance of death in hospital in the next 24 h`,
@@ -968,22 +985,30 @@ details.more summary:hover{color:var(--blue)}
     bar:(what,q)=>`${what}: ${q.p50}, likely range ${q.p10} to ${q.p90} (8 in 10 outcomes)`
   };
   /* no bed status: an event is flagged on a bed when its chance is at or above that event's threshold in Settings */
-  const onList = r => SUP.filter(k=>r.on_now[k]);
-  const nextList = r => SUP.filter(k=>!r.on_now[k] && r.p[k]!=null && r.p[k]>=lines[k]).sort((a,b)=>r.p[b]-r.p[a]);
-  const anyNew = r => 1-SUP.reduce((m,k)=>m*(r.on_now[k]||r.p[k]==null?1:1-r.p[k]),1);
+  const onList = r => SUP.filter(k=>r.on_now[k]===true);
+  const unknownList = r => SUP.filter(k=>r.on_now[k]===null);
+  /* a support whose current state is unknown (null) is not "off": it cannot start "new", and it leaves the forecast for this bed without an estimate */
+  const nextList = r => SUP.filter(k=>r.on_now[k]===false && r.p[k]!=null && r.p[k]>=lines[k]).sort((a,b)=>r.p[b]-r.p[a]);
+  /* no score for a support that is off: missing data, unless it was started and stopped before the cut (the task rule gives that no score: not a new start, and the rest of the forecast stands) */
+  const noScore = (r,k) => r.on_now[k]===false && r.p[k]==null && !r.stopped_before_cut[k];
+  const anyNew = r => SUP.some(k=>r.on_now[k]==null || noScore(r,k))?null:1-SUP.reduce((m,k)=>m*(r.on_now[k]===true||r.p[k]==null?1:1-r.p[k]),1);
+  /* a bed with a support not observed, or with no estimate: its empty Next 24 h reads "No estimate", never "nothing new" */
+  const noEst = r => anyNew(r)==null || r.p.icu_departure==null;
   const showLeave = r => r.p.icu_departure!=null && r.p.icu_departure>=lines.leave;
   const showDeath = r => r.p.death!=null && r.p.death>=lines.death;
   /* a bed is flagged when a new life support or death is at its threshold; discharge is shown but is not a flag */
   const flagged = r => nextList(r).length>0 || showDeath(r);
-  const flowWords = r => { const on=onList(r), nx=nextList(r).map(k=>`${SHORTN[k]} ${pct(r.p[k])}`);
+  const flowWords = r => { if(r.present===false) return "Not in the ICU at this replay time."; const on=onList(r), unknown=unknownList(r), nx=nextList(r).map(k=>`${SHORTN[k]} ${pct(r.p[k])}`);
     if(showDeath(r)) nx.push(`death ${pct(r.p.death)}`);
     if(showLeave(r)) nx.push(`leaving the ICU ${pct(r.p.icu_departure)}`);
-    return `Now: ${on.length?on.map(k=>SHORTN[k]).join(", "):"no life support"}. Next 24 hours: ${nx.length?nx.join(", "):"nothing new"}.`; };
+    return `Now: ${on.length?on.map(k=>SHORTN[k]).join(", "):unknown.length?"support unknown":"no life support"}${unknown.length?`; unknown: ${unknown.map(k=>SHORTN[k]).join(", ")}`:""}. Next 24 hours: ${nx.length?nx.join(", "):noEst(r)?"No estimate":"nothing new"}.`; };
   function flow(r){ const on=onList(r), it=(tip,icon,name,v)=>`<span class="nx"${T(tip)}>${icon}<small><span class="nm">${name} </span>${esc(pct(v))}</small></span>`;
+    if(r.present===false) return `<span class="flow"><small class="mu">Not in the ICU at this replay time</small></span>`;
     let next = nextList(r).map(k=>it(DEF.start(k,r.p[k]),ic(k,false),SHORTN[k],r.p[k])).join("");
     if(showDeath(r)) next += it(DEF.dead(r.p.death),svg("death"),"Death",r.p.death);
     if(showLeave(r)) next += it(DEF.out(r.p.icu_departure),ic("leave",false),"Discharge",r.p.icu_departure);
-    return `<span class="flow" aria-hidden="true"><span class="col"><span class="cap">Now</span><span class="its">${on.length?on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}<small><span class="nm">${SHORTN[k]}</span></small></span>`).join(""):`<small class="mu"${T(DEF.none)}>no support</small>`}</span></span>${svg("arrow","","arr")}<span class="col"><span class="cap">Next 24 h</span><span class="its">${next||`<small class="mu"${T(DEF.same)}>nothing new</small>`}</span></span></span>`; }
+    const unknown=unknownList(r), now=on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}<small><span class="nm">${SHORTN[k]}</span></small></span>`).join("")+(unknown.length?`<small class="mu">${esc(unknown.map(k=>SHORTN[k]).join(", "))} unknown</small>`:"");
+    return `<span class="flow" aria-hidden="true"><span class="col"><span class="cap">Now</span><span class="its">${now||`<small class="mu"${T(DEF.none)}>no support</small>`}</span></span>${svg("arrow","","arr")}<span class="col"><span class="cap">Next 24 h</span><span class="its">${next||`<small class="mu"${T(noEst(r)?DEF.unknown:DEF.same)}>${noEst(r)?"No estimate":"nothing new"}</small>`}</span></span></span>`; }
   /* Dema's range bar: track, the 8-in-10 range, a bead at the median, a solid ink line for what is free or covered, a dashed one for a typical day */
   function bar(q, mark, typ, top, tip){ const max=Math.max(q.p90, mark==null?0:mark, typ==null?0:typ, top||0, 1)+1, x=v=>Math.round((6+(v/max)*288)*10)/10;
     return `<svg class="bar" viewBox="0 0 300 24" preserveAspectRatio="xMinYMid meet" aria-hidden="true"${tip?T(tip):""}><rect x="0" y="0" width="300" height="24" fill="none" pointer-events="all"/><line class="trk" x1="6" x2="294" y1="12" y2="12"/><line class="rng" x1="${x(q.p10)}" x2="${Math.max(x(q.p90),x(q.p10)+2)}" y1="12" y2="12"/>${typ!=null?`<line class="typ" x1="${x(typ)}" x2="${x(typ)}" y1="1" y2="23"/>`:""}${mark!=null?`<rect class="cap" x="${x(mark)-1.5}" y="0" width="3" height="24"/>`:""}<circle class="med" cx="${x(q.p50)}" cy="12" r="4.5"/></svg>`; }
@@ -1026,7 +1051,7 @@ details.more summary:hover{color:var(--blue)}
     b.onkeydown=e=>{ if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight") return; e.preventDefault(); const o=b.parentElement.querySelector(`button[data-w="${e.key==="ArrowLeft"?"now":"next"}"]`); o.focus(); setWhen(o.dataset.w,true); }; }
 
   /* the flag control: three presets and a small Thresholds popover (per-event steppers with the beds each catches, and a custom line) */
-  const flagCount = k => RM.rooms.filter(r => k==="leave" ? r.p.icu_departure!=null && r.p.icu_departure>=lines.leave : k==="death" ? r.p.death!=null && r.p.death>=lines.death : !r.on_now[k] && r.p[k]!=null && r.p[k]>=lines[k]).length;
+  const flagCount = k => RM.rooms.filter(r => k==="leave" ? r.p.icu_departure!=null && r.p.icu_departure>=lines.leave : k==="death" ? r.p.death!=null && r.p.death>=lines.death : r.on_now[k]===false && r.p[k]!=null && r.p[k]>=lines[k]).length;
   function paintFlag(){ const pv=Math.round(lines.base*100), even=SUP.every(k=>lines[k]===lines.base);
     for(const b of $("flag").querySelectorAll("button")) b.disabled=isPending();
     for(const b of $("fseg").children) b.setAttribute("aria-pressed", String(even && +b.dataset.p===pv));
@@ -1066,6 +1091,13 @@ details.more summary:hover{color:var(--blue)}
   function unitLine(){ const ls=FC.life_support, y=Y(); return `<b>${ls.now_patients}</b> on life support now · <b>${ls.expected_new_patients.p50}</b> more expected ${rgT(ls.expected_new_patients)}${y?` · ${y.words} ${YNAME(y)}`:""}`; }
   function renderStrain(){
     const tbtn=$("viewtyp"), sl=$("sline");
+    if(hasNow() && !hasFc()){
+      const pending=FC.forecast_state==="pending-model", extra=nowDetail();
+      $("strainbody").innerHTML=`<div class="lh"><h2 id="strain-h">Life support</h2></div><div class="nums"><span><b>${esc(nowCount())}</b><i>on life support now</i></span>${when==="next"?`<span class="f"><b>No estimate</b><i>${pending?"Model pending":"Forecast unavailable"}</i></span>`:""}</div><p class="barl">${esc(extra)}</p>`;
+      $("lead").className="lead"; $("deaths").textContent=when==="next"?"Deaths: No estimate":""; $("capset").textContent=""; tbtn.hidden=true; sl.hidden=false; delete $("strainview").dataset.cards; $("alerts").hidden=true;
+      sl.innerHTML=`<span><b>${esc(nowCount())}</b> on life support now</span>${when==="next"?'<span class="f">No estimate</span>':""}`;
+      sl.setAttribute("aria-label",`${nowCount()} on life support now. ${extra}${when==="next"?" Next 24 hours: No estimate.":""}`); renderWatch(); return;
+    }
     if(!hasFc() && !(isPending() && hasNow())){
       const off = offline && !FC;
       $("strainbody").innerHTML=`<div class="lh"><h2 id="strain-h">Life support</h2></div><p class="nums"><span><b>No forecast yet</b></span></p><p class="barl">${off?"Can't reach the board server — retrying.":'Updates start at 07:00. Use "Update the unit" to start one.'}</p>`;
@@ -1103,9 +1135,9 @@ details.more summary:hover{color:var(--blue)}
     for(const b of $("alerts").querySelectorAll(".bedchip")) b.onclick=()=>openRoom(+b.dataset.room);
     renderWatch();
   }
-  /* Dema's capacity bar, used when a number free is set: the whole bar is the total (in use + free); solid = in use now,
+  /* Dema's capacity bar, used when a number free is set: the whole bar is the total (the saved machine total, which use may already exceed; null when no total is set); solid = in use now,
      lighter = with the flagged beds; it turns red when that passes the total. */
-  function usageBar(on, free, pred, tip){ const tot=free!=null?on+free:null, sum=on+pred, over=tot!=null&&sum>tot, max=tot!=null?Math.max(tot,1):Math.max(sum,1)+1, x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
+  function usageBar(on, tot, pred, tip){ const sum=on+pred, over=tot!=null&&sum>tot, max=tot!=null?Math.max(tot,1):Math.max(sum,1)+1, x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
     return `<svg class="ubar" viewBox="0 0 300 46" preserveAspectRatio="xMinYMid meet" role="img" aria-label="${on} in use now, ${sum} with the flagged beds${tot!=null?`, ${tot} in total${over?": over the total":""}`:", no total set"}"${tip?T(tip):""}>
       <rect x="0" y="0" width="300" height="46" fill="none" pointer-events="all"/><line x1="6" x2="294" y1="25" y2="25" stroke="var(--fig)" stroke-width="10" stroke-linecap="round"/>
       ${sum?`<line x1="6" x2="${x(sum)}" y1="25" y2="25" stroke="${col}" stroke-opacity=".4" stroke-width="10" stroke-linecap="round"/>`:""}
@@ -1115,23 +1147,23 @@ details.more summary:hover{color:var(--blue)}
       ${tot!=null?`<text x="294" y="45" text-anchor="end" font-size="13">${tot} total</text>`:""}</svg>`; }
   /* a bed's top risk: its highest chance among death and the supports it is not on yet; the three highest in the unit pulse (Dema's rule), with ties */
   const RISKK = ["imv","vasopressor","crrt"];   // death never ranks or marks a bed (PRODUCT.md): it is a unit count and a row in the bed view
-  const riskOf = (r,k) => k==="death" ? r.p.death : k==="leave" ? r.p.icu_departure : r.on_now[k] ? null : r.p[k];
+  const riskOf = (r,k) => k==="death" ? r.p.death : k==="leave" ? r.p.icu_departure : r.on_now[k]===false ? r.p[k] : null;      // a support that is on, or not observed, has no "new start" chance
   const topRisk = r => { let best=null; for(const k of RISKK){ const v=riskOf(r,k); if(v!=null && (!best || v>best[1])) best=[k,v]; } return best; };
   const topBeds = () => { const l=RM.rooms.map(r=>[r.room,topRisk(r)]).filter(x=>x[1]).sort((a,b)=>b[1][1]-a[1][1]); if(l.length<=3) return l.map(x=>x[0]);
     const cut=Math.round(l[2][1][1]*100); return l.filter(x=>Math.round(x[1][1]*100)>=cut).map(x=>x[0]); };      // the top three, plus any bed tied with the third at the shown percent
-  const gapOf = k => { const fr=machFree(k); return fr==null ? null : flagCount(k)-fr; };      // flagged beds minus what is free
+  const gapOf = k => { const sp=machSpare(k); return sp==null ? null : flagCount(k)-sp; };      // flagged beds minus what is spare; machines already over the total count too
   /* the beds behind each count: solid ink figures are on that support now, the others fill with the chance (2 in 10 or more; leaving at 6 in 10 or more) */
   /* Dema's bed figure: head and shoulders, the bed number, a label; p fills it from the bottom, dv is a stack of support badges */
   const fig = (r,cls,p,label,name,dv) => `<button type="button" class="pp${cls?" "+cls:""}" data-room="${r.room}" aria-label="Bed ${r.room}${r.name?`, ${esc(r.name.full)}`:""}: ${name}"${T(`Bed ${r.room}${r.name?` · ${r.name.display}`:""} · ${name}`)}><span class="av"${p!=null?` style="--p:${Math.round(p*100)}%"`:""} aria-hidden="true"><svg class="base" viewBox="0 0 40 42"><use href="#i-fig"/></svg>${p!=null?`<svg class="fill" viewBox="0 0 40 42"><use href="#i-fig"/></svg>`:""}</span><span class="rm">${r.room}</span>${label?`<span class="pc">${label}</span>`:""}${dv?`<span class="dv" aria-hidden="true">${dv}</span>`:""}</button>`;
   function renderWatch(){
-    const el=$("watch"); if((!hasFc() && !(isPending() && hasNow())) || !RM.rooms.length){ el.innerHTML=""; return; }
+    const el=$("watch"); if(!hasNow() || !RM.rooms.length){ el.innerHTML=""; return; }
     const ls=FC.life_support, y=Y(), rs=RM.rooms, first=FIRST[role()], CARDN={imv:"Ventilator (IMV)", vasopressor:"Vasopressor", crrt:"CRRT"};
-    const top = Math.max(...SUP.map(k=>ls.expected_by[k].p90||0));      // the three support bars share one scale
-    if(nowMode()){
+    const top = Math.max(0,...SUP.map(k=>vq(ls.expected_by?.[k])?ls.expected_by[k].p90:0));      // the three support bars share one scale
+    if(nowMode() || !hasFc()){
       el.innerHTML = SUP.map(k=>{ const on=rs.filter(r=>r.on_now[k]); return `<article class="wc" data-k="${k}" style="order:${first===k?0:1}" aria-labelledby="wc-${k}">
         <header>${ic(k,true)}<div><h3 id="wc-${k}">${CARDN[k]}</h3><p class="wsub">patients on ${START[k]} at 07:00</p></div></header>
-        <div class="nums"><span><b>${ls.now_by[k]}</b><i>on now</i></span>${machFree(k)!=null?`<span${T(`${k==="imv"?"Ventilators":"CRRT machines"} free now`)}><b>${machFree(k)}</b><i>free${machines[k]!=null?` of ${machines[k]}`:""}</i></span>`:""}</div>
-        <span class="gl">On now</span>${on.length?`<div class="set">${on.map(r=>fig(r,"on",null,"",`on ${START[k]} now`)).join("")}</div>`:`<p class="nobody">None</p>`}</article>`; }).join("");
+        <div class="nums"><span><b>${esc(supportCount(k))}</b><i>on now</i></span>${machFree(k)!=null?`<span${T(`${k==="imv"?"Ventilators":"CRRT machines"} free now`)}><b>${machFree(k)}</b><i>free${machines[k]!=null?` of ${machines[k]}`:""}${machSpare(k)<0?` · ${-machSpare(k)} over`:""}</i></span>`:""}</div>
+        <span class="gl">On now</span>${on.length?`<div class="set">${on.map(r=>fig(r,"on",null,"",`on ${START[k]} now`)).join("")}</div>`:`<p class="nobody">${ls.now_unknown_by?.[k]>0?"None confirmed":"None"}</p>`}${ls.now_unknown_by?.[k]>0?`<p class="nobody">Support status unknown for ${ls.now_unknown_by[k]} rooms.</p>`:""}</article>`; }).join("");
       for(const b of el.querySelectorAll(".pp")) b.onclick=()=>openRoom(+b.dataset.room); return; }
     /* Dema's cards: one per event. Predicted new* is the beds at or above that event's threshold; the unit forecast (expected count, 8-in-10 range) sits under it. */
     const NAME={death:"Deaths", imv:"Ventilator", vasopressor:"Vasopressor", crrt:"CRRT", leave:"Leave the ICU to ward or step-down"}, EVW={death:"death in hospital", imv:"starting a ventilator", vasopressor:"starting a vasopressor", crrt:"starting CRRT", leave:"leaving the ICU"}, SHORTEV={death:"Death", imv:"Vent", vasopressor:"Press", crrt:"CRRT"};
@@ -1139,16 +1171,16 @@ details.more summary:hover{color:var(--blue)}
     const card = k => { const sup=SUP.includes(k), c = k==="death" ? FC.resources.death : k==="leave" ? FC.resources.icu_departure : ls.expected_by[k], q = c && c.p50!=null ? c : null;
       const may=rs.filter(r=>{ const v=riskOf(r,k); return v!=null && v>=lines[k]; }).sort((a,b)=>riskOf(b,k)-riskOf(a,k)), skey = k==="leave" ? "icu_departure" : k, na = !q && (naq(c) || rs.some(r=>r.skipped && r.skipped[skey])), n = na ? 0 : may.length; if(k!=="leave" && k!=="death" && !na) for(const r of may) flagged.add(r.room);   // na: the probe was skipped, so there is no estimate (not zero)
       const mach = k==="imv"||k==="crrt", free = sup ? machFree(k) : null, onN = sup ? rs.filter(r=>r.on_now[k]).length : 0;
-      const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is free
+      const spare = sup ? machSpare(k) : null, st = spare==null ? null : n>spare ? "SHORT" : n===spare && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is spare (below zero when more are in use than the saved total)
       const freeable = k==="imv"||k==="crrt" ? rs.filter(r=>r.on_now[k] && r.p.icu_departure!=null && r.p.icu_departure>=lines.leave).length : 0;
       const frees = k==="leave" ? ["imv","crrt"].map(x=>[x,may.filter(r=>r.on_now[x]).length]).filter(x=>x[1]) : [];
       return `<article class="wc${lv?` lv-${lv}`:""}" data-k="${k}" style="order:${first===k?0:1};--w:${Math.max(4,Math.min(10,n))}" aria-labelledby="wc-${k}">
         <h3 id="wc-${k}">${NAME[k]}${st?`<span class="band lv-${lv}"${T(DEF.band[st])}>${st}</span>`:""}</h3>
-        <div class="stats">${sup?`<span${T(`Patients on ${START[k]} at 07:00`)}><i>On now</i><b>${ls.now_by[k]}</b><small>beds</small></span>`:""}${mach ? (free!=null?`<span class="free"${T(`${k==="imv"?"Ventilators":"CRRT machines"} free: ${free}${machines[k]!=null?` of ${machines[k]} on the unit`:""}`)}><i>Free</i><b>${free}</b><small>${machines[k]!=null?`of ${machines[k]}`:"&nbsp;"}</small></span>`:`<span${T(`No total is set for ${k==="imv"?"ventilators":"CRRT machines"}: set it in Settings, under Capacity`)}><i>Free</i><b>–</b><small><button type="button" class="chg capset-go" aria-label="Set the total ${k==="imv"?"ventilators":"CRRT machines"} in settings">not set</button></small></span>`) : ""}<span class="exp"${T(na ? "No estimate for this event in this forecast: no data, not zero" : "Beds at or above this event's threshold: a flag per bed, not a certainty")}><i>Predicted new*</i><b>${na?"–":n}</b>${na?"<small>no data</small>":""}</span></div>
+        <div class="stats">${sup?`<span${T(`Patients on ${START[k]} at 07:00`)}><i>On now</i><b>${esc(supportCount(k))}</b><small>beds</small></span>`:""}${mach ? (free!=null?`<span class="free"${T(`${k==="imv"?"Ventilators":"CRRT machines"} free: ${free}${machines[k]!=null?` of ${machines[k]} on the unit`:""}`)}><i>Free</i><b>${free}</b><small>${machines[k]!=null?`of ${machines[k]}${machSpare(k)<0?` · ${-machSpare(k)} over`:""}`:"&nbsp;"}</small></span>`:`<span${T(`No total is set for ${k==="imv"?"ventilators":"CRRT machines"}: set it in Settings, under Capacity`)}><i>Free</i><b>–</b><small><button type="button" class="chg capset-go" aria-label="Set the total ${k==="imv"?"ventilators":"CRRT machines"} in settings">not set</button></small></span>`) : ""}<span class="exp"${T(na ? "No estimate for this event in this forecast: no data, not zero" : "Beds at or above this event's threshold: a flag per bed, not a certainty")}><i>Predicted new*</i><b>${na?"–":n}</b>${na?"<small>no data</small>":""}</span></div>
         ${q?`<p class="fc"${T(DEF.bar(`Unit forecast: ${EVW[k]}`,q))}>Unit forecast <b>${q.p50}</b> ${rgT(q)}</p>`:na?`<p class="fc">Unit forecast <b>not available</b></p>`:""}
         ${freeable?`<p class="frees"${T(`Beds on ${START[k]} now with ${P(lines.leave)} or more to leave the ICU`)}><i>${ic(k,true)}</i><b>${freeable}</b> may free up if likely leavers go</p>`:""}
         ${frees.length?`<p class="frees">If these beds leave, they free ${frees.map(([x,m])=>`<i>${ic(x,true)}</i><b>${m}</b> ${x==="imv"?(m===1?"ventilator":"ventilators"):"CRRT"}`).join(" ")}</p>`:""}
-        ${mach ? usageBar(onN, free, n, `${onN} in use now, ${onN+n} with the ${n} flagged${free!=null?`, ${onN+free} in total`:"; no total set"}`) : ""}
+        ${mach ? usageBar(onN, free!=null?machTotal(k):null, n, `${onN} in use now, ${onN+n} with the ${n} flagged${free!=null?`, ${machTotal(k)} in total`:"; no total set"}`) : ""}
         <span class="gl">${k==="death"?"Unit count only":"Beds to watch"}</span>
         ${na?`<p class="bedline"><b>No estimate for this event</b> · not counted as zero</p>`:""}
         <p class="bedline"${T(DEF.flag)}${na?" hidden":""}>Beds at <b>${P(lines[k])}</b> or more · <b>${nb(n)}</b> <button type="button" class="chg" aria-label="Change the threshold for ${NAME[k]} in settings">Change</button></p>
@@ -1160,9 +1192,9 @@ details.more summary:hover{color:var(--blue)}
     for(const b of el.querySelectorAll(".pp")) b.onclick=()=>openRoom(+b.dataset.room);
   }
   function renderFooter(){
-    if(!hasFc()){ $("alltasks").innerHTML=`<tr><td colspan="3">—</td></tr>`; return; }
+    if(!FC?.resources){ $("alltasks").innerHTML=`<tr><td colspan="3">No estimate</td></tr>`; return; }
     const T = [["IMV starts","invasive ventilation begins (tube or tracheostomy)","ventilator"],["Vasopressor starts","a vasopressor infusion starts (not inotropes alone)","vasopressor"],["CRRT starts","continuous dialysis begins","crrt"],["ICU discharges","leave the ICU for a ward or step-down unit","icu_departure"],["Death","in-hospital death","death"]];
-    $("alltasks").innerHTML = T.map(([n,def,k])=>{ const c=FC.resources[k]; if(!vq(c)) return `<tr><th scope="row">${n}<span class="range">${def}</span></th><td class="num">—</td><td></td></tr>`;
+    $("alltasks").innerHTML = T.map(([n,def,k])=>{ const c=FC.resources[k]; if(!vq(c)) return `<tr><th scope="row">${n}<span class="range">${def}</span></th><td class="num">No estimate</td><td></td></tr>`;
       return `<tr><th scope="row">${n}<span class="range">${def}</span></th><td class="num">${c.p50} <span class="range">${rgT(c)}</span></td><td>${esc(str(c.team,40))}</td></tr>`; }).join("");
   }
 
@@ -1173,19 +1205,21 @@ details.more summary:hover{color:var(--blue)}
   const rn = n => { const r=R(n); return `bed ${n}${r&&r.name?` (${r.name.display})`:""}`; };
   function bedTile(r){
     const who=[r.sex,r.age].filter(Boolean).join(" "), b=document.createElement("button");
-    b.type="button"; b.className="bed"+(flagged(r)?" hit":""); b.dataset.room=r.room; b.dataset.level=r.level||"none"; b.dataset.state=flagged(r)?"flagged":"clear"; b.dataset.ftip=flowWords(r);
+    b.type="button"; b.className="bed"+(flagged(r)?" hit":""); b.dataset.room=r.room; b.dataset.level=r.level||"none"; b.dataset.state=flagged(r)?"flagged":noEst(r)?"unknown":"clear"; b.dataset.ftip=flowWords(r);
     b.setAttribute("aria-label",`Bed ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${flowWords(r)}`);
-    { const on=onList(r), it=(tip,icon,v)=>`<span class="nx"${T(tip)}>${icon}<small>${esc(pct(v))}</small></span>`;
+    { const on=onList(r), unknown=unknownList(r), it=(tip,icon,v)=>`<span class="nx"${T(tip)}>${icon}<small>${esc(pct(v))}</small></span>`;
       let next = nextList(r).map(k=>it(DEF.start(k,r.p[k]),cb(ic(k,false)),r.p[k])).join("");
       if(showDeath(r)) next += it(DEF.dead(r.p.death),cb(svg("death")),r.p.death);
       if(showLeave(r)) next += it(DEF.out(r.p.icu_departure),cb(ic("leave",false)),r.p.icu_departure);
       b.innerHTML=`<span class="bt"><span class="av" aria-hidden="true"><svg viewBox="0 0 40 42"><use href="#i-fig"/></svg></span><span class="rm">${r.room}</span>${whoH(r)}</span>
-        <span class="nowl" aria-hidden="true">${on.length?on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}</span>`).join(""):`<small class="mu"${T(DEF.none)}>No life support</small>`}</span>
-        <span class="nextl" aria-hidden="true"><span class="cap">Next 24 h</span>${next||`<small class="mu"${T(DEF.same)}>nothing new</small>`}</span>`; }
-    if(nowMode()){ const on=onList(r), n=on.length;      // Now: only what is running at 07:00; weight is the number of supports
-      b.className="bed s"+Math.min(n,2)+(n?" on":""); b.dataset.state="now-"+n; b.dataset.ftip = n ? `Life support running at 07:00: ${on.map(k=>SHORTN[k]).join(", ")}` : DEF.none;
-      b.setAttribute("aria-label",`Bed ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${n?`on ${on.map(k=>SHORTN[k]).join(", ")}`:"no life support"} at 07:00.`);
-      b.innerHTML=`<span class="bt"><span class="av" aria-hidden="true"><svg viewBox="0 0 40 42"><use href="#i-fig"/></svg></span><span class="rm">${r.room}</span>${whoH(r)}${n>=2?`<span class="st"${T(`On ${n} life supports at 07:00`)}>${n} supports</span>`:""}</span><span class="nowl" aria-hidden="true">${n?"":`<small class="mu"${T(DEF.none)}>No life support</small>`}${on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}</span>`).join("")}</span>`; }
+        <span class="nowl" aria-hidden="true">${on.length||unknown.length?on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}</span>`).join("")+(unknown.length?`<small class="mu">${esc(unknown.map(k=>SHORTN[k]).join(", "))} unknown</small>`:""):`<small class="mu"${T(DEF.none)}>No life support</small>`}</span>
+        <span class="nextl" aria-hidden="true"><span class="cap">Next 24 h</span>${next||`<small class="mu"${T(noEst(r)?DEF.unknown:DEF.same)}>${noEst(r)?"No estimate":"nothing new"}</small>`}</span>`; }
+    if(r.present===false){ b.className="bed"; b.dataset.state="ended"; b.dataset.ftip=DEF.ended; b.innerHTML=`<span class="bt"><span class="rm">${r.room}</span></span><span class="nowl" aria-hidden="true"><small class="mu">Not in the ICU</small></span>`; b.onclick=()=>openRoom(r.room); return b; }
+    if(nowMode()){ const on=onList(r), n=on.length, unknown=unknownList(r), nowW=flowWords(r).split(" Next 24 hours:")[0];      // Now: only what is running at 07:00; weight is the number of known active supports
+      b.className="bed s"+Math.min(n,2)+(n?" on":""); b.dataset.state="now-"+n; b.dataset.ftip = unknown.length ? nowW : n ? `Life support running at 07:00: ${on.map(k=>SHORTN[k]).join(", ")}` : DEF.none;
+      if(!n && unknown.length) b.dataset.state="now-unknown";
+      b.setAttribute("aria-label",`Bed ${r.room}${r.name?`, ${r.name.full}`:""}${who?`, ${r.sex==="F"?"female":r.sex==="M"?"male":""}${r.age?` ${r.age}`:""}`:""}: ${unknown.length?nowW:`${n?`on ${on.map(k=>SHORTN[k]).join(", ")}`:"no life support"} at 07:00.`}`);
+      b.innerHTML=`<span class="bt"><span class="av" aria-hidden="true"><svg viewBox="0 0 40 42"><use href="#i-fig"/></svg></span><span class="rm">${r.room}</span>${whoH(r)}${n>=2?`<span class="st"${T(`On ${n} life supports at 07:00`)}>${n} supports</span>`:""}</span><span class="nowl" aria-hidden="true">${n||unknown.length?"":`<small class="mu"${T(DEF.none)}>No life support</small>`}${on.map(k=>`<span class="nx"${T(DEF.on(k))}>${ic(k,true)}</span>`).join("")}${unknown.length?`<small class="mu">${esc(unknown.map(k=>SHORTN[k]).join(", "))} unknown</small>`:""}</span>`; }
     b.onclick=()=>openRoom(r.room); return b; }
   function renderGrid(){
     const g=$("grid"), N=RM.rooms.length; g.innerHTML="";
@@ -1224,7 +1258,8 @@ details.more summary:hover{color:var(--blue)}
     if(ids.length<2){ pa.hidden=na.hidden=true; } else { const pv=ids[(i-1+ids.length)%ids.length], nx=ids[(i+1)%ids.length]; pa.hidden=na.hidden=false;
       pa.href=`#room=${pv}`; pa.innerHTML=svg("arrow","","flip")+`Bed ${pv}`; na.href=`#room=${nx}`; na.innerHTML=`Bed ${nx}`+svg("arrow"); }
     const p=r.p, on=r.on_now;
-    if(nowM) $("rv-risks").innerHTML = (isPending() ? `<p class="stopped">${PEND_LINE}</p>` : "") + `<ul class="risks now">${SUP.map(k=>`<li><span class="nm">${ic(k,on[k])}${SHORTN[k]}</span><span class="lw2${on[k]?" on":""}">${on[k]?"On now":"Not running"}</span></li>`).join("")}</ul>${stoppedNote(r)}`;
+    if(r.present===false){ $("rv-risk-h").textContent="Not in the ICU at this replay time"; $("rv-risks").textContent="No current patient or forecast in this stable room slot."; $("past").textContent=""; $("pastmore").hidden=true; $("rv-vit").hidden=true; $("vits").innerHTML=""; paintScope(); return; }
+    if(nowM) $("rv-risks").innerHTML = (isPending() ? `<p class="stopped">${PEND_LINE}</p>` : "") + `<ul class="risks now">${SUP.map(k=>`<li><span class="nm">${ic(k,on[k]===true)}${SHORTN[k]}</span><span class="lw2${on[k]===true?" on":""}">${on[k]===true?"On now":on[k]===false?"Not running":"Unknown"}</span></li>`).join("")}</ul>${stoppedNote(r)}`;
     else $("rv-risks").innerHTML = `<ul class="risks">${SUP.map(k=>rrow(ROWN[k],p[k],on[k],ic(k,on[k]),p[k]!=null?DEF.start(k,p[k]):"")).join("")}</ul>${stoppedNote(r)}
       <ul class="risks solo">${rrow("Leaves the ICU (ward or step-down)",p.icu_departure,false,ic("leave",false),p.icu_departure!=null?DEF.out(p.icu_departure):"")}${rrow("Dies in hospital",p.death,false,svg("death"),p.death!=null?`${pct(p.death)} chance of death in hospital in the next 24 h`:"")}</ul>`;
     const ph=r.past_12h, items=pastOpen?ph:ph.slice(0,5);
@@ -1329,17 +1364,17 @@ details.more summary:hover{color:var(--blue)}
   function schedulePoll(ms){ clearTimeout(pollTimer); pollTimer=setTimeout(pollRuns,ms); }
   async function pollRuns(){
     let rn=null; try{ rn=await getJSON("/api/runs"); }catch(e){ /* the dispatcher may be down: the board still works */ }
-    let f=null; try{ f=await getJSON("/api/forecast"); }catch(e){ f=null; }
+    let f=null, snapshot=null; try{ if(contextMode===true){ snapshot=await getJSON("/api/context"); f=snapshot.forecast; } else f=await getJSON("/api/forecast"); }catch(e){ f=null; }
     if(!f || typeof f!=="object"){ offline=true; failN++; idleLine(); if(!FC){ renderStrain(); renderGrid(); }
       schedulePoll(Math.min(30000,(FAST?300:2000)*Math.pow(2,Math.min(failN,4)))); return; }
     const wasOff=offline; offline=false; failN=0;
     const avail=!!(rn && rn.available!==false), busy=!!(avail && (rn.running||rn.updating));
     if(avail) DEMO_LABEL = rn.demo_clock_hours>0 ? str(rn.demo_clock_label,80)||`Demo clock +${Number(rn.demo_clock_hours)||0} h` : "";
     const ra=rn&&rn.last&&rn.last.room&&rn.last.room.at;
-    let need = wasOff || !FC || (f.made_at||null)!==(FC&&FC.made_at||null) || !!run;
+    let need = wasOff || !FC || (f.made_at||null)!==(FC&&FC.made_at||null) || (snapshot && snapshot.snapshot_id!==CONTEXT?.snapshot_id) || !!run;
     if(lastRoomRunAt===undefined) lastRoomRunAt=ra||null; else if(ra && ra!==lastRoomRunAt){ lastRoomRunAt=ra; need=true; }
     let changed=false;
-    if(need){ try{ await loadAll(); changed=true; }catch(e){ /* keep the last data on screen */ } }
+    if(need){ try{ await loadAll(snapshot); changed=true; }catch(e){ /* keep the last data on screen */ } }
     else { try{ if(serverMachines(await getJSON("/api/capacity"))) changed=true; }catch(e){ /* keep the totals on screen */ } }   // every refresh: totals saved on another device
     if(run && !busy){
       const moved = changed && sigOf()!==run.before;
@@ -1359,19 +1394,27 @@ details.more summary:hover{color:var(--blue)}
      Served live, the totals are the server's: GET /api/capacity on load and on every refresh, and its value wins (even null); the device
      copy (lookahead-machines) is used when the server leaves the key out and in #synthetic. A save POSTs vents_total and crrt_total
      (null when a saved total is blanked; a derived vents_free is never sent); the device copy changes only when the save works. */
-  let machines = {imv:null, crrt:null}, capSeq = 0, capDone = 0, capBusy = 0;
+  let machines = {imv:null, crrt:null}, capSeq = 0, capDone = 0, capBusy = 0, srvVF;      // srvVF: the ventilators free GET /api/capacity gives now (null: none); undefined until the server has answered
   const MKEY = {imv:"vents_total", crrt:"crrt_total"};
   try{ const m=JSON.parse(localStorage.getItem("lookahead-machines")||"null"); if(m && typeof m==="object") for(const k of ["imv","crrt"]) if(Number.isInteger(m[k]) && m[k]>=0 && m[k]<=50) machines[k]=m[k]; }catch(e){ /* no storage */ }
   const saveMachines = () => { try{ localStorage.setItem("lookahead-machines", JSON.stringify(machines)); }catch(e){ /* storage blocked: totals last for this page */ } };
-  const inUse = k => RM.rooms.filter(r=>r.on_now[k]).length;
-  function machFree(k){ if(k!=="imv" && k!=="crrt") return null; if(machines[k]!=null) return Math.max(0, machines[k]-inUse(k));
-    const y=Y(); return k==="imv" && y && y.kind==="capacity" && y.vf!=null ? y.vf : null; }      // a ventilators-free number saved on the server still counts
-  function paintCapForm(){ $("cap-vt").value = machines.imv==null ? "" : machines.imv; $("cap-ct").value = machines.crrt==null ? "" : machines.crrt; }
+  /* machines in use now: counted from the rooms; when the room records are withheld (a counts-only ward), from the unit's own count; null when neither says */
+  const inUse = k => RM.rooms.length ? RM.rooms.filter(r=>r.on_now[k]).length : fin(FC?.life_support?.now_by?.[k]) ? FC.life_support.now_by[k] : null;
+  /* spare = total - in use now, negative when more are in use than the saved total (a deficit that must stay visible);
+     free = spare, never below 0; total = the saved total, or in use + free when only a number free is known. */
+  function machSpare(k){ if(k!=="imv" && k!=="crrt") return null; if(RM.rooms.some(r=>r.present!==false && r.on_now[k]===null)) return null; if(machines[k]!=null){ const u=inUse(k); return u==null ? null : machines[k]-u; }
+    if(k!=="imv") return null; if(srvVF!==undefined) return srvVF;      // no total: only a ventilators-free number the server stores now (never the forecast's, which may come from a total since cleared)
+    const y=Y(); return y && y.kind==="capacity" && y.vf!=null ? y.vf : null; }      // the server's capacity has not been read (#synthetic, or an older server): the forecast's number
+  const machFree = k => { const sp=machSpare(k); return sp==null ? null : Math.max(0, sp); };
+  const machTotal = k => machines[k]!=null ? machines[k] : inUse(k)+machFree(k);
+  const CAPBOX = {imv:"cap-vt", crrt:"cap-ct"};
+  function paintCapForm(skip){ for(const k of ["imv","crrt"]) if(CAPBOX[k]!==skip) $(CAPBOX[k]).value = machines[k]==null ? "" : machines[k]; }      // skip: the box being edited keeps what was typed
   /* the server's totals win when it sends the key (even null); true when a total changed. Skipped while a save is in flight. */
   function serverMachines(c){ if(c && typeof c==="object" && c.capacity && typeof c.capacity==="object") c=c.capacity;
     if(!c || typeof c!=="object" || capBusy) return false; let ch=false;
     for(const k of ["imv","crrt"]) if(hasOwn(c,MKEY[k])){ const v=c[MKEY[k]], n = Number.isInteger(v) && v>=0 && v<=50 ? v : null; if(n!==machines[k]){ machines[k]=n; ch=true; } }
-    if(ch){ saveMachines(); const a=document.activeElement; if(!a || (a.id!=="cap-vt" && a.id!=="cap-ct")) paintCapForm(); }
+    if(ch){ saveMachines(); const a=document.activeElement; paintCapForm(a && a.id); }      // only the box with the focus is left alone: the other follows the server, so a save never sends a stale total back
+    if(hasOwn(c,"vents_free")){ const v=c.vents_free, n = c.vents_total==null && Number.isInteger(v) && v>=0 && v<=50 ? v : null; if(n!==srvVF){ srvVF=n; ch=true; } }      // with a total, free comes from the total
     return ch; }
   const postCap = async body => { capBusy++; try{ return LIVE ? await postJSON("/api/capacity", body) : await api.capacity(body); }
     catch(err){ return {ok:false,reason:"The board server did not answer. Try again in a moment."}; } finally{ capBusy--; } };
@@ -1385,7 +1428,7 @@ details.more summary:hover{color:var(--blue)}
     for(const k of ["imv","crrt"]){ if(newM[k]!=null) body[MKEY[k]]=newM[k]; else if(machines[k]!=null) body[MKEY[k]]=null; }   // a blanked total goes as null (the server clears it); a box that was never set is left out
     if(ls!=="") body.life_support_patients=+ls;
     if(ls==="" && (!LIVE || Object.keys(body).length===1)){ commit(); renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device."; return; }
-    const vfN = newM.imv==null ? null : Math.max(0, newM.imv-inUse("imv"));   // local view only; never sent (free = total - in use, worked out by the server)
+    const usedV = inUse("imv"), vfN = newM.imv==null || usedV==null ? null : Math.max(0, newM.imv-usedV);   // local view only; never sent (free = total - in use, worked out by the server)
     const rs=await postCap(body);
     if(!rs.ok){ msg.textContent="Not saved. "+(str(rs.reason,200)||"Try again in a moment."); return; }
     commit();   // the device copy of the totals only when the save worked
@@ -1412,7 +1455,8 @@ details.more summary:hover{color:var(--blue)}
   /* ---------- chat widget: a launcher at the bottom right and a non-modal panel. Open or closed is remembered; the draft and messages last for the session. ---------- */
   const log=$("log"), chatbtn=$("chatbtn"), chatpanel=$("chatpanel"), qEl=$("q"), sendBtn=$("send");
   const CHAT_DOWN = "Can't reach the chat right now. Try again.";
-  let chatScope=null, chatSeen=null, askCtl=null;      // chatScope: a room number, or null for the unit
+  let chatScope=null, chatSeen=null, chatGen=0;      // chatScope: a room number, or null for the unit; chatGen: the conversation, a new one after Close
+  const asks=new Set();      // the requests of this conversation that are still waiting
   const UNIT_Q = ["Which beds need attention first?","How many ventilators will we need?","Who is likely to leave today?","Summarise the next 24 hours"];
   const roomQ = n => { const r=R(n); return [`${r&&flagged(r)?"Why is this bed flagged":"What is forecast for this bed"}?`,"What changed in the last 12 hours?","Chance of leaving the ICU?"]; };
   function renderChips(){      // suggested questions: only while the conversation is empty, and they follow the context
@@ -1432,7 +1476,8 @@ details.more summary:hover{color:var(--blue)}
 
   const plus = q => vq(q) ? `+${q.p50}` : "no estimate";
   const cnt = q => vq(q) ? `median ${q.p50} in the next 24 hours (range ${q.p10} to ${q.p90})` : "no estimate in this forecast";
-  const worryRooms = () => RM.rooms.filter(flagged).sort((a,b)=>anyNew(b)-anyNew(a)).map(r=>r.room);
+  const worryP = r => Math.max(showDeath(r)?r.p.death:0, ...nextList(r).map(k=>r.p[k]));      // a flagged bed's highest chance at its threshold: a new life support, or death
+  const worryRooms = () => RM.rooms.filter(flagged).sort((a,b)=>worryP(b)-worryP(a)).map(r=>r.room);
   const worryLine = () => { const w=worryRooms(); return w.length ? `At or above a threshold for a new life support or death, highest chance first: ${w.map(rn).join(", ")}.` : "No bed has a new life support or death at its threshold."; };
   function summary(){ if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
     const ls=FC.life_support, y=Y(), d=FC.resources.icu_departure;
@@ -1452,7 +1497,7 @@ details.more summary:hover{color:var(--blue)}
     if(/\b(update|re-?run|refresh)\b.{0,24}\b(unit|forecast|board)\b/.test(t)) return startUpdate("unit");
     if(!hasFc()) return "No forecast yet. Updates start at 07:00.";
     if(/summari[sz]e/.test(t)) return summary();
-    if(room && R(room) && /(why is this|what is forecast for this) (?:room|bed)/.test(t)){ const r=R(room); return `Bed ${room}: ${flagged(r)?"flagged, at or above a threshold":"no new life support or death at its threshold"}. ${flowWords(r)}`; }
+    if(room && R(room) && /(why is this|what is forecast for this) (?:room|bed)/.test(t)){ const r=R(room); return `Bed ${room}: ${flagged(r)?"flagged, at or above a threshold":noEst(r)?"no estimate for part of its forecast":"no new life support or death at its threshold"}. ${flowWords(r)}`; }
     if(room && R(room) && /(what changed|last 12)/.test(t)){ const ph=R(room).past_12h.slice(0,3); return ph.length ? `Bed ${room}, last 12 hours: ${ph.map(x=>`${x.h!=null?x.h+" h ago, ":""}${x.text}`).join("; ")}.` : `Bed ${room}: nothing recorded in the last 12 hours.`; }
     if(room && R(room) && /chance of leaving/.test(t)){ const v=R(room).p.icu_departure; return v==null ? `Bed ${room}: no estimate for leaving the ICU.` : `Bed ${room}: ${inTen(v)} chance of leaving the ICU in the next 24 hours.`; }
     if(/likely to leave/.test(t)){ const o=RM.rooms.filter(r=>r.p.icu_departure!=null&&r.p.icu_departure>=lines.leave).sort((a,b)=>b.p.icu_departure-a.p.icu_departure);
@@ -1477,12 +1522,13 @@ details.more summary:hover{color:var(--blue)}
   }
   async function ask(q){ openChat(false); say(roleLabel(role()),q,"q");
     const th=say("","Thinking…","t"), stop=document.createElement("button"); stop.type="button"; stop.className="stop"; stop.textContent="Stop"; th.appendChild(stop);
-    const ctl=new AbortController(); let stopped=false, a; askCtl=ctl; stop.onclick=()=>{ stopped=true; ctl.abort(); qEl.focus(); };
+    const ctl=new AbortController(), gen=chatGen, here=()=>gen===chatGen; let stopped=false, a; asks.add(ctl); stop.onclick=()=>{ stopped=true; ctl.abort(); qEl.focus(); };
     if(LIVE){ try{ const body={question:q, role:role(), seen_made_at:seenMadeAt}; if(chatScope!==null) body.room=chatScope; const rs=await postJSON("/api/ask", body, 60000, ctl);
-        a=str(rs.answer,4000)||(rs.ok===false && /^The board server answered/.test(rs.reason||"") ? "" : str(rs.reason,200))||CHAT_DOWN; if(typeof rs.made_at==="string") seenMadeAt=rs.made_at; }catch(e){ a=CHAT_DOWN; }
+        a=str(rs.answer,4000)||(rs.ok===false && /^The board server answered/.test(rs.reason||"") ? "" : str(rs.reason,200))||CHAT_DOWN; if(here() && typeof rs.made_at==="string") seenMadeAt=rs.made_at; }catch(e){ a=CHAT_DOWN; }
       schedulePoll(FAST?300:3000); }
     else { await new Promise(res=>{ const t=setTimeout(res, FAST?40:450); ctl.signal.addEventListener("abort",()=>{ clearTimeout(t); res(); }); }); a = stopped ? "" : await Promise.resolve(answer(q)); }
-    th.remove(); if(askCtl===ctl) askCtl=null;
+    asks.delete(ctl); if(!here()) return;      // Close cleared this conversation: its answers, errors and notes are dropped
+    th.remove();
     if(stopped) say("","Stopped.","n"); else say("Lookahead",a,"a"); }
   const saveChat = v => { try{ localStorage.setItem("lookahead-chat",v); }catch(e){ /* storage blocked: the widget starts closed next time */ } };
   function grow(){ qEl.style.height="auto"; qEl.style.height=Math.min(qEl.scrollHeight+2, 104)+"px"; sendBtn.disabled=!qEl.value.trim(); }
@@ -1491,7 +1537,7 @@ details.more summary:hover{color:var(--blue)}
       chatSeen = FC && typeof FC.made_at==="string" ? FC.made_at : null; $("chatdot").hidden=true; $("chatdot-l").hidden=true; paintScope(); renderChips(); grow(); }
     if(focusInput) qEl.focus(); }
   function minChat(focus=true){ chatpanel.hidden=true; chatbtn.setAttribute("aria-expanded","false"); document.documentElement.dataset.chat="closed"; saveChat("closed"); if(focus) chatbtn.focus(); }      // the conversation and the draft stay
-  function closeChat(){ if(askCtl) askCtl.abort(); log.innerHTML=""; qEl.value=""; minChat(); }
+  function closeChat(){ chatGen++; for(const c of asks) c.abort(); asks.clear(); log.innerHTML=""; qEl.value=""; minChat(); }
   chatbtn.onclick=()=>openChat();
   $("chatmin").onclick=()=>minChat();
   $("chatclose").onclick=closeChat;
