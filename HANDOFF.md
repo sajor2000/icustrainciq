@@ -37,13 +37,15 @@ Old plans are in [`docs/archive/`](docs/archive/README.md).
 
 Names and affiliations as listed by the [CLIF Consortium](https://clif-icu.com/team).
 
-| Name | Affiliation | Owns | Decides (in `ICU_TWIN_DELTA.md`) |
-|---|---|---|---|
-| J.C. Rojas, MD | Rush University | product, board and chat, Fuzzball workflows, docs | docs, chat, the final call |
-| Kaveri Chhikara, MS | UChicago Medicine | forecast pipeline on the cluster, dispatcher, `launch.sh`, runbook | workflows and backend |
-| Vaishvik Chaudhari, MS | Rush University | the patient model: tokenizer, training, the ICU + 24 h cut, probes | scoring and training |
-| Dema Therese, MS | UChicago Medicine | board design and the capacity model | the page |
-| Zewei ('Whiskey') Liao, MS | UChicago Medicine | team member | |
+| Name | Affiliation |
+|---|---|
+| J.C. Rojas, MD | Rush University |
+| Kaveri Chhikara, MS | UChicago Medicine |
+| Vaishvik Chaudhari, MS | Rush University |
+| Dema Therese, MS | UChicago Medicine |
+| Zewei ('Whiskey') Liao, MS | UChicago Medicine |
+
+We built it together; there are no per-person roles.
 
 ## Where the code is
 

@@ -140,14 +140,14 @@ bash scripts/launch.sh --all       # publish code, stage the unit, forecast, the
 
 ## Team 7 - CLIF
 
-Five people. Roles and institutions in the second column are as listed by the [CLIF Consortium](https://clif-icu.com/team).
+We built ICU Lookahead together, as one team. Names and affiliations as listed by the [CLIF Consortium](https://clif-icu.com/team).
 
-| Name | CLIF Consortium | On this project |
-|---|---|---|
-| J.C. Rojas, MD | Founding Vice-Chair, Steering Committee · Rush University | Product, board and chat, Fuzzball workflows, docs ([sajor2000](https://github.com/sajor2000)) |
-| Kaveri Chhikara, MS | Vice-chair for Software Development, Steering Committee · UChicago Medicine | Forecast pipeline on the cluster, dispatcher, launch script and runbook |
-| Vaishvik Chaudhari, MS | Vice-chair and Technical Lead, Steering Committee · Rush University | The patient model: tokenizer, training, the ICU + 24 h cut, probes ([vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin)) |
-| Dema Therese, MS | UChicago Medicine | Board design: person icon at the Settings thresholds, event cards, bed pop-up with 12-hour vitals, settings panel, Now/Next swipe, the capacity model |
-| Zewei ('Whiskey') Liao, MS | UChicago Medicine | Team member |
+| Name | Affiliation |
+|---|---|
+| J.C. Rojas, MD | Rush University |
+| Kaveri Chhikara, MS | UChicago Medicine |
+| Vaishvik Chaudhari, MS | Rush University |
+| Dema Therese, MS | UChicago Medicine |
+| Zewei ('Whiskey') Liao, MS | UChicago Medicine |
 
 Demo data only: the mockup uses made-up patients, and names on the board are fictional. ICU Lookahead is a research prototype, not a medical device; it supports decisions and recommends no treatment.
