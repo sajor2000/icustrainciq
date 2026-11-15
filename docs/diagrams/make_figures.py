@@ -3,11 +3,16 @@
     python3 docs/diagrams/make_figures.py            # writes docs/diagrams/*.html
     python3 docs/diagrams/make_figures.py --night <dir>   # night-board copies, for the project page's dark theme
 
+Seven diagrams (stack, flow, architecture, workflow, api, trigger, data-boundary) and one chart
+(results-auroc, drawn from the held-out table in docs/RESULTS.md; no number is typed here).
+Every diagram carries the same hosting zone (ZONE) and the same colour key on its caption line.
+
 Design source: DESIGN.md (section "Diagrams"). Colours, type sizes, radii and the
 icon family below are the board's tokens; do not add a colour or a font here.
 After writing, check and export each figure with the diagram-design skill:
 verify_geometry.py, self_check.py --offline, export_png.py.
 """
+import re
 import sys
 from pathlib import Path
 
@@ -49,6 +54,12 @@ NIGHT = dict(BOARD="#0E131B", BOARD2="#1C2533", SURFACE="#151C28", INK="#E6E9EF"
              AMBER_BG="#3B2D12", AMBER_EDGE="#C58A2F")
 OUT = HERE
 
+# the hosting zone, worded the same on every diagram
+ZONE = "2 × Lenovo ThinkStation PGX (NVIDIA GB10) · CIQ Fuzzball 4.3 · patient data stays inside"
+# the colour key, the same on every diagram's caption line
+# (node kind, words, width of the words in px at 13px)
+KEY = (("model", "Our model", 62), ("forecast", "Its forecast", 72), ("nvidia", "NVIDIA model", 84), ("store", "Fuzzball volume", 100))
+
 
 def esc(s):
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -75,13 +86,15 @@ class Fig:
                 f'font-family="{FONT_ATTR}" text-anchor="{anchor}"{ls}>{esc(s)}</text>')
 
     # -- containers
-    def zone(self, x, y, w, h, label):
+    def zone(self, x, y, w, h, label=None, label_dx=20):
+        """The hosting boundary. label_dx moves the label along the top edge, clear of a crossing arrow."""
+        label = label or ZONE
         lw = int(len(label) * 12 * 0.61) + 20
         self.zones.append(
             f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="16" fill="none" stroke="{INK}" '
             f'stroke-width="1.5" stroke-dasharray="6 5"/>'
-            f'<rect x="{x + 20}" y="{y - 8}" width="{lw}" height="16" fill="{BOARD}"/>'
-            + self.text(x + 28, y + 4, label, 12, 700, INK, caps=True))
+            f'<rect x="{x + label_dx}" y="{y - 8}" width="{lw}" height="16" fill="{BOARD}"/>'
+            + self.text(x + label_dx + 8, y + 4, label, 12, 700, INK, caps=True))
 
     # -- connectors: orthogonal, corners rounded at r=8
     def arrow(self, pts, color=None, dashed=False, label=None, at=None, side="above"):
@@ -160,8 +173,19 @@ class Fig:
                 ry += 36
         self.nodes.append("".join(o))
 
-    def caption(self, s, y=None):
-        self.foot.append(self.text(16, y or self.h - 20, s, 14, 400, INK2))
+    def caption(self, s, y=None, key=True):
+        """One caption line; on diagrams the same colour key sits at its right end."""
+        y = y or self.h - 20
+        self.foot.append(self.text(16, y, s, 14, 400, INK2))
+        if not key:
+            return
+        x = self.w - 16 - sum(w + 38 for _, _, w in KEY) + 18
+        for kind, words, w in KEY:
+            fill, edge, _, _ = kinds()[kind]
+            self.foot.append(f'<rect x="{x}" y="{y - 12}" width="14" height="14" rx="3" fill="{fill}" '
+                             f'stroke="{edge}" stroke-width="1"/>')
+            self.foot.append(self.text(x + 20, y, words, 13, 400, INK2))
+            x += w + 38
 
     def raw(self, layer, s):
         getattr(self, layer).append(s)
@@ -217,105 +241,108 @@ class Fig:
 # =============================================================== hero 1: the stack
 def stack():
     f = Fig("stack", 1200, 576, "How we used the hackathon stack",
-            "A clinician's browser reaches two Lenovo ThinkStation PGX machines run by CIQ Fuzzball. One GPU serves NVIDIA Nemotron 3 Nano on vLLM for the chat; the other runs the patient model the team trained. Fuzzball services serve the board and start jobs; Fuzzball volumes hold the patient data, the model and the results.",
+            "A clinician's browser reaches two Lenovo ThinkStation PGX machines run by CIQ Fuzzball 4.3. Fuzzball services serve the board, start forecast jobs and serve NVIDIA Nemotron 3 Nano on vLLM for the chat on one GPU. A Fuzzball job runs the patient model the team trained on the other GPU. Three Fuzzball volumes hold the patient data, the model and the results.",
             "ICU Lookahead · the hackathon stack", "Two Lenovo machines, CIQ Fuzzball, one NVIDIA model and one of our own", big=True)
-    f.zone(264, 48, 920, 456, "2 × Lenovo ThinkStation PGX · NVIDIA GB10 · run by CIQ Fuzzball 4.3")
+    f.zone(264, 48, 920, 456)
     f.node(16, 112, 208, 104, "card", "Clinician", "Browser", ["the board page"], icon="person")
-    f.node(304, 112, 376, 104, "card", "Fuzzball services", "Board server + dispatcher",
+    f.node(304, 112, 376, 104, "card", "Fuzzball services · CPU", "Board server + dispatcher",
            ["serve the board, start forecast jobs"])
-    f.node(768, 112, 376, 104, "nvidia", "GPU 1 · NVIDIA model, used as is", "Nemotron 3 Nano on vLLM",
-           ["answers the chat"], icon="chat")
+    f.node(768, 112, 376, 104, "nvidia", "Fuzzball service · GPU 1", "Nemotron 3 Nano on vLLM",
+           ["NVIDIA model, used as is, for the chat"], icon="chat")
     f.node(304, 312, 376, 104, "store", "Fuzzball volumes", "Patient data · model · results",
            ["mimic_clif · twin-store · hfcache"])
-    f.node(768, 312, 376, 104, "model", "GPU 2 · trained by us", "Our patient model",
-           ["the forecast job, minutes per run"])
+    f.node(768, 312, 376, 104, "model", "Fuzzball job · GPU 2", "Our patient model",
+           ["trained on both GPUs, runs in minutes"])
     f.arrow([(224, 164), (304, 164)])
     f.arrow([(680, 164), (768, 164)], label="Chat", at=(724, 164))
     f.arrow([(584, 216), (584, 264), (956, 264), (956, 312)], label="Starts a job", at=(770, 264))
     f.arrow([(768, 364), (680, 364)], BLUE, label="Forecast", at=(724, 364))
     f.arrow([(400, 312), (400, 216)], BLUE, label="Reads", at=(400, 264), side="left")
     f.raw("foot", f.text(304, 468, "Patient data never leaves these two machines.", 18, 700, INK))
-    f.caption("Ink is what runs now. Blue is our model and the forecast it writes.", 548)
+    f.caption("Fuzzball runs every part as a service, a job or a volume.", 548)
     f.write()
 
 
 # =============================================================== hero 2: the 07:00 flow
 def flow():
-    f = Fig("flow", 1200, 304, "What happens at 07:00",
+    f = Fig("flow", 1200, 328, "What happens at 07:00",
             "Chart data up to 07:00 goes to the team's patient model, which reads each patient once and keeps its last layer; five small classifiers turn that into five chances; the board shows them; the chat answers from the board. Update the unit starts the same run as a Fuzzball job.",
             "ICU Lookahead · the 07:00 run", "From the chart to the board, once each morning", big=True)
-    xs = [12, 252, 492, 732, 972]
-    f.node(xs[0], 40, 216, 128, "card", "Each patient", "Chart data",
+    f.zone(8, 40, 1184, 232)
+    xs = [20, 256, 492, 728, 964]
+    f.node(xs[0], 72, 216, 128, "card", "Each patient", "Chart data",
            ["labs · vitals · drugs", "machines, up to 07:00"], icon="person")
-    f.node(xs[1], 40, 216, 128, "model", "Trained by us", "Our patient model",
+    f.node(xs[1], 72, 216, 128, "model", "Trained by us", "Our patient model",
            ["reads each chart once,", "keeps the last layer"])
-    f.node(xs[2], 40, 216, 128, "forecast", None, "Five classifiers",
+    f.node(xs[2], 72, 216, 128, "forecast", None, "Five classifiers",
            ["ventilator, vasopressor", "CRRT, leaving, death"], icons=["vent", "pump", "crrt", "leave"])
-    f.node(xs[3], 40, 216, 128, "card", "The board", "Now → Next 24 h",
+    f.node(xs[3], 72, 216, 128, "card", "The board", "Now → Next 24 h",
            ["Bed board", "Unit strain"], icon="beds")
-    f.node(xs[4], 40, 216, 128, "nvidia", "NVIDIA, used as is", "Chat",
-           ["Nemotron 3 Nano answers", "from the board"], icon="chat")
-    f.arrow([(228, 112), (252, 112)])
-    f.arrow([(468, 112), (492, 112)], BLUE)
-    f.arrow([(708, 112), (732, 112)], BLUE)
-    f.arrow([(948, 112), (972, 112)])
-    f.arrow([(840, 168), (840, 216), (360, 216), (360, 168)], INK2, dashed=True,
-            label="Update the unit", at=(600, 216), side="below")
-    f.caption("Fuzzball runs this as one job at 07:00, and again when someone presses Update the unit.", 280)
+    f.node(xs[4], 72, 216, 128, "nvidia", "NVIDIA, used as is", "Chat",
+           ["Nemotron 3 Nano answers", "from the board's numbers"], icon="chat")
+    f.arrow([(236, 136), (256, 136)])
+    f.arrow([(472, 136), (492, 136)], BLUE)
+    f.arrow([(708, 136), (728, 136)], BLUE)
+    f.arrow([(944, 136), (964, 136)])
+    f.arrow([(836, 200), (836, 232), (364, 232), (364, 200)], INK2, dashed=True,
+            label="Update the unit", at=(600, 232), side="below")
+    f.caption("One Fuzzball job at 07:00, and again on Update the unit.", 304)
     f.write()
 
 
 # =============================================================== detail: architecture
 def architecture():
     f = Fig("architecture", 1280, 600, "Technical architecture",
-            "The board page talks to one service, the board server. The board server asks Nemotron for chat answers and asks the dispatcher to start or report runs. The dispatcher starts the t7-forecast job, which reads the read-only volumes and writes forecast files to twin-store, where the board server reads them.",
+            "The board page talks to one service, the board server, which holds the page, the API and the grounded chat agent. The board server asks Nemotron for chat answers and asks the dispatcher to start or report runs. The dispatcher starts the t7-forecast job, which runs the patient model with the probe fitted by job 4, reads the mimic_clif volume and writes forecast files to twin-store, where the board server reads them. Nemotron's weights are on hfcache. A fourth volume, demo-context, arrives with pull request 16.",
             "ICU Lookahead · architecture", "One door into the two machines; everything else stays inside")
-    f.zone(288, 32, 976, 496, "2 × Lenovo PGX (GB10) · CIQ Fuzzball 4.3 · patient rows stay inside")
+    f.zone(288, 32, 976, 496)
     f.node(24, 232, 216, 96, "card", "Clinician's browser", "Board page", ["one HTML file, over HTTPS"], icon="person")
     f.node(328, 72, 240, 96, "nvidia", "GPU 1 · service", "Nemotron 3 Nano", ["NVIDIA, on vLLM, used as is"])
-    f.node(328, 232, 240, 96, "card", "CPU · service", "Board server", ["page, API and chat agent"])
+    f.node(328, 232, 240, 96, "card", "CPU · service", "Board server", ["page, API, grounded chat"])
     f.node(328, 392, 240, 96, "card", "CPU · service", "Dispatcher", ["07:00 clock, one run at once"])
-    f.node(656, 72, 240, 96, "card", "Run once, in order", "Setup workflows", ["t7-code → t7-ward"])
-    f.node(656, 392, 240, 96, "model", "GPU 2 · job", "t7-forecast", ["runs our patient model"])
-    f.node(992, 232, 240, 96, "store", "Volume · written", "twin-store", ["everything ICU Lookahead writes"])
-    f.node(992, 392, 240, 96, "store", "Volumes · read only", "mimic_clif · hfcache", ["patients, model, weights"])
+    f.node(656, 72, 240, 96, "store", "Volume · read only", "hfcache", ["Nemotron weights"])
+    f.node(656, 392, 240, 96, "model", "GPU 2 · job", "t7-forecast", ["our model + job 4's probe"])
+    f.node(992, 72, 240, 96, "store", "Volume · restricted", "demo-context", ["the chat's ICU snapshot"])
+    f.node(992, 232, 240, 96, "store", "Volume · written", "twin-store", ["code, probe, forecast files"])
+    f.node(992, 392, 240, 96, "store", "Volume · read only", "mimic_clif", ["25-patient ward, our model"])
     f.arrow([(240, 280), (328, 280)])
     f.arrow([(448, 232), (448, 168)], label="Asks", at=(448, 200), side="right")
     f.arrow([(448, 328), (448, 392)], label="Run · status", at=(448, 360), side="right")
     f.arrow([(568, 440), (656, 440)], label="Starts", at=(612, 440))
+    f.arrow([(656, 120), (568, 120)], label="Weights", at=(612, 120))
     f.arrow([(992, 280), (568, 280)], BLUE, label="Forecast files", at=(780, 280))
     f.arrow([(896, 420), (944, 420), (944, 304), (992, 304)], BLUE, label="Writes", at=(944, 362), side="left")
     f.arrow([(992, 460), (896, 460)], label="Reads", at=(944, 460), side="below")
-    f.arrow([(896, 120), (1112, 120), (1112, 232)], label="Code · ward", at=(1004, 120))
-    f.caption("The board server is the only door into the two machines. Ink is a call; blue is the forecast.", 572)
+    f.caption("The board server is the only door in. Ink is a call; blue is the forecast.", 572)
     f.write()
 
 
 # =============================================================== detail: how to run it on the cluster
 def workflow():
-    f = Fig("workflow", 1280, 420, "How to run it on the cluster",
-            "Seven steps in order: create the twin-store volume once, then run t7-code, t7-ward, t7-forecast and t7-twin, and open the board's link. scripts/launch.sh --all runs the four workflows in order. The demo patients, the trained model and the classifiers fitted in training are already on the cluster. On a new twin-store, both classifier files (probe-final.joblib and probe-final.meta.json) are staged in /store/train before the first t7-forecast.",
-            "ICU Lookahead · run order", "One volume, then four workflows; one script runs them")
+    f = Fig("workflow", 1280, 424, "How to run it on the cluster",
+            "Three steps by hand: create the twin-store volume once, stage job 4's probe once per model, and render the ready workflow files after each code change. Then one command, scripts/launch.sh --all, runs four Fuzzball workflows in order: t7-code, t7-ward, t7-forecast-unit and t7-twin, and prints the board's link. The team ran this path end to end on the cluster; every step but the per-change render is marked done.",
+            "ICU Lookahead · how to run it", "Three steps by hand, then one command")
     xs = [24, 344, 664, 984]
-    y1, y2, h = 40, 208, 112
-    f.node(xs[0], y1, 272, h, "card", "1 · One time", "Create twin-store",
-           ["fuzzball volume create team7", "twin-store --size 20GB"], chip="ready")
-    f.node(xs[1], y1, 272, h, "card", "2 · CPU", "t7-code", ["publishes the code", "and the Python packages"], chip="ready")
-    f.node(xs[2], y1, 272, h, "card", "3 · CPU", "t7-ward", ["checks the cohort,", "stages the 25 rooms"], chip="ready")
-    f.node(xs[3], y1, 272, h, "forecast", "4 · One GPU", "t7-forecast", ["one pass per patient; needs both", "classifier files in /store/train"], chip="ready")
-    f.node(xs[3], y2, 272, h, "card", "5 · The other GPU", "t7-twin", ["board server, dispatcher,", "Nemotron 3 Nano"], chip="ready")
-    f.node(xs[2], y2, 272, h, "card", "6 · Last", "Open the board", ["the script prints the link;", "launch.sh --link shows it again"], chip="ready")
-    f.node(xs[1], y2, 272, h, "card", "Day to day", "scripts/launch.sh", ["--forecast for fresh numbers,", "--restart to restart the board"], chip="ready")
-    f.node(xs[0], y2, 272, h, "store", "0 · Done", "Already on the cluster", ["25 demo patients, trained model", "and its classifiers (read only)"], chip="done")
+    y1, y2, h = 40, 232, 112
+    f.zone(8, 200, 1264, 168, label_dx=312)
+    f.node(xs[0], y1, 272, h, "card", "Done · once", "Create twin-store",
+           ["fuzzball volume create team7", "twin-store --size 20GB"], chip="done")
+    f.node(xs[1], y1, 272, h, "card", "Done · once per model", "Stage job 4's probe",
+           ["to /store/train, with its", "provenance sidecar"], chip="done")
+    f.node(xs[2], y1, 272, h, "card", "After each code change", "Render ready/",
+           ["git push, then make_ready.sh", "at that commit"], chip="todo")
+    f.node(xs[3], y1, 272, h, "card", "Ran end to end", "scripts/launch.sh --all",
+           ["runs the four workflows below,", "prints the board's link"], chip="done")
+    f.node(xs[0], y2, 272, h, "card", "1 · CPU · done", "t7-code", ["publishes code and packages", "to twin-store"], chip="done")
+    f.node(xs[1], y2, 272, h, "card", "2 · CPU · done", "t7-ward", ["stages the 25 rooms,", "checks the vocabulary"], chip="done")
+    f.node(xs[2], y2, 272, h, "forecast", "3 · GPU 2 · done", "t7-forecast-unit", ["one pass per patient, then", "rooms.json and forecast.json"], chip="done")
+    f.node(xs[3], y2, 272, h, "card", "4 · GPU 1 · done", "t7-twin", ["board, dispatcher, Nemotron;", "stays up"], chip="done")
     yc1, yc2 = y1 + h // 2, y2 + h // 2
-    f.arrow([(296, yc1), (344, yc1)])
-    f.arrow([(616, yc1), (664, yc1)])
-    f.arrow([(936, yc1), (984, yc1)])
-    f.arrow([(1120, y1 + h), (1120, y2)])
-    f.arrow([(984, yc2), (936, yc2)])
-    f.arrow([(664, yc2), (616, yc2)])
-    f.caption("bash scripts/launch.sh --all runs steps 2 to 5 in order and prints the link. The files are in backend/fuzzball/ready/.", 384)
-    f.caption("New twin-store: before the first t7-forecast, stage probe-final.joblib and probe-final.meta.json in /store/train (runbook, section 4).", 406)
+    for a in range(3):
+        f.arrow([(xs[a] + 272, yc1), (xs[a + 1], yc1)])
+        f.arrow([(xs[a] + 272, yc2), (xs[a + 1], yc2)])
+    f.arrow([(1120, y1 + h), (1120, 176), (160, 176), (160, y2)])
+    f.caption("Green ran on the cluster with launch.sh. Amber is by hand; --restart reloads new code.", 400)
     f.write()
 
 
@@ -324,27 +351,28 @@ def api():
     f = Fig("api", 1280, 620, "API map",
             "The board page makes four GET calls and three POST calls to the board server. Reads come from files on twin-store and from the dispatcher's status; writes go to the dispatcher to start a run, to Nemotron for a chat answer, and to twin-store for tonight's capacity.",
             "ICU Lookahead · API", "Four reads, three writes, one rule for every POST")
+    f.zone(272, 24, 1000, 536)
     f.node(24, 120, 184, 352, "card", "Browser", "Board page", ["same origin only"], icon="person")
     f.node(304, 56, 528, 224, "card", "4 GETs · no headers needed", "Read", rows=[
-        ("GET /api/forecast", "unit counts with ranges", False),
+        ("GET /api/forecast", "unit counts with 80% ranges", False),
         ("GET /api/rooms", "one entry per room", False),
-        ("GET /api/capacity", "ventilators and staffing set tonight", False),
+        ("GET /api/capacity", "capacity and staffing set tonight", False),
         ("GET /api/runs", "next 07:00, running update, last runs", False)])
     f.node(304, 320, 528, 224, "card", "3 POSTs · JSON body", "Write", rows=[
         ("Every POST", "JSON, X-Lookahead: 1, same origin; else 403", True),
         ("POST /api/rerun", "starts one forecast, unit or room", False),
-        ("POST /api/ask", "a chat answer", False),
+        ("POST /api/ask", "a chat answer, from tool results", False),
         ("POST /api/capacity", "saves tonight's capacity", False)])
-    f.node(1000, 56, 256, 88, "store", "Volume", "twin-store", ["forecast, rooms, capacity"])
-    f.node(1000, 248, 256, 88, "card", "Inside only · :9000", "Dispatcher", ["starts and reports runs"])
-    f.node(1000, 456, 256, 88, "nvidia", "Inside only · GPU 1", "Nemotron 3 Nano", ["through the chat agent"])
-    f.arrow([(208, 168), (304, 168)], label="GET", at=(256, 168))
-    f.arrow([(208, 432), (304, 432)], label="POST", at=(256, 432))
+    f.node(1000, 56, 240, 88, "store", "Volume", "twin-store", ["forecast, rooms, capacity"])
+    f.node(1000, 248, 240, 88, "card", "Inside only · :9000", "Dispatcher", ["starts and reports runs"])
+    f.node(1000, 456, 240, 88, "nvidia", "Inside only · :8000", "Nemotron 3 Nano", ["through the chat agent"])
+    f.arrow([(208, 168), (304, 168)], label="GET", at=(240, 168))
+    f.arrow([(208, 432), (304, 432)], label="POST", at=(240, 432))
     f.arrow([(832, 100), (1000, 100)], label="Reads files", at=(916, 100))
     f.arrow([(832, 236), (916, 236), (916, 276), (1000, 276)], label="Status", at=(874, 236))
     f.arrow([(832, 356), (916, 356), (916, 308), (1000, 308)], label="Run", at=(874, 356), side="below")
     f.arrow([(832, 500), (1000, 500)], label="Chat", at=(916, 500))
-    f.caption("GET / is the page. The dispatcher and Nemotron answer only the board server, never the browser.", 592)
+    f.caption("GET / is the page. The dispatcher and Nemotron answer only the board server.", 592)
     f.write()
 
 
@@ -354,14 +382,14 @@ def trigger():
             "The board page posts a rerun to the board server, which passes it to the dispatcher. The dispatcher starts the forecast job through Fuzzball. The job writes rooms.json and forecast.json to twin-store. The page polls the run state, then asks for the forecast and the rooms; the board server reads both files, and the board is redrawn.",
             "ICU Lookahead · Update the unit", "One button, one POST, one Fuzzball job")
     xs = [136, 388, 640, 892, 1144]
-    f.zone(272, 16, 988, 116, "2 × Lenovo PGX (GB10) · CIQ Fuzzball")
+    f.zone(272, 16, 992, 116, label_dx=12)
     heads = [("card", "Browser", "Board page", "Update the unit"),
              ("card", "CPU · service", "Board server", "checks the POST rule"),
              ("card", "CPU · service", "Dispatcher", "one run, 20 minutes apart"),
-             ("model", "GPU 2 · job", "Forecast job", "our patient model"),
+             ("model", "GPU 2 · job", "t7-forecast", "our model + job 4's probe"),
              ("store", "Volume", "twin-store", "rooms.json, forecast.json")]
     for x, (k, tag, t, s) in zip(xs, heads):
-        f.raw("zones", f'<line x1="{x}" y1="120" x2="{x}" y2="560" stroke="{LINE}" stroke-width="1" stroke-dasharray="3 4"/>')
+        f.raw("zones", f'<line x1="{x}" y1="120" x2="{x}" y2="552" stroke="{LINE}" stroke-width="1" stroke-dasharray="3 4"/>')
         f.node(x - 104, 32, 208, 88, k, tag, t, [s])
     msgs = [(0, 1, 176, "POST /api/rerun", INK), (1, 2, 224, "POST /run", INK),
             (2, 3, 272, "fuzzball workflow start", INK), (3, 4, 320, "writes both files", BLUE),
@@ -376,15 +404,83 @@ def trigger():
         w = int(len(label) * 7.8) + 16
         f.labels.append(f'<rect x="{lx - w // 2}" y="{y - 26}" width="{w}" height="18" rx="2" fill="{BOARD}"/>'
                         + f.text(lx, y - 12, label, 13, 700, BLUE if c == BLUE else INK2, "middle"))
-    f.caption("The dispatcher fills a copy of t7-forecast.fz and starts it, because Fuzzball 4.3 workflows take no parameters.", 548)
+    f.caption("Fuzzball 4.3 workflows take no parameters: the dispatcher fills a copy of t7-forecast.fz.", 600)
     f.write()
 
+
+# =============================================================== detail: where the patient data lives
+def data_boundary():
+    f = Fig("data-boundary", 1280, 584, "Where the patient data lives",
+            "Patient rows are on the mimic_clif volume and in two restricted folders of twin-store, inside the two machines. The forecast job reads the rows and writes two files of counts and room entries. The board server serves those files to the clinician's browser and passes tool results to Nemotron. GitHub holds code only.",
+            "ICU Lookahead · data boundary", "Rows stay on the volumes; only counts and room entries reach a screen")
+    f.zone(296, 40, 968, 488)
+    f.node(24, 88, 232, 96, "card", "Public", "GitHub", ["code at a pinned commit"])
+    f.node(24, 264, 232, 96, "card", "Hospital network", "Clinician's browser", ["counts and room entries"], icon="person")
+    f.node(336, 264, 240, 96, "card", "CPU · service", "Board server", ["serves three JSON files"])
+    f.node(336, 408, 240, 96, "nvidia", "GPU 1 · service", "Nemotron 3 Nano", ["sees tool results only"])
+    f.node(656, 88, 240, 96, "model", "GPU 2 · job", "t7-forecast", ["reads rows, writes counts"])
+    f.node(656, 264, 240, 96, "forecast", "On twin-store", "The forecast files", ["counts, ranges, room entries"])
+    f.node(976, 88, 240, 96, "store", "Restricted volume", "mimic_clif", ["patient rows, tokens, model"])
+    f.node(976, 264, 240, 96, "store", "Restricted folders", "stage/ and train/", ["on twin-store: tokens, scores"])
+    f.arrow([(256, 136), (656, 136)], label="Code only", at=(456, 136))
+    f.arrow([(976, 136), (896, 136)], label="Rows", at=(936, 136))
+    f.arrow([(776, 184), (776, 264)], BLUE, label="Counts", at=(776, 224), side="right")
+    f.arrow([(656, 312), (576, 312)], BLUE, label="Files", at=(616, 312))
+    f.arrow([(336, 312), (256, 312)])
+    f.arrow([(456, 360), (456, 408)], label="Tool results", at=(456, 384), side="right")
+    f.raw("foot", f.text(656, 444, "Patient rows never leave the volumes.", 18, 700, INK))
+    f.raw("foot", f.text(656, 472, "Names on the tiles are generated. Logs print counts only.", 14, 400, INK2))
+    f.caption("Real rooms need --real-ward and stay on these machines (D19).", 556)
+    f.write()
+
+
+# =============================================================== chart: held-out AUROC with 95% ranges
+def results_rows():
+    """(task, auroc, low, high) from the 'Held-out results' table of docs/RESULTS.md, in its order."""
+    text = (HERE.parent / "RESULTS.md").read_text(encoding="utf-8")
+    table = text.split("## Held-out results", 1)[1].split("\n## ", 1)[0]
+    rows = re.findall(r"^\| ([^|]+?) \|[^|]*\|[^|]*\|[^|]*\| \*\*([0-9.]+)\*\* \(([0-9.]+)[–-]([0-9.]+)\)", table, re.M)
+    if len(rows) != 6:
+        raise SystemExit(f"expected 6 held-out rows in docs/RESULTS.md, found {len(rows)}")
+    return [(t, float(a), float(lo), float(hi), a, lo, hi) for t, a, lo, hi in rows]
+
+
+def results_auroc():
+    rows = results_rows()
+    f = Fig("results-auroc", 960, 424, "Held-out AUROC by task, with 95% ranges",
+            "Held-out AUROC of the six classifier tasks, highest first: " +
+            "; ".join(f"{t} {a} ({lo} to {hi})" for t, _, _, _, a, lo, hi in rows) + ".",
+            "ICU Lookahead · model results", "Held-out AUROC by task, with 95% ranges")
+    x0, x1, top, step = 208, 688, 76, 44
+    px = lambda v: round(x0 + (v - 0.5) / 0.5 * (x1 - x0), 1)
+    f.raw("foot", f.text(16, 36, "Held-out AUROC by task, with 95% range", 16, 700, INK))
+    bottom = top + step * len(rows) - 12
+    for i in range(6):                                    # 0.5 .. 1.0
+        v = 0.5 + i / 10
+        f.raw("zones", f'<line x1="{px(v)}" y1="{top - 16}" x2="{px(v)}" y2="{bottom}" stroke="{BOARD2}" stroke-width="1"/>')
+        f.raw("foot", f.text(px(v), bottom + 20, f"{v:.1f}", 12, 400, INK2, "middle"))
+    f.raw("foot", f.text(x0, bottom + 40, "0.5 is a coin toss", 12, 400, INK2))
+    f.raw("foot", f.text(x1, bottom + 40, "1.0 is perfect", 12, 400, INK2, "end"))
+    for i, (task, v, lo, hi, a, slo, shi) in enumerate(rows):
+        y = top + i * step
+        f.raw("foot", f.text(x0 - 16, y + 5, task, 14, 400, INK, "end"))
+        f.raw("lines", f'<line x1="{px(lo)}" y1="{y}" x2="{px(hi)}" y2="{y}" stroke="{BLUE}" stroke-width="2" stroke-linecap="round"/>')
+        for e in (lo, hi):
+            f.raw("lines", f'<line x1="{px(e)}" y1="{y - 5}" x2="{px(e)}" y2="{y + 5}" stroke="{BLUE}" stroke-width="2" stroke-linecap="round"/>')
+        f.raw("nodes", f'<circle cx="{px(v)}" cy="{y}" r="6" fill="{BLUE}" stroke="{BOARD}" stroke-width="2"/>')
+        f.raw("foot", f.text(x1 + 32, y + 5, a, 14, 700, INK))
+        f.raw("foot", f.text(x1 + 80, y + 5, f"({slo}–{shi})", 13, 400, INK2))
+    f.caption("Dot: held-out AUROC. Bar: 95% bootstrap range, 10,000 samples. Source: the table in docs/RESULTS.md.", 404, key=False)
+    f.write()
+
+
+FIGURES = (stack, flow, architecture, workflow, api, trigger, data_boundary, results_auroc)
 
 if __name__ == "__main__":
     if "--night" in sys.argv:
         OUT = Path(sys.argv[sys.argv.index("--night") + 1])
         OUT.mkdir(parents=True, exist_ok=True)
         globals().update(NIGHT)
-    for fn in (stack, flow, architecture, workflow, api, trigger):
+    for fn in FIGURES:
         fn()
     print("wrote", ", ".join(sorted(p.name for p in OUT.glob("*.html"))), "in", OUT)

@@ -351,7 +351,7 @@ footer p{max-width:80ch}
   <div class="wrap">
     <h2>Run it on the cluster</h2>
     <p class="lede">One script runs the chain and prints the board's link. Each step is a Fuzzball workflow file.</p>
-    <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/workflow.png"><img loading="lazy" src="diagrams/workflow.png" width="2560" height="842" alt="Run order: create twin-store once, then t7-code, t7-ward, t7-forecast and t7-twin, and open the board's link. scripts/launch.sh runs the four workflows. The demo patients, the trained model and its classifiers are already on the cluster; on a new twin-store both classifier files are staged in /store/train before the first forecast."></picture></div></figure>
+    <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/workflow.png"><img loading="lazy" src="diagrams/workflow.png" width="2560" height="850" alt="How to run it: three steps by hand (create twin-store once, stage job 4's probe with its provenance file once per model, render the ready workflow files after each code change), then scripts/launch.sh --all runs t7-code, t7-ward, t7-forecast-unit and t7-twin in order and prints the board's link."></picture></div></figure>
 <pre>bash scripts/launch.sh             # from backend/: start what is missing, wait for the board, print its HTTPS link
 bash scripts/launch.sh --forecast  # run a fresh forecast first
 bash scripts/launch.sh --link      # print the link of the running board
