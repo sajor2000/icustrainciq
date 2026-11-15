@@ -1,4 +1,8 @@
-# Lookahead JSON contract
+# ICU Lookahead JSON contract
+
+Read this if you build against `forecast.json`, `rooms.json` or the board's API and need the exact fields.
+
+Changes with PR #20: capacity gains `vents_total`, `crrt_total`, `nurses_on_shift` and `rt_on_shift`. This file describes the shapes on `main`.
 
 What `app/aggregate.py` writes to `forecast.json` (unit scope) and `app/rooms.py` writes to `rooms.json` (one ward: the open demo by default, or a real MIMIC-IV ward with `--real-ward`, see "ward block"). The frontend and the services build to this. Flags: `docs/LIVE_DEMO.md` section 1.5. Decisions: `docs/DECISIONS.md` D8.
 

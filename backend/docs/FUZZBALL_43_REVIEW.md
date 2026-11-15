@@ -1,4 +1,21 @@
-# Fuzzball 4.3 review of the Lookahead workflows and dispatcher
+# Fuzzball 4.3 review of the ICU Lookahead workflows and dispatcher
+
+Read this if you want to see each workflow construct checked against the Fuzzball 4.3 documentation; it is a dated record of the files as read on 2026-11-14 at 14:24 CST, so use [`RUNBOOK.md`](RUNBOOK.md) to run the app and [`../../docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) for the overview.
+
+**Status:** The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Statements below that nothing had run describe the time of writing.
+
+Superseded since this review: line numbers, and findings about constructs that later changed. In the files on `main` the dispatcher fetches the Fuzzball CLI with Python (no `apt`, no `wget`), the board endpoint is `protocol: http` (the proxy ends TLS), and the probe comes from job 4, with `t7-fit` as the fallback. Current state:
+
+| Topic | Current state (code on `main`) |
+|---|---|
+| How to run | `scripts/launch.sh` first ([`RUNBOOK.md`](RUNBOOK.md)); the manual workflow steps are the fallback |
+| Volumes | `twin-store` is the one volume ICU Lookahead writes (code, packages, stage ward, forecast files). `mimic_clif` is only read, at `/data`. `hfcache` holds the Nemotron weights. `clif_work` and `tooling` are not used |
+| Probe | Fitted by job 4 in vaishvikc/ICU-Twin and staged at `/store/train/probe-final.joblib` with `probe-final.meta.json`. `t7-fit` is the fallback |
+| Names | Generated per room number by `app/fake_names.py` (`--names fake`). `name.parquet` is no longer read |
+| Code on the cluster | Published by `t7-code` from this repo's `backend/` at a pinned commit. Training (`job_2` to `job_4`) is in vaishvikc/ICU-Twin; there is no `t7-build` here |
+| Schedule and cut | One run at 07:00; each patient is cut 24 h after ICU arrival; five predictions on the board |
+
+## Scope of this review
 
 Read-only review against the official docs at `https://docs.ciq.com/fuzzball/4.3` (all 229 pages of the 4.3 tree were downloaded on 2026-11-14 and searched; the pages in section 5 were read). Nothing was run on the cluster: no `fuzzball` CLI, no MCP call, no `workflow validate`. No repo file was edited.
 

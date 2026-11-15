@@ -1,14 +1,19 @@
-# Guide for coding agents: ICU Lookahead
+# Guide for coding agents
 
-Read `HANDOFF.md` first, then `README.md`, `docs/ARCHITECTURE.md` (what runs where), `docs/FRONTEND_SPEC.md` (board contract, screens, states) and `docs/USER_JOURNEY.md`. Decisions: `docs/DECISIONS.md`. Backend: `backend/README.md`. Model training: github.com/vaishvikc/ICU-Twin.
+Read this if you are a coding agent about to change this repo.
 
-- **Design work:** use the Impeccable skill for any UI change; it reads `PRODUCT.md`, `DESIGN.md` and `.impeccable/`. Stay in the world `DESIGN.md` describes (ink is now, blue is forecast, one drawn icon family); Operate mode: the task beats expression.
-- **Board constraints:** one static HTML file, CSS and vanilla JavaScript, no build step, no third-party scripts, works offline. It is served by `backend/app/board.py`; after changing `mockups/command-center.html`, copy it to `backend/app/static/index.html`. Keep the API in `docs/FRONTEND_SPEC.md` and `backend/docs/CONTRACT.md` in step.
-- **Backend:** `uv` only. `cd backend && uv run --extra dev --extra model pytest -q` and `ruff check app tests` must pass.
-- **Fuzzball:** check syntax against https://docs.ciq.com/fuzzball/4.3, not memory. Never start, stop or delete anything on the cluster without the team's go-ahead. Only the dispatcher starts forecast runs.
-- **Data:** never commit patient data, ids, model weights or probes. Real MIMIC-IV rows live only in `backend/data/local/` (git-ignored) and on Fuzzball volumes; the repo is public. Print counts only. Names on the board are invented.
-- **Copy:** plain clinical words, no hedging or disclaimers on the board; status words, never colour alone; chances as percentages; no treatment recommendations.
-- **Design system:** `DESIGN.md` is the one source for colour, type, radius and icons. Any UI, diagram, slide or page uses its tokens; do not add a second palette or a web font.
-- **Diagrams:** the diagram-design skill with the recorded profile `lookahead` (`.diagram-design`; mapping in `DESIGN.md`, section "Diagrams"). Figures are written by `docs/diagrams/make_figures.py` as HTML plus a PNG in `docs/diagrams/`: at most 7 boxes on a README figure, one caption line, no legend block. They must pass the skill's `verify_geometry.py` and `self_check.py --offline`, and `impeccable detect` with no ignores.
-- **Project page:** `docs/index.html` is the GitHub Pages site (served from `/docs` on `main`); it uses the same tokens.
-- **Check before done:** open the board at 1440 px, 1920 px and 390 px, day and night, both tabs and both Now / Next 24 h; no console errors.
+Start with `HANDOFF.md`, then `docs/ARCHITECTURE.md` (what runs where) and `backend/docs/RUNBOOK.md` (how it runs on the cluster). Board contract: `docs/FRONTEND_SPEC.md`. Decisions: `docs/DECISIONS.md`. Model training: github.com/vaishvikc/ICU-Twin.
+
+| Area | Rule |
+|---|---|
+| Name | The product is ICU Lookahead (D24). Code, workflow, header and file names keep `lookahead` |
+| Data | Never commit patient data, ids, model weights or probes. Never open `backend/data/`. MIMIC-IV rows live only there (git-ignored) and on Fuzzball volumes; the repo is public. Print counts only. Names on the board are generated |
+| Backend | `uv` only. `cd backend && uv run --extra dev --extra model pytest -q` and `ruff check app tests` must pass |
+| Fuzzball | Check syntax against https://docs.ciq.com/fuzzball/4.3, not memory. Never start, stop or delete anything on the cluster without the team's go-ahead. Only the dispatcher starts forecast runs. Edit templates in `backend/fuzzball/`, then render `ready/` with `scripts/make_ready.sh`; do not edit `ready/` by hand |
+| Board | One static HTML file, CSS and vanilla JavaScript, no build step, no third-party scripts, works offline. After changing `mockups/command-center.html`, copy it to `backend/app/static/index.html`. Keep `docs/FRONTEND_SPEC.md` and `backend/docs/CONTRACT.md` in step with the API |
+| Design | `DESIGN.md` is the one source for colour, type, radius and icons. Use the Impeccable skill for UI changes (Operate mode). No second palette, no web font |
+| Copy | Plain clinical words. No hedging or disclaimers on the board. Status words, never colour alone. Chances as percentages. No treatment recommendations |
+| Diagrams | Edit `docs/diagrams/make_figures.py`, never the HTML. Every diagram carries the same hosting zone, one caption line and the same colour key; at most 9 boxes. Each must pass the diagram-design skill's `verify_geometry.py` and `self_check.py --offline`. Export a PNG beside the HTML and a night copy to `docs/site/night/` |
+| Results | Numbers in `docs/RESULTS.md` come from job 4. The chart reads that table; do not type a number into a figure |
+| Project page | `docs/index.html` is the GitHub Pages site, served from `/docs` on `main`; it uses the same tokens |
+| Before done | Open the board at 1440 px, 1920 px and 390 px, day and night, both tabs and both Now and Next 24 h. No console errors |

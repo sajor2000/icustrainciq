@@ -1,5 +1,9 @@
 # Chat agent (Ask the board)
 
+Read this if you want to know how the chat picks its tools, what it refuses, and where its answers come from.
+
+Changes with PR #16: answers are rendered from evidence in `app/evidence.py`, and the chat reads a shared ICU snapshot built by `app/demo_context.py`. This file describes the agent on `main`.
+
 `app/chat_agent.py` turns "Ask the board" into a bounded tool-calling agent. Its name in answers is "Lookahead"; the voice is a clinical tool: short, factual, no disclaimers, hedges or notes about the model (the safety rules are behaviour, not copy). Nemotron 3 Nano (vLLM, OpenAI-compatible) decides which read-only tools to call; the tools read `forecast.json`, `rooms.json` and the dispatcher; the answer comes only from tool results. Stdlib only. API: `POST /api/ask {"question","role","room?","seen_made_at?"}` returns `{"answer","made_at","trace"?}`; `trace` is tool names only, `made_at` is the forecast time the answer used. The page sends back the last `made_at` it received as `seen_made_at`; when the forecast changed since, the answer starts with one line, `Forecast updated at HH:MM. Answers below use it.` (HH:MM in the board's TZ, America/Chicago on the cluster; no line on the first answer of a conversation).
 
 ## The loop
