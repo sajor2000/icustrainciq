@@ -396,7 +396,7 @@ def arch_train():
 
 def arch_live():
     f = Fig("arch-live", 1200, 412, "ICU Horizon live on CIQ Fuzzball",
-            "The live app is one CIQ Fuzzball workflow, job 5 (t7-launch). Load checks inputs on node B (CPU, 7 s). Infer runs the GEM and its probes on node B's GPU (35 s). Score adds up beds and the unit on node A (CPU, 33 s) and writes the forecast to the twin-store VAST volume. Two services stay up: the bed board on node A (CPU) serves clinicians over HTTPS, and the chat, NVIDIA Nemotron 3.5 Bolt E4B on llama.cpp, runs on node B's GPU with weights on the hfcache volume.",
+            "The live app is one CIQ Fuzzball workflow, job 5 (t7-launch). Load checks inputs on node B (CPU, 7 s). Infer runs the GEM and its probes on node B's GPU (35 s). Score adds up beds and the unit on node A (CPU, 33 s) and writes rooms.json and forecast.json to the twin-store VAST volume. The bed board service on node A reads those files and serves the ICU team over HTTPS; its chat agent calls read-only tools on the same files and sends the tool results to the chat model, NVIDIA Nemotron 3.5 Bolt E4B on llama.cpp on node B's GPU, whose only volume is hfcache with its weights. Nemotron never reads patient records; it knows what is happening to a patient only from the GEM's forecast passed in as tool results.",
             "ICU Horizon · live app", "The live app: job 5 and two services", big=True)
     _print_fonts(f)
     f.zone(16, 40, 1168, 356, label="ICU Horizon live · job 5 (t7-launch) · node A = SPARK13 · node B = SPARK14")
@@ -405,21 +405,23 @@ def arch_live():
     f.node(xs[0], r1, w, h, "card", "Fuzzball", "Object cache", ["code in,", "counts out"])
     f.node(xs[1], r1, w, h, "store", "VAST · read only", "mimic_clif", ["GEM, probes,", "25 patients"])
     f.node(xs[2], r1, w, h, "forecast", "VAST · 20 GB", "twin-store", ["rooms.json,", "forecast.json"])
+    f.node(xs[3], r1, w, h, "nvidia", "Service · B · GPU", "Nemotron chat", ["llama.cpp; sees", "tool results only"])
     f.node(xs[4], r1, w, h, "store", "VAST volume", "hfcache", ["Nemotron E4B", "4-bit weights"])
     f.node(xs[0], r2, w, h, "card", "Job 5 · node B", "Load", ["CPU · 2 cores", "ran 7 s"])
     f.node(xs[1], r2, w, h, "model", "Job 5 · node B", "Infer", ["GPU · 8 cores", "ran 35 s"])
     f.node(xs[2], r2, w, h, "card", "Job 5 · node A", "Score", ["CPU · 4 cores", "ran 33 s"])
-    f.node(xs[3], r2, w, h, "card", "Service · A", "Bed board", ["CPU · HTTPS", "to clinicians"])
-    f.node(xs[4], r2, w, h, "nvidia", "Service · B", "Nemotron chat", ["GPU · llama.cpp", "64k context"])
+    f.node(xs[3], r2, w, h, "card", "Service · A · CPU", "Board + chat", ["reads twin-store,", "runs chat tools"])
+    f.node(xs[4], r2, w, h, "card", "HTTPS", "ICU team", ["nurse, doctor", "in a browser"], icon="person")
     m2 = r2 + h // 2
     f.arrow([(xs[0] + w, m2), (xs[1], m2)])
     f.arrow([(xs[1] + w, m2), (xs[2], m2)])
     f.arrow([(xs[3] + w, m2), (xs[4], m2)])
+    f.arrow([(xs[4], r1 + 62), (xs[3] + w, r1 + 62)])
     f.arrow([(cx[0], r1 + h), (cx[0], r2)], label="Code", at=(cx[0], 226), side="right")
     f.arrow([(cx[1], r1 + h), (cx[1], r2)], label="GEM", at=(cx[1], 226), side="right")
     f.arrow([(cx[2], r2), (cx[2], r1 + h)], BLUE, label="Writes", at=(cx[2], 226), side="right")
-    f.arrow([(xs[2] + w, 134), (cx[3], 134), (cx[3], r2)], BLUE, label="Forecast", at=(780, 134))
-    f.arrow([(cx[4], r1 + h), (cx[4], r2)], label="Weights", at=(cx[4], 226), side="right")
+    f.arrow([(xs[2] + w, r1 + h - 24), (715, r1 + h - 24), (715, 244), (770, 244), (770, r2)], BLUE)
+    f.arrow([(870, r2), (870, r1 + h)], BLUE, label="Tool results", at=(870, 222), side="right")
     f.write()
 
 
