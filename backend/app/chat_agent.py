@@ -69,8 +69,8 @@ _UNIT_OBJ = (
     r"(?:(?:the|our|this)\s+)?(?:whole\s+|entire\s+)?"
     r"(?:unit|icu|board|forecast|ward|everything)(?:\s+forecast)?"
 )
-_ROOM_OBJ = r"(?:the\s+)?room\s*#?\s*([0-9]{1,2})"
-_THIS_ROOM_OBJ = r"(?:this|the open|my)\s+room"
+_ROOM_OBJ = r"(?:the\s+)?(?:room|bed)\s*#?\s*([0-9]{1,2})"
+_THIS_ROOM_OBJ = r"(?:this|the open|my)\s+(?:room|bed)"
 ROOM_UPDATE = re.compile(rf"{_LEAD}{_VERB}\s+{_ROOM_OBJ}{_TAIL}", re.I | re.A)
 THIS_ROOM_UPDATE = re.compile(rf"{_LEAD}{_VERB}\s+{_THIS_ROOM_OBJ}{_TAIL}", re.I | re.A)
 UNIT_UPDATE = re.compile(rf"{_LEAD}{_VERB}\s+{_UNIT_OBJ}{_TAIL}", re.I | re.A)
