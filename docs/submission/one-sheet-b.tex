@@ -46,7 +46,7 @@ Resource-constrained ICUs have only a few life-support machines. When those run 
 
 \columnbreak
 \sh{What we built}
-A bed board the ICU nurse and doctor read at 7 am, before rounds (the daily team review): life support now, each event's 24-h probability, and unit totals against the machines. Refreshed hourly (78 s per run). A large language model (LLM) chat answers questions.
+A bed board the ICU nurse and doctor read at 7 am, before rounds (the daily team review): life support now, each event's 24-h probability, and unit totals against the machines. A large language model (LLM) chat answers questions.
 \end{multicols}
 
 \vspace{2pt}
@@ -70,7 +70,7 @@ AUROC: area under the receiver operating characteristic curve (1.0 is perfect), 
 {\par\vspace{3pt}\centering \includegraphics[width=0.56\linewidth]{../diagrams/arch-live.png}\par\vspace{2pt}}
 \vspace{-4pt}
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
-\textbf{\color{ink}How the chat knows the patients:} the board's chat agent reads the GEM's forecast on twin-store and passes it to Nemotron as tool results; Nemotron never reads patient records. \textbf{\color{ink}Fuzzball:} Orchestrate schedules, Substrate runs the containers (llama.cpp: an open-source LLM server). DDP: PyTorch distributed data parallel.\par}
+\textbf{\color{ink}How the chat knows the patients:} the board's chat agent reads the GEM's forecast on twin-store and passes it to Nemotron as tool results; Nemotron never reads patient records. \textbf{\color{ink}Fuzzball:} Orchestrate schedules, Substrate runs the containers (llama.cpp: an open-source LLM server). Training runs as a distributed workflow with Fuzzball's generic multinode.\par}
 
 \vfill
 {\color{ink}\rule{\textwidth}{0.9pt}}\\[2pt]

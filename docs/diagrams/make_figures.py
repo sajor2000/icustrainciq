@@ -308,7 +308,7 @@ def architecture():
     f.node(c3, r2, w, h, "store", "VAST volume", "mimic_clif", ["patients in CLIF,", "model, six probes"])
     f.node(c1, r3, w, h, "card", "Fuzzball", "Object cache", ["the only way in or out"])
     f.node(c2, r3, w, h, "model", "Job 5 · 1 GPU", "Our model predicts", ["load, infer, score:", "one pass per patient"])
-    f.node(c3, r3, w, h, "card", "Jobs 1–4 · 2 GPUs", "Train once", ["tokenize, train (DDP),", "fit six probes"])
+    f.node(c3, r3, w, h, "card", "Jobs 1–4 · 2 GPUs", "Train once", ["tokenize, train,", "fit six probes"])
     f.arrow([(184, 268), (c1, 268)])
     f.arrow([(332, r2), (332, r1 + h)], label="Chat", at=(332, 192), side="right")
     f.arrow([(c2, 116), (c1 + w, 116)], label="Weights", at=(476, 116))
@@ -325,7 +325,7 @@ def architecture():
 # =============================================================== print: architecture for the one-page handouts
 def architecture_print():
     f = Fig("architecture-print", 1200, 636, "ICU Horizon on CIQ Fuzzball, job by job",
-            "Every CIQ Fuzzball 4.3 job and service on two Lenovo ThinkStation PGX workstations, each with one NVIDIA GB10 (20 Arm cores, about 128 GB memory, one GPU). Train once: job 1 copies health records in through the object cache (1 core), job 2 tokenizes them (20 cores, 110 GiB), job 3 trains the GEM, a generative event model, from scratch with PyTorch distributed data parallel on two nodes with one GB10 GPU each, job 3.1 packages and load-tests the checkpoint (2 cores), job 4 embeds patients on two GPUs and fits six probes on CPU; the GEM and probes are saved to the 200 GB mimic_clif VAST volume. Job 5: load checks inputs (2 cores, 8 GB, 7 s), infer runs the GEM and probes for 25 patients on one GPU (8 cores, 48 GB, 35 s), score adds up beds and the unit (4 cores, 16 GB, 33 s) and writes the forecast to the 20 GB twin-store volume. Services: the bed board (python 3.12, 2 cores, 4 GB, port 8080 behind an HTTPS endpoint) and the chat, NVIDIA Nemotron 3.5 Bolt E4B in 4-bit GGUF on llama.cpp (one GPU, 8 cores, 32 GB), with weights on the hfcache volume.",
+            "Every CIQ Fuzzball 4.3 job and service on two Lenovo ThinkStation PGX workstations, each with one NVIDIA GB10 (20 Arm cores, about 128 GB memory, one GPU). Train once: job 1 copies health records in through the object cache (1 core), job 2 tokenizes them (20 cores, 110 GiB), job 3 trains the GEM, a generative event model, from scratch as a Fuzzball distributed workflow (generic multinode) on two nodes with one GB10 GPU each, job 3.1 packages and load-tests the checkpoint (2 cores), job 4 embeds patients on two GPUs and fits six probes on CPU; the GEM and probes are saved to the 200 GB mimic_clif VAST volume. Job 5: load checks inputs (2 cores, 8 GB, 7 s), infer runs the GEM and probes for 25 patients on one GPU (8 cores, 48 GB, 35 s), score adds up beds and the unit (4 cores, 16 GB, 33 s) and writes the forecast to the 20 GB twin-store volume. Services: the bed board (python 3.12, 2 cores, 4 GB, port 8080 behind an HTTPS endpoint) and the chat, NVIDIA Nemotron 3.5 Bolt E4B in 4-bit GGUF on llama.cpp (one GPU, 8 cores, 32 GB), with weights on the hfcache volume.",
             "ICU Horizon · Fuzzball jobs", "Every job, its hardware and its resources", big=True)
     f.t_title = 17
     f.zone(16, 40, 1168, 536, label="2 × Lenovo ThinkStation PGX · NVIDIA GB10: 20 Arm cores, 128 GB, 1 GPU each · CIQ Fuzzball 4.3")
@@ -334,7 +334,7 @@ def architecture_print():
     r1, r2, r3 = ys
     f.node(xs[0], r1, w, h, "card", "Job 1 · CPU · Node A", "Move data", ["CLIF records in", "alpine image", "1 core · 2 GiB"])
     f.node(xs[1], r1, w, h, "card", "Job 2 · CPU", "Tokenize", ["events into tokens", "uv Python image", "20 cores · 110 GiB"])
-    f.node(xs[2], r1, w, h, "model", "Training · A + B", "Train the GEM", ["Nemotron backbone,", "1 DDP rank per node", "20 cores, 110 GiB ea."])
+    f.node(xs[2], r1, w, h, "model", "Training · A + B", "Train the GEM", ["Nemotron backbone,", "generic multinode", "20 cores, 110 GiB ea."])
     f.node(xs[3], r1, w, h, "card", "Job 3.1 · CPU · Node A", "Package", ["save checkpoint", "load test passes", "2 cores · 4 GiB"])
     f.node(xs[4], r1, w, h, "card", "Job 4 · 2 GPUs, CPU", "Fit probes", ["embed on 2 × GB10", "fit 6 probes on CPU", "20 cores · 90 GiB"])
     f.node(xs[0], r2, w, h, "card", "Fuzzball", "Object cache", ["code, data in", "logs, counts out", "never overwrites"])
@@ -371,7 +371,7 @@ def _print_fonts(f):
 
 def arch_train():
     f = Fig("arch-train", 1200, 380, "Training on CIQ Fuzzball, run once",
-            "Run once on two Lenovo ThinkStation PGX workstations (node A, CIQ-CHI-SPARK13; node B, CIQ-CHI-SPARK14), each one NVIDIA GB10. Job 1 moves CLIF records in on node A (CPU). Job 2 tokenizes them into the custom 1,231-token vocabulary on node B (CPU). Job 3, the one training workflow, trains the GEM, an NVIDIA Nemotron E4B backbone, from scratch with PyTorch DDP across both nodes, one GPU each. Job 3.1 packages and load-tests the checkpoint on node A. Job 4 embeds patients on both GPUs and fits six linear probes. Tokens, the GEM and the probes are saved on the 200 GB mimic_clif VAST volume.",
+            "Run once on two Lenovo ThinkStation PGX workstations (node A, CIQ-CHI-SPARK13; node B, CIQ-CHI-SPARK14), each one NVIDIA GB10. Job 1 moves CLIF records in on node A (CPU). Job 2 tokenizes them into the custom 1,231-token vocabulary on node B (CPU). Job 3, the one training workflow, trains the GEM, an NVIDIA Nemotron E4B backbone, from scratch as a Fuzzball distributed workflow (generic multinode) across both nodes, one GPU each. Job 3.1 packages and load-tests the checkpoint on node A. Job 4 embeds patients on both GPUs and fits six linear probes. Tokens, the GEM and the probes are saved on the 200 GB mimic_clif VAST volume.",
             "ICU Horizon · training", "One training workflow, with data prep and probes around it", big=True)
     _print_fonts(f)
     f.zone(16, 40, 1168, 324, label="Run once · node A = SPARK13 · node B = SPARK14")
@@ -379,7 +379,7 @@ def arch_train():
     cx = [x + w // 2 for x in xs]
     f.node(xs[0], r1, w, h, "card", "Job 1 · node A", "Move data", ["CPU · 1 core", "CLIF records in"])
     f.node(xs[1], r1, w, h, "card", "Job 2 · node B", "Tokenize", ["CPU · 20 cores", "1,231 tokens"])
-    f.node(xs[2], r1, w, h, "model", "Job 3 · A + B", "Train the GEM", ["2 GPUs, DDP", "Nemotron E4B"])
+    f.node(xs[2], r1, w, h, "model", "Job 3 · A + B", "Train the GEM", ["generic", "multinode"])
     f.node(xs[3], r1, w, h, "card", "Job 3.1 · node A", "Package", ["CPU · 2 cores", "load test"])
     f.node(xs[4], r1, w, h, "card", "Job 4 · A + B", "Fit probes", ["2 GPUs + CPU", "6 linear probes"])
     f.node(xs[0], r2, w, 96, "card", "Fuzzball", "Object cache", ["data in"])
@@ -478,7 +478,7 @@ def slide_ehr():
 
 def slide_train():
     f = Fig("slide-train", 1280, 456, "Training on CIQ Fuzzball, run once",
-            "Run once on two Lenovo ThinkStation PGX workstations, each one NVIDIA GB10. Job 1 moves CLIF records in on node A; job 2 tokenizes them into the 1,231-token vocabulary on node B; job 3 trains the GEM from scratch on both GPUs with PyTorch DDP; job 3.1 packages it on node A; job 4 fits six linear probes on both GPUs. Everything is saved on the 200 GB mimic_clif VAST volume.",
+            "Run once on two Lenovo ThinkStation PGX workstations, each one NVIDIA GB10. Job 1 moves CLIF records in on node A; job 2 tokenizes them into the 1,231-token vocabulary on node B; job 3 trains the GEM from scratch on both GPUs as a Fuzzball distributed workflow (generic multinode); job 3.1 packages it on node A; job 4 fits six linear probes on both GPUs. Everything is saved on the 200 GB mimic_clif VAST volume.",
             "ICU Horizon · training", "Training: one workflow on both GPUs", big=True)
     _slide_fonts(f)
     f.zone(12, 32, 1256, 364, label="Run once · 2 × NVIDIA GB10 · CIQ Fuzzball 4.3")
@@ -486,7 +486,7 @@ def slide_train():
     cx = [x + w // 2 for x in xs]
     f.node(xs[0], r1, w, h, "card", "Job 1 · CPU", "Move data", ["CLIF records", "in · node A"])
     f.node(xs[1], r1, w, h, "card", "Job 2 · CPU", "Tokenize", ["1,231 tokens", "node B"])
-    f.node(xs[2], r1, w, h, "model", "Job 3 · 2 GPUs", "Train GEM", ["DDP, nodes", "A + B"])
+    f.node(xs[2], r1, w, h, "model", "Job 3 · 2 GPUs", "Train GEM", ["multinode,", "nodes A + B"])
     f.node(xs[3], r1, w, h, "card", "Job 3.1 · CPU", "Package", ["load test", "node A"])
     f.node(xs[4], r1, w, h, "card", "Job 4 · 2 GPUs", "Fit probes", ["6 linear", "probes"])
     f.node(xs[1], r2, 712, 92, "store", "VAST volume · 200 GB", "mimic_clif", [])
