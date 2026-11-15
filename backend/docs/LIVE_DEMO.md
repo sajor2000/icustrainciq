@@ -15,7 +15,7 @@ Sections 0 to 8 are the design as written on 2026-11-14; section 9 holds the lat
 | Code on the cluster | Published by `t7-code` from this repo's `backend/` at a pinned commit. Training (`job_2` to `job_4`) is in vaishvikc/ICU-Twin; there is no `t7-build` here |
 | Schedule and cut | One run at 07:00; each patient is cut 24 h after ICU arrival; five predictions on the board |
 
-Status: design plus the code that already exists (2026-11-14, branch `t7/fb-live-demo`; the later decisions are in section 9 and win where they differ: 07:00 run, unit and room updates, demo clock, capacity). It answers one question: **after the model is trained, what happens on the day, minute by minute, and what is still missing?** Section 7 is the gap list. Section 8 is what J.C. must decide.
+Status: design plus the code that already exists (2026-11-14, branch `t7/fb-live-demo`; the later decisions are in section 9 and win where they differ: 07:00 run, unit and room updates, demo clock, capacity). It answers one question: **after the model is trained, what happens on the day, minute by minute, and what is still missing?** Section 7 is the gap list. Section 8 is what the team must decide.
 
 Companions: `docs/DECISIONS.md` (D2 probe scoring, D3 cut at 24 h after ICU arrival, D6 privacy line, D9 dispatcher, D10 which unit), `docs/CLUSTER_FACTS.md`, `.claude/skills/fuzzball-ops/SKILL.md`, and the frontend repo (`docs/INTEGRATION.md`, `FRONTEND_SPEC.md`, `FRONTEND_PLAN.md`, `ARCHITECTURE.md`). The chat agent (`app/chat_agent.py`) and the board server (`app/board.py`) are on `main`; this file states what they need from the backend.
 
@@ -71,7 +71,7 @@ Run on the repo's open `clif_demo/` on 2026-11-14 (counts only): 101 eligible st
 
 **Reconcile with the team-machine list** (lane 3, minutes): print the digest of that list the same way (`stage_ward.digest`). If equal, done. If not, recommendation: adopt the script's list. The data is open, nothing clinical rests on which 25, and a list nobody can regenerate inside the cluster is the weaker claim.
 
-While doing this, one bug on `main` surfaced and is **fixed on this branch** (flag for Vaishvik, hardware-pivot style note): `icutwin-winnow -c icutwin/config/winnowing.yaml` was refused with `unknown option(s) ['horizon_after_threshold_s']`, because the shipped `winnowing.yaml` only had that key as a comment. That would have stopped `t7-smoke` and `t7-build` at the winnow step. `winnowing.yaml` now lists the key (null), the winnower treats null as unset, and a test loads the example override.
+While doing this, one bug on `main` surfaced and is **fixed on this branch** (flag for scoring and training, hardware-pivot style note): `icutwin-winnow -c icutwin/config/winnowing.yaml` was refused with `unknown option(s) ['horizon_after_threshold_s']`, because the shipped `winnowing.yaml` only had that key as a comment. That would have stopped `t7-smoke` and `t7-build` at the winnow step. `winnowing.yaml` now lists the key (null), the winnower treats null as unset, and a test loads the example override.
 
 ### 1.3 The per-room scoring path
 
@@ -178,7 +178,7 @@ python /store/code/app/rooms.py ... --recount --forecast /store/forecast.json --
 
 `--demo-clock-hours` (also `threshold.after_first_occurrence.offset_s` in the winnow config) is added to the 24 h; `duration_s + offset_s` must stay above 0 (a cut at or before ICU arrival is refused). Stays whose record ends before the new cut drop out of the winnow output; `rooms.py` reports how many in `dropped` (ward rooms with no entry, never negative) and leaves those rooms out of `rooms.json`. On the open demo data: 0 h keeps 112 stays, +12 h keeps 80, +48 h keeps 45 (all stays, not only the 25 rooms). A clock move changes every stay's cut, so re-extract the whole ward; for one room with an unchanged clock use `icutwin-extract --stay-ids`, and after a new capacity or a plain rerun `--room` needs no GPU.
 
-**What "on now" means (decided 2026-11-14): what is running at the cut, from the last record before it.** `icutwin-winnow` writes three boolean columns from `at_cut` in `winnowing.yaml` (hardware/demo pivot, for Vaishvik), which `aggregate.py` and `rooms.py` use everywhere "on now" appears, and which make a support that stopped before the cut forecastable again:
+**What "on now" means (decided 2026-11-14): what is running at the cut, from the last record before it.** `icutwin-winnow` writes three boolean columns from `at_cut` in `winnowing.yaml` (hardware/demo pivot, for scoring and training), which `aggregate.py` and `rooms.py` use everywhere "on now" appears, and which make a support that stopped before the cut forecastable again:
 
 | Support | Running at the cut when | Tokens it reads |
 |---|---|---|
@@ -397,15 +397,15 @@ Size: XS under an hour, S a few hours, M most of a day.
 | G10 | `t7-preflight.fz`: CPU job that prints counts for the go/no-go list | 2 | S | open |
 | G11 | Held-out metrics file (AUROC and calibration per task, counts only) for D7 and the chat | 3 | S | open (`summarize_preds` only logs) |
 | G12 | Strain index and baseline | 3 | done | here, with tests; frontend reads `strain` (XS, lane 4), and its band words should come from the backend |
-| G13 | `hypotension_init` is already true before the cut in about 95% of open-demo stays; check the MIMIC training rate and decide whether the board row stays | 1 + Vaishvik | S | open |
-| G14 | Winnow override bug (`unknown option horizon_after_threshold_s`) | Vaishvik review | done | fixed here, tested |
+| G13 | `hypotension_init` is already true before the cut in about 95% of open-demo stays; check the MIMIC training rate and decide whether the board row stays | 1 + scoring and training | S | open |
+| G14 | Winnow override bug (`unknown option horizon_after_threshold_s`) | Scoring and training review | done | fixed here, tested |
 | G15 | `made_at` with offset, atomic JSON writes | 3 | done | here, tested |
 | G16 | How a judge's browser opens a `scope: group` endpoint (headers cannot be set from a URL); verify at T-60 | 2 | S | open |
 | G17 | Time-to-run numbers, image warm-up, node health check of our two nodes | 2 | XS | at T-60 |
 
 ---
 
-## 8. Open decisions for J.C.
+## 8. Open decisions
 
 1. **D10**: confirm option A (the 25 stage-ward rooms are the unit). Everything above assumes it.
 2. **Hosting**: vendored static page, read from `/store/code` per request, `t7-sync` from a git tag (section 3). Alternative is fetching at start (rejected above).
@@ -420,7 +420,7 @@ Size: XS under an hour, S a few hours, M most of a day.
 
 ## 9. Later decisions: 07:00 run, unit and room updates, demo clock, capacity (runbook)
 
-Decided by J.C. on 2026-11-14 (`docs/DECISIONS.md` D9). Code: `app/dispatcher.py`, `app/board.py`, `app/chat_agent.py`, `fuzzball/t7-forecast.fz`, `fuzzball/t7-fit.fz`, `fuzzball/t7-twin.fz`.
+Decided 2026-11-14 (`docs/DECISIONS.md` D9). Code: `app/dispatcher.py`, `app/board.py`, `app/chat_agent.py`, `fuzzball/t7-forecast.fz`, `fuzzball/t7-fit.fz`, `fuzzball/t7-twin.fz`.
 
 ### 9.1 Order of workflows (one-time, then daily)
 
@@ -430,7 +430,7 @@ Decided by J.C. on 2026-11-14 (`docs/DECISIONS.md` D9). Code: `app/dispatcher.py
 2. **`t7-code`** (post-demo, with the team's go-ahead; from ICU-Twin it publishes ICU-Twin's code instead) publishes this repo's `backend/` to `/store/code` and `/store/py`. It comes before the probe's sidecar, because the sidecar command imports `icutwin` from those two folders.
 3. **Stage the probe** (once per `twin-store`; again if the volume is recreated): copy job 4's probe to `/store/train/probe-final.joblib` and write its provenance sidecar `probe-final.meta.json` ([`RUNBOOK.md`](RUNBOOK.md) section 4). The forecast's precheck stops without both files.
 4. **`t7-ward`** (once, and whenever the ward changes; needed even when the probe is already staged): the stage-ward list and its tokens under `/store/stage`. The forecast's precheck stops without them ("run t7-ward first").
-5. **`t7-fit`** (fallback, only when job 4 has not staged a probe): `stage` (CPU: links to the training tokens, winnow, vocabulary check), `extract` (GPU, train/tuning/held_out), `fit` (CPU: probes saved to `/store/train/probe-final.joblib` with the sidecar). **The fallback alone does not make a forecast run:** `t7-fit` writes its winnowed training labels under `/store/train`, and `t7-forecast` requires job 4's `/data/tokenized_output/train_for_inference.parquet` (its precheck) and reads its baseline from `/data/tokenized_output`. If that file is missing, run job 4's winnow step in vaishvikc/ICU-Twin first; `mimic_clif` is read-only for this repo, so nothing here writes it. Aligning the forecast with the fallback's own output is an open item for the workflow's owner (Kaveri).
+5. **`t7-fit`** (fallback, only when job 4 has not staged a probe): `stage` (CPU: links to the training tokens, winnow, vocabulary check), `extract` (GPU, train/tuning/held_out), `fit` (CPU: probes saved to `/store/train/probe-final.joblib` with the sidecar). **The fallback alone does not make a forecast run:** `t7-fit` writes its winnowed training labels under `/store/train`, and `t7-forecast` requires job 4's `/data/tokenized_output/train_for_inference.parquet` (its precheck) and reads its baseline from `/data/tokenized_output`. If that file is missing, run job 4's winnow step in vaishvikc/ICU-Twin first; `mimic_clif` is read-only for this repo, so nothing here writes it. Aligning the forecast with the fallback's own output is an open item for the workflow's area (workflows and backend).
 6. `t7-twin` (Nemotron, board, dispatcher). The board no longer waits for Nemotron.
 7. Daily: the dispatcher starts `t7-forecast` at **07:00 sharp** (dispatcher clock, zone-aware `America/Chicago`, so daylight saving moves nothing; window 07:00 to 07:00). If another run is active, the cluster cannot be listed, or the start fails, it retries every minute for 10 minutes and logs every attempt and the outcome to `runs.jsonl`. The 07:00 run ignores the 20 minute gap. A dispatcher that starts after 07:00 with no scheduled run since the cut runs it once (catch-up). Until it lands the board keeps the previous forecast and `/api/runs` says `updating: true`; a failed or missed scheduled run shows in `/api/runs` as `scheduled.state` = `failed` or `missed`: check it after 07:15 on demo day.
 

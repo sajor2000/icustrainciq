@@ -1,4 +1,4 @@
-# Nemotron chatbot handoff for Whiskey
+# Nemotron chatbot handoff
 
 The [Claude design-context repair](CLAUDE_FIX_HANDOFF.md) is complete and verified.
 
@@ -77,7 +77,7 @@ place real data, IDs, tokens, context, weights or probes in Git or a code archiv
    selected-cohort forecast. Check that room and unit replies use that exact
    publication, then test an explicit refresh and recovery from a failed run.
 
-Whiskey can immediately refine question routing and concise response wording in
+The chat lane can immediately refine question routing and concise response wording in
 the two chat modules above. Keep the same evidence boundary and extend the
 existing public HTTP tests for any behavior change. Do not add a new agent
 framework, role platform or a second prediction pipeline for this single-user

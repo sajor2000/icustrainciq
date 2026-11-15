@@ -39,7 +39,7 @@ labels:
     - [VITAL//map//*, "<", 65]
     - [VITAL//sbp//*, "<", 90]
 
-# what is actually running at the cut (demo pivot for Vaishvik; D8 life support). Each
+# what is actually running at the cut (demo pivot for scoring and training; D8 life support). Each
 # name becomes one boolean column in <split>_for_inference.parquet, from the records
 # before the cut: unlike LABEL//*_past (started at any time before it), a support that
 # was stopped before the cut is False.

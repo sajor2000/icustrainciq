@@ -28,7 +28,7 @@ Question IDs refer to [`QUESTIONS.md`](https://github.com/vaishvikc/ICU-Twin/blo
 | Our compute | **2 × Lenovo ThinkStation PGX** (NVIDIA GB10: 1 GPU, 20 cores, 128 GB unified memory each). `fuzzball node list` shows every team's nodes; size all work for our two | A1 |
 | GPU rule | Each node lists `nvidia.com/gpu: 1`. A job or service that requests it holds the whole GPU until it ends, so two GPU jobs never share a node. `exclusive: true` is a different thing: it reserves the whole **node** (Fuzzball 4.3 workflow syntax), so only Nemotron sets it; the forecast, fit and smoke GPU jobs do not (`COMPUTE_PLAN.md`). No pinning to a named node: the scheduler places work | F3 |
 | Driver / CUDA | 580 / **CUDA 13.0**. Images must be built for CUDA 13.0 (forward compatible to 13.1 only) | G7 |
-| Images we pin | `nvcr.io/nvidia/pytorch:25.11-py3`, `nvcr.io/nvidia/vllm:25.12.post1-py3`, `lmsysorg/sglang:v0.5.21` (official SGLang release, arm64, CUDA 13.0.1; only for Vaishvik's sampling experiments and the optional smoke check; fallback `scitrera/dgx-spark-sglang:0.5.12`). NGC tags newer than 26.02 need a newer driver | G7, H3 |
+| Images we pin | `nvcr.io/nvidia/pytorch:25.11-py3`, `nvcr.io/nvidia/vllm:25.12.post1-py3`, `lmsysorg/sglang:v0.5.21` (official SGLang release, arm64, CUDA 13.0.1; only for the sampling experiments and the optional smoke check; fallback `scitrera/dgx-spark-sglang:0.5.12`). NGC tags newer than 26.02 need a newer driver | G7, H3 |
 | GPU memory | `nvidia-smi` reports `[N/A]` (unified memory); use `free -g` | G3 |
 | `/dev/shm` | 60 GB | G8 |
 | ulimits | nofile 1048576, memlock 4194304 KB | G8 |
@@ -66,7 +66,7 @@ The aggregate job and the bed board need no GPU.
 ## Data route (decided)
 
 1. **Our S3 bucket → `mimic_clif`** by volume `ingress` with a team-scoped S3 secret.
-2. Fallback: upload once from Vaishvik's computer through a short-lived upload service, then a verify job.
+2. Fallback: upload once from a team member's computer through a short-lived upload service, then a verify job.
 3. Last resort: PhysioNet download by https ingress with a `physionet` secret; outbound HTTPS to physionet.org, GitHub, PyPI, nvcr.io and Hugging Face works from a job.
 
 Laptops never hold or move the data. Jobs print counts and checksums only.

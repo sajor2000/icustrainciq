@@ -199,7 +199,7 @@ class Winnower:
         ]
 
     def add_at_cut_flags(self, df: pl.LazyFrame, split: str) -> pl.LazyFrame:
-        """HARDWARE/DEMO PIVOT (for Vaishvik): `<name>` boolean columns saying what is
+        """HARDWARE/DEMO PIVOT (for scoring and training): `<name>` boolean columns saying what is
         actually running at the cut, from the records before it (config `at_cut`),
         unlike `<token>_past` (started at any time before the cut). Three rules:
           last_of:   the last token among `last_of` patterns is one of `running_if`
