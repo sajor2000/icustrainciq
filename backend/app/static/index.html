@@ -7,7 +7,7 @@
 <style>
 /* The look follows Dema's Alternative board (mockups/command-center.html): a cool neutral ground, white hairline cards, one blue.
    Numbers are ink. On Unit strain amber is TIGHT / BUSY / AT LIMIT and red is SHORT / VERY BUSY; a red card is tinted with a still halo and only the beds pulse.
-   On the Bed board a tile's edge is its trajectory: red worsening, amber watch, green leaving. */
+   On the Bed board a tile has no status: its figure turns red and pulses when a new life support or death is at its threshold. */
 :root{
   --board:#F6F7F9; --board-2:#EEF0F4; --surface:#FFFFFF; --ink:#111827; --ink-2:#5B6474; --rule:rgba(17,24,39,.10); --line:#CDD3DC;
   --blue:#2563EB; --focus:#2563EB; --sel:rgba(37,99,235,.22); --fig:#E4E6EA;
@@ -150,7 +150,7 @@ h1,h2,h3,p{margin:0}
 .legend .sep{width:1px;height:1rem;background:var(--line)}
 .roomnote{margin:0 0 .5rem;font-size:.875rem;font-weight:600}
 
-/* bed tile: room, one trajectory status, then Now -> Next 24 h */
+/* bed tile: room, then Now -> Next 24 h (no bed status, D25) */
 .bed{--t-bg:var(--surface);--t-fg:var(--ink);--t-2:var(--ink-2);--ic-k:var(--t-bg);
   display:flex;flex-direction:column;gap:.5rem;min-width:0;min-height:5.75rem;text-align:left;padding:.625rem .75rem;
   border:1px solid var(--rule);border-radius:1rem;background:var(--t-bg);color:var(--t-fg);cursor:pointer;box-shadow:var(--card);
@@ -528,13 +528,7 @@ details.more summary:hover{color:var(--blue)}
   <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="7.2" r="3.9"/><path d="M4.5 21v-1.4c0-3.5 3.2-5.9 7.5-5.9s7.5 2.4 7.5 5.9V21z"/></symbol>
   <symbol id="i-person-on" viewBox="0 0 24 24"><circle fill="currentColor" cx="12" cy="7.2" r="3.9"/><path fill="currentColor" d="M4.5 21v-1.4c0-3.5 3.2-5.9 7.5-5.9s7.5 2.4 7.5 5.9V21z"/></symbol>
   <symbol id="i-fig" viewBox="0 0 40 42"><circle cx="20" cy="10.5" r="8.5"/><path d="M3 42v-3.5C3 30 10 24 20 24s17 6 17 14.5V42Z"/></symbol>
-  <!-- trajectory shapes -->
-  <symbol id="i-up" viewBox="0 0 24 24"><path fill="currentColor" d="M12 4.5 21 19.5H3z"/></symbol>
-  <symbol id="i-watch" viewBox="0 0 24 24"><path d="M12 6.5 19.5 19h-15z" stroke-width="2.5"/></symbol>
-  <symbol id="i-hold" viewBox="0 0 24 24"><path d="M4 8.5h16M4 15.5h16" stroke-width="3.5"/></symbol>
-  <symbol id="i-steady" viewBox="0 0 24 24"><circle fill="currentColor" cx="12" cy="12" r="3.5" stroke="none"/></symbol>
   <symbol id="i-none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" stroke-width="1.5"/></symbol>
-  <symbol id="i-any" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6" stroke-width="2.25"/></symbol>
   <symbol id="i-same" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M3.5 12h16M14 6.5l5.5 5.5-5.5 5.5" stroke-width="2.25"/></symbol>
@@ -949,7 +943,7 @@ details.more summary:hover{color:var(--blue)}
   function applyCapLocal(){ if(hasFc() && capLocal) FC.yardstick=localCapYard(capLocal); }
   const YNAME = y => y.kind==="capacity" ? "vs tonight's staffing" : "vs a typical day";
 
-  /* ---------- icons, and one bed's trajectory (worked out here from the five forecasts) ---------- */
+  /* ---------- icons, and what is flagged on a bed (worked out here from the five forecasts and the thresholds) ---------- */
   const ICON = {imv:"vent", vasopressor:"pump", crrt:"crrt", leave:"leave"};
   const SUPN = {imv:"IMV", vasopressor:"Vasopressor", crrt:"CRRT"};
   const ICN = {imv:"Ventilator", vasopressor:"Vasopressor", crrt:"CRRT"};

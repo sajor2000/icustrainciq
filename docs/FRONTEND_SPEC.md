@@ -93,7 +93,7 @@ patient or forecast. The detailed envelope contract is in
 | Action | Request | Response |
 |---|---|---|
 | Update the unit or one room | `POST /api/rerun {"role": "ICU nurse", "scope": "unit"}` or `{"scope": "room", "room": 12}` | `{"started": true, "workflow", "name", "scope", "room", "demo_clock_hours", "demo_clock_label"}` or `{"started": false, "reason": "..."}` (HTTP 200; the reason is shown verbatim, for example "Updated 12 minutes ago. You can update again at 13:17.") |
-| Set tonight's capacity | `POST /api/capacity {"life_support_patients": 0..50, "vents_total": 0..50, "role": "ICU nurse"}` (every number optional; `vents_free` is no longer accepted) | `200 {"ok": true, "capacity": {...}}` or `400 {"ok": false, "reason": "..."}` (shown) |
+| Set tonight's capacity | `POST /api/capacity {"life_support_patients": 0..50, "vents_total": 0..50, "role": "ICU nurse"}` (every number optional; a `vents_free` in the request is ignored, not refused: the save succeeds and the value is not stored, because free ventilators are worked out from `vents_total` when read) | `200 {"ok": true, "capacity": {...}}` or `400 {"ok": false, "reason": "..."}` (shown) |
 | Ask the chat | `POST /api/ask {"question", "role", "room"?, "seen_made_at"?}` | `{"answer", "made_at", "trace"?}`; the board sends back the last `made_at` it received, and the server adds "Forecast updated at HH:MM. Answers below use it." when it changed |
 
 Roles accepted: `ICU nurse`, `ICU physician`, `pharmacy`, `respiratory therapy`, `bed manager`. The board never sends or stores names. The chat can start "update room 12" or "update the unit" only when the user asks in those words; chips never start an update.
@@ -186,7 +186,7 @@ The board is read at 07:00 by a tired team at a workstation or a wall screen, of
 > **Status (D25):** the page (`backend/app/static/index.html`, Dema's final design) has only the Settings capacity form: ventilators, CRRT machines and, optionally, the life-support patients tonight's staffing covers. It has no nurses or respiratory-therapist fields. The form sends `vents_total` and `crrt_total` (and `life_support_patients` when given), never `vents_free`; a total the user blanks is sent as `null`, a box that was never set is left out. A failed save reads "Not saved" with the reason and leaves the device copy alone; a response that arrives after a newer save is ignored. Served live, `GET /api/capacity` is read on load and on every refresh and its totals win (even `null`); Reset clears the totals on the server too.
 
 
-"Set tonight's capacity" sends `POST /api/capacity` with `role` and **only the fields the user filled in**; an empty field is left out, never sent as `null`:
+"Set tonight's capacity" sends `POST /api/capacity` with `role` and **only the fields the user set or cleared**. A box that was never set is left out, and the server keeps what it has for that key. A saved total the user blanks is sent as `null`, and the server clears it:
 
 | Field | Meaning |
 |---|---|
@@ -197,7 +197,7 @@ The board is read at 07:00 by a tired team at a workstation or a wall screen, of
 | `life_support_patients` | life-support patients tonight's staffing covers (optional; drives the unit yardstick) |
 | `vents_free` | not sent: free ventilators are total minus in use now, worked out when read, never stored |
 
-The response is `{"ok": true, "capacity": {...}}` (or `{"ok": false, "reason"}`, shown). On load and on every refresh the page reads `GET /api/capacity` (either the object itself or `{"capacity": {...}}`) and the forecast's `yardstick.capacity` block. For each of `vents_total`, `crrt_total`, `nurses_on_shift`, `rt_on_shift`: **when the server returns the key, its value wins** (even `null`); when the key is absent (an older backend) or in `#synthetic` mode the copy kept on the device (`lookahead-machines`) is used. A saved `life_support_patients` from `GET /api/capacity` recomputes the yardstick on load when the forecast does not carry it yet, so a saved shortage survives a reload. The line "Capacity set 07:12 by ICU nurse (charge)" comes from the server's `set_at` (or `updated_at`) and `set_by_role`. An older server that refuses a save without `life_support_patients` leaves the numbers on the device and says so.
+The response is `{"ok": true, "capacity": {...}}` (or `{"ok": false, "reason"}`, shown). On load and on every refresh the page reads `GET /api/capacity` (either the object itself or `{"capacity": {...}}`) and the forecast's `yardstick.capacity` block. For `vents_total` and `crrt_total` (the page has no boxes for `nurses_on_shift` and `rt_on_shift`; the API and the chat carry them): **when the server returns the key, its value wins** (even `null`); when the key is absent (an older backend) or in `#synthetic` mode the copy kept on the device (`lookahead-machines`) is used. A saved `life_support_patients` from `GET /api/capacity` recomputes the yardstick on load when the forecast does not carry it yet, so a saved shortage survives a reload. The line "Capacity set 07:12 by ICU nurse (charge)" comes from the server's `set_at` (or `updated_at`) and `set_by_role`. An older server that refuses a save without `life_support_patients` leaves the numbers on the device and says so.
 
 ## Staffing (D23)
 
@@ -206,10 +206,13 @@ The response is `{"ok": true, "capacity": {...}}` (or `{"ok": false, "reason"}`,
 
 Rules: a nurse is **1:1** for a patient on CRRT or on **two or more vasoactive infusions**, **1:2** for everyone else; one **respiratory therapist per six ventilated patients**, rounded up.
 
-- Data, all optional: per room `on_now_detail: {"vasoactives": int|null}`; in `forecast.json` `staffing_now: {nurses, one_to_one, one_to_two, rt, vented}` and `staffing_next_24h: {nurses: {p10,p50,p90}, rt: {p10,p50,p90}}`. When they are absent the page works them out: 1:1 from `on_now.crrt` and the vasoactive count (a vasopressor flag alone counts as one agent); next 24 h adds expected CRRT starts (new 1:1 beds) and ventilator starts from `life_support.expected_by`, and assumes a bed that empties is refilled.
-- **Unit strain**: a Staffing card leads the row. Nurses: needed now, next 24 h with its range, "1:1 × 3 · 1:2 × 22". Respiratory therapists: needed now, next 24 h with its range, "5 ventilated". With "Nurses on shift" or "RTs on shift" entered, the block shows the number on shift and SHORT (need above it) or AT LIMIT (equal); the header strain line adds "Nurses short by 2" or "RT short by 1".
-- **Bed tiles**: Now shows a quiet "1:1" tag on a 1:1 bed (legend: "1:1 nurse: on CRRT" or "1:1 nurse: on 2 vasoactive infusions"); nothing for 1:2. Next 24 h shows "1:1 likely" only when the chance of starting CRRT is at the flag line or more.
-- **Room page**: the sub-line starts "Nursing 1:1 (on CRRT)" or "Nursing 1:2". **Chat** (offline): "How many nurses do we need?" answers with the numbers.
+The data and the served chat below are current. The page bullets (Unit strain card, bed-tile tags, room page line) are **historical: the design before D25, not drawn by the page**.
+
+- Data, all optional: per room `on_now_detail: {"vasoactives": int|null}`; in `forecast.json` `staffing_now: {nurses, one_to_one, one_to_two, rt, vented}` and `staffing_next_24h: {nurses: {p10,p50,p90}, rt: {p10,p50,p90}}`. Historical (before D25): when they were absent the page worked them out, 1:1 from `on_now.crrt` and the vasoactive count (a vasopressor flag alone counts as one agent); next 24 h adds expected CRRT starts (new 1:1 beds) and ventilator starts from `life_support.expected_by`, and assumes a bed that empties is refilled.
+- *Historical, not on the page (D25).* **Unit strain**: a Staffing card led the row. Nurses: needed now, next 24 h with its range, "1:1 × 3 · 1:2 × 22". Respiratory therapists: needed now, next 24 h with its range, "5 ventilated". With "Nurses on shift" or "RTs on shift" entered, the block shows the number on shift and SHORT (need above it) or AT LIMIT (equal); the header strain line adds "Nurses short by 2" or "RT short by 1".
+- *Historical, not on the page (D25).* **Bed tiles**: Now showed a quiet "1:1" tag on a 1:1 bed (legend: "1:1 nurse: on CRRT" or "1:1 nurse: on 2 vasoactive infusions"); nothing for 1:2. Next 24 h shows "1:1 likely" only when the chance of starting CRRT is at the flag line or more.
+- *Historical, not on the page (D25).* **Room page**: the sub-line started "Nursing 1:1 (on CRRT)" or "Nursing 1:2"; the offline chat answered "How many nurses do we need?".
+- **Chat** (served): `get_staffing` gives the nurses and respiratory therapists the ratio rule asks for, now and in the next 24 h; a count the forecast cannot give reads "unknown" or "No estimate".
 
 ## Robustness (review of PR #3)
 

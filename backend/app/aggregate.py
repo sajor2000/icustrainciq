@@ -827,14 +827,17 @@ def machine_yardsticks(tab: dict, totals: dict, pending: bool = False) -> dict |
     flagged = beds not on that support whose chance of starting it is FLAG_AT or
     more; SHORT when flagged > free, AT LIMIT when flagged == free and > 0, else
     ON TRACK. None when no total is set; a support without a total is None. With no
-    forecast (pending, or the probe skipped) `flagged`, `words` and `level` are null:
-    in use and free stay real."""
+    forecast (pending, or a bed that could start it has no score) `flagged`, `words`
+    and `level` are null: in use and free stay real. When raw CLIF cannot say whether
+    a stay is on the support, `in_use` is null too, and so is `free` unless the team
+    entered a number free: an unknown state is never counted as off."""
     out = {}
     for s in capacity_mod.MACHINES:
         on = tab["on"][s]
-        in_use = int(on.sum())
+        unk = (tab.get("unknown") or {}).get(s)
+        in_use = None if unk is not None and np.any(unk) else int(on.sum())
         free = capacity_mod.free(s, totals, in_use)
-        if free is None:
+        if free is None and totals.get(capacity_mod.MACHINES[s]) is None:
             out[s] = None
             continue
         name = SUPPORT_RESOURCE[s]
@@ -849,7 +852,7 @@ def machine_yardsticks(tab: dict, totals: dict, pending: bool = False) -> dict |
             "words": None,
             "level": None,
         }
-        if not (pending or (sk.any() and (sk | on).all())):
+        if not (pending or free is None or sk.any()):  # a missing score is never 0
             flagged = int((~on & (np.nan_to_num(p, nan=0.0) >= entry["flag_at"])).sum())
             w, lv = capacity_mod.words(flagged, free)
             entry.update(

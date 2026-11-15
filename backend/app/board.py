@@ -173,6 +173,22 @@ def make_handler(
         real_ward=real_ward,
     )
 
+    def capacity_forecast() -> dict:
+        """the forecast the free machines are worked out from: the one the page is
+        served. In context mode that is the context's forecast (nothing when the
+        context is unavailable), never the standalone forecast.json"""
+        if context_path is None and not require_real_data:
+            return load()
+        try:
+            if context_path is None:
+                raise ContextUnavailable("A context is required")
+            context = load_context(context_path)
+            if require_real_data and context["source"]["kind"] != "mimic-iv":
+                raise ContextUnavailable("A MIMIC-IV context is required")
+        except ContextUnavailable:
+            return {}
+        return context["forecast"]
+
     def read_capacity() -> dict:
         try:
             cap = json.loads(capacity_path.read_text())
@@ -180,7 +196,7 @@ def make_handler(
             cap = {}
         cap = cap if isinstance(cap, dict) else {}
         return {
-            **capacity_mod.view(cap, load()),
+            **capacity_mod.view(cap, capacity_forecast()),
             "updated_at": cap.get("updated_at"),
             "set_by_role": cap.get("set_by_role"),
         }
@@ -229,7 +245,7 @@ def make_handler(
             return 500, {"ok": False, "reason": f"could not save ({type(e).__name__})"}
         # privacy: time and role only; the numbers are not logged
         log.info("capacity set at=%s role=%s", cap["updated_at"], role)
-        shown = {**cap, **capacity_mod.view(cap, load())}  # with the free machines
+        shown = {**cap, **capacity_mod.view(cap, capacity_forecast())}  # free machines
         return 200, {"ok": True, "capacity": shown}
 
     def origin_ok(origin: str | None, host: str | None, fwd_host: str | None) -> bool:

@@ -233,3 +233,42 @@ def test_post_merges_into_the_file_and_null_clears(stack):  # noqa: F811
     )
     assert c == 200 and r["capacity"]["vents_total"] is None
     assert r["capacity"]["nurses_on_shift"] == 9 and r["capacity"]["rt_on_shift"] == 2
+
+
+def test_machine_status_is_unavailable_when_current_use_is_unknown():
+    """CodeRabbit PR 20 (third review): raw CLIF cannot say whether one stay is
+    ventilated. The machines in use, the free count and the status are null (the
+    total stays), like life_support.now_by; they are never worked out as if off."""
+    ids = [f"pat-{i}" for i in range(3)]
+    df = scores(3, p={IMV: [0.1, 0.1, 0.1], CRRT: [0.1, 0.1, 0.1]}, ids=ids)
+    clif = {
+        i: {"imv": None if i == "pat-2" else False, "vasopressor": False, "crrt": False}
+        for i in ids
+    }
+    tab = aggregate.patient_table(df, clif=clif)
+    m = aggregate.machine_yardsticks(tab, {"vents_total": 8, "crrt_total": 2})
+    assert m["imv"]["total"] == 8
+    assert m["imv"]["in_use"] is None and m["imv"]["free"] is None
+    assert m["imv"]["flagged"] is None and m["imv"]["words"] is None
+    assert (m["crrt"]["in_use"], m["crrt"]["free"], m["crrt"]["words"]) == (
+        0,
+        2,
+        "ON TRACK",
+    )
+    # an entered number free (no total) is the team's own count: it stays
+    m = aggregate.machine_yardsticks(tab, {"vents_free": 3})
+    assert m["imv"]["free"] == 3 and m["imv"]["in_use"] is None
+    assert m["imv"]["words"] is None  # the flagged beds are still unknown
+
+
+def test_machine_status_needs_a_score_for_every_bed_that_could_start():
+    """CodeRabbit PR 20 (third review): two stays off IMV, one without a score. No
+    ventilator is free; the missing score could be a flagged bed, so the status is
+    null, never ON TRACK with 0 flagged."""
+    df = scores(2, p={IMV: [0.1, np.nan], CRRT: [0.1, 0.1]})
+    tab = aggregate.patient_table(df)
+    m = aggregate.machine_yardsticks(tab, {"vents_total": 0, "crrt_total": 1})
+    assert (m["imv"]["in_use"], m["imv"]["free"]) == (0, 0)
+    assert m["imv"]["flagged"] is None and m["imv"]["words"] is None
+    assert m["imv"]["short_by"] is None and m["imv"]["level"] is None
+    assert m["crrt"]["words"] == "ON TRACK"  # every CRRT score is there
