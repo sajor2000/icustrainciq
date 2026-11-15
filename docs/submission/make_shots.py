@@ -64,7 +64,7 @@ async def shots(browser):
 
     # The header strain line with tonight's machines set: 6 ventilators, 3 CRRT machines, staffing covers 14
     # (capacity lives in the Settings panel; #settings opens it)
-    ctx, page = await open_board(browser, 1000, "#synthetic&view=strain&settings")
+    ctx, page = await open_board(browser, 1280, "#synthetic&view=strain&settings")
     await page.fill("#cap-vt", "6")
     await page.fill("#cap-ct", "3")
     await page.fill("#cap-ls", "14")
@@ -72,6 +72,8 @@ async def shots(browser):
     await page.wait_for_timeout(400)
     await page.click("#setclose")
     await page.wait_for_timeout(300)
+    # one row on the sheet: the two small notes at the end of the line (who set the capacity, last run) are left out of this crop
+    await page.add_style_tag(content="#alerts .capset,#runbadge{display:none!important}#alerts,#alerts .hi{flex-wrap:nowrap}#alerts>*,#alerts .albody>*{white-space:nowrap;flex:none}")
     await crop(page, "strain-line", "[document.getElementById('alerts')]", pad=5)
     # One event card on Unit strain: the top of the ventilator card (on now, free, predicted new, unit forecast, usage bar)
     await crop(page, "event-card", "[document.querySelector('.wc[data-k=\"imv\"]')]", pad=5, max_height=200)   # down to the usage bar

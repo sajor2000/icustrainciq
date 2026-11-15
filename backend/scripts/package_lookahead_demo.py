@@ -30,7 +30,6 @@ FILE_ALLOWLIST = (
     "fuzzball/t7-lookahead-forecast.fz",
     "docs/LOOKAHEAD_DEMO.md",
     "docs/CLAUDE_WORKFLOW_ALIGNMENT.md",
-    "docs/FUZZBALL_43_REVIEW.md",
     "docs/COMPUTE_PLAN.md",
     "scripts/package_lookahead_demo.py",
     "scripts/prepare_lookahead_cohort.py",

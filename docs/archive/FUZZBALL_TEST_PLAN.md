@@ -1,14 +1,16 @@
 # First run on real Fuzzball: test plan
 
-Read this if you are checking a first run on the cluster step by step and want the expected result of each check; it is a dated plan written 2026-11-14 before the first run, so use [`RUNBOOK.md`](RUNBOOK.md) to run the app and [`../../docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) for the overview.
+Read this if you are checking a first run on the cluster step by step and want the expected result of each check; it is a dated plan written 2026-11-14 before the first run, so use [`RUNBOOK.md`](../../backend/docs/RUNBOOK.md) to run the app and [`../../docs/ARCHITECTURE.md`](../ARCHITECTURE.md) for the overview.
+
+**Archived 2026-11-15** from `backend/docs/`. File names in the text are relative to `backend/` as it was then.
 
 **Status:** The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Statements below that nothing had run describe the time of writing.
 
-Superseded since this plan: "nothing in this plan has been run" was true when written; [`RUNBOOK.md`](RUNBOOK.md) is the team's later launch procedure. Step 2 (`t7-fit`) is now the fallback, not a required step. Read `t7-build` as training (vaishvikc/ICU-Twin, `workflows/job_3_train`). Start the files in `fuzzball/ready/` (`scripts/make_ready.sh`); do not render by hand or with `sed`. Where a paragraph below disagrees with this table, the table wins.
+Superseded since this plan: "nothing in this plan has been run" was true when written; [`RUNBOOK.md`](../../backend/docs/RUNBOOK.md) is the team's later launch procedure. Step 2 (`t7-fit`) is now the fallback, not a required step. Read `t7-build` as training (vaishvikc/ICU-Twin, `workflows/job_3_train`). Start the files in `fuzzball/ready/` (`scripts/make_ready.sh`); do not render by hand or with `sed`. Where a paragraph below disagrees with this table, the table wins.
 
 | Topic | Current state (code on `main`) |
 |---|---|
-| How to run | `scripts/launch.sh` first ([`RUNBOOK.md`](RUNBOOK.md)); the manual workflow steps are the fallback |
+| How to run | `scripts/launch.sh` first ([`RUNBOOK.md`](../../backend/docs/RUNBOOK.md)); the manual workflow steps are the fallback |
 | Volumes | `twin-store` is the one volume ICU Lookahead writes (code, packages, stage ward, forecast files). `mimic_clif` is only read, at `/data`. `hfcache` holds the Nemotron weights. `clif_work` and `tooling` are not used |
 | Probe | Fitted by job 4 in vaishvikc/ICU-Twin and staged at `/store/train/probe-final.joblib` with `probe-final.meta.json`. `t7-fit` is the fallback |
 | Names | Generated per room number by `app/fake_names.py` (`--names fake`). `name.parquet` is no longer read |

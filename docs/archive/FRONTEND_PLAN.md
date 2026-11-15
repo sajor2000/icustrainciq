@@ -1,6 +1,6 @@
 # Frontend plan: from mockup to the live board
 
-Goal: by **15:00 Saturday** the live board on the cluster does what the mockup does, on real forecast counts, and by **11:00 Sunday** (feature freeze) it handles every state in [`FRONTEND_SPEC.md`](FRONTEND_SPEC.md) and passes the checks below. Journeys it must serve: [`USER_JOURNEY.md`](USER_JOURNEY.md). Owner: lane 4 (bed board), with lane 3 (data) and lane 2 (Fuzzball).
+Goal: by **15:00 Saturday** the live board on the cluster does what the mockup does, on real forecast counts, and by **11:00 Sunday** (feature freeze) it handles every state in [`FRONTEND_SPEC.md`](../FRONTEND_SPEC.md) and passes the checks below. Journeys it must serve: [`USER_JOURNEY.md`](../USER_JOURNEY.md). Owner: lane 4 (bed board), with lane 3 (data) and lane 2 (Fuzzball).
 
 ## Decisions
 

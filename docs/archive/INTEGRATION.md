@@ -1,6 +1,6 @@
 # Integration: how the board talks to the cluster
 
-How model output (the `icutwin` probe probabilities computed on a GPU, the unit counts, the stage-ward rooms) and the Nemotron chat reach the browser; how the browser sends requests; and what the Fuzzball team (lane 2, with lane 3) must provide. Spec: [`FRONTEND_SPEC.md`](FRONTEND_SPEC.md). Build plan: [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md). Backend: [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin).
+How model output (the `icutwin` probe probabilities computed on a GPU, the unit counts, the stage-ward rooms) and the Nemotron chat reach the browser; how the browser sends requests; and what the Fuzzball team (lane 2, with lane 3) must provide. Spec: [`FRONTEND_SPEC.md`](../FRONTEND_SPEC.md). Build plan: [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md). Backend: [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin).
 
 Terms follow the codebase-design vocabulary: a **module** has an **interface** at a **seam**; an **adapter** fills a seam; a module is **deep** when a small interface hides a lot of behaviour.
 

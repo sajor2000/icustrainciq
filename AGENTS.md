@@ -2,15 +2,17 @@
 
 Read this if you are a coding agent about to change this repo.
 
-Start with `HANDOFF.md`, then `docs/ARCHITECTURE.md` (what runs where) and `backend/docs/RUNBOOK.md` (how it runs on the cluster). Board contract: `docs/FRONTEND_SPEC.md`. Decisions: `docs/DECISIONS.md`. Model training: github.com/vaishvikc/ICU-Twin.
+Start with `HANDOFF.md`, then `docs/ARCHITECTURE.md` (what runs where) and `backend/docs/RUNBOOK.md` (how it runs on the cluster). Board contract: `docs/FRONTEND_SPEC.md`. Decisions: `docs/DECISIONS.md`. Model training: github.com/vaishvikc/ICU-Twin. What this repo changed against it, and what to port: `docs/ICU_TWIN_DELTA.md`. The page changes on Dema's design: `docs/UI_REVIEW_FOR_DEMA.md`.
+
+**The demo runs from ICU-Twin. Do not run `backend/scripts/launch.sh` from this repo: its `ready/` files would overwrite the team's code on the shared volume.**
 
 | Area | Rule |
 |---|---|
 | Name | The product is ICU Lookahead (D24). Code, workflow, header and file names keep `lookahead` |
 | Data | Never commit patient data, ids, model weights or probes. Never open `backend/data/`. MIMIC-IV rows live only there (git-ignored) and on Fuzzball volumes; the repo is public. Print counts only. Names on the board are generated |
-| Backend | `uv` only. `cd backend && uv run --extra dev --extra model pytest -q` and `ruff check app tests` must pass |
+| Backend | `uv` only. `cd backend && uv run --extra dev --extra model pytest -q` and `ruff check app tests` must pass; the page tests need a browser: `uv run --extra dev --extra model --with playwright python -m pytest -q tests/test_page_browser.py` |
 | Fuzzball | Check syntax against https://docs.ciq.com/fuzzball/4.3, not memory. Never start, stop or delete anything on the cluster without the team's go-ahead. Only the dispatcher starts forecast runs. Edit templates in `backend/fuzzball/`, then render `ready/` with `scripts/make_ready.sh`; do not edit `ready/` by hand |
-| Board | One static HTML file, CSS and vanilla JavaScript, no build step, no third-party scripts, works offline. After changing `mockups/command-center.html`, copy it to `backend/app/static/index.html`. Keep `docs/FRONTEND_SPEC.md` and `backend/docs/CONTRACT.md` in step with the API |
+| Board | Dema's final design (D25) with the approved refinements (D27): refine, never redesign. Death never marks a bed tile. One static HTML file, CSS and vanilla JavaScript, no build step, no third-party scripts, works offline. After changing `mockups/command-center.html`, copy it to `backend/app/static/index.html`. Keep `docs/FRONTEND_SPEC.md` and `backend/docs/CONTRACT.md` in step with the API |
 | Design | `DESIGN.md` is the one source for colour, type, radius and icons. Use the Impeccable skill for UI changes (Operate mode). No second palette, no web font |
 | Copy | Plain clinical words. No hedging or disclaimers on the board. Status words, never colour alone. Chances as percentages. No treatment recommendations |
 | Diagrams | Edit `docs/diagrams/make_figures.py`, never the HTML. Every diagram carries the same hosting zone, one caption line and the same colour key; at most 9 boxes. Each must pass the diagram-design skill's `verify_geometry.py` and `self_check.py --offline`. Export a PNG beside the HTML and a night copy to `docs/site/night/` |
