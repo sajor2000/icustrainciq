@@ -1356,7 +1356,7 @@ details.more summary:hover{color:var(--blue)}
   /* ---------- capacity ---------- */
   /* Capacity as machine totals (Dema's model): total ventilators and CRRT machines on the unit; free = total - in use now.
      The totals live on this device (lookahead-machines). The staffing number is optional and, when given, is POSTed as before
-     with vents_free derived from the ventilator total; the API is unchanged (a CRRT total has no field yet). */
+     with the totals sent as vents_total and crrt_total (a derived vents_free is never sent); the device copy is kept only when the save works. */
   let machines = {imv:null, crrt:null};
   try{ const m=JSON.parse(localStorage.getItem("lookahead-machines")||"null"); if(m && typeof m==="object") for(const k of ["imv","crrt"]) if(Number.isInteger(m[k]) && m[k]>=0 && m[k]<=50) machines[k]=m[k]; }catch(e){ /* no storage */ }
   const saveMachines = () => { try{ localStorage.setItem("lookahead-machines", JSON.stringify(machines)); }catch(e){ /* storage blocked: totals last for this page */ } };
@@ -1369,14 +1369,15 @@ details.more summary:hover{color:var(--blue)}
     for(const [v,id,what] of [[vt,"cap-vt","Ventilators on the unit"],[ct,"cap-ct","CRRT machines on the unit"],[ls,"cap-ls","Life-support patients tonight's staffing covers"]])
       if(v!=="" && !ok(v)){ msg.textContent=`${what} must be a whole number from 0 to 50, or left empty.`; $(id).focus(); return; }
     if(ls==="" && vt==="" && ct==="" && machines.imv==null && machines.crrt==null){ msg.textContent="Enter the ventilators or CRRT machines on the unit, or the patients tonight's staffing covers."; $("cap-vt").focus(); return; }
-    machines={imv:vt===""?null:+vt, crrt:ct===""?null:+ct}; saveMachines();
-    if(ls===""){ renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device."; return; }
-    const vfN = machines.imv==null ? null : Math.max(0, machines.imv-inUse("imv"));
-    const body={life_support_patients:+ls, role:role()}; if(vfN!=null) body.vents_free=vfN;   // POST /api/capacity
+    const newM={imv:vt===""?null:+vt, crrt:ct===""?null:+ct};
+    if(ls===""){ machines=newM; saveMachines(); renderStrain(); if(room!==null) renderRoom(); msg.textContent="Saved on this device."; return; }
+    const vfN = newM.imv==null ? null : Math.max(0, newM.imv-inUse("imv"));   // local view only; never sent (free = total - in use, worked out by the server)
+    const body={life_support_patients:+ls, role:role()}; if(newM.imv!=null) body.vents_total=newM.imv; if(newM.crrt!=null) body.crrt_total=newM.crrt;   // POST /api/capacity
     let rs;
     if(LIVE){ try{ rs=await postJSON("/api/capacity", body); }catch(err){ rs={ok:false,reason:"The board server did not answer. Try again in a moment."}; } }
     else rs=await api.capacity(body);
-    if(!rs.ok){ msg.textContent=str(rs.reason,200)||"Capacity was not saved."; return; }
+    if(!rs.ok){ msg.textContent="Not saved. "+(str(rs.reason,200)||"Try again in a moment."); return; }
+    machines=newM; saveMachines();   // the device copy of the totals only when the save worked
     const sv=rs.capacity||{}, setAt=typeof sv.set_at==="string"?sv.set_at:typeof sv.updated_at==="string"?sv.updated_at:iso(Date.now());
     viewTyp=false;
     if(LIVE){ try{ await loadAll(); }catch(err){ /* keep the last forecast */ }
