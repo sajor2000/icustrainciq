@@ -902,12 +902,13 @@ details.more summary:hover{color:var(--ink)}
   const TRAJ = {worse:["Worsening","up"], watch:["Watch","watch"], hold:["Not improving","hold"], leave:["Leaving","leave"], steady:["Steady","steady"], unknown:["No estimate","same"], ended:["Not in ICU","same"]};
   const onList = r => SUP.filter(k=>r.on_now[k]===true);
   const unknownList = r => SUP.filter(k=>r.on_now[k]===null);
-  const nextList = r => SUP.filter(k=>!r.on_now[k] && r.p[k]!=null && r.p[k]>=lines[k]).sort((a,b)=>r.p[b]-r.p[a]);
-  const anyNew = r => SUP.some(k=>r.on_now[k]!==true && r.p[k]==null)?null:1-SUP.reduce((m,k)=>m*(r.on_now[k]===true?1:1-r.p[k]),1);
+  /* a support whose current state is unknown (null) is not "off": it cannot start "new", and it leaves the combined chance unknown */
+  const nextList = r => SUP.filter(k=>r.on_now[k]===false && r.p[k]!=null && r.p[k]>=lines[k]).sort((a,b)=>r.p[b]-r.p[a]);
+  const anyNew = r => SUP.some(k=>r.on_now[k]==null || (r.on_now[k]===false && r.p[k]==null))?null:1-SUP.reduce((m,k)=>m*(r.on_now[k]===true?1:1-r.p[k]),1);
   function traj(r){ if(r.present===false) return "ended"; if(isPending()) return "unknown"; const a=anyNew(r), dep=r.p.icu_departure;
-    if(a>=upLine(lines.base) || SUP.some(k=>!r.on_now[k] && r.p[k]!=null && r.p[k]>=upLine(lines[k]))) return "worse";
-    if(a>=lines.base || nextList(r).length) return "watch";
-    if(a==null || dep==null) return "unknown";
+    if((a!=null && a>=upLine(lines.base)) || SUP.some(k=>r.on_now[k]===false && r.p[k]!=null && r.p[k]>=upLine(lines[k]))) return "worse";
+    if((a!=null && a>=lines.base) || nextList(r).length) return "watch";
+    if(a==null || dep==null) return "unknown";      // a support not observed, or no estimate: never Steady
     if(onList(r).length && dep<lines.base) return "hold";
     return dep!=null && dep>=lines.leave ? "leave" : "steady"; }
   /* a room flagged by the combined chance alone (no single support at its line): a plus in a ring carries the combined chance */
@@ -956,7 +957,7 @@ details.more summary:hover{color:var(--ink)}
     b.onkeydown=e=>{ if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight") return; e.preventDefault(); const o=b.parentElement.querySelector(`button[data-w="${e.key==="ArrowLeft"?"now":"next"}"]`); o.focus(); setWhen(o.dataset.w,true); }; }
 
   /* the flag control: three presets and a small Thresholds popover (per-event steppers with the beds each catches, and a custom line) */
-  const flagCount = k => RM.rooms.filter(r => k==="leave" ? r.p.icu_departure!=null && r.p.icu_departure>=lines.leave : !r.on_now[k] && r.p[k]!=null && r.p[k]>=lines[k]).length;
+  const flagCount = k => RM.rooms.filter(r => k==="leave" ? r.p.icu_departure!=null && r.p.icu_departure>=lines.leave : r.on_now[k]===false && r.p[k]!=null && r.p[k]>=lines[k]).length;
   function paintFlag(){ const pv=Math.round(lines.base*100), even=SUP.every(k=>lines[k]===lines.base);
     for(const b of $("flag").querySelectorAll("button")) b.disabled=isPending(); if(isPending() && !$("thrpop").hidden) thrOpen(false);
     for(const b of $("fseg").children) b.setAttribute("aria-pressed", String(even && +b.dataset.p===pv));
@@ -1028,9 +1029,9 @@ details.more summary:hover{color:var(--ink)}
     tbtn.textContent = viewTyp ? "View against tonight's staffing" : "View against a typical day";
     renderWatch();
   }
-  /* Dema's capacity bar, used when a number free is set: the whole bar is the total (in use + free); solid = in use now,
-     lighter = with the flagged beds; it turns red when that passes the total. */
-  function usageBar(on, free, pred, tip){ const tot=on+free, sum=on+pred, over=sum>tot, max=Math.max(tot,1), x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
+  /* Dema's capacity bar, used when a number free is set: the whole bar is the total (the saved machine total, which use may
+     already exceed); solid = in use now, lighter = with the flagged beds; it turns red when that passes the total. */
+  function usageBar(on, tot, pred, tip){ const sum=on+pred, over=sum>tot, max=Math.max(tot,1), x=v=>Math.round((6+(Math.min(v,max)/max)*288)*10)/10, col=over?"var(--red)":"var(--blue)";
     return `<svg class="ubar" viewBox="0 0 300 46" preserveAspectRatio="xMinYMid meet" role="img" aria-label="${on} in use now, ${sum} with the flagged beds, ${tot} in total${over?": over the total":""}"${tip?T(tip):""}>
       <rect x="0" y="0" width="300" height="46" fill="none" pointer-events="all"/><line x1="6" x2="294" y1="25" y2="25" stroke="var(--fig)" stroke-width="10" stroke-linecap="round"/>
       ${sum?`<line x1="6" x2="${x(sum)}" y1="25" y2="25" stroke="${col}" stroke-opacity=".4" stroke-width="10" stroke-linecap="round"/>`:""}
@@ -1038,7 +1039,7 @@ details.more summary:hover{color:var(--ink)}
       <line x1="${x(on)}" x2="${x(on)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3"/><text x="${x(on)}" y="11" text-anchor="middle" font-size="14" font-weight="700">${on}</text>
       ${pred?`<line x1="${x(sum)}" x2="${x(sum)}" y1="16" y2="34" stroke="var(--ink)" stroke-width="3" stroke-dasharray="3 2"/>${x(sum)-x(on)>24?`<text x="${Math.min(x(sum),286)}" y="11" text-anchor="${x(sum)>280?"end":"middle"}" font-size="14" font-weight="700">${sum}</text>`:""}`:""}
       <text x="294" y="45" text-anchor="end" font-size="13">${tot} total</text></svg>`; }
-  const gapOf = k => { const fr=machFree(k); return fr==null ? null : flagCount(k)-fr; };      // flagged beds minus what is free
+  const gapOf = k => { const sp=machSpare(k); return sp==null ? null : flagCount(k)-sp; };      // flagged beds minus what is spare; machines already over the total count too
   const gapChips = () => [["imv","Ventilators"],["crrt","CRRT"]].map(([k,nm])=>{ const g=gapOf(k); return g>0 ? `<span class="band lv-red"${T(DEF.band.SHORT)}>${nm} short by ${g}</span>` : g===0 && flagCount(k)>0 ? `<span class="band lv-amber"${T(DEF.band["AT LIMIT"])}>${nm} at the limit</span>` : ""; }).join("");
   /* the beds behind each count: solid ink figures are on that support now, the others fill with the chance (2 in 10 or more; leaving at 6 in 10 or more) */
   function renderWatch(){
@@ -1049,18 +1050,18 @@ details.more summary:hover{color:var(--ink)}
     if(nowMode() || !hasFc()){
       el.innerHTML = SUP.map(k=>{ const on=rs.filter(r=>r.on_now[k]); return `<article class="wc" data-k="${k}" style="order:${first===k?0:1}" aria-labelledby="wc-${k}">
         <header>${ic(k,true)}<div><h3 id="wc-${k}">${CARDN[k]}</h3><p class="wsub">patients on ${START[k]} at 07:00</p></div></header>
-        <div class="nums"><span><b>${esc(supportCount(k))}</b><i>on now</i></span>${machFree(k)!=null?`<span${T(`${k==="imv"?"Ventilators":"CRRT machines"} free now`)}><b>${machFree(k)}</b><i>free${machines[k]!=null?` of ${machines[k]}`:""}</i></span>`:""}</div>
+        <div class="nums"><span><b>${esc(supportCount(k))}</b><i>on now</i></span>${machFree(k)!=null?`<span${T(`${k==="imv"?"Ventilators":"CRRT machines"} free now`)}><b>${machFree(k)}</b><i>free${machines[k]!=null?` of ${machines[k]}`:""}${machSpare(k)<0?` · ${-machSpare(k)} over`:""}</i></span>`:""}</div>
         <span class="gl">On now</span>${on.length?`<div class="set">${on.map(r=>fig(r,"on",null,"",`on ${START[k]} now`)).join("")}</div>`:`<p class="nobody">${ls.now_unknown_by?.[k]>0?"None confirmed":"None"}</p>`}${ls.now_unknown_by?.[k]>0?`<p class="nobody">Support status unknown for ${ls.now_unknown_by[k]} rooms.</p>`:""}</article>`; }).join("");
       for(const b of el.querySelectorAll(".pp")) b.onclick=()=>openRoom(+b.dataset.room); return; }
     const set = (list, none) => list.length ? `<div class="set">${list.join("")}</div>` : `<p class="nobody">${none}</p>`;
     const card = k => { const q=ls.expected_by[k], free = machFree(k);
-      const on=rs.filter(r=>r.on_now[k]), may=rs.filter(r=>!r.on_now[k] && r.p[k]!=null && r.p[k]>=lines[k]).sort((a,b)=>b.p[k]-a.p[k]), n=may.length;
+      const on=rs.filter(r=>r.on_now[k]), may=rs.filter(r=>r.on_now[k]===false && r.p[k]!=null && r.p[k]>=lines[k]).sort((a,b)=>b.p[k]-a.p[k]), n=may.length;
       const st = free==null ? null : n>free ? "SHORT" : n===free && n>0 ? "AT LIMIT" : null, lv = st==="SHORT" ? "red" : st ? "amber" : "";      // Dema's rule: flagged beds against what is free
       const freeable = k==="vasopressor" ? 0 : on.filter(r=>r.p.icu_departure!=null && r.p.icu_departure>=lines.leave).length;
       return `<article class="wc${lv?` lv-${lv}`:""}" data-k="${k}" style="order:${first===k?0:1};--w:${Math.max(5,Math.min(10,Math.max(on.length,n)))}" aria-labelledby="wc-${k}">
         <header>${ic(k,true)}<div><h3 id="wc-${k}">${CARDN[k]}</h3><p class="wsub">patients expected to start ${START[k]} in the next 24 h</p></div>${st?`<span class="band lv-${lv}"${T(DEF.band[st])}>${st}</span>`:""}</header>
-        <div class="nums"><span${T(`Patients on ${START[k]} at 07:00`)}><b>${ls.now_by[k]}</b><i>on now</i></span>${free!=null?`<span${T(`${k==="imv"?"Ventilators":"CRRT machines"} free: ${free}${machines[k]!=null?` of ${machines[k]} on the unit`:""}`)}><b>${free}</b><i>free${machines[k]!=null?` of ${machines[k]}`:""}</i></span>`:""}<span class="f"${T(DEF.bar("Expected new starts",q))}><b>+${q.p50}</b><i>expected new starts (${q.p10} to ${q.p90})</i></span></div>
-        ${free!=null ? usageBar(on.length, free, n, `${on.length} in use now, ${on.length+n} with the ${n} flagged, ${on.length+free} in total`) : bar(q,null,null,top,DEF.bar("Expected new starts",q))}
+        <div class="nums"><span${T(`Patients on ${START[k]} at 07:00`)}><b>${ls.now_by[k]}</b><i>on now</i></span>${free!=null?`<span${T(`${k==="imv"?"Ventilators":"CRRT machines"} free: ${free}${machines[k]!=null?` of ${machines[k]} on the unit`:""}`)}><b>${free}</b><i>free${machines[k]!=null?` of ${machines[k]}`:""}${machSpare(k)<0?` · ${-machSpare(k)} over`:""}</i></span>`:""}<span class="f"${T(DEF.bar("Expected new starts",q))}><b>+${q.p50}</b><i>expected new starts (${q.p10} to ${q.p90})</i></span></div>
+        ${free!=null ? usageBar(on.length, machTotal(k), n, `${on.length} in use now, ${on.length+n} with the ${n} flagged, ${machTotal(k)} in total`) : bar(q,null,null,top,DEF.bar("Expected new starts",q))}
         ${freeable?`<p class="frees"${T(`Beds on ${START[k]} now with ${P(lines.leave)} or more to leave the ICU`)}><i>${ic(k,true)}</i><b>${freeable}</b> may free up if likely leavers go</p>`:""}
         <span class="gl">On now</span>${set(on.map(r=>fig(r,"on",null,"",`on ${START[k]} now`)),"None")}
         <span class="gl"${T(DEF.flag)}>Beds at ${P(lines[k])} or more · ${n} ${n===1?"bed":"beds"}</span>${set(may.map(r=>fig(r,r.p[k]>=upLine(lines[k])?"w":"",r.p[k],esc(pct(r.p[k])),`${pct(r.p[k])} chance of starting ${START[k]}`)),"None")}</article>`; };
@@ -1269,8 +1270,12 @@ details.more summary:hover{color:var(--ink)}
   try{ const m=JSON.parse(localStorage.getItem("lookahead-machines")||"null"); if(m && typeof m==="object") for(const k of ["imv","crrt"]) if(Number.isInteger(m[k]) && m[k]>=0 && m[k]<=50) machines[k]=m[k]; }catch(e){ /* no storage */ }
   const saveMachines = () => { try{ localStorage.setItem("lookahead-machines", JSON.stringify(machines)); }catch(e){ /* storage blocked: totals last for this page */ } };
   const inUse = k => RM.rooms.filter(r=>r.on_now[k]).length;
-  function machFree(k){ if(k!=="imv" && k!=="crrt") return null; if(RM.rooms.some(r=>r.present!==false && r.on_now[k]===null)) return null; if(machines[k]!=null) return Math.max(0, machines[k]-inUse(k));
+  /* spare = total - in use now, negative when more are in use than the saved total (a deficit that must stay visible);
+     free = spare, never below 0; total = the saved total, or in use + free when only a number free is known. */
+  function machSpare(k){ if(k!=="imv" && k!=="crrt") return null; if(RM.rooms.some(r=>r.present!==false && r.on_now[k]===null)) return null; if(machines[k]!=null) return machines[k]-inUse(k);
     const y=Y(); return k==="imv" && y && y.kind==="capacity" && y.vf!=null ? y.vf : null; }      // a ventilators-free number saved on the server still counts
+  const machFree = k => { const sp=machSpare(k); return sp==null ? null : Math.max(0, sp); };
+  const machTotal = k => machines[k]!=null ? machines[k] : inUse(k)+machFree(k);
   function paintCapForm(){ $("cap-vt").value = machines.imv==null ? "" : machines.imv; $("cap-ct").value = machines.crrt==null ? "" : machines.crrt; }
   $("capform").onsubmit=async e=>{ e.preventDefault();
     const ls=$("cap-ls").value.trim(), vt=$("cap-vt").value.trim(), ct=$("cap-ct").value.trim(), ok=v=>/^\d{1,2}$/.test(v) && +v<=50, msg=$("capmsg");
@@ -1304,7 +1309,8 @@ details.more summary:hover{color:var(--ink)}
   /* ---------- chat widget: a launcher at the bottom right and a non-modal panel. Open or closed is remembered; the draft and messages last for the session. ---------- */
   const log=$("log"), chatbtn=$("chatbtn"), chatpanel=$("chatpanel"), qEl=$("q"), sendBtn=$("send");
   const CHAT_DOWN = "Can't reach the chat right now. Try again.";
-  let chatScope=null, chatSeen=null, askCtl=null;      // chatScope: a room number, or null for the unit
+  let chatScope=null, chatSeen=null, chatGen=0;      // chatScope: a room number, or null for the unit; chatGen: the conversation, a new one after Close
+  const asks=new Set();      // the requests of this conversation that are still waiting
   const UNIT_Q = ["Who should we worry about first?","How many ventilators will we need?","Who is likely to leave today?","Summarise the next 24 hours"];
   const roomQ = n => { const r=R(n); return [`Why is this room ${r?TRAJ[traj(r)][0]:"flagged"}?`,"What changed in the last 12 hours?","Chance of leaving the ICU?"]; };
   function renderChips(){      // suggested questions: only while the conversation is empty, and they follow the context
@@ -1368,12 +1374,13 @@ details.more summary:hover{color:var(--ink)}
   }
   async function ask(q){ openChat(false); say(roleLabel(role()),q,"q");
     const th=say("","Thinking…","t"), stop=document.createElement("button"); stop.type="button"; stop.className="stop"; stop.textContent="Stop"; th.appendChild(stop);
-    const ctl=new AbortController(); let stopped=false, a; askCtl=ctl; stop.onclick=()=>{ stopped=true; ctl.abort(); qEl.focus(); };
+    const ctl=new AbortController(), gen=chatGen, here=()=>gen===chatGen; let stopped=false, a; asks.add(ctl); stop.onclick=()=>{ stopped=true; ctl.abort(); qEl.focus(); };
     if(LIVE){ try{ const body={question:q, role:role(), seen_made_at:seenMadeAt}; if(chatScope!==null) body.room=chatScope; const rs=await postJSON("/api/ask", body, 60000, ctl);
-        a=str(rs.answer,4000)||(rs.ok===false && /^The board server answered/.test(rs.reason||"") ? "" : str(rs.reason,200))||CHAT_DOWN; if(typeof rs.made_at==="string") seenMadeAt=rs.made_at; }catch(e){ a=CHAT_DOWN; }
+        a=str(rs.answer,4000)||(rs.ok===false && /^The board server answered/.test(rs.reason||"") ? "" : str(rs.reason,200))||CHAT_DOWN; if(here() && typeof rs.made_at==="string") seenMadeAt=rs.made_at; }catch(e){ a=CHAT_DOWN; }
       schedulePoll(FAST?300:3000); }
     else { await new Promise(res=>{ const t=setTimeout(res, FAST?40:450); ctl.signal.addEventListener("abort",()=>{ clearTimeout(t); res(); }); }); a = stopped ? "" : await Promise.resolve(answer(q)); }
-    th.remove(); if(askCtl===ctl) askCtl=null;
+    asks.delete(ctl); if(!here()) return;      // Close cleared this conversation: its answers, errors and notes are dropped
+    th.remove();
     if(stopped) say("","Stopped.","n"); else say("Lookahead",a,"a"); }
   const saveChat = v => { try{ localStorage.setItem("lookahead-chat",v); }catch(e){ /* storage blocked: the widget starts closed next time */ } };
   function grow(){ qEl.style.height="auto"; qEl.style.height=Math.min(qEl.scrollHeight+2, 104)+"px"; sendBtn.disabled=!qEl.value.trim(); }
@@ -1382,7 +1389,7 @@ details.more summary:hover{color:var(--ink)}
       chatSeen = FC && typeof FC.made_at==="string" ? FC.made_at : null; $("chatdot").hidden=true; $("chatdot-l").hidden=true; paintScope(); renderChips(); grow(); }
     if(focusInput) qEl.focus(); }
   function minChat(focus=true){ chatpanel.hidden=true; chatbtn.setAttribute("aria-expanded","false"); document.documentElement.dataset.chat="closed"; saveChat("closed"); if(focus) chatbtn.focus(); }      // the conversation and the draft stay
-  function closeChat(){ if(askCtl) askCtl.abort(); log.innerHTML=""; qEl.value=""; minChat(); }
+  function closeChat(){ chatGen++; for(const c of asks) c.abort(); asks.clear(); log.innerHTML=""; qEl.value=""; minChat(); }
   chatbtn.onclick=()=>openChat();
   $("chatmin").onclick=()=>minChat();
   $("chatclose").onclick=closeChat;
