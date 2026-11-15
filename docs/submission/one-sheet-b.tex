@@ -47,15 +47,15 @@ A small or rural ICU has a few life-support machines (ventilators, dialysis), no
 
 \columnbreak
 \sh{What we built}
-A bed board for the 07:00 team meeting: each patient's life support now, the probability of each event in the next 24 h, and unit totals against the machines on hand. An LLM chat answers questions about it.
+A bed board the ICU nurse and doctor read at 7 am, before rounds: each patient's life support now, the probability of each event in the next 24 h, and unit totals against the machines on hand. It refreshes every hour; one forecast takes about 78 s. An LLM chat answers questions.
 
 \columnbreak
 \sh{What is new for healthcare AI}
 \begin{itemize}[leftmargin=8pt,itemsep=1pt,topsep=0pt,parsep=0pt,label={\color{blue}\textbullet}]
-\item \textbf{A language model of health records:} pretrained from scratch on clinical-event tokens, not text.
-\item \textbf{One pass, many outcomes:} linear probes on the last hidden state.
+\item \textbf{A GEM for ICU records:} Nemotron E4B design, trained from scratch on clinical tokens.
+\item \textbf{One pass, many outcomes:} probes on the hidden state.
 \item \textbf{Patient to unit:} probabilities sum into machine demand.
-\item \textbf{On-prem:} trains and runs on the hospital's own hardware.
+\item \textbf{On-prem:} the hospital's own hardware.
 \end{itemize}
 \end{multicols}
 
@@ -69,7 +69,7 @@ A bed board for the 07:00 team meeting: each patient's life support now, the pro
 Starts a ventilator {\color{sec}(a machine breathes for the patient)} & respiratory therapy & \textbf{0.78} (0.75--0.81) \\
 Starts a vasopressor {\color{sec}(IV drug that raises blood pressure)} & pharmacy & \textbf{0.77} (0.74--0.80) \\
 Starts CRRT {\color{sec}(a machine does the kidneys' work)} & ICU team & \textbf{0.88} (0.85--0.91) \\
-Leaves the ICU {\color{sec}(to a lower-care ward, freeing the bed)} & bed manager & \textbf{0.80} ward \textperiodcentered{} \textbf{0.89} step-down \\
+Transfers to a ward {\color{sec}(leaves the ICU, freeing the bed)} & bed manager & \textbf{0.80} (0.79--0.81) \\
 Dies {\color{sec}(a unit count, never shown on a bed)} & ICU team & \textbf{0.93} (0.91--0.95) \\
 \bottomrule
 \end{tabular*}}\\[1pt]
@@ -81,25 +81,25 @@ Held-out test AUROC (patients never seen in training), 95\% bootstrap ranges. A 
  title={\sffamily\bfseries The model we trained, and the hidden layer},coltitle=white,colbacktitle=blue,fonttitle=\small,toptitle=1pt,bottomtitle=1pt]
 \fontsize{8.7}{10.2}\selectfont\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000
 \begin{multicols}{2}
-\textbf{1. Pretrain on health records.} A decoder-only transformer (layer design of NVIDIA Nemotron 3.5 Bolt E4B), 36.2M parameters, trained from scratch on both GB10s with DDP. Next-token objective plus a time-to-next-event loss. Vocabulary: 1,231 clinical-event tokens (lab and vital-sign values binned into ten levels, drugs, devices, transfers, time gaps); context 4,096 tokens.
+\textbf{1. Train the GEM.} A generative event model: decoder-only transformer, NVIDIA Nemotron 3.5 Bolt E4B layer design, 36.2M parameters, from scratch on both GB10s (DDP). Custom vocabulary of 1,231 ICU event tokens; next-token plus time-to-next-event loss.
 
-\textbf{2. Embed each patient.} One forward pass over the patient's first 24 hours in the ICU. The last layer's hidden state at the final token, a \textbf{384-d vector}, is the patient embedding. No sampling, no generated futures.
+\textbf{2. Read its hidden layer.} One forward pass over the patient's first 24 hours in the ICU. The last layer's hidden state at the final token, a \textbf{384-d vector}, is the patient embedding.
 
 \columnbreak
-\textbf{3. Linear probes.} Six L2 logistic regressions on the embedding, fit once on training patients, output 24-hour event probabilities; leaving the ICU combines the ward and step-down probes. A new outcome is a new probe, not a new model. Probabilities sum into unit counts with an 80\% interval.
+\textbf{3. Linear probes.} Six L2 logistic regressions on the embedding, fit once on training patients, output 24-hour event probabilities. A new outcome is a new probe, not a new model. Probabilities sum into unit counts with an 80\% interval.
 
-\textbf{4. LLM for explanation only.} NVIDIA Nemotron 3 Nano on vLLM answers questions by calling read-only tools on the forecast. It predicts nothing.
+\textbf{4. LLM for explanation only.} NVIDIA Nemotron 3 Nano on llama.cpp answers questions by calling read-only tools on the forecast. It predicts nothing.
 \end{multicols}
 \end{tcolorbox}
 
 \vspace{2pt}
-{\sffamily\bfseries\color{blue}\small HOW WE USED THE CIQ STACK\hfill\normalfont\itshape\color{sec} the Fuzzball workflow on two local Lenovo ThinkStation PGX, one NVIDIA GB10 each\par}
+{\sffamily\bfseries\color{blue}\small HOW WE USED THE CIQ STACK\hfill\normalfont\itshape\color{sec} every Fuzzball job, CPU and GPU, on two local Lenovo ThinkStation PGX\par}
 \begin{center}
 \includegraphics[width=0.76\linewidth]{../diagrams/architecture-print.png}
 \end{center}
 \vspace{-4pt}
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
-\textbf{\color{ink}Fuzzball:} Orchestrate schedules every job, container image and VAST volume; Substrate runs the NVIDIA containers (PyTorch, vLLM). We drove it with the Fuzzball MCP server and CLI. Code goes in and results come out only through the object cache. \textbf{\color{ink}All four tracks:} multi-node training (job 3 trains on both GB10s) \textperiodcentered{} inference (job 5 and Nemotron) \textperiodcentered{} scientific AI (a clinical model trained from scratch) \textperiodcentered{} cluster and scheduling (five workflows; inference frees its GPU before Nemotron starts).\par}
+\textbf{\color{ink}Fuzzball:} Orchestrate schedules every job, image and VAST volume; Substrate runs the containers (NVIDIA PyTorch, llama.cpp); we drove it with the Fuzzball MCP server and CLI. \textbf{\color{ink}All four tracks:} multi-node training (job 3) \textperiodcentered{} inference (job 5, Nemotron) \textperiodcentered{} scientific AI (the GEM) \textperiodcentered{} cluster scheduling (five workflows).\par}
 
 \vfill
 {\color{ink}\rule{\textwidth}{0.9pt}}\\[2pt]

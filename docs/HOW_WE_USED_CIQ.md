@@ -22,7 +22,7 @@ Two Lenovo ThinkStation PGX machines, each with one NVIDIA GB10, run CIQ Fuzzbal
 |---|---|---|
 | Scheduler | CIQ Fuzzball 4.3, Fuzzfile `version: v4` | every `workflows/job_*/workflow.fz` |
 | GPU image | `nvcr.io/nvidia/pytorch:25.11-py3` (NGC). Newer tags need a newer driver than the cluster's 580 | jobs 3, 3.1, 4, 5 |
-| Chat serving | `nvcr.io/nvidia/vllm:25.12.post1-py3` (NGC), with tool calling (`--tool-call-parser qwen3_coder`) | job 5, service `nemotron` |
+| Chat serving | The running job 5 (`t7-launch`, started 2026-11-15) serves Nemotron with the llama.cpp server image `ghcr.io/ggml-org/llama.cpp:server-cuda13-b11459`. The workflow file at commit `875358a` names `nvcr.io/nvidia/vllm:25.12.post1-py3`; the team switched after that commit | job 5, service `nemotron` |
 | Chat model | NVIDIA Nemotron 3 Nano 30B-A3B FP8, pinned revision `9bee194…`, used as is, not trained by us | job 5 |
 | Our patient model | A decoder with the layer design of NVIDIA Nemotron 3.5 Bolt E4B (Gemma 4 text), trained from scratch: 16 layers, hidden size 384, 1,231 event tokens, 36,232,032 parameters | `icutwin/model/decoder.py`, job 3.1 load test |
 | Python packages | `uv`, one persistent virtual environment on the volume, `mimic_clif:/.tooling/venv-ngc2511`, rebuilt only when `uv.lock` changes | job 3 `setup`; jobs 4 and 5 refuse a venv built for another `uv.lock` |
@@ -62,10 +62,28 @@ Two Lenovo ThinkStation PGX machines, each with one NVIDIA GB10, run CIQ Fuzzbal
 1. **`load`** (CPU, 10 min limit). Unpacks the code, checks the venv against `uv.lock`, then checks that the code's token list matches the model's `final/vocab.yaml` (it stops if not). Checks the 25 demo stays, the classifiers and the training labels. A missing input fails here, before a GPU is booked.
 2. **`infer`** (1 GPU, 30 min limit). `app/infer_ward.py`: CLIF tables → one event timeline per stay → cut 24 hours after ICU arrival → one pass through the model → the saved classifiers → six probabilities per stay. Nothing is fitted. It prints counts only.
 3. **`score`** (CPU). `app/rooms.py` writes one entry per room; `app/aggregate.py` adds the rooms up into unit counts with a likely range and writes `forecast.json` last, the file the page watches.
-4. **`nemotron`** (service, 1 GPU). Starts after `score`, so the inference GPU is free first. Serves the pinned local copy from `hfcache`.
+4. **`nemotron`** (service, 1 GPU). Starts after `score`, so the inference GPU is free first. Serves the local copy from `hfcache` (llama.cpp server in the running workflow).
 5. **`board`** (service, CPU). Starts after `score`. Serves the page and the API on port 8080; the chat works once Nemotron is ready.
 
 **A new forecast** means stopping `t7-launch` and starting it again with a new `Tag`. There is no dispatcher and no 07:00 timer in this path, so the board's update button answers "no dispatcher configured".
+
+## What ran on the cluster
+
+Read from Fuzzball as team 7 on 2026-11-15 (read only; nothing was started, stopped or changed). Times are UTC.
+
+| Workflow run | When | Result |
+|---|---|---|
+| `job_1_data_move` | Nov 14, 15:20, 40 s | finished |
+| `job-2-tokenize` | Nov 14, 17:38 to 17:45 | finished |
+| `job-3-train ep2-20261114c` (2 GPUs, DDP) | Nov 14, 19:11 to 20:13 | stopped by the team after about an hour; checkpoint kept |
+| `job-3-1-package ep2-20261114c` | Nov 14, 20:19 to 20:20 | finished |
+| `job4-probe-20261114d` (2 GPUs, then CPU) | Nov 14, 21:38 to 22:13 | finished |
+| `t7-fb-nemotron-persistent` | Nov 14, 18:14 | finished: Nemotron weights on `hfcache` |
+| `t7-launch` (job 5) | Nov 15, from 16:04 | running: `load` 7 s, `infer` 35 s on one GPU, `score` 33 s, then `board` and `nemotron` up |
+
+One forecast for the 25-patient ward takes about 78 seconds, from load to score. In that run, `load`, `infer` and `nemotron` ran on node CIQ-CHI-SPARK14 and `score` and `board` on CIQ-CHI-SPARK13.
+
+Volumes as Fuzzball lists them (provisioner `team7`): `mimic_clif` 200 GB, `twin-store` 20 GB, `hfcache` (no fixed size reported).
 
 ## How to run it
 

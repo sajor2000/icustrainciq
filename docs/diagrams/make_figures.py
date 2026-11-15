@@ -293,13 +293,13 @@ def flow():
 # =============================================================== detail: architecture (job 5 path)
 def architecture():
     f = Fig("architecture", 1040, 596, "ICU Horizon architecture",
-            "On two Lenovo ThinkStation PGX machines run by CIQ Fuzzball 4.3: jobs 1 to 4 train our model once on both GPUs from CLIF data that comes in through the object cache and save it with six probes to the mimic_clif volume. Job 5 loads the code, runs our model and probes on one GPU, and writes rooms.json and forecast.json to the twin-store volume. The board server reads them and serves the clinician's browser; it asks NVIDIA Nemotron 3 Nano on vLLM, whose weights are on hfcache, to answer chat questions. The volumes are on VAST storage.",
+            "On two Lenovo ThinkStation PGX machines run by CIQ Fuzzball 4.3: jobs 1 to 4 train our model once on both GPUs from CLIF data that comes in through the object cache and save it with six probes to the mimic_clif volume. Job 5 loads the code, runs our model and probes on one GPU, and writes rooms.json and forecast.json to the twin-store volume. The board server reads them and serves the clinician's browser; it asks NVIDIA Nemotron 3 Nano on llama.cpp, whose weights are on hfcache, to answer chat questions. The volumes are on VAST storage.",
             "ICU Horizon · architecture", "Train once, then one workflow runs the board")
     f.zone(208, 32, 816, 504)
     c1, c2, c3, w, h = 232, 520, 808, 200, 104
     r1, r2, r3 = 64, 216, 368
     f.node(16, r2, 168, h, "card", "Hospital", "Clinician", ["the bed board,", "in a browser"], icon="person")
-    f.node(c1, r1, w, h, "nvidia", "Service · 1 GPU", "Nemotron 3 Nano", ["NVIDIA chat on vLLM,", "answers in plain words"])
+    f.node(c1, r1, w, h, "nvidia", "Service · 1 GPU", "Nemotron 3 Nano", ["NVIDIA chat model", "on llama.cpp"])
     f.node(c2, r1, w, h, "store", "VAST volume", "hfcache", ["Nemotron weights"])
     f.node(c1, r2, w, h, "card", "Service · CPU", "Board server", ["page, API, chat tools"])
     f.node(c2, r2, w, h, "forecast", "VAST volume", "twin-store", ["rooms.json,", "forecast.json"])
@@ -322,28 +322,41 @@ def architecture():
 
 # =============================================================== print: architecture for the one-page handouts
 def architecture_print():
-    f = Fig("architecture-print", 1120, 440, "ICU Horizon architecture, print",
-            "On two Lenovo ThinkStation PGX machines run by CIQ Fuzzball 4.3: jobs 1 to 4 train our model once on both GPUs and save it with six probes to the mimic_clif volume. Job 5 reads it, runs one pass per patient on one GPU and writes the forecast to the twin-store volume. The board server reads the forecast for the clinician's browser and asks NVIDIA Nemotron 3 Nano on vLLM, whose weights are on hfcache, to answer chat questions. The volumes are on VAST storage; the object cache is the only way in or out.",
-            "ICU Horizon · architecture", "Train once, then one workflow runs the board")
-    f.zone(200, 32, 904, 352)
-    xs, w, h, r1, r2 = (224, 448, 672, 896), 184, 112, 64, 240
-    f.node(16, r1, 160, h, "card", "Hospital", "Clinician", ["the bed board", "in a browser"], icon="person")
-    f.node(xs[0], r1, w, h, "card", "CPU service", "Board server", ["page, API and", "chat tools"])
-    f.node(xs[1], r1, w, h, "nvidia", "GPU service", "Nemotron 3 Nano", ["NVIDIA chat, vLLM", "plain-word answers"])
-    f.node(xs[2], r1, w, h, "store", "VAST volume", "hfcache", ["Nemotron weights"])
-    f.node(xs[3], r1, w, h, "card", "Jobs 1–4 · 2 GPUs", "Train once", ["tokenize, train,", "fit six classifiers"])
-    f.node(xs[0], r2, w, h, "forecast", "VAST volume", "twin-store", ["rooms.json,", "forecast.json"])
-    f.node(xs[1], r2, w, h, "model", "Job 5 · 1 GPU", "Our model", ["load, infer, score:", "one pass each"])
-    f.node(xs[2], r2, w, h, "store", "VAST volume", "mimic_clif", ["patient records,", "model, classifiers"])
-    c1, c2 = r1 + h // 2, r2 + h // 2
-    f.arrow([(176, c1), (xs[0], c1)])
-    f.arrow([(xs[0] + w, c1), (xs[1], c1)])
-    f.arrow([(xs[2], c1), (xs[1] + w, c1)])
-    f.arrow([(316, r2), (316, r1 + h)], BLUE, label="Forecast", at=(316, 208), side="right")
-    f.arrow([(xs[1], c2), (xs[0] + w, c2)], BLUE)
-    f.arrow([(xs[2], c2), (xs[1] + w, c2)])
-    f.arrow([(988, r1 + h), (988, c2), (xs[2] + w, c2)], label="Saves", at=(988, 232), side="right")
-    f.caption("Inside the dashed line: CIQ Fuzzball. Blue carries the forecast.", 420)
+    f = Fig("architecture-print", 1200, 588, "ICU Horizon on CIQ Fuzzball, job by job",
+            "Inside CIQ Fuzzball 4.3 on two Lenovo ThinkStation PGX machines. Train once: job 1 moves health records in through the object cache (CPU), job 2 tokenizes them (CPU), job 3 trains the GEM, a generative event model with the NVIDIA Nemotron 3.5 Bolt E4B layer design, from scratch on both GPUs, job 3.1 packages it (CPU) and job 4 fits six probes on its hidden states (two GPUs, then CPU); the model and probes go to the mimic_clif volume. Run the board, job 5: load checks inputs (CPU), infer runs the GEM and probes on one GPU, score adds up beds and the unit (CPU) and writes the forecast to twin-store; the bed board service reads it and asks NVIDIA Nemotron 3 Nano on llama.cpp on one GPU, with weights on hfcache, to answer chat questions. The volumes are on VAST storage.",
+            "ICU Horizon · Fuzzball jobs", "Train once on two GPUs, then one workflow runs the board", big=True)
+    f.zone(16, 40, 1168, 488)
+    xs, w, h, ys = (40, 270, 500, 730, 960), 200, 112, (72, 232, 392)
+    cx = [x + w // 2 for x in xs]
+    r1, r2, r3 = ys
+    f.node(xs[0], r1, w, h, "card", "Job 1 · CPU", "Move data", ["health records in", "via object cache"])
+    f.node(xs[1], r1, w, h, "card", "Job 2 · CPU", "Tokenize", ["records into", "event tokens"])
+    f.node(xs[2], r1, w, h, "model", "Job 3 · 2 GPUs", "Train the GEM", ["Nemotron E4B design,", "from scratch, DDP"])
+    f.node(xs[3], r1, w, h, "card", "Job 3.1 · CPU", "Package", ["checkpoint plus", "load test"])
+    f.node(xs[4], r1, w, h, "card", "Job 4 · 2 GPUs, CPU", "Fit probes", ["hidden states, then", "six classifiers"])
+    f.node(xs[0], r2, w, h, "card", "Fuzzball", "Object cache", ["the only way", "in or out"])
+    f.node(xs[1], r2, w, h, "store", "VAST volume · 200 GB", "mimic_clif", ["records, tokens,", "GEM, probes"])
+    f.node(xs[2], r2, w, h, "forecast", "VAST volume · 20 GB", "twin-store", ["rooms.json,", "forecast.json"])
+    f.node(xs[4], r2, w, h, "store", "VAST volume", "hfcache", ["Nemotron weights"])
+    f.node(xs[0], r3, w, h, "card", "Job 5 · CPU", "Load", ["checks code, GEM,", "25 patients"])
+    f.node(xs[1], r3, w, h, "model", "Job 5 · 1 GPU", "Infer", ["GEM hidden state,", "probes, per patient"])
+    f.node(xs[2], r3, w, h, "card", "Job 5 · CPU", "Score", ["beds and unit", "totals"])
+    f.node(xs[3], r3, w, h, "card", "Service · CPU", "Bed board", ["page and API for", "clinicians"])
+    f.node(xs[4], r3, w, h, "nvidia", "Service · 1 GPU", "Nemotron 3 Nano", ["NVIDIA chat model", "on llama.cpp"])
+    m1, m3 = r1 + h // 2, r3 + h // 2
+    for i in range(4):
+        f.arrow([(xs[i] + w, m1), (xs[i + 1], m1)])
+    f.arrow([(xs[0] + w, m3), (xs[1], m3)])
+    f.arrow([(xs[1] + w, m3), (xs[2], m3)])
+    f.arrow([(xs[3] + w, m3), (xs[4], m3)])
+    f.arrow([(cx[0], r2), (cx[0], r1 + h)], label="Data in", at=(cx[0], 208), side="right")
+    f.arrow([(cx[0], r2 + h), (cx[0], r3)], label="Code in", at=(cx[0], 368), side="right")
+    f.arrow([(cx[2], r1 + h), (cx[2], 208), (420, 208), (420, r2)])
+    f.arrow([(cx[1], r2 + h), (cx[1], r3)], label="GEM", at=(cx[1], 368), side="right")
+    f.arrow([(cx[2], r3), (cx[2], r2 + h)], BLUE, label="Writes", at=(cx[2], 368), side="right")
+    f.arrow([(xs[2] + w, 288), (cx[3], 288), (cx[3], r3)], BLUE, label="Forecast", at=(780, 288))
+    f.arrow([(cx[4], r2 + h), (cx[4], r3)], label="Weights", at=(cx[4], 368), side="right")
+    f.caption("Top row runs once to train; bottom row is job 5. Blue is our GEM and its forecast.", 564)
     f.write()
 
 
