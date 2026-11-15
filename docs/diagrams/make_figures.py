@@ -294,7 +294,7 @@ def architecture():
 # =============================================================== detail: how to run it on the cluster
 def workflow():
     f = Fig("workflow", 1280, 420, "How to run it on the cluster",
-            "Seven steps in order: create the twin-store volume once, then run t7-code, t7-ward, t7-forecast and t7-twin, and open the board's link. scripts/launch.sh --all runs the four workflows in order. The demo patients, the trained model and the classifiers fitted in training are already on the cluster.",
+            "Seven steps in order: create the twin-store volume once, then run t7-code, t7-ward, t7-forecast and t7-twin, and open the board's link. scripts/launch.sh --all runs the four workflows in order. The demo patients, the trained model and the classifiers fitted in training are already on the cluster. On a new twin-store, both classifier files (probe-final.joblib and probe-final.meta.json) are staged in /store/train before the first t7-forecast.",
             "ICU Lookahead · run order", "One volume, then four workflows; one script runs them")
     xs = [24, 344, 664, 984]
     y1, y2, h = 40, 208, 112
@@ -302,7 +302,7 @@ def workflow():
            ["fuzzball volume create team7", "twin-store --size 20GB"], chip="ready")
     f.node(xs[1], y1, 272, h, "card", "2 · CPU", "t7-code", ["publishes the code", "and the Python packages"], chip="ready")
     f.node(xs[2], y1, 272, h, "card", "3 · CPU", "t7-ward", ["checks the cohort,", "stages the 25 rooms"], chip="ready")
-    f.node(xs[3], y1, 272, h, "forecast", "4 · One GPU", "t7-forecast", ["one pass per patient, then the", "classifiers saved in training"], chip="ready")
+    f.node(xs[3], y1, 272, h, "forecast", "4 · One GPU", "t7-forecast", ["one pass per patient; needs both", "classifier files in /store/train"], chip="ready")
     f.node(xs[3], y2, 272, h, "card", "5 · The other GPU", "t7-twin", ["board server, dispatcher,", "Nemotron 3 Nano"], chip="ready")
     f.node(xs[2], y2, 272, h, "card", "6 · Last", "Open the board", ["the script prints the link;", "launch.sh --link shows it again"], chip="ready")
     f.node(xs[1], y2, 272, h, "card", "Day to day", "scripts/launch.sh", ["--forecast for fresh numbers,", "--restart to restart the board"], chip="ready")
@@ -314,7 +314,8 @@ def workflow():
     f.arrow([(1120, y1 + h), (1120, y2)])
     f.arrow([(984, yc2), (936, yc2)])
     f.arrow([(664, yc2), (616, yc2)])
-    f.caption("bash scripts/launch.sh --all runs steps 2 to 5 in order and prints the link. The files are in backend/fuzzball/ready/.", 392)
+    f.caption("bash scripts/launch.sh --all runs steps 2 to 5 in order and prints the link. The files are in backend/fuzzball/ready/.", 384)
+    f.caption("New twin-store: before the first t7-forecast, stage probe-final.joblib and probe-final.meta.json in /store/train (runbook, section 4).", 406)
     f.write()
 
 
