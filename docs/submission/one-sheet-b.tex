@@ -19,7 +19,9 @@
 \newcommand{\sh}[1]{{\sffamily\bfseries\color{blue}\small\MakeUppercase{#1}}\par\vspace{1pt}}
 \newcommand{\gl}[1]{{\color{sec}#1}}
 \renewcommand{\arraystretch}{1.04}
+\usepackage{ragged2e}\usepackage{enumitem}
 \begin{document}
+\RaggedRight
 \fontsize{9}{10.8}\selectfont
 % masthead
 \begin{minipage}[b]{0.38\textwidth}
@@ -49,7 +51,12 @@ A bed board for 07:00 rounds: each patient's life support now and the chance of 
 
 \columnbreak
 \sh{What is new for healthcare AI}
-\textbf{Speaks EHR, not English:} our own model, trained from scratch on two desk-side GPUs. \textbf{One pass, many outcomes:} probes on its hidden layer, no retraining. \textbf{Patient to unit:} resource strain a day ahead. \textbf{Private, portable:} local, on any hospital's CLIF data.
+\begin{itemize}[leftmargin=8pt,itemsep=1pt,topsep=0pt,parsep=0pt,label={\color{blue}\textbullet}]
+\item \textbf{Speaks EHR, not English:} our own model, from scratch, on two GPUs.
+\item \textbf{One pass, many outcomes:} hidden-layer probes.
+\item \textbf{Patient to unit:} strain a day ahead.
+\item \textbf{Private, portable:} local, on any CLIF data.
+\end{itemize}
 \end{multicols}
 
 \vspace{2pt}
@@ -62,8 +69,7 @@ A bed board for 07:00 rounds: each patient's life support now and the chance of 
 Starts a ventilator & machine that breathes for the patient & \textbf{0.780} (0.747--0.812) & respiratory therapy \\
 Starts a vasopressor & drug drip that holds blood pressure up & \textbf{0.771} (0.739--0.802) & pharmacy \\
 Starts CRRT & continuous dialysis for failed kidneys & \textbf{0.881} (0.850--0.910) & ICU team \\
-Leaves the ICU: to a ward & ward bed & \textbf{0.799} (0.790--0.808) & bed manager \\
-Leaves the ICU: to step-down & step-down bed & \textbf{0.885} (0.872--0.898) & bed manager \\
+Leaves the ICU & to a ward \textperiodcentered{} to step-down & \textbf{0.799} \textperiodcentered{} \textbf{0.885} & bed manager \\
 Dies & counted for the unit, never on a bed & \textbf{0.930} (0.912--0.946) & ICU team \\
 \bottomrule
 \end{tabular*}}\\[1pt]
@@ -75,23 +81,21 @@ AUROC, held-out patients, MIMIC-IV in CLIF, cut 24 h after ICU arrival: 0.5 is a
  title={\sffamily\bfseries The model we trained, and the hidden layer},coltitle=white,colbacktitle=blue,fonttitle=\small,toptitle=1pt,bottomtitle=1pt]
 \fontsize{8.7}{10.2}\selectfont
 \begin{multicols}{2}
-\textbf{1. A model that speaks EHR, not English.} Trained by us from scratch on both GB10 GPUs. Its 1,231 words are clinical events (labs, vital signs, drugs, machines), each value binned into one of ten bins. Its one task: guess the next event and the time until it, as a language model guesses the next word. 16 layers, hidden size 384, \textbf{36.2M parameters}, 4,096-event context; the layer design of NVIDIA Nemotron 3.5 Bolt E4B, no pretrained weights.
+\textbf{1. A model that speaks EHR, not English.} Trained by us from scratch on both GB10 GPUs. Its 1,231 words are clinical events (labs, vital signs, drugs, machines), each value in one of ten bins. One task: guess the next event and the time until it, as a language model guesses the next word. \textbf{36.2M parameters}, 16 layers, 4,096-event context; NVIDIA Nemotron 3.5 Bolt E4B layer design, no pretrained weights.
 
-\textbf{2. The hidden layer is the summary.} We do not make it write the future. One pass over a patient's first 24 hours in the ICU; the last layer's hidden state at the last event is \textbf{384 numbers}, the model's summary of the patient. Having learned to anticipate the next event, it carries what is likely to happen.
+\textbf{2. The hidden layer is the summary.} One pass over a patient's first 24 hours in the ICU. The last layer's hidden state at the last event is \textbf{384 numbers}: the model's summary of the patient, which already carries what is likely to happen next.
 
 \columnbreak
-\textbf{3. Six small probes read it.} Six logistic regressions (``linear probes'', Alain \& Bengio 2016) turn the 384 numbers into six chances. Fitted once on past patients (z-scored, L2, chosen by cross-validated AUROC). A new prediction needs a new probe, not a new model.
+\textbf{3. Six small probes read it.} Six logistic regressions (``linear probes'', Alain \& Bengio 2016) turn the 384 numbers into six chances, which add up to unit counts with an 80\% range (exact Poisson-binomial). Fitted once on past patients (z-scored, L2, chosen by cross-validated AUROC). A new prediction needs a new probe, not a new model.
 
-\textbf{4. The chances add up.} Unit counts with an 80\% range (exact Poisson-binomial), against the unit's ventilators and CRRT machines.
-
-\textbf{5. A chat model explains it in English.} NVIDIA Nemotron 3 Nano on vLLM, used as is, answers by calling read-only tools on the forecast. It predicts nothing.
+\textbf{4. A chat model explains it in English.} NVIDIA Nemotron 3 Nano on vLLM, used as is, answers by calling read-only tools on the forecast. It predicts nothing.
 \end{multicols}
 \end{tcolorbox}
 
 \vspace{2pt}
 {\sffamily\bfseries\color{blue}\small HOW WE USED THE CIQ STACK\hfill\normalfont\itshape\color{sec} the Fuzzball workflow on two local Lenovo ThinkStation PGX, one NVIDIA GB10 each\par}
 \begin{center}
-\includegraphics[width=0.68\linewidth]{../diagrams/architecture-print.png}
+\includegraphics[width=0.72\linewidth]{../diagrams/architecture-print.png}
 \end{center}
 \vspace{-4pt}
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
