@@ -5,7 +5,7 @@ commit `bc4c44df2ae6b7f26cf42ce21e119598d68b0d89`. Changes are isolated in a sep
 worktree. Whiskey receives the app/backend branch after local synthetic checks;
 this record does not claim a cluster deployment or a completed private-data run.
 
-This integration follows the current Lookahead app in `icustrainciq`, including its
+This integration follows the current ICU Horizon app in `icustrainciq`, including its
 copied backend and reviewed picture-board UI. Its source workspace remains
 unchanged. Local code snapshots and synthetic tests are the verification evidence;
 this document does not claim a cluster deployment or private-data transfer.

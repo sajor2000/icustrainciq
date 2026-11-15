@@ -1,15 +1,15 @@
-# Demo day: how ICU Lookahead runs live, end to end
+# Demo day: how ICU Horizon runs live, end to end
 
 Read this if you want the demo-day design: what is real on stage, the minute-by-minute plan, the fallbacks and the forecast CLI flags. To start or relaunch the app, use [`RUNBOOK.md`](RUNBOOK.md).
 
-**Status:** The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Not run: the chat-grounding workflows `t7-lookahead-prepare`, `-forecast` and `-chat`, and `t7-twin` without Nemotron.
+**Status:** The team ran ICU Horizon end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Not run: the chat-grounding workflows `t7-lookahead-prepare`, `-forecast` and `-chat`, and `t7-twin` without Nemotron.
 
 Sections 0 to 8 are the design as written on 2026-11-14; section 9 holds the later decisions and wins where they differ. Where a paragraph disagrees with this table, the table wins.
 
 | Topic | Current state (code on `main`) |
 |---|---|
 | How to run | `scripts/launch.sh` first ([`RUNBOOK.md`](RUNBOOK.md)); the manual workflow steps are the fallback |
-| Volumes | `twin-store` is the one volume ICU Lookahead writes (code, packages, stage ward, forecast files). `mimic_clif` is only read, at `/data`. `hfcache` holds the Nemotron weights. `clif_work` and `tooling` are not used |
+| Volumes | `twin-store` is the one volume ICU Horizon writes (code, packages, stage ward, forecast files). `mimic_clif` is only read, at `/data`. `hfcache` holds the Nemotron weights. `clif_work` and `tooling` are not used |
 | Probe | Fitted by job 4 in vaishvikc/ICU-Twin and staged at `/store/train/probe-final.joblib` with `probe-final.meta.json`. `t7-fit` is the fallback |
 | Names | Generated per room number by `app/fake_names.py` (`--names fake`). `name.parquet` is no longer read |
 | Code on the cluster | Published by `t7-code` from this repo's `backend/` at a pinned commit. Training (`job_2` to `job_4`) is in vaishvikc/ICU-Twin; there is no `t7-build` here |
@@ -132,7 +132,7 @@ One thing to check before the demo (G13): in the open demo stays, 95% already me
 
 ### 1.5 Forecast CLI
 
-The ICU Lookahead forecast (five predictions, life support, yardstick; JSON in `docs/CONTRACT.md`) is written by two scripts. Both print counts only and write atomically. Paths below are examples on the cluster volumes.
+The ICU Horizon forecast (five predictions, life support, yardstick; JSON in `docs/CONTRACT.md`) is written by two scripts. Both print counts only and write atomically. Paths below are examples on the cluster volumes.
 
 **Unit run** (every run, last step; `forecast.json` is the commit marker the page watches):
 
@@ -223,7 +223,7 @@ Nothing that holds a GPU runs during training. The scheduler places work; it doe
 
 ### 2.3 How the dispatcher starts `t7-forecast`
 
-Superseded by section 9 (Lookahead): scopes, the template, the guards, the 07:00 retry and catch-up, the demo clock. What stays true from the in-workflow API docs:
+Superseded by section 9 (ICU Horizon): scopes, the template, the guards, the 07:00 retry and catch-up, the demo clock. What stays true from the in-workflow API docs:
 
 - Fuzzball injects `FB_TOKEN`, `FB_API_HOST`, `FB_OPENAPI_URL` into every job and service. The token acts **as the submitting user** (team7), is bound to the workflow it was injected into, and covers start, validate, list, describe and stop of workflows, logs, volumes list/create, object cache and endpoint listing; it refuses secrets, volume deletion and admin. It **stops working the moment `t7-twin` finishes, fails or is cancelled**. In a service it expires after 7 days; the dispatcher refreshes it daily (`POST $FB_OPENAPI_URL/v4/workflows:refreshToken`, swapped in only on success). On demo day check the age of `t7-twin` (under 7 days).
 - The CLI is downloaded by the service to container-local tmpfs (`/dev/shm`, not the shared `/store`) and checked against `FB_CLI_SHA256` when that is set (the service prints the hash it got when it is not; pin it in `t7-twin.fz`).

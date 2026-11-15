@@ -1,4 +1,4 @@
-# ICU Lookahead in one page
+# ICU Horizon in one page
 
 *CIQ x NVIDIA Local AI Hackathon, team7. For judges from NVIDIA, CIQ and VAST. Decision support only: not a medical device, not prospectively validated. The board shows staffing and machine needs, not treatments.*
 

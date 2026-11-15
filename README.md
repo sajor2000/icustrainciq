@@ -1,4 +1,4 @@
-# ICU Lookahead: see the next 24 hours of your ICU, on machines you own
+# ICU Horizon: From bench to bedside
 
 A bed board that tells a small ICU at 07:00 what the next 24 hours will need. Team7, CIQ × NVIDIA × Lenovo Local AI Hackathon, Chicago, Nov 14–15, 2026.
 
@@ -18,7 +18,7 @@ A bed board that tells a small ICU at 07:00 what the next 24 hours will need. Te
 
 A small or rural hospital has one ICU, a few ventilators and dialysis machines, no data-science team and no cloud contract for patient data. When the unit runs short, the nearest help is a transfer hours away. The team learns it is short when it already is.
 
-ICU Lookahead answers one question each morning: who is on life support now, who is likely to need it by tomorrow, and does the unit have the machines and staff for that. It runs in the building, so patient data never leaves.
+ICU Horizon answers one question each morning: who is on life support now, who is likely to need it by tomorrow, and does the unit have the machines and staff for that. It runs in the building, so patient data never leaves.
 
 > **Key.** ICU: the intensive care unit. Life support: a machine or drug that does the work of a failing organ. Ventilator: breathes for the patient. Vasopressor: a drug drip that holds blood pressure up. CRRT: continuous dialysis, for failed kidneys.
 
@@ -93,7 +93,7 @@ Volumes: `mimic_clif` (credentialed data, the model, training tokens), `twin-sto
 |---|---|
 | ![Bed board, Now](docs/screenshots/beds-now.png) | ![Unit strain, Next 24 h](docs/screenshots/strain-next.png) |
 
-![Ask ICU Lookahead: the chat answers from the forecast](docs/screenshots/chat-widget.png)
+![Ask ICU Horizon: the chat answers from the forecast](docs/screenshots/chat-widget.png)
 
 ![Update the unit: Queued, Running on the GPU, Scoring, Done](docs/screenshots/update-progress.png)
 
@@ -140,7 +140,7 @@ bash scripts/launch.sh --all       # publish code, stage the unit, forecast, the
 
 ## Team 7 - CLIF
 
-We built ICU Lookahead together, as one team. Names and affiliations as listed by the [CLIF Consortium](https://clif-icu.com/team).
+We built ICU Horizon together, as one team. Names and affiliations as listed by the [CLIF Consortium](https://clif-icu.com/team).
 
 | Name | Affiliation |
 |---|---|
@@ -150,4 +150,4 @@ We built ICU Lookahead together, as one team. Names and affiliations as listed b
 | Dema Therese, MS | UChicago Medicine |
 | Zewei ('Whiskey') Liao, MS | UChicago Medicine |
 
-Demo data only: the mockup uses made-up patients, and names on the board are fictional. ICU Lookahead is a research prototype, not a medical device; it supports decisions and recommends no treatment.
+Demo data only: the mockup uses made-up patients, and names on the board are fictional. ICU Horizon is a research prototype, not a medical device; it supports decisions and recommends no treatment.

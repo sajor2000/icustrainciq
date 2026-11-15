@@ -1,4 +1,4 @@
-"""Write the ICU Lookahead figures (HTML with inline SVG) in the board's design system.
+"""Write the ICU Horizon figures (HTML with inline SVG) in the board's design system.
 
     python3 docs/diagrams/make_figures.py            # writes docs/diagrams/*.html
     python3 docs/diagrams/make_figures.py --night <dir>   # night-board copies, for the project page's dark theme
@@ -204,7 +204,7 @@ class Fig:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ICU Lookahead · {esc(self.title)}</title>
+  <title>ICU Horizon · {esc(self.title)}</title>
   <style>
     *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
     body {{ font-family: {FONT}; background: {BOARD}; color: {INK}; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 1.5rem; }}
@@ -242,7 +242,7 @@ class Fig:
 def stack():
     f = Fig("stack", 1200, 576, "How we used the hackathon stack",
             "A clinician's browser reaches two Lenovo ThinkStation PGX machines run by CIQ Fuzzball 4.3. Fuzzball services serve the board, start forecast jobs and serve NVIDIA Nemotron 3 Nano on vLLM for the chat on one GPU. A Fuzzball job runs the patient model the team trained on the other GPU. Three Fuzzball volumes hold the patient data, the model and the results.",
-            "ICU Lookahead · the hackathon stack", "Two Lenovo machines, CIQ Fuzzball, one NVIDIA model and one of our own", big=True)
+            "ICU Horizon · the hackathon stack", "Two Lenovo machines, CIQ Fuzzball, one NVIDIA model and one of our own", big=True)
     f.zone(264, 48, 920, 456)
     f.node(16, 112, 208, 104, "card", "Clinician", "Browser", ["the board page"], icon="person")
     f.node(304, 112, 376, 104, "card", "Fuzzball services · CPU", "Board server + dispatcher",
@@ -267,7 +267,7 @@ def stack():
 def flow():
     f = Fig("flow", 1200, 328, "What happens at 07:00",
             "Chart data up to 07:00 goes to the team's patient model, which reads each patient once and keeps its last layer; five small classifiers turn that into five chances; the board shows them; the chat answers from the board. Update the unit starts the same run as a Fuzzball job.",
-            "ICU Lookahead · the 07:00 run", "From the chart to the board, once each morning", big=True)
+            "ICU Horizon · the 07:00 run", "From the chart to the board, once each morning", big=True)
     f.zone(8, 40, 1184, 232)
     xs = [20, 256, 492, 728, 964]
     f.node(xs[0], 72, 216, 128, "card", "Each patient", "Chart data",
@@ -294,7 +294,7 @@ def flow():
 def architecture():
     f = Fig("architecture", 1280, 600, "Technical architecture",
             "The board page talks to one service, the board server, which holds the page, the API and the grounded chat agent. The board server asks Nemotron for chat answers and asks the dispatcher to start or report runs. The dispatcher starts the t7-forecast job, which runs the patient model with the probe fitted by job 4, reads the mimic_clif volume and writes forecast files to twin-store, where the board server reads them. Nemotron's weights are on hfcache. A fourth volume, demo-context, arrives with pull request 16.",
-            "ICU Lookahead · architecture", "One door into the two machines; everything else stays inside")
+            "ICU Horizon · architecture", "One door into the two machines; everything else stays inside")
     f.zone(288, 32, 976, 496)
     f.node(24, 232, 216, 96, "card", "Clinician's browser", "Board page", ["one HTML file, over HTTPS"], icon="person")
     f.node(328, 72, 240, 96, "nvidia", "GPU 1 · service", "Nemotron 3 Nano", ["NVIDIA, on vLLM, used as is"])
@@ -321,7 +321,7 @@ def architecture():
 def workflow():
     f = Fig("workflow", 1280, 424, "How to run it on the cluster",
             "Three steps by hand: create the twin-store volume once, render the ready workflow files after each code change, and stage job 4's probe once per model after the code is published (scripts/launch.sh --code), because the probe's sidecar command imports the published code. Then one command, scripts/launch.sh --all, runs four Fuzzball workflows in order: t7-code, t7-ward, t7-forecast-unit and t7-twin, and prints the board's link. The team ran this path end to end on the cluster; every step but the per-change render is marked done.",
-            "ICU Lookahead · how to run it", "Three steps by hand, then one command")
+            "ICU Horizon · how to run it", "Three steps by hand, then one command")
     xs = [24, 344, 664, 984]
     y1, y2, h = 40, 232, 112
     f.zone(8, 200, 1264, 168, label_dx=312)
@@ -350,7 +350,7 @@ def workflow():
 def api():
     f = Fig("api", 1280, 620, "API map",
             "The board page makes four GET calls and three POST calls to the board server. Reads come from files on twin-store and from the dispatcher's status; writes go to the dispatcher to start a run, to Nemotron for a chat answer, and to twin-store for tonight's capacity.",
-            "ICU Lookahead · API", "Four reads, three writes, one rule for every POST")
+            "ICU Horizon · API", "Four reads, three writes, one rule for every POST")
     f.zone(272, 24, 1000, 536)
     f.node(24, 120, 184, 352, "card", "Browser", "Board page", ["same origin only"], icon="person")
     f.node(304, 56, 528, 224, "card", "4 GETs · no headers needed", "Read", rows=[
@@ -380,7 +380,7 @@ def api():
 def trigger():
     f = Fig("trigger", 1280, 624, "Update the unit, from click to refreshed board",
             "The board page posts a rerun to the board server, which passes it to the dispatcher. The dispatcher starts the forecast job through Fuzzball. The job writes rooms.json and forecast.json to twin-store. The page polls the run state, then asks for the forecast and the rooms; the board server reads both files, and the board is redrawn.",
-            "ICU Lookahead · Update the unit", "One button, one POST, one Fuzzball job")
+            "ICU Horizon · Update the unit", "One button, one POST, one Fuzzball job")
     xs = [136, 388, 640, 892, 1144]
     f.zone(272, 16, 992, 116, label_dx=12)
     heads = [("card", "Browser", "Board page", "Update the unit"),
@@ -412,7 +412,7 @@ def trigger():
 def data_boundary():
     f = Fig("data-boundary", 1280, 584, "Where the patient data lives",
             "Patient rows are on the mimic_clif volume and in two restricted folders of twin-store, inside the two machines. The forecast job reads the rows and writes two files of counts and room entries. The board server serves those files to the clinician's browser and passes tool results to Nemotron. GitHub holds code only.",
-            "ICU Lookahead · data boundary", "Rows stay on the volumes; only counts and room entries reach a screen")
+            "ICU Horizon · data boundary", "Rows stay on the volumes; only counts and room entries reach a screen")
     f.zone(296, 40, 968, 488)
     f.node(24, 88, 232, 96, "card", "Public", "GitHub", ["code at a pinned commit"])
     f.node(24, 264, 232, 96, "card", "Hospital network", "Clinician's browser", ["counts and room entries"], icon="person")
@@ -450,7 +450,7 @@ def results_auroc():
     f = Fig("results-auroc", 960, 424, "Held-out AUROC by task, with 95% ranges",
             "Held-out AUROC of the six classifier tasks, highest first: " +
             "; ".join(f"{t} {a} ({lo} to {hi})" for t, _, _, _, a, lo, hi in rows) + ".",
-            "ICU Lookahead · model results", "Held-out AUROC by task, with 95% ranges")
+            "ICU Horizon · model results", "Held-out AUROC by task, with 95% ranges")
     x0, x1, top, step = 208, 688, 76, 44
     px = lambda v: round(x0 + (v - 0.5) / 0.5 * (x1 - x0), 1)
     f.raw("foot", f.text(16, 36, "Held-out AUROC by task, with 95% range", 16, 700, INK))

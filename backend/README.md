@@ -1,4 +1,4 @@
-# ICU Lookahead backend
+# ICU Horizon backend
 
 Read this if you want to run, test or change what serves the board and writes the forecast.
 
@@ -44,7 +44,7 @@ Chat grounding, on `main`: `app/demo_context.py` builds the shared ICU snapshot,
 
 ## Run on the cluster
 
-The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked.
+The team ran ICU Horizon end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked.
 
 ```bash
 bash scripts/launch.sh            # start what is missing, print and open the board's link

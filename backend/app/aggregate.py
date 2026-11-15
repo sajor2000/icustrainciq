@@ -5,7 +5,7 @@ Usage: python app/aggregate.py <tokenized_output> <forecast.json>
          [--capacity capacity.json] [--demo-clock-hours H] [--cut-time ISO]
          [--tz America/Chicago] [--stage-csv stage_ward.csv] [--real-ward]
 
-The Lookahead forecast.json (life support now and expected new, yardstick, check_first)
+The ICU Horizon forecast.json (life support now and expected new, yardstick, check_first)
 is described in docs/CONTRACT.md; flags in docs/LIVE_DEMO.md "Forecast CLI".
 The stage ward is the open MIMIC-IV Demo: a --stage-csv with a stay id that is not in
 clif_demo/clif_hospitalization.parquet is refused unless --real-ward is given (real
@@ -382,7 +382,7 @@ def strain_index(
     }
 
 
-# ---- Lookahead (docs/DECISIONS.md D8, docs/CONTRACT.md): life support, yardstick ----
+# ---- ICU Horizon (docs/DECISIONS.md D8, docs/CONTRACT.md): life support, yardstick ----
 SUPPORTS = ("imv", "vasopressor", "crrt")  # life support the board counts
 SUPPORT_RESOURCE = {"imv": "ventilator", "vasopressor": "vasopressor", "crrt": "crrt"}
 LEVELS = {"medium": 0.2, "high": 0.4}  # any_life_support cut-offs (configurable)

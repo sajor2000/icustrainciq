@@ -1,8 +1,8 @@
 # Architecture
 
-Read this if you want to know what ICU Lookahead runs, where it runs, and how to start it.
+Read this if you want to know what ICU Horizon runs, where it runs, and how to start it.
 
-ICU Lookahead is a bed board for one ICU. It shows the life support each patient is on now and forecasts the next 24 hours. Everything runs on two Lenovo ThinkStation PGX machines under CIQ Fuzzball 4.3, and it has run there end to end. Nothing is hosted in the cloud, and GitHub holds code only.
+ICU Horizon is a bed board for one ICU. It shows the life support each patient is on now and forecasts the next 24 hours. Everything runs on two Lenovo ThinkStation PGX machines under CIQ Fuzzball 4.3, and it has run there end to end. Nothing is hosted in the cloud, and GitHub holds code only.
 
 | Section | Answers |
 |---|---|
@@ -137,7 +137,7 @@ The demo ward is a CLIF-format extract of 25 MIMIC-IV hospitalizations on `mimic
 
 | Where | Holds | Never holds |
 |---|---|---|
-| `mimic_clif` (only read) | the ward's CLIF tables, training tokens, the trained model | anything ICU Lookahead writes |
+| `mimic_clif` (only read) | the ward's CLIF tables, training tokens, the trained model | anything ICU Horizon writes |
 | `twin-store`, folders `stage/` and `train/` | tokens, features, per-stay scores, the staged probe; restricted | |
 | `rooms.json`, `forecast.json`, board server, Nemotron, browser | unit counts with ranges; room entries by room number with generated names | patient rows, stay ids, real names |
 | Laptop, GitHub | code, synthetic `examples/`, the open MIMIC-IV Demo in `backend/clif_demo/` | anything from the cluster volumes |

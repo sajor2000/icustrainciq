@@ -31,7 +31,7 @@ One file. Details, pictures and undo for every row: [`UI_REVIEW_FOR_DEMA.md`](UI
 | "See first" row: the three beds from Dema's top-beds rule | Feature (faster read at 07:00) | Low | Port before demo if Dema approves | The page file |
 | "Update the unit" progress strip: Queued, Running on the GPU, Scoring, Done, "Updated HH:MM", failures in plain words | Feature | **Needs live check**: never watched against a real Fuzzball run | Port before demo only if one update is watched on the cluster first; otherwise after | The page file |
 | Chat: clearer suggested questions; the chat opens above an open bed (it was under the pop-up and could not be clicked) | Polish and a bug fixed | Low | Port before demo | The page file |
-| Escape closes one panel at a time; 44 px targets; quieter tiles; phone layout; header reads "ICU Lookahead" | Bug fixed and polish | Low | Port before demo | The page file |
+| Escape closes one panel at a time; 44 px targets; quieter tiles; phone layout; header reads "ICU Horizon" | Bug fixed and polish | Low | Port before demo | The page file |
 | Machine totals read from the server; the saved total stays when use exceeds it ("1 over") | Bug fixed | Low on ICU-Twin's server (it has no totals, so the page keeps them on the device) | Port with the page | The page file |
 | Standard flag lines 20 / 40 / 60 with "Reset to standard" (ICU-Twin: 25%, presets 50 / 25 / 10) | Decision D26, applied here (J.C. merged PR #24) | Low, but it changes which beds are flagged on stage: rehearse with it | Port with the page if Dema agrees; otherwise revert the six lines first | The page file; `UI_REVIEW_FOR_DEMA.md` change 14 |
 

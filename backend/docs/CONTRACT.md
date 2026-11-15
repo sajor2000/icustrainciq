@@ -1,4 +1,4 @@
-# ICU Lookahead JSON contract
+# ICU Horizon JSON contract
 
 Read this if you build against `forecast.json`, `rooms.json` or the board's API and need the exact fields.
 

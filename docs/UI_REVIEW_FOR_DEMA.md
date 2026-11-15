@@ -22,7 +22,7 @@ The page is still Dema's design: the same layout, tiles, person figure, circle i
 | 8 | Chat opens above an open bed (bug fix) | J.C. Q6c | |
 | 9 | Escape closes one panel at a time (bug fix) | PR 24 | |
 | 10 | 44 px touch targets on bed chips and Change links | PR 24 | |
-| 11 | Header reads "ICU Lookahead" | D24 | |
+| 11 | Header reads "ICU Horizon" | D24 | |
 | 12 | Phone layout at 390 px | J.C. Q6d | |
 | 13 | No console error when no context is published | bug fix | |
 | 14 | Standard flag lines 20% / 40% / 60% and "Reset to standard" | D26; applied: J.C. merged PR 24 | |
@@ -169,15 +169,15 @@ Pictures: change 3, the chips in the alert line.
 
 **Undo.** `.bedchip` `min-width:2.5rem;min-height:2rem`; `.chg` without `display`, `min-height` and the `-.75rem` margins.
 
-### 11. Header reads "ICU Lookahead"
+### 11. Header reads "ICU Horizon"
 
 Pictures: change 1.
 
-**What.** The title is "ICU Lookahead" with "next 24 hours" beside it (it was "Lookahead · ICU forecast"). The browser tab and the chat ("Ask ICU Lookahead") follow.
+**What.** The title is "ICU Horizon" with "next 24 hours" beside it (it was "ICU Horizon · ICU forecast"). The browser tab and the chat ("Ask ICU Horizon") follow.
 
 **Why.** D24.
 
-**Undo.** The `<h1>`, `<title>`, `document.title` and the three "Ask ICU Lookahead" strings.
+**Undo.** The `<h1>`, `<title>`, `document.title` and the three "Ask ICU Horizon" strings.
 
 ### 12. Phone layout at 390 px
 

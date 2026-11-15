@@ -8,7 +8,7 @@ Start with `HANDOFF.md`, then `docs/ARCHITECTURE.md` (what runs where) and `back
 
 | Area | Rule |
 |---|---|
-| Name | The product is ICU Lookahead (D24). Code, workflow, header and file names keep `lookahead` |
+| Name | The product is ICU Horizon (D28). Code, workflow, header and file names keep `lookahead` |
 | Data | Never commit patient data, ids, model weights or probes. Never open `backend/data/`. MIMIC-IV rows live only there (git-ignored) and on Fuzzball volumes; the repo is public. Print counts only. Names on the board are generated |
 | Backend | `uv` only. `cd backend && uv run --extra dev --extra model pytest -q` and `ruff check app tests` must pass; the page tests need a browser: `uv run --extra dev --extra model --with playwright python -m pytest -q tests/test_page_browser.py` |
 | Fuzzball | Check syntax against https://docs.ciq.com/fuzzball/4.3, not memory. Never start, stop or delete anything on the cluster without the team's go-ahead. Only the dispatcher starts forecast runs. Edit templates in `backend/fuzzball/`, then render `ready/` with `scripts/make_ready.sh`; do not edit `ready/` by hand |

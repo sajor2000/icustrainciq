@@ -1,4 +1,4 @@
-# Lookahead: selected-25 research demo
+# ICU Horizon: selected-25 research demo
 
 This is the actual app's backend on isolated branch `t7/ui-nemotron-chatbot`.
 Run local commands below from `backend/`. The workflow alignment record names

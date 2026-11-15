@@ -1,6 +1,6 @@
 # Handoff
 
-Read this if you are taking over ICU Lookahead and need its state, its owners and the next steps.
+Read this if you are taking over ICU Horizon and need its state, its owners and the next steps.
 
 Last updated: 2026-11-15.
 
@@ -72,7 +72,7 @@ We built it together; there are no per-person roles.
 
 ## Status
 
-The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, from ICU-Twin, and it worked. The workflow files as rendered from this repo have not been run on the cluster.
+The team ran ICU Horizon end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, from ICU-Twin, and it worked. The workflow files as rendered from this repo have not been run on the cluster.
 
 | Piece | State |
 |---|---|

@@ -1288,7 +1288,7 @@ index b3ba59f..e19aa40 100644
      else { await new Promise(res=>{ const t=setTimeout(res, FAST?40:450); ctl.signal.addEventListener("abort",()=>{ clearTimeout(t); res(); }); }); a = stopped ? "" : await Promise.resolve(answer(q)); }
 -    th.remove(); if(askCtl===ctl) askCtl=null;
 +    th.remove(); askCtls.delete(ctl); if(askCtl===ctl) askCtl=null; if(gen!==chatGen) return;      // Close ended this conversation: drop its late answer
-     if(stopped) say("","Stopped.","n"); else say("Lookahead",a,"a"); }
+     if(stopped) say("","Stopped.","n"); else say("ICU Horizon",a,"a"); }
    const saveChat = v => { try{ localStorage.setItem("lookahead-chat",v); }catch(e){ /* storage blocked: the widget starts closed next time */ } };
    function grow(){ qEl.style.height="auto"; qEl.style.height=Math.min(qEl.scrollHeight+2, 104)+"px"; sendBtn.disabled=!qEl.value.trim(); }
 @@ -1382,7 +1382,7 @@ details.more summary:hover{color:var(--ink)}
@@ -1325,7 +1325,7 @@ index b3ba59f..e19aa40 100644
      else { await new Promise(res=>{ const t=setTimeout(res, FAST?40:450); ctl.signal.addEventListener("abort",()=>{ clearTimeout(t); res(); }); }); a = stopped ? "" : await Promise.resolve(answer(q)); }
 -    th.remove(); if(askCtl===ctl) askCtl=null;
 +    th.remove(); askCtls.delete(ctl); if(askCtl===ctl) askCtl=null; if(gen!==chatGen) return;      // Close ended this conversation: drop its late answer
-     if(stopped) say("","Stopped.","n"); else say("Lookahead",a,"a"); }
+     if(stopped) say("","Stopped.","n"); else say("ICU Horizon",a,"a"); }
    const saveChat = v => { try{ localStorage.setItem("lookahead-chat",v); }catch(e){ /* storage blocked: the widget starts closed next time */ } };
    function grow(){ qEl.style.height="auto"; qEl.style.height=Math.min(qEl.scrollHeight+2, 104)+"px"; sendBtn.disabled=!qEl.value.trim(); }
 @@ -1382,7 +1382,7 @@ details.more summary:hover{color:var(--ink)}
