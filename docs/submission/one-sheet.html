@@ -145,7 +145,7 @@ section{margin-top:6px}
   <section class="pad arch" aria-label="How we used the CIQ stack">
     <span class="cap">How we used the CIQ stack · 1 Training <em>one training workflow on both GB10s, with data prep and probes</em></span>
     <img src="../diagrams/arch-train.png" alt="Training on CIQ Fuzzball, run once: job 1 moves CLIF records in on node A (CPU); job 2 tokenizes them into the custom 1,231-token vocabulary on node B (CPU); job 3 trains the GEM, a Nemotron backbone, from scratch on both nodes with one DDP rank and one GPU each; job 3.1 packages the checkpoint on node A; job 4 embeds patients on both GPUs and fits six probes on node B. Tokens, the GEM and the probes are saved on the 200 GB mimic_clif VAST volume.">
-    <span class="cap">2 ICU Horizon live <em>what Fuzzball runs for the bed board and the chat</em></span>
+    <span class="cap">2 ICU Horizon live <em>how the chat gets its context: Nemotron sees the GEM's forecast, never patient records</em></span>
     <img src="../diagrams/arch-live.png" alt="ICU Horizon live, job 5 on CIQ Fuzzball: load (CPU, node B), infer with the GEM and probes (GPU, node B, 35 s), score (CPU, node A) writes the forecast to twin-store; the bed board service (CPU, node A) serves clinicians over HTTPS; the Nemotron 3.5 Bolt E4B chat on llama.cpp (GPU, node B) answers questions, with weights on hfcache.">
     <p class="arch-note"><b>How the chat knows the patients:</b> the board's chat agent reads the GEM's forecast on twin-store and passes it to Nemotron as tool results; Nemotron never reads patient records. <b>Fuzzball:</b> Orchestrate schedules, Substrate runs the containers (NVIDIA NGC PyTorch; llama.cpp, an open-source LLM server). DDP: PyTorch distributed data parallel.</p>
   </section>
