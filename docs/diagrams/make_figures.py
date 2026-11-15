@@ -426,6 +426,29 @@ def arch_live():
     f.write()
 
 
+# =============================================================== slides: EHR table -> vocabulary -> GEM -> predictions
+def ehr_to_tokens():
+    f = Fig("ehr-to-tokens", 1280, 320, "From EHR tables to predictions",
+            "Left to right: charted EHR values from CLIF tables (time, heart rate, mean arterial pressure, PEEP on the ventilator, norepinephrine dose) become event tokens in a custom 1,231-token vocabulary, each value binned into one of ten bins. The GEM, an NVIDIA Nemotron E4B backbone trained from scratch with a next-token objective, reads a patient's tokens once; its last hidden state is 384 numbers. Six linear probes on that state give five 24-hour chances. Values are illustrative.",
+            "ICU Horizon · the model", "From EHR tables to predictions", big=True)
+    _print_fonts(f)
+    y, h, g = 24, 236, 24
+    ws = (214, 344, 198, 176, 222)
+    xs = []; x = 20
+    for w in ws:
+        xs.append(x); x += w + g
+    f.node(xs[0], y, ws[0], h, "card", "EHR · CLIF tables", "Charted values", ["08:00", "heart rate 118", "MAP 62 mmHg", "PEEP 10 cmH2O", "norepi 0.12"])
+    f.node(xs[1], y, ws[1], h, "forecast", "1,231-token vocab", "Event tokens", ["CLCK//08", "VITAL//heart_rate//B8", "VITAL//map//B2", "RESP//peep_set//B6", "MED_CON//norepinephrine//B4"])
+    f.node(xs[2], y, ws[2], h, "model", "From scratch", "GEM", ["Nemotron E4B", "backbone, 36M", "parameters,", "next-token loss"])
+    f.node(xs[3], y, ws[3], h, "card", "One pass", "Hidden state", ["384 numbers", "per patient"])
+    f.node(xs[4], y, ws[4], h, "card", "6 linear probes", "24-h chances", ["Ventilator", "Vasopressor", "CRRT", "To ward", "Death"])
+    m = y + h // 2
+    for i in range(4):
+        f.arrow([(xs[i] + ws[i], m), (xs[i + 1], m)], BLUE if i in (1, 2) else None)
+    f.caption("Each value becomes one token (ten bins per measure). Values are illustrative.", 300, key=False)
+    f.write()
+
+
 # =============================================================== print: the model in four steps (Steps type)
 def model_steps():
     steps = [("01", "Train from scratch", ["Nemotron backbone,", "1,231-token vocab"], False),
@@ -616,7 +639,7 @@ def results_auroc():
     f.write()
 
 
-FIGURES = (stack, flow, architecture, architecture_print, model_steps, arch_train, arch_live, workflow, api, trigger, data_boundary, results_auroc)
+FIGURES = (stack, flow, architecture, architecture_print, model_steps, arch_train, arch_live, ehr_to_tokens, workflow, api, trigger, data_boundary, results_auroc)
 
 if __name__ == "__main__":
     if "--night" in sys.argv:
