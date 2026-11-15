@@ -42,7 +42,7 @@ UChicago Medicine: Kaveri Chhikara, MS \textperiodcentered{} Dema Therese, MS \t
 \vspace{2pt}
 \begin{multicols}{2}
 \sh{The problem}
-A small or rural ICU has a few life-support machines (ventilators, dialysis), no data-science team, and patient data that cannot leave the building. It learns it is short too late; help is a transfer hours away.
+In spring 2020, COVID-19 hospitals feared running out of ventilators and wrote rules for who would get one.$^{1,2}$ A small or rural ICU lives with that strain: few life-support machines, no data-science team, and data that cannot leave the building.
 
 \columnbreak
 \sh{What we built}
@@ -51,24 +51,23 @@ A bed board the ICU nurse and doctor read at 7 am, before rounds (the daily team
 
 \vspace{2pt}
 {\sffamily\bfseries\color{blue}\small WHAT IS NEW: A NEMOTRON BACKBONE TRAINED FROM SCRATCH\hfill\normalfont\itshape\color{sec} GEM (generative event model): 36M params, 1,231-token vocab\par}\vspace{2pt}
-{\par\vspace{3pt}\centering \includegraphics[width=0.6\linewidth]{../diagrams/model-steps.png}\par\vspace{2pt}}
-\vspace{-6pt}
+{\par\vspace{3pt}\centering \includegraphics[width=0.52\linewidth]{../diagrams/model-steps.png}\par\vspace{2pt}}
+\vspace{-4pt}
+{\fontsize{8.6}{10.2}\selectfont \textbf{One model, many tasks.} Most healthcare AI trains one model per prediction. The GEM is read once per patient and linear probes on its hidden state predict many tasks; a new task is a new probe, not a new model. \textbf{Privacy-preserving, on-premises:} it trains and runs on the hospital's own machines, and patient records never leave.\par}
+\vspace{3pt}
 
-
-\vspace{2pt}
-
-{\sffamily\bfseries\color{blue}\small THE FIVE PREDICTIONS\hfill\normalfont\itshape\color{sec} each is the chance it happens in the next 24 hours\par}\vspace{1pt}
-{\par\vspace{3pt}\centering \includegraphics[width=0.78\linewidth]{img/five-cards.png}\par\vspace{2pt}}
+{\sffamily\bfseries\color{blue}\small THE FIVE PREDICTIONS\hfill\normalfont\itshape\color{sec} five an ICU physician finds clinically meaningful; each is a 24-hour chance\par}\vspace{1pt}
+{\par\vspace{3pt}\centering \includegraphics[width=0.72\linewidth]{img/five-cards.png}\par\vspace{2pt}}
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
 AUROC: area under the receiver operating characteristic curve (1.0 is perfect), on held-out patients never seen in training.}
 
 \vspace{5pt}
 
-{\sffamily\bfseries\color{blue}\small HOW WE USED THE CIQ STACK \textperiodcentered{} 1 TRAINING\hfill\normalfont\itshape\color{sec} one training workflow on both GB10s, with data prep and probes\par}
-{\par\vspace{3pt}\centering \includegraphics[width=0.68\linewidth]{../diagrams/arch-train.png}\par\vspace{2pt}}
+{\sffamily\bfseries\color{blue}\small HOW WE USED THE CIQ STACK\par}\vspace{1pt}{\sffamily\fontsize{8.6}{10.4}\selectfont\color{sec}\textbf{\color{ink}1 \textperiodcentered{} Training.} One training workflow on both NVIDIA GB10s, with data prep and probe fitting around it.\par}
+{\par\vspace{3pt}\centering \includegraphics[width=0.58\linewidth]{../diagrams/arch-train.png}\par\vspace{2pt}}
 
-{\sffamily\bfseries\color{blue}\small 2 ICU HORIZON LIVE\hfill\normalfont\itshape\color{sec} how the chat gets its context: Nemotron sees the GEM's forecast, never patient records\par}
-{\par\vspace{3pt}\centering \includegraphics[width=0.68\linewidth]{../diagrams/arch-live.png}\par\vspace{2pt}}
+{\sffamily\fontsize{8.6}{10.4}\selectfont\color{sec}\textbf{\color{ink}2 \textperiodcentered{} ICU Horizon live.} How the chat gets its context: Nemotron sees the GEM's forecast, never patient records.\par}
+{\par\vspace{3pt}\centering \includegraphics[width=0.58\linewidth]{../diagrams/arch-live.png}\par\vspace{2pt}}
 \vspace{-4pt}
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
 \textbf{\color{ink}How the chat knows the patients:} the board's chat agent reads the GEM's forecast on twin-store and passes it to Nemotron as tool results; Nemotron never reads patient records. \textbf{\color{ink}Fuzzball:} Orchestrate schedules, Substrate runs the containers (llama.cpp: an open-source LLM server). DDP: PyTorch distributed data parallel.\par}
@@ -77,7 +76,7 @@ AUROC: area under the receiver operating characteristic curve (1.0 is perfect), 
 {\color{ink}\rule{\textwidth}{0.9pt}}\\[2pt]
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
 \begin{minipage}[t]{0.74\textwidth}
-\textbf{\color{ink}Data:} CLIF-MIMIC, our electronic health record (EHR) dataset: MIMIC-IV, a public de-identified ICU database, in CLIF (Common Longitudinal ICU data Format), \href{https://clif-icu.com}{\textbf{\color{ink}clif-icu.com}}. Code: \href{https://github.com/vaishvikc/ICU-Twin}{\textbf{\color{ink}github.com/vaishvikc/ICU-Twin}}. Research prototype; not a medical device.
+$^1$Ranney ML et al. N Engl J Med 2020;382:e41. $^2$Truog RD et al. N Engl J Med 2020;382:1973--5. \textbf{\color{ink}Data:} CLIF-MIMIC, our electronic health record (EHR) dataset: MIMIC-IV, a public de-identified ICU database, in CLIF (Common Longitudinal ICU data Format), \href{https://clif-icu.com}{\textbf{\color{ink}clif-icu.com}}. Code: \href{https://github.com/vaishvikc/ICU-Twin}{\textbf{\color{ink}github.com/vaishvikc/ICU-Twin}}. Research prototype; not a medical device.
 \end{minipage}\hfill
 \begin{minipage}[t]{0.25\textwidth}\raggedleft{\normalsize\bfseries\color{ink}\rmfamily Nothing leaves the building.}\end{minipage}}
 \end{document}

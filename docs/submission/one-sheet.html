@@ -72,8 +72,10 @@ section{margin-top:6px}
 .steps b i{font-style:normal;color:var(--blue);margin-right:4px}
 
 /* the stack: ink band */
-.arch img{display:block;width:66%;margin:0 auto 4px;height:auto;border-radius:8px}
-.steps-fig img{display:block;width:70%;margin:0 auto;height:auto;border-radius:.5rem}
+.arch img{display:block;width:60%;margin:0 auto 4px;height:auto;border-radius:8px}
+.steps-fig img{display:block;width:68%;margin:0 auto;height:auto;border-radius:.5rem}
+.sub{font-size:12px;line-height:1.35;color:var(--ink-2);margin:2px 0 3px}
+.sub b{color:var(--ink);font-weight:800}
 .arch-note{margin-top:4px;font-size:11px;line-height:1.38;color:var(--ink-2)}
 .arch-note b{color:var(--ink)}
 
@@ -111,7 +113,7 @@ section{margin-top:6px}
   <section class="three pad">
     <div>
       <h2>The problem</h2>
-      <p>A small or rural ICU has a few life-support machines (ventilators, dialysis), no data-science team, and patient data that cannot leave the building. It learns it is short too late; help is a transfer hours away.</p>
+      <p>In spring 2020, COVID-19 hospitals feared running out of ventilators and wrote rules for who would get one.<sup>1,2</sup> A small or rural ICU lives with that strain: few machines, no data-science team, and data that cannot leave the building.</p>
     </div>
     <div>
       <h2>What we built</h2>
@@ -119,17 +121,17 @@ section{margin-top:6px}
     </div>
     <div>
       <h2>What is new for healthcare AI</h2>
-      <ul class="new"><li><b>GEM (generative event model):</b> NVIDIA Nemotron E4B backbone, trained from scratch: 36M parameters, custom 1,231-token ICU vocabulary.</li><li><b>One pass, many outcomes:</b> linear probes on the hidden state.</li><li><b>Patient to unit:</b> sums into machine demand.</li><li><b>On-premises:</b> the hospital's own hardware.</li></ul>
+      <ul class="new"><li><b>One model, many tasks:</b> most healthcare AI trains one model per prediction. Our GEM (generative event model), a Nemotron E4B backbone trained from scratch, serves them all from one pass.</li><li><b>New task:</b> a new linear probe, no retraining.</li><li><b>Privacy-preserving, on-premises:</b> records never leave the hospital.</li></ul>
     </div>
   </section>
 
   <section class="pad steps-fig" aria-label="The model">
-    <span class="cap">The model we trained <em>a Nemotron backbone, trained from scratch, read through its hidden layer</em></span>
+    <span class="cap">The model we trained <em>Nemotron backbone from scratch · 36M parameters · custom 1,231-token vocabulary</em></span>
     <img src="../diagrams/model-steps.png" alt="The GEM in four steps: 1, train the GEM from scratch: an NVIDIA Nemotron 3.5 Bolt E4B backbone with a custom vocabulary of 1,231 ICU event tokens; 2, highlighted, read its hidden layer: one pass per patient gives a 384-dimensional embedding; 3, six logistic-regression probes give 24-hour event probabilities; 4, the Nemotron E4B chat explains the forecast through tools and predicts nothing.">
   </section>
 
   <section class="pad" aria-label="The five predictions">
-    <span class="cap">The five predictions <em>the chance each happens in the next 24 hours, on every bed</em></span>
+    <span class="cap">The five predictions <em>five an ICU physician finds clinically meaningful; each is the chance in the next 24 hours</em></span>
     <div class="five">
       <div class="p"><svg class="ic" style="color:var(--vent)"><use href="#i-vent"/></svg><p class="t"><b>Ventilator start</b></p><p class="what">a machine breathes for the patient</p><p class="score">AUROC <b>0.78</b></p></div>
       <div class="p"><svg class="ic" style="color:var(--press)"><use href="#i-pump"/></svg><p class="t"><b>Vasopressor start</b></p><p class="what">a drug given into a vein that raises blood pressure</p><p class="score">AUROC <b>0.77</b></p></div>
@@ -143,16 +145,17 @@ section{margin-top:6px}
   
 
   <section class="pad arch" aria-label="How we used the CIQ stack">
-    <span class="cap">How we used the CIQ stack · 1 Training <em>one training workflow on both GB10s, with data prep and probes</em></span>
+    <span class="cap">How we used the CIQ stack</span>
+    <p class="sub"><b>1 · Training.</b> One training workflow on both NVIDIA GB10s, with data prep and probe fitting around it.</p>
     <img src="../diagrams/arch-train.png" alt="Training on CIQ Fuzzball, run once: job 1 moves CLIF records in on node A (CPU); job 2 tokenizes them into the custom 1,231-token vocabulary on node B (CPU); job 3 trains the GEM, a Nemotron backbone, from scratch on both nodes with one DDP rank and one GPU each; job 3.1 packages the checkpoint on node A; job 4 embeds patients on both GPUs and fits six probes on node B. Tokens, the GEM and the probes are saved on the 200 GB mimic_clif VAST volume.">
-    <span class="cap">2 ICU Horizon live <em>how the chat gets its context: Nemotron sees the GEM's forecast, never patient records</em></span>
+    <p class="sub"><b>2 · ICU Horizon live.</b> How the chat gets its context: Nemotron sees the GEM's forecast, never patient records.</p>
     <img src="../diagrams/arch-live.png" alt="ICU Horizon live, job 5 on CIQ Fuzzball: load (CPU, node B), infer with the GEM and probes (GPU, node B, 35 s), score (CPU, node A) writes the forecast to twin-store; the bed board service (CPU, node A) serves clinicians over HTTPS; the Nemotron 3.5 Bolt E4B chat on llama.cpp (GPU, node B) answers questions, with weights on hfcache.">
     <p class="arch-note"><b>How the chat knows the patients:</b> the board's chat agent reads the GEM's forecast on twin-store and passes it to Nemotron as tool results; Nemotron never reads patient records. <b>Fuzzball:</b> Orchestrate schedules, Substrate runs the containers (NVIDIA NGC PyTorch; llama.cpp, an open-source LLM server). DDP: PyTorch distributed data parallel.</p>
   </section>
 
   <footer class="foot pad">
     <div class="in">
-      <span><b>Data:</b> CLIF-MIMIC, our electronic health record (EHR) dataset: MIMIC-IV, a public de-identified ICU database, in CLIF (Common Longitudinal ICU data Format), <a href="https://clif-icu.com"><b>clif-icu.com</b></a>. Code: <a href="https://github.com/vaishvikc/ICU-Twin"><b>github.com/vaishvikc/ICU-Twin</b></a>. Research prototype; not a medical device.</span>
+      <span><sup>1</sup> Ranney ML et al. N Engl J Med 2020;382:e41. <sup>2</sup> Truog RD et al. N Engl J Med 2020;382:1973–5. <b>Data:</b> CLIF-MIMIC, our electronic health record (EHR) dataset: MIMIC-IV, a public de-identified ICU database, in CLIF (Common Longitudinal ICU data Format), <a href="https://clif-icu.com"><b>clif-icu.com</b></a>. Code: <a href="https://github.com/vaishvikc/ICU-Twin"><b>github.com/vaishvikc/ICU-Twin</b></a>. Research prototype; not a medical device.</span>
       <span class="last">Nothing leaves the building.</span>
     </div>
   </footer>
