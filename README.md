@@ -42,7 +42,7 @@ Two models, two jobs: ours knows ICU data and makes the forecast; NVIDIA's knows
 - **Built the board** (Dema's final design): every bed shows life support now, then the next 24 hours. A "See first" row names the three beds most likely to need a new life support. An event shows in a circle with its chance once it reaches the threshold set in Settings, and the bed's person icon turns red and pulses when a new life support reaches it. Death never marks a bed: it is one count for the unit, and a row when a bed is opened. A bed opens a pop-up with its five chances and the last 12 hours of vital signs. Unit strain has one card per event, with the unit forecast and its range, against the ventilators and CRRT machines the unit has. Now and Next 24 h switch with a swipe. "Update the unit" shows the job's progress (Queued, Running on the GPU, Scoring, Done). Names on the tiles are generated and fictional.
 - **Built the services**: a board server, a dispatcher that starts the 07:00 run and the on-request runs, and a chat agent that answers from the forecast through tools.
 - **Wrote the Fuzzball workflows**: publish the code (`t7-code`), stage the unit (`t7-ward`), the forecast (`t7-forecast`: a check, one model pass on one GPU, scoring) and the services (`t7-twin`), as ready-to-run files in `backend/fuzzball/ready/`. `t7-fit` stays only as a fallback for when training's job 4 has not run. One script, `backend/scripts/launch.sh`, runs what is needed and prints the board's link.
-- **Tested it**: 457 backend tests pass: 431 with `cd backend && uv run --extra dev --extra model pytest -q`, and 26 more that drive the page in a real browser (`uv run --extra dev --extra model --with playwright python -m pytest -q`).
+- **Tested it**: 459 backend tests pass: 431 with `cd backend && uv run --extra dev --extra model pytest -q`, and 28 more that drive the page in a real browser (`uv run --extra dev --extra model --with playwright python -m pytest -q`).
 - **Where it stands**: it ran end to end on the two Lenovo machines under Fuzzball with one launch script (the team's run on 2026-11-14, from ICU-Twin). The demo patients and the trained model are on the cluster. The steps, what each leaves on the cluster and the failures already met there are in the [runbook](backend/docs/RUNBOOK.md). The board also runs on a laptop with made-up data.
 
 ## How well it predicts
@@ -65,7 +65,9 @@ On held-out patients (cut at ICU arrival + 24 h, event in the next 24 h): AUROC 
 
 ## Where the patient data lives
 
-![Patient records stay on Fuzzball volumes inside the two machines; only room numbers, counts and percentages reach the browser](docs/diagrams/data-boundary.png)
+The patient tables stay on Fuzzball volumes inside the two machines. The clinician's browser gets the unit counts and one entry per room: the five chances, the last events the model read and 12 hours of vital signs. The chat model gets tool results only. GitHub holds code only.
+
+![Patient tables stay on Fuzzball volumes inside the two machines; unit counts and room entries reach the clinician's browser; the chat model sees tool results only](docs/diagrams/data-boundary.png)
 
 ## Run it
 

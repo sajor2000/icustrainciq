@@ -50,7 +50,7 @@ One file. Details, pictures and undo for every row: [`UI_REVIEW_FOR_DEMA.md`](UI
 
 | Change | Area | Why | Risk to the running demo | Recommendation | Owner | How to port |
 |---|---|---|---|---|---|---|
-| Chat grounded in one published snapshot (PR #16): `demo_context.py`, `evidence.py`, a bounded `chat_agent.py`, `board.py --context` | chat | Feature, and a bug fixed (a unit answer and a bed answer could come from different runs; the model could state a number the forecast did not contain) | **Needs live check** (548 changed lines in `chat_agent.py`; tested here on synthetic data only) | Port after demo | J.C. | Section 5.2 |
+| Chat grounded in one published snapshot (PR #16): `demo_context.py`, `evidence.py`, a bounded `chat_agent.py`, `board.py --context` | chat | Feature, and a bug fixed (a unit answer and a bed answer could come from different runs; the model could state a number the forecast did not contain) | **Needs live check** (548 changed lines in `chat_agent.py`; tested here on synthetic data only) | Port after demo, with `app/capacity.py` (section 5.8) | J.C. | Section 5.2 |
 | The three `t7-lookahead-*.fz` workflows and the `demo-context` volume | workflows | Feature | **Needs live check: never run on the cluster**, and they use a second volume the team's plan does not have | Keep here only until after the demo | Kaveri | Section 5.2 |
 | Real MIMIC-IV rooms only with `--real-ward` (D19); `t7-twin.fz` passes `@WARD_FLAG@` | backend, workflows | Bug fixed (privacy: the board served real rooms whenever the files carried them) | **Needs live check**: if `board.py` is ported without the `t7-twin.fz` line, the cohort board shows no rooms | Port after demo, both together | Kaveri | Section 5.3 |
 | `--counts-only` on the ward winnow in `t7-fit`, `t7-ward`, `t7-forecast`, and the flag in `winnower.py` | workflows, scoring | Bug fixed (privacy: outcome rates of a 25-stay ward went into workflow logs) | **Needs live check**: the workflow line and the winnower must ship in one publish, or the job fails | Port after demo | Kaveri, Vaishvik | Section 5.6 |
@@ -171,7 +171,7 @@ Each topic says what changed, why, and what to take with it.
 
 **Why.** A unit answer and a room answer could come from different runs. The model could also state a number the forecast did not contain.
 
-**Take with it.** `demo_context.py`, `evidence.py`, `chat_agent.py` and `board.py` together, with `test_demo_context.py`, `test_demo_chat_app.py`, `test_chat_agent.py`. Docs: `backend/docs/CHAT_AGENT.md`, `backend/docs/LOOKAHEAD_DEMO.md`, `CHATBOT_HANDOFF.md`.
+**Take with it.** `demo_context.py`, `evidence.py`, `chat_agent.py`, `board.py` **and `capacity.py`** together, with `test_demo_context.py`, `test_demo_chat_app.py`, `test_chat_agent.py`, `test_capacity.py`. `chat_agent.py` and `board.py` import `capacity` unconditionally and ICU-Twin does not have that file, so without it the board does not start (`ModuleNotFoundError`). Section 5.8 (capacity and staffing) is therefore a prerequisite of this bundle, not a later step. Docs: `backend/docs/CHAT_AGENT.md`, `backend/docs/LOOKAHEAD_DEMO.md`, `CHATBOT_HANDOFF.md`.
 
 **Works without it.** The board and chat still run from plain `forecast.json` and `rooms.json` when `--context` is not given.
 
@@ -263,8 +263,8 @@ Before the demo, only sections 1.1 and 1.2. Afterwards:
 1. 5.10, then 5.6 (winnower and logger first, then the three workflow lines).
 2. 5.5, then re-extract the ward.
 3. 5.4.
-4. 5.8.
-5. 5.2 and 5.3 together, with the `t7-twin.fz` line.
+4. 5.8 (it brings `app/capacity.py`, which 5.2 imports).
+5. 5.2 and 5.3 together, with the `t7-twin.fz` line. Never before 5.8.
 6. 5.9: take the page whole, then copy it to `app/static/index.html`.
 7. Re-render `fuzzball/ready/` and run `fuzzball workflow validate` on each file.
 

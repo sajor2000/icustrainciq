@@ -27,7 +27,7 @@ Keep values short (about 14 characters fit in a slot on the sheet).
 
 | Count | Value on Nov 14 | Recheck with |
 |---|---|---|
-| Backend tests passing | 457 on Nov 15 (431 without a browser, plus 26 page tests in a real browser) | `cd backend && uv run --extra dev --extra model --with playwright python -m pytest -q` |
+| Backend tests passing | 459 on Nov 15 (431 without a browser, plus 28 page tests in a real browser) | `cd backend && uv run --extra dev --extra model --with playwright python -m pytest -q` |
 | "Ran end to end on the two Lenovo machines under Fuzzball with one launch script" | true of the team's run on Nov 14, from ICU-Twin | `HANDOFF.md`, Status |
 
 ## Statements to confirm on site

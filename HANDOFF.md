@@ -66,7 +66,7 @@ Names and affiliations as listed by the [CLIF Consortium](https://clif-icu.com/t
 | Cluster | **From the ICU-Twin checkout, not from here:** `bash scripts/launch.sh` (variants `--all`, `--restart`, `--forecast`, `--link`, `--no-open`). The same script is in `backend/scripts/` here for reference only |
 | Laptop, the page with made-up data | `python3 -m http.server 8000`, then open `http://localhost:8000/mockups/command-center.html#synthetic` |
 | Laptop, the board server on example data | `cd backend && uv run python app/board.py --forecast ../examples/forecast.json --static ../mockups/command-center.html --port 8080` |
-| Tests | `cd backend && uv run --extra dev --extra model pytest -q` (431 tests) and `ruff check app tests`. With a browser: `uv run --extra dev --extra model --with playwright python -m pytest -q` (457: 26 drive the page) |
+| Tests | `cd backend && uv run --extra dev --extra model pytest -q` (431 tests) and `ruff check app tests`. With a browser: `uv run --extra dev --extra model --with playwright python -m pytest -q` (459: 28 drive the page) |
 
 ## Status
 
@@ -100,7 +100,7 @@ Not for the demo. Afterwards, and only with the team's go-ahead:
 
 1. Merge the final pull request, then **re-render `ready/`**: `cd backend && scripts/make_ready.sh $(git rev-parse HEAD)` and commit `fuzzball/ready/`. The files there now pin `617edc0`.
 2. Check the ingress line names this repo: `grep -h "uri:.*http" fuzzball/ready/*.fz | sort -u`.
-3. If `twin-store` was recreated, stage job 4's probe again (`RUNBOOK.md` section 4), after the code is published.
+3. If `twin-store` was recreated: publish the code first, `bash scripts/launch.sh --code` (the probe's sidecar command imports `icutwin` from `/store/code` and `/store/py`, which a new volume does not have yet), then stage job 4's probe and its sidecar (`RUNBOOK.md` section 4). On a volume that still holds the staged probe, skip this step.
 4. `bash scripts/launch.sh --all --restart`. `--all` alone publishes the code but leaves a running `t7-twin` on the code it loaded at start; `--restart` reloads it, and is skipped when nothing is running. This overwrites `/store/code` on the shared volume: the team's code there is replaced.
 
 ## Rules that must hold

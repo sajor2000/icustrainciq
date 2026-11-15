@@ -282,7 +282,7 @@ index bd2baf4..c959515 100755
    S=$(fuzzball workflow describe "$WF" 2>/dev/null | awk -F'|' '$3 ~ /board/ {gsub(/ /,"",$2); print $2; exit}')
    case "$S" in
 -    Running) echo " ready"; break ;;
-+    Running) echo " ready"; READY=1; break ;;
++    Running|Started) echo " ready"; READY=1; break ;;
      Failed|Errored|Canceled)
        echo " $S"; echo "   fuzzball workflow log $WF board" >&2; exit 1 ;;
    esac

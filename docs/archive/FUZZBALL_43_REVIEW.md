@@ -4,13 +4,15 @@ Read this if you want to see each workflow construct checked against the Fuzzbal
 
 **Archived 2026-11-15** from `backend/docs/`. File names in the text are relative to `backend/` as it was then.
 
+> **Do not launch from this repository.** The demo runs from the team's ICU-Twin repo ([github.com/vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin)); `launch.sh` run from here would overwrite the team's code on the shared volume. Where this archived record says to run `scripts/launch.sh`, it means ICU-Twin's procedure.
+
 **Status:** The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Statements below that nothing had run describe the time of writing.
 
 Superseded since this review: line numbers, and findings about constructs that later changed. In the files on `main` the dispatcher fetches the Fuzzball CLI with Python (no `apt`, no `wget`), the board endpoint is `protocol: http` (the proxy ends TLS), and the probe comes from job 4, with `t7-fit` as the fallback. Current state:
 
 | Topic | Current state (code on `main`) |
 |---|---|
-| How to run | `scripts/launch.sh` first ([`RUNBOOK.md`](../../backend/docs/RUNBOOK.md)); the manual workflow steps are the fallback |
+| How to run | From the ICU-Twin checkout, its `scripts/launch.sh` first (ICU-Twin's runbook); the manual workflow steps are the fallback. Not from this repository: [`RUNBOOK.md`](../../backend/docs/RUNBOOK.md) here is for after the demo, with the team's go-ahead |
 | Volumes | `twin-store` is the one volume ICU Lookahead writes (code, packages, stage ward, forecast files). `mimic_clif` is only read, at `/data`. `hfcache` holds the Nemotron weights. `clif_work` and `tooling` are not used |
 | Probe | Fitted by job 4 in vaishvikc/ICU-Twin and staged at `/store/train/probe-final.joblib` with `probe-final.meta.json`. `t7-fit` is the fallback |
 | Names | Generated per room number by `app/fake_names.py` (`--names fake`). `name.parquet` is no longer read |

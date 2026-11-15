@@ -98,7 +98,7 @@ Timing notes: the 4:30 and 4:50 lines are about 60 and 40 words, 40 seconds toge
 
 | Question | Answer |
 |---|---|
-| **Privacy: where does patient data go?** | "Nowhere. Patient rows live on Fuzzball volumes on the two machines. The browser and the chat model see room numbers, counts and percentages. GitHub holds code only. The names on screen are made up." |
+| **Privacy: where does patient data go?** | "It stays in the building. The patient tables live on Fuzzball volumes on the two machines. The clinician's browser, inside the hospital, shows each bed's forecast, its recent chart events and vital signs. The chat model sees only the answers of its tools. GitHub holds code only. The names on screen are made up." |
 | **How accurate is it? Is it validated?** | "It is a research prototype trained on MIMIC-IV, a public research dataset, in CLIF format. It has not been tested prospectively and it is not a medical device. On patients the model never saw, AUROC is 0.93 for death, 0.88 for CRRT and leaving to step-down, 0.80 for leaving to a ward, 0.78 for a ventilator and 0.77 for a vasopressor. Full table in docs/RESULTS.md." |
 | **Why local? Why not a cloud API?** | "A rural hospital often has no cloud contract for patient data and no team to run one. Two desk-size machines it owns need no contract and no connection. And a model this small does not need more: one pass per patient on one GPU." |
 

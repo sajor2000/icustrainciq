@@ -4,13 +4,15 @@ Read this if you are checking a first run on the cluster step by step and want t
 
 **Archived 2026-11-15** from `backend/docs/`. File names in the text are relative to `backend/` as it was then.
 
+> **Do not launch from this repository.** The demo runs from the team's ICU-Twin repo ([github.com/vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin)); `launch.sh` run from here would overwrite the team's code on the shared volume. Where this archived record says to run `scripts/launch.sh`, it means ICU-Twin's procedure.
+
 **Status:** The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Statements below that nothing had run describe the time of writing.
 
 Superseded since this plan: "nothing in this plan has been run" was true when written; [`RUNBOOK.md`](../../backend/docs/RUNBOOK.md) is the team's later launch procedure. Step 2 (`t7-fit`) is now the fallback, not a required step. Read `t7-build` as training (vaishvikc/ICU-Twin, `workflows/job_3_train`). Start the files in `fuzzball/ready/` (`scripts/make_ready.sh`); do not render by hand or with `sed`. Where a paragraph below disagrees with this table, the table wins.
 
 | Topic | Current state (code on `main`) |
 |---|---|
-| How to run | `scripts/launch.sh` first ([`RUNBOOK.md`](../../backend/docs/RUNBOOK.md)); the manual workflow steps are the fallback |
+| How to run | From the ICU-Twin checkout, its `scripts/launch.sh` first (ICU-Twin's runbook); the manual workflow steps are the fallback. Not from this repository: [`RUNBOOK.md`](../../backend/docs/RUNBOOK.md) here is for after the demo, with the team's go-ahead |
 | Volumes | `twin-store` is the one volume ICU Lookahead writes (code, packages, stage ward, forecast files). `mimic_clif` is only read, at `/data`. `hfcache` holds the Nemotron weights. `clif_work` and `tooling` are not used |
 | Probe | Fitted by job 4 in vaishvikc/ICU-Twin and staged at `/store/train/probe-final.joblib` with `probe-final.meta.json`. `t7-fit` is the fallback |
 | Names | Generated per room number by `app/fake_names.py` (`--names fake`). `name.parquet` is no longer read |

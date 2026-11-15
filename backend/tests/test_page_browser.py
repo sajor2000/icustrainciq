@@ -479,6 +479,16 @@ def test_a_live_update_follows_the_dispatcher_and_ends_updated_or_stopped(
             page.wait_for_selector(
                 "#runprog .steps li.is:has-text('Running on the GPU')"
             )
+            # the job list cannot be read: the step stays, and the strip says so
+            fake.status = {
+                "running": {"unknown": True},
+                "updating": False,
+                "stuck": None,
+            }
+            page.wait_for_selector(
+                "#runprog .pg-m:has-text(\"Can't read the job's status\")"
+            )
+            assert "Running on the GPU" in current(page)
             fake.set(None)
             page.wait_for_selector("#runprog .steps li.is:has-text('Scoring')")
             forecast = json.loads((tmp_path / "forecast.json").read_text())
@@ -506,3 +516,66 @@ def test_a_live_update_follows_the_dispatcher_and_ends_updated_or_stopped(
             page.close()
     finally:
         fake.close()
+
+
+def test_a_refused_second_update_leaves_the_running_one_alone(browser, tmp_path):
+    """CodeRabbit PR 25: while a bed update runs, an update of the unit asked in the
+    chat is refused; the strip keeps the bed's scope and step and adds the reason."""
+    unit_files(tmp_path, lambda room: None)
+    with running_board(tmp_path, static_path=PAGE) as base:
+        page = open_page(browser, base, WIDTHS[0], "synthetic&room=3")
+        page.click("#rv-update")
+        page.wait_for_selector("#rv-prog .steps li.is")
+        page.click("#rv-ask")
+        page.fill("#q", "update the unit")
+        page.click("#send")
+        page.wait_for_selector("#log .msg.a")
+        assert "already running" in page.inner_text("#log .msg.a")
+        strip = page.inner_text("#runprog")
+        assert "Updating bed 3" in strip and "Not started." not in strip, strip
+        assert "A second update was not started" in strip, strip
+        assert page.locator("#runprog .steps li.is").count() == 1
+        page.close()
+
+
+def test_a_capacity_read_that_began_before_a_save_is_dropped(browser, tmp_path):
+    """CodeRabbit PR 25: GET /api/capacity is asked for at load; a total saved while
+    that answer is on its way must not be put back by it."""
+    unit_files(tmp_path, lambda room: None)
+    (tmp_path / "capacity.json").write_text(json.dumps({"vents_total": 5}))
+    with running_board(tmp_path, static_path=PAGE) as base:
+        page = browser.new_page(viewport={"width": 1440, "height": 900})
+        held = []
+        page.route(
+            "**/api/capacity",
+            lambda route: (
+                held.append(route)
+                if route.request.method == "GET" and not held
+                else route.continue_()
+            ),
+        )
+        page.goto(f"{base}/#fast")
+        page.wait_for_function("() => true")
+        for _ in range(50):
+            if held:
+                break
+            page.wait_for_timeout(100)
+        assert held, "the page did not ask for the capacity"
+        # the first read is still on its way (with total 5): save 10 now
+        page.evaluate("document.getElementById('gear').click()")
+        page.fill("#cap-vt", "10")
+        with page.expect_response(
+            lambda r: r.url.endswith("/api/capacity") and r.request.method == "POST"
+        ):
+            page.press("#cap-vt", "Enter")
+        held[0].fulfill(
+            status=200,
+            content_type="application/json",
+            body=json.dumps({"vents_total": 5, "crrt_total": None}),
+        )
+        page.wait_for_selector('button.bed[data-room="1"]', state="attached")
+        page.wait_for_timeout(600)
+        assert page.input_value("#cap-vt") == "10"
+        stored = page.evaluate("localStorage.getItem('lookahead-machines')")
+        assert json.loads(stored)["imv"] == 10, stored
+        page.close()

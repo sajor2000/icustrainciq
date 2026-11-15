@@ -324,17 +324,17 @@
 -  async function loadAll(){ const [f,r]=await Promise.all([getJSON("/api/forecast"), getJSON("/api/rooms")]);
 -    if(!f||typeof f!=="object"||!r||typeof r!=="object") throw new Error("shape"); setData(f,r); }
 +  async function loadAll(preloaded=null){
-+    const cap=getJSON("/api/capacity").catch(()=>null);      // the machine totals saved on the server, on every load
++    const capGen=capSeq, cap=getJSON("/api/capacity").catch(()=>null);      // the machine totals saved on the server, on every load; capGen: the saves made when this read began
 +    if(contextMode!==false){ try{ const c=preloaded||await getJSON("/api/context");
 +        if(c && c.context_mode===false && contextMode!==true) contextMode=false;      // no context is published: the server says so with 200, so the probe leaves no error in the console (an older server answers 404, handled below)
 +        else { if(c.schema_version!==1 || !c.forecast || !c.rooms || c.snapshot_id!==c.forecast.snapshot_id || c.snapshot_id!==c.rooms.snapshot_id || c.cohort_id!==c.forecast.cohort_id || c.cohort_id!==c.rooms.cohort_id) throw new Error("context shape");
-+          contextMode=true; CONTEXT=c; setData(c.forecast,c.rooms); seenMadeAt=c.published_at; serverMachines(await cap); return; }
++          contextMode=true; CONTEXT=c; setData(c.forecast,c.rooms); seenMadeAt=c.published_at; serverMachines(await cap, capGen); return; }
 +      }catch(e){ if(e.status===404 && contextMode!==true) contextMode=false; else throw e; }
 +    }
 +    const [f,r]=await Promise.all([getJSON("/api/forecast"), getJSON("/api/rooms")]);
 +    if(!f||typeof f!=="object"||!r||typeof r!=="object") throw new Error("shape");
 +    if(f.snapshot_id && r.snapshot_id && (f.snapshot_id!==r.snapshot_id || f.cohort_id!==r.cohort_id)) throw new Error("snapshot mismatch");
-+    setData(f,r); serverMachines(await cap);
++    setData(f,r); serverMachines(await cap, capGen);
 +  }
    const sleep = ms => new Promise(res=>setTimeout(res,ms));
    async function loadRetry(tries=3){ for(let i=0;i<tries;i++){ try{ await loadAll(); return true; }catch(e){ if(i<tries-1) await sleep((FAST?150:600)*Math.pow(3,i)); } } return false; }
@@ -686,12 +686,14 @@
    function markRunning(on){
      for(const id of ["upd-strain","upd-grid","upd-room"]){ const e=$(id); if(e) e.hidden=!on; }
      for(const id of ["rerun","rv-update"]){ const b=$(id); b.setAttribute("aria-disabled",String(on)); b.textContent = on?"Updating…": id==="rerun"?"Update the unit":"Update this bed"; }
-@@ -1300,14 +1417,15 @@
+@@ -1300,14 +1417,17 @@
      if(scope==="room" && !R(n)) return `Bed ${n} is not in this forecast.`;
      const body={scope, role:who||role()}; if(scope==="room") body.room=n;
      const res=LIVE ? await api.liveRerun(body) : await api.rerun(body);
 -    if(!res.started){ const why=str(res.reason,200)||"The update did not start."; say2(scope, why, true); return why; }
-+    if(!res.started){ const why=str(res.reason,200)||"The update did not start."; setProg("fail",{scope, n, title:"Not started.", msg:why}); return why; }
++    if(!res.started){ const why=str(res.reason,200)||"The update did not start."; if(run && prog && prog.phase!=="fail" && prog.phase!=="done"){ prog.note=`A second update was not started: ${why}`; paintProg(); }      // the update already running keeps its own strip, scope and step
++      else setProg("fail",{scope, n, title:"Not started.", msg:why});
++      return why; }
      hold.unit=hold.room=false; markRunning(true);
 -    const what = scope==="room"?"bed "+n:"the unit";
 -    if(LIVE){ run={live:true,scope,n,before:sigOf(),idle:0}; if(typeof res.demo_clock_label==="string") DEMO_LABEL=res.demo_clock_label;
@@ -708,7 +710,7 @@
      return `Started ${res.name} (${scope==="room"?"bed "+n:"unit"}). The numbers refresh in place when it finishes.`;
    }
    function finishRun(scope, n){
-@@ -1317,6 +1435,7 @@
+@@ -1317,6 +1437,7 @@
      else { const old=R(n), nr=genRoom(n, mk(seedN), now, old.on_now); nr.scope="room"; const i=RM.rooms.findIndex(x=>x.room===n); RM.rooms[i]=cleanRoom(nr); FC.demo_clock_hours=demo; FC.check_first=checkFirst(RM.rooms); }
      markRunning(false); hold.unit=hold.room=false; refreshAll();
      if(scope==="room") put("rv-run",`<b>${runLine("room",n)}</b>`);
@@ -716,7 +718,7 @@
      noteChange();
    }
    $("rerun").onclick=()=>{ if($("rerun").getAttribute("aria-disabled")==="true") return; startUpdate("unit"); };
-@@ -1326,54 +1445,81 @@
+@@ -1326,54 +1447,81 @@
    function schedulePoll(ms){ clearTimeout(pollTimer); pollTimer=setTimeout(pollRuns,ms); }
    async function pollRuns(){
      let rn=null; try{ rn=await getJSON("/api/runs"); }catch(e){ /* the dispatcher may be down: the board still works */ }
@@ -732,12 +734,13 @@
 -    let need = wasOff || !FC || (f.made_at||null)!==(FC&&FC.made_at||null) || !!run;
 +    let need = wasOff || !FC || (f.made_at||null)!==(FC&&FC.made_at||null) || (snapshot && snapshot.snapshot_id!==CONTEXT?.snapshot_id) || !!run;
      if(lastRoomRunAt===undefined) lastRoomRunAt=ra||null; else if(ra && ra!==lastRoomRunAt){ lastRoomRunAt=ra; need=true; }
-     let changed=false;
+-    let changed=false;
 -    if(need){ try{ await loadAll(); changed=true; }catch(e){ /* keep the last data on screen */ } }
++    let changed=false; const sig0=sigOf(), capGen=capSeq;      // the forecast on screen before this poll's reload: the baseline for a run started elsewhere
 +    if(need){ try{ await loadAll(snapshot); changed=true; }catch(e){ /* keep the last data on screen */ } }
-+    else { try{ if(serverMachines(await getJSON("/api/capacity"))) changed=true; }catch(e){ /* keep the totals on screen */ } }   // every refresh: totals saved on another device
++    else { try{ if(serverMachines(await getJSON("/api/capacity"), capGen)) changed=true; }catch(e){ /* keep the totals on screen */ } }   // every refresh: totals saved on another device
 +    const rstate = rn && rn.running && typeof rn.running.state==="string" ? rn.running.state.toUpperCase() : "", phaseNow = /PEND|QUEUE/.test(rstate) ? "queued" : "gpu";
-+    const cantTell = !avail || !!(rn.running && rn.running.unknown), stuck = avail && rn.stuck && typeof rn.stuck==="object" ? rn.stuck : null;
++    const cantTell = !avail || !!(rn.running && rn.running.unknown) || (busy && (!rstate || rstate==="UNKNOWN")), CANT = "Can't read the job's status right now. Still trying; the last forecast stays on screen.", /* cantTell: the job list could not be read, or gave no state: never shown as a step */ stuck = avail && rn.stuck && typeof rn.stuck==="object" ? rn.stuck : null;
      if(run && !busy){
 -      const moved = changed && sigOf()!==run.before;
 -      if(moved || run.idle>=2){       // grace of two quiet polls: the dispatcher can report idle just before the files land
@@ -754,10 +757,10 @@
 +        if(moved) setProg("done",{scope:sc, n, at: sc==="room" && R(n) ? R(n).updated_at : FC.made_at});
 +        else if(stopped) setProg("fail",{scope:sc, n, title:"The update was stopped.", msg:stuckWords(stuck)});
 +        else setProg("fail",{scope:sc, n, title:"No new forecast arrived.", msg:`The update ended without new numbers. ${stillShown()} Update again; if it happens twice, ask the team to check the job on the cluster.`});
-+      } else if(cantTell){ if(prog){ prog.note="Can't read the job's status right now. Still trying; the last forecast stays on screen."; paintProg(); } }
++      } else if(cantTell){ if(prog){ prog.note=CANT; paintProg(); } }
 +      else if(run.sawBusy) setProg("score");      // the job has left the list: the board is reading the new scores
-+    } else if(busy && !run){ run={live:true,scope:"unit",before:sigOf(),t0:Date.now(),idleAt:0,sawBusy:true}; markRunning(true); setProg(phaseNow,{scope:"unit", n:null, morning:false}); }      // started by the schedule or on another screen
-+    else if(busy && run){ run.idleAt=0; run.sawBusy=true; setProg(phaseNow); }
++    } else if(busy && !run){ if(!cantTell){ run={live:true,scope:"unit",before:sig0,t0:Date.now(),idleAt:0,sawBusy:true}; markRunning(true); setProg(phaseNow,{scope:"unit", n:null, morning:false}); } }      // started by the schedule or on another screen
++    else if(busy && run){ run.idleAt=0; if(cantTell){ if(prog){ prog.note=CANT; paintProg(); } } else { run.sawBusy=true; setProg(phaseNow); } }      // an unknown status keeps the step it had
      if(!run){ if(changed) refreshAll(); else idleLine(); }
 -    schedulePoll(run?POLL_MS:IDLE_MS);
 +    schedulePoll(run?RUN_POLL_MS:IDLE_MS);
@@ -791,8 +794,8 @@
 +  const CAPBOX = {imv:"cap-vt", crrt:"cap-ct"};
 +  function paintCapForm(skip){ for(const k of ["imv","crrt"]) if(CAPBOX[k]!==skip) $(CAPBOX[k]).value = machines[k]==null ? "" : machines[k]; }      // skip: the box being edited keeps what was typed
 +  /* the server's totals win when it sends the key (even null); true when a total changed. Skipped while a save is in flight. */
-+  function serverMachines(c){ if(c && typeof c==="object" && c.capacity && typeof c.capacity==="object") c=c.capacity;
-+    if(!c || typeof c!=="object" || capBusy) return false; let ch=false;
++  function serverMachines(c, gen){ if(c && typeof c==="object" && c.capacity && typeof c.capacity==="object") c=c.capacity;
++    if(!c || typeof c!=="object" || capBusy || (gen!==undefined && gen!==capSeq)) return false; /* gen: a read that began before a save or a reset is stale, even when that save has already finished */ let ch=false;
 +    for(const k of ["imv","crrt"]) if(hasOwn(c,MKEY[k])){ const v=c[MKEY[k]], n = Number.isInteger(v) && v>=0 && v<=50 ? v : null; if(n!==machines[k]){ machines[k]=n; ch=true; } }
 +    if(ch){ saveMachines(); const a=document.activeElement; paintCapForm(a && a.id); }      // only the box with the focus is left alone: the other follows the server, so a save never sends a stale total back
 +    if(hasOwn(c,"vents_free")){ const v=c.vents_free, n = c.vents_total==null && Number.isInteger(v) && v>=0 && v<=50 ? v : null; if(n!==srvVF){ srvVF=n; ch=true; } }      // with a total, free comes from the total
@@ -825,7 +828,7 @@
      const sv=rs.capacity||{}, setAt=typeof sv.set_at==="string"?sv.set_at:typeof sv.updated_at==="string"?sv.updated_at:iso(Date.now());
      viewTyp=false;
      if(LIVE){ try{ await loadAll(); }catch(err){ /* keep the last forecast */ }
-@@ -1383,7 +1529,10 @@
+@@ -1383,7 +1531,10 @@
        if(hasFc()) FC.yardstick=genYardstick(FC,cap); }
      renderStrain(); if(room!==null) renderRoom(); noteChange();
      msg.textContent="Saved."; };
@@ -837,7 +840,7 @@
      if(!LIVE){ cap={...NOCAP}; try{ localStorage.removeItem("lookahead-capacity"); }catch(err){ /* storage blocked */ } if(hasFc()) FC.yardstick=genYardstick(FC,cap); }
      viewTyp=false; renderStrain(); if(room!==null) renderRoom();
      $("capmsg").textContent = LIVE ? "Machine totals cleared. The staffing number saved on the server stays until it is set again." : "Capacity cleared."; };
-@@ -1393,12 +1542,14 @@
+@@ -1393,12 +1544,14 @@
    /* ---------- chat widget: a launcher at the bottom right and a non-modal panel. Open or closed is remembered; the draft and messages last for the session. ---------- */
    const log=$("log"), chatbtn=$("chatbtn"), chatpanel=$("chatpanel"), qEl=$("q"), sendBtn=$("send");
    const CHAT_DOWN = "Can't reach the chat right now. Try again.";
@@ -856,7 +859,7 @@
      for(const q of qs){ const b=document.createElement("button"); b.type="button"; b.className="chip"; b.textContent=q; b.onclick=()=>ask(q); el.appendChild(b); }
    }
    /* an answer: every piece is escaped; numbers are bold and room numbers that exist become links */
-@@ -1411,34 +1562,43 @@
+@@ -1411,34 +1564,43 @@
      log.appendChild(d); log.scrollTop=log.scrollHeight; $("chips").hidden=true; return d; }
    function noteChange(){ if(LIVE || chatpanel.hidden || !log.querySelector(".msg:not(.n)")) return; const o=log.querySelector(".msg.n"); if(o) o.remove(); say("",`Forecast updated ${hm(FC.made_at)}. Answers below use it.`,"n"); chatSeen=FC.made_at; }
  
@@ -912,7 +915,7 @@
        const r=r0, items=[["IMV",r.p.imv],["vasopressor",r.p.vasopressor],["CRRT",r.p.crrt],["ICU discharge",r.p.icu_departure],["death",r.p.death]].filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,2);
        const on=[["IMV","imv"],["vasopressor","vasopressor"],["CRRT","crrt"]].filter(x=>r.on_now[x[1]]).map(x=>x[0]);
        return `Bed ${r.room}, next 24 hours${r.level?` (${r.level} for new life support)`:""}: ${items.map(x=>`${x[0]} (${inTen(x[1])})`).join(", then ")}.${on.length?` On now: ${on.join(", ")}.`:""}`; }
-@@ -1447,23 +1607,24 @@
+@@ -1447,23 +1609,24 @@
        if(!y) return `Now plus new life support: ${cnt(load)}.`;
        return y.kind==="capacity" ? `${y.words} vs tonight's staffing: now plus new life support ${cnt(load)}; staffing covers ${y.ls}${y.vf!=null?`; ${y.vf} ventilators free, IMV starts ${cnt(ls.expected_by.imv)}`:""}.`
          : `${y.words} vs a typical day: now plus new life support ${cnt(load)}${y.typ!=null?`; a typical day is about ${y.typ}`:""}. No capacity is set for tonight.`; }
@@ -943,7 +946,7 @@
    const saveChat = v => { try{ localStorage.setItem("lookahead-chat",v); }catch(e){ /* storage blocked: the widget starts closed next time */ } };
    function grow(){ qEl.style.height="auto"; qEl.style.height=Math.min(qEl.scrollHeight+2, 104)+"px"; sendBtn.disabled=!qEl.value.trim(); }
    function openChat(focusInput=true){
-@@ -1471,7 +1632,7 @@
+@@ -1471,7 +1634,7 @@
        chatSeen = FC && typeof FC.made_at==="string" ? FC.made_at : null; $("chatdot").hidden=true; $("chatdot-l").hidden=true; paintScope(); renderChips(); grow(); }
      if(focusInput) qEl.focus(); }
    function minChat(focus=true){ chatpanel.hidden=true; chatbtn.setAttribute("aria-expanded","false"); document.documentElement.dataset.chat="closed"; saveChat("closed"); if(focus) chatbtn.focus(); }      // the conversation and the draft stay
@@ -952,7 +955,7 @@
    chatbtn.onclick=()=>openChat();
    $("chatmin").onclick=()=>minChat();
    $("chatclose").onclick=closeChat;
-@@ -1539,4 +1700,4 @@
+@@ -1539,4 +1702,4 @@
  })();
  </script>
  </body>

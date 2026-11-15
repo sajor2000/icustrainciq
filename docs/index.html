@@ -348,8 +348,8 @@ footer p{max-width:80ch}
     <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/architecture.png"><img loading="lazy" src="diagrams/architecture.png" width="2560" height="1200" alt="Architecture: board page, board server, Nemotron 3 Nano, dispatcher, the setup workflows t7-code and t7-ward, the t7-forecast job, and the volumes twin-store, mimic_clif and hfcache"></picture></div></figure>
 
     <h3>Where the patient data lives</h3>
-    <p>Patient rows stay on Fuzzball volumes on the two machines. The browser and the chat model get room numbers, counts and percentages.</p>
-    <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/data-boundary.png"><img loading="lazy" src="diagrams/data-boundary.png" width="2560" height="1170" alt="Data boundary: patient records and the trained model stay on Fuzzball volumes inside the two machines; only room numbers, counts and percentages reach the browser; GitHub holds code only."></picture></div></figure>
+    <p>The patient tables stay on Fuzzball volumes on the two machines. The clinician's browser, inside the hospital network, gets the unit counts and one entry per room: the bed number, a generated name, age and sex, the life support running, the five chances, the last events the model read and 12 hours of vital signs. The chat model gets tool results only: counts, and one room's fields when the user asks about that room. GitHub holds code only.</p>
+    <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/data-boundary.png"><img loading="lazy" src="diagrams/data-boundary.png" width="2560" height="1170" alt="Data boundary: patient records and the trained model stay on Fuzzball volumes inside the two machines; the browser gets unit counts and room entries (the five chances, recent chart events and 12 hours of vital signs per room); the chat model gets tool results only; GitHub holds code only."></picture></div></figure>
     <h3>The API</h3>
     <p>Four reads and three writes. Every POST must carry a JSON content type and the header <code>X-Lookahead: 1</code> from the same origin; anything else gets 403.</p>
     <figure><div class="fig"><picture><source media="(prefers-color-scheme:dark)" srcset="site/night/api.png"><img loading="lazy" src="diagrams/api.png" width="2560" height="1240" alt="API map: four GET calls and three POST calls on the board server, reaching twin-store, the dispatcher and Nemotron 3 Nano"></picture></div></figure>
@@ -382,7 +382,7 @@ bash scripts/launch.sh --all       # publish code, stage the unit, forecast, the
     <p style="margin-top:1rem">Steps, checks and the failures already met on the cluster are in the <a href="https://github.com/sajor2000/icustrainciq/blob/main/backend/docs/RUNBOOK.md">runbook</a>. Two GPUs in total: Nemotron holds one, a forecast uses the other.</p>
     <h3>Run it on a laptop</h3>
 <pre>python3 -m http.server 8000        # then open http://localhost:8000/mockups/command-center.html#synthetic
-(cd backend &amp;&amp; uv run --extra dev --extra model pytest -q)   # 431 tests; with --with playwright and python -m pytest, 457 (26 in a real browser)
+(cd backend &amp;&amp; uv run --extra dev --extra model pytest -q)   # 431 tests; with --with playwright and python -m pytest, 459 (28 in a real browser)
 (cd backend &amp;&amp; uv run python app/board.py --forecast ../examples/forecast.json --static ../mockups/command-center.html --port 8080)</pre>
   </div>
 </section>
