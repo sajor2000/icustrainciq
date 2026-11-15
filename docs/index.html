@@ -4,8 +4,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lookahead · the ICU's next 24 hours, on two local machines</title>
-<meta name="description" content="Lookahead is a bed board that tells a small ICU at 07:00 what the next 24 hours will need. It runs on two Lenovo ThinkStation PGX machines under CIQ Fuzzball, with NVIDIA Nemotron 3 Nano for chat and a patient model the team trained.">
+<title>ICU Lookahead · see the next 24 hours of your ICU</title>
+<meta name="description" content="ICU Lookahead is a bed board that tells a small ICU at 07:00 what the next 24 hours will need. It runs on two Lenovo ThinkStation PGX machines under CIQ Fuzzball, with NVIDIA Nemotron 3 Nano for chat and a patient model the team trained.">
 <meta name="color-scheme" content="light dark">
 <style>
 :root{
@@ -161,7 +161,7 @@ footer p{max-width:80ch}
 
 <header class="top">
   <div class="wrap">
-    <a class="mark" href="#top">Lookahead</a>
+    <a class="mark" href="#top">ICU Lookahead</a>
     <nav aria-label="Sections">
       <a href="#problem">Problem</a>
       <a href="#stack">Stack</a>
@@ -180,8 +180,8 @@ footer p{max-width:80ch}
 <div class="hero">
   <div class="wrap cols">
     <div>
-      <h1>The ICU's next 24 hours, on two local machines</h1>
-      <p class="lede">Lookahead is a bed board for one intensive care unit. At 07:00 it shows who is on life support now, who is likely to need it by tomorrow, and whether the unit has the machines and staff for that.</p>
+      <h1>See the next 24 hours of your ICU. On machines you own.</h1>
+      <p class="lede">ICU Lookahead is a bed board for one intensive care unit. At 07:00 it shows who is on life support now, who is likely to need it by tomorrow, and whether the unit has the machines and staff for that.</p>
       <div class="actions">
         <a class="btn primary" href="#board">See the board <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         <a class="btn" href="submission/one-sheet.pdf">One-page summary (PDF)</a>
@@ -189,7 +189,7 @@ footer p{max-width:80ch}
       <p class="where"><svg class="ic" aria-hidden="true"><use href="#i-beds"/></svg><span>Team7 at the CIQ × NVIDIA × Lenovo Local AI Hackathon, Chicago, Nov 14–15, 2026. Built and tested on a laptop with made-up patients; not yet run end to end on the cluster.</span></p>
     </div>
     <figure class="shot">
-      <img src="screenshots/beds-next.png" width="2880" height="2986" alt="The bed board: 25 rooms, each showing life support running now and what may start in the next 24 hours, with the rooms to worry about first on top">
+      <img src="screenshots/beds-next.png" width="2880" height="3440" alt="The bed board: 25 rooms, each showing life support running now and what may start in the next 24 hours, with the rooms to worry about first on top">
     </figure>
   </div>
 </div>
@@ -198,7 +198,7 @@ footer p{max-width:80ch}
   <div class="wrap">
     <h2>A small ICU finds out it is short when it already is</h2>
     <p>A small or rural hospital has one ICU, a few ventilators and dialysis machines, no data-science team and no cloud contract for patient data. When the unit runs short of a machine or a nurse, the nearest help is a transfer hours away.</p>
-    <p>Lookahead answers one question each morning, in time to act on it: what will this unit need in the next 24 hours? It runs inside the building on two desk-size machines, so patient data never leaves.</p>
+    <p>ICU Lookahead answers one question each morning, in time to act on it: what will this unit need in the next 24 hours? It runs inside the building on two desk-size machines, so patient data never leaves.</p>
     <dl class="key">
       <div><dt>ICU</dt><dd>The intensive care unit: the sickest patients in the hospital, one nurse to one or two beds.</dd></div>
       <div><dt>Life support</dt><dd>A machine or drug that does the work of a failing organ.</dd></div>
@@ -277,15 +277,15 @@ footer p{max-width:80ch}
     <p class="lede">Ink means now. Blue means the next 24 hours. Every bed carries one status word, and every count carries its range.</p>
     <div class="gallery">
       <figure class="wide">
-        <div class="shot"><img loading="lazy" src="screenshots/beds-next.png" width="2880" height="2986" alt="Bed board, Next 24 h view"></div>
+        <div class="shot"><img loading="lazy" src="screenshots/beds-next.png" width="2880" height="3440" alt="Bed board, Next 24 h view"></div>
         <figcaption><b>Bed board, Next 24 h.</b> One tile per room. Solid icons are the life support running at 07:00; outline icons with a percentage are what may start by tomorrow. "Worry first" at the top lists the rooms most likely to get sicker.</figcaption>
       </figure>
       <figure>
-        <div class="shot"><img loading="lazy" src="screenshots/beds-now.png" width="1440" height="1339" alt="Bed board, Now view"></div>
+        <div class="shot"><img loading="lazy" src="screenshots/beds-now.png" width="1440" height="1432" alt="Bed board, Now view"></div>
         <figcaption><b>Bed board, Now.</b> Only what is running at 07:00, with the sickest rooms first. Nothing here is a forecast.</figcaption>
       </figure>
       <figure>
-        <div class="shot"><img loading="lazy" src="screenshots/strain-next.png" width="1440" height="1357" alt="Unit strain, Next 24 h view"></div>
+        <div class="shot"><img loading="lazy" src="screenshots/strain-next.png" width="1440" height="1109" alt="Unit strain, Next 24 h view"></div>
         <figcaption><b>Unit strain.</b> The patients added up: how many are on life support now, how many more are expected and the likely range, with one word that compares it with tonight's staffing or a typical day.</figcaption>
       </figure>
       <figure>
@@ -297,11 +297,11 @@ footer p{max-width:80ch}
         <figcaption><b>One room.</b> The five predictions for one patient, each as a percentage, and the last events the model read.</figcaption>
       </figure>
       <figure>
-        <div class="shot"><img loading="lazy" src="screenshots/chat-widget.png" width="1440" height="900" alt="The Ask Lookahead chat panel beside the board"></div>
-        <figcaption><b>Ask Lookahead.</b> NVIDIA Nemotron 3 Nano answers from the forecast on screen. It can start an update when asked; it never predicts.</figcaption>
+        <div class="shot"><img loading="lazy" src="screenshots/chat-widget.png" width="1440" height="900" alt="The Ask ICU Lookahead chat panel beside the board"></div>
+        <figcaption><b>Ask ICU Lookahead.</b> NVIDIA Nemotron 3 Nano answers from the forecast on screen. It can start an update when asked; it never predicts.</figcaption>
       </figure>
       <figure>
-        <div class="shot"><img loading="lazy" src="screenshots/pending.png" width="1440" height="1339" alt="The board before a forecast exists"></div>
+        <div class="shot"><img loading="lazy" src="screenshots/pending.png" width="1440" height="1432" alt="The board before a forecast exists"></div>
         <figcaption><b>Before the first forecast.</b> The board shows the Now side and says the forecast is not ready. It never shows made-up numbers.</figcaption>
       </figure>
       <figure class="third">
@@ -401,7 +401,7 @@ footer p{max-width:80ch}
 
 <footer>
   <div class="wrap">
-    <p>Demo data only. The mockup uses made-up patients and the names on the board are fictional. Lookahead is a research prototype, not a medical device; it supports decisions and recommends no treatment.</p>
+    <p>Demo data only. The mockup uses made-up patients and the names on the board are fictional. ICU Lookahead is a research prototype, not a medical device; it supports decisions and recommends no treatment.</p>
   </div>
 </footer>
 </body>

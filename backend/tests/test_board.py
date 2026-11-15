@@ -413,3 +413,20 @@ def test_chat_update_ask_over_fire_cases_do_not_start_a_run(stack):
         {"question": "Should we update the unit?", "role": "ICU nurse"},
     )
     assert code == 200 and fake.started == []
+
+
+def test_page_death_never_ranks_a_bed_and_a_skipped_event_is_not_zero():
+    """CodeRabbit PR #19: death is a unit count, never a bed ranking or a per-bed
+    list on Unit strain (PRODUCT.md); an event whose probe was skipped
+    (`available: false`, docs/CONTRACT.md) reads "no data", and does not blank the
+    board or show as 0. Text checks on the served page; the browser check is manual."""
+    import pathlib
+
+    root = pathlib.Path(__file__).resolve().parents[2]
+    page = (root / "mockups" / "command-center.html").read_text()
+    assert page == (root / "backend/app/static/index.html").read_text()
+    assert 'const RISKK = ["imv","vasopressor","crrt"];' in page
+    assert 'n&&k!=="death"?`<div class="set">' in page  # no per-bed death figures
+    assert 'k!=="leave" && k!=="death" && !na' in page  # death flags no bed
+    assert "o.available===false" in page and "vqn(eb.crrt)" in page
+    assert 'na?"–":n' in page and "Unit forecast <b>not available</b>" in page

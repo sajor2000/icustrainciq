@@ -7,16 +7,16 @@ version: v4
 #                with --real-ward (real MIMIC-IV room views, local only; docs/DECISIONS.md D6)
 #   /data/dashboard_data   CLIF folder of the ward: /store/code/clif_demo by default (the open demo); a cohort folder on a
 #                team volume (the final cohort: /data/dashboard_data on mimic_clif) when the dispatcher runs with --clif-dir. Never the repo.
-#   --names /data/dashboard_data/name.parquet      empty by default (no names on the tiles); "--names <file on a team volume | fake>" when the
+#   --names fake      empty by default (no names on the tiles); "--names <file on a team volume | fake>" when the
 #                dispatcher runs with --names: made-up names only (app/fake_names.py), never in git or a log
 # and starts that copy (docs/DECISIONS.md D9). By hand: replace the six tokens first, e.g.
-#   sed 's/room/unit/;s/12/0/;s/0/0/;s/--real-ward//;s/--names /data/dashboard_data/name.parquet//;s#/data/dashboard_data#/store/code/clif_demo#' fuzzball/t7-forecast.fz > /tmp/f.fz && fuzzball workflow start /tmp/f.fz --name t7-forecast-manual
+#   sed 's/room/unit/;s/12/0/;s/0/0/;s/--real-ward//;s/--names fake//;s#/data/dashboard_data#/store/code/clif_demo#' fuzzball/t7-forecast.fz > /tmp/f.fz && fuzzball workflow start /tmp/f.fz --name t7-forecast-manual
 #   or: python scripts/render_fz.py fuzzball/t7-forecast.fz --scope unit -o /tmp/f.fz   (refuses a token left unfilled)
 # Always pass --name t7-forecast-...: the dispatcher's one-run-at-a-time guard goes by the name.
 # A room run needs a whole-ward rooms.json (rooms.py refuses otherwise; the dispatcher refuses first).
-# Jobs: precheck (CPU: probes and stage tokens exist) -> extract (one GPU) -> score (CPU).
+# Jobs: precheck (CPU: probe and stage tokens exist) -> extract (one GPU) -> score (CPU).
 #
-# unit: extract the stage ward, apply the SAVED probes (never refit; fitting is t7-fit, once per model),
+# unit: extract the stage ward, apply the SAVED probe (never refit; fitting is job 4, once per model),
 #       write rooms.json, then forecast.json last (the commit marker the page watches).
 # room: same extract (model load dominates; icutwin-extract has no stay filter), apply probes to that one
 #       room's stay, rewrite that room in rooms.json. forecast.json is untouched.
@@ -39,16 +39,19 @@ defaults:
 
 jobs:
   precheck:
-    # CPU: fail in seconds, before anything holds the GPU, if the one-time steps (t7-fit) have not run
+    # CPU: fail in seconds, before anything holds the GPU, if the one-time steps (job 4, t7-ward) have not run
     image: {uri: "docker://python:3.12-slim"}
     resource: {cpu: {cores: 1}, memory: {size: 1GB}}
     policy: {timeout: {execute: 5m}}
     script: |
       #!/bin/bash
       set -euo pipefail
-      test -f /store/probes/mdl-icutwin/manifest.json || { echo "no saved probes: run t7-fit first"; exit 1; }
-      test -d /store/stage/tokenized_output || { echo "no stage ward tokens: run t7-fit first"; exit 1; }
-      test -f /store/stage/stage_ward.csv || { echo "no stage ward list: run t7-fit first"; exit 1; }
+      # the probe comes from job 4 (workflows/job_4_probe in vaishvikc/ICU-Twin), fit on the training split beside
+      # the model it belongs to; probe_src/ records the code that cut, extracted and fit it
+      test -f /store/train/probe-final.joblib -a -f /store/train/probe-final.meta.json || { echo "no staged probe: see docs/RUNBOOK.md (job 4 fits it; it is staged to /store/train with its provenance sidecar)"; exit 1; }
+      test -f /data/tokenized_output/train_for_inference.parquet || { echo "no winnowed training split: job 4 writes it"; exit 1; }
+      test -d /store/stage/tokenized_output || { echo "no stage ward tokens: run t7-ward first"; exit 1; }
+      test -f /store/stage/stage_ward.csv || { echo "no stage ward list: run t7-ward first"; exit 1; }
       test -d /data/model_output/final || { echo "no model at /data/model_output/final"; exit 1; }
       test -f /data/dashboard_data/clif_hospitalization.parquet || { echo "no ward CLIF folder at /data/dashboard_data"; exit 1; }
       echo "prechecks ok"
@@ -67,10 +70,15 @@ jobs:
       #!/bin/bash
       set -euo pipefail
       HOURS=0
-      # re-winnow the stage ward at the demo-clock cut (07:00 run: 0 h); writes the at-cut flags too
-      python -c "from icutwin.scoring.winnower import main; main()" /store/stage/tokenized_output \
-        -c /store/code/examples/winnow_24h.yaml --demo-clock-hours "$HOURS" --counts-only   # a ward of 25: no outcome rates in the log
-      # every cut moved, so the whole ward is re-extracted (about 100 short passes)
+      # t7-ward already winnowed this ward at the 07:00 cut (clock 0). Re-winnow only when
+      # the demo clock moves the cut, which changes every stay's at-cut flags and labels.
+      if [ "$HOURS" = "0" ] && [ -f /store/stage/tokenized_output/held_out_for_inference.parquet ]; then
+        echo "winnow: skipped (t7-ward cut this ward at the same 07:00 clock)"
+      else
+        python -c "from icutwin.scoring.winnower import main; main()" /store/stage/tokenized_output \
+          --demo-clock-hours "$HOURS" --counts-only   # a ward of 25: no outcome rates in the log
+      fi
+      # one short forward pass per stage-ward stay (25 in the final cohort)
       python -c "from icutwin.scoring.extractor import main; main()" /store/stage/tokenized_output -m /data/model_output/final
       ls /store/stage/tokenized_output/features-*.parquet | wc -l
 
@@ -89,13 +97,13 @@ jobs:
       STAGE=/store/stage/tokenized_output
       CLIF=/data/dashboard_data      # the ward's CLIF folder: the open demo, or a cohort folder on a team volume
       # rooms.py applies the saved probes (never refits) and writes rooms.json; ids stay on the volume
-      COMMON="--model /data/model_output/final --probes /store/probes/mdl-icutwin --stay-ids /store/stage/stage_ward.csv --out /store/rooms.json --demo-clock-hours $HOURS --demographics $CLIF --clif-now $CLIF --tz America/Chicago $WARD --names /data/dashboard_data/name.parquet"
+      COMMON="--model /data/model_output/final --probes /store/train/probe-final.joblib --stay-ids /store/stage/stage_ward.csv --out /store/rooms.json --demo-clock-hours $HOURS --demographics $CLIF --clif-now $CLIF --tz America/Chicago $WARD --names fake"
       if [ "$SCOPE" = "room" ]; then
         python /store/code/app/rooms.py $STAGE $COMMON --room "$ROOM"   # this room only; the header keeps the unit numbers
       else
         python /store/code/app/rooms.py $STAGE $COMMON
         CAP=""; test -f /store/capacity.json && CAP="--capacity /store/capacity.json"
         python /store/code/app/aggregate.py $STAGE /store/forecast.json --beds 25 --score rep \
-          --baseline /store/train --stage-csv /store/stage/stage_ward.csv --demo-clock-hours "$HOURS" --clif-now $CLIF --tz America/Chicago $WARD $CAP
+          --baseline /data/tokenized_output --stage-csv /store/stage/stage_ward.csv --demo-clock-hours "$HOURS" --clif-now $CLIF --tz America/Chicago $WARD $CAP
         python -c "import json; d=json.load(open('/store/forecast.json')); print('made_at', d.get('made_at'), 'rows', len(d.get('resources', {})))"
       fi

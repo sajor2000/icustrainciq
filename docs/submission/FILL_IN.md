@@ -22,16 +22,13 @@ Keep values short (about 14 characters fit in a slot on the sheet).
 | `forecast-time` | Seconds from pressing "Update the unit" to the board redrawing | Fuzzball lane | rehearsal, `COMPUTE_PLAN.md` checklist step 5 |
 | `chat-tokens-per-sec` | Nemotron 3 Nano tokens per second on one GB10 | Services lane | vLLM log during a chat question |
 | `heldout-accuracy` | **Filled:** held-out AUROC 0.77–0.93 (see `docs/RESULTS.md`) | Vaishvik | done 2026-11-14 |
-| `team-other-members` | The two team members not named in the repo | J.C. | the team |
-| `workflow-count` (has a value: 5) | Number of Fuzzball workflow files | Fuzzball lane | `ls backend/fuzzball/*.fz`; 5 were committed on Nov 14, a sixth (`t7-code.fz`) was uncommitted |
+| `workflow-count` (has a value: 6) | Number of Fuzzball workflow files | Fuzzball lane | `ls backend/fuzzball/*.fz` |
 
 ## Counts printed on the sheet (recheck before printing)
 
 | Count | Value on Nov 14 | Recheck with |
 |---|---|---|
-| Backend tests passing | 249 | `cd backend && uv run --extra dev --extra model pytest -q` |
-| Diagrams | 8 | `ls docs/diagrams/*.png` |
-| API calls | 8 | the API table in `docs/ARCHITECTURE.md` |
+| Backend tests passing | 255 | `cd backend && uv run --extra dev --extra model pytest -q` |
 
 ## Statements to confirm on site
 

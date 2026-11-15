@@ -706,20 +706,16 @@ def test_run_cohort_no_extract_applies_saved_probe_manifest_to_existing_features
     labels.select("hospitalization_id", "last_valid", "cut_s").with_columns(
         pl.Series("features", [[0.0]] * labels.height)
     ).write_parquet(ward_files["features"])
-    probes = ward_files["out"].parent / "probes"
-    probes.mkdir()
-    tasks = yaml.safe_load((REPO / "examples/probe_tasks.yaml").read_text())["score"][
-        "target_tokens"
-    ]
-    manifest = {
-        "model": ward_files["model"].name,
-        "features": 1,
-        "weights_sha256": json.loads(
-            ward_files["scores"].with_suffix(".meta.json").read_text()
-        )["weights_sha256"],
-        "tokens": {t: {"file": None} for t in tasks},
-    }
-    (probes / "manifest.json").write_text(json.dumps(manifest))
+    import joblib
+
+    from icutwin.scoring import rep_based
+
+    # one probe file per model (probe-<model>.joblib) with its weights sidecar; no
+    # task had two classes in this synthetic fit, so it holds no probe
+    probes = ward_files["out"].parent / f"probe-{ward_files['model'].name}.joblib"
+    joblib.dump({}, probes)
+    rep_based.write_scores_meta(probes, ward_files["model"])
+    weights = rep_based.weights_digest(ward_files["model"])
     reuse = (
         "--model",
         str(ward_files["model"]),
@@ -730,14 +726,12 @@ def test_run_cohort_no_extract_applies_saved_probe_manifest_to_existing_features
     # CodeRabbit PR #16: features that do not say which weights made them (a file
     # from before the digest was recorded), or that name other weights, are not
     # reused: the earlier snapshot stays and the run says to extract again
-    from icutwin.scoring import rep_based
-
     before = ward_files["out"].read_text()
     rep_based.features_meta_path(ward_files["features"]).unlink()
     for digest in (None, "0" * 64):
         if digest:
             rep_based.features_meta_path(ward_files["features"]).write_text(
-                json.dumps({"model": manifest["model"], "weights_sha256": digest})
+                json.dumps({"model": probes.stem, "weights_sha256": digest})
             )
         run = run_cohort(ward_files, *reuse)
         assert run.returncode != 0
@@ -747,10 +741,10 @@ def test_run_cohort_no_extract_applies_saved_probe_manifest_to_existing_features
     assert run.returncode == 0, run.stderr
     doc = load_context(ward_files["out"])
     assert doc["forecast_state"] == "ready"
-    assert doc["provenance"]["weights_sha256"] == manifest["weights_sha256"]
+    assert doc["provenance"]["weights_sha256"] == weights
     assert (
         doc["provenance"]["probes_sha256"]
-        == hashlib.sha256((probes / "manifest.json").read_bytes()).hexdigest()
+        == hashlib.sha256(probes.read_bytes()).hexdigest()
     )
 
 

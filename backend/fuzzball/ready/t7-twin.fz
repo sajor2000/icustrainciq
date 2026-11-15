@@ -55,7 +55,9 @@ services:
     persist: true
     network:
       ports: [{name: web, port: 8080}]
-      endpoints: [{name: web, port-name: web, protocol: https, type: subdomain, scope: group}]
+      # protocol is what the CONTAINER serves: board.py is plain HTTP and the
+      # endpoint proxy terminates TLS, so https here gives a TLS handshake error
+      endpoints: [{name: web, port-name: web, protocol: http, type: subdomain, scope: group}]
     readiness-probe: {tcp-socket: {port: 8080}, initial-delay-seconds: 10, period-seconds: 10, failure-threshold: 30}
     script: |
       #!/bin/bash
@@ -113,8 +115,11 @@ services:
         for i in $(seq 1 "$n"); do "$@" && return 0; echo "attempt $i of $n failed: $1"; sleep "$s"; done
         return 1
       }
-      install_tools() { apt-get -qq update >/dev/null && apt-get -qq install -y wget ca-certificates tzdata >/dev/null; }
-      retry 10 15 install_tools || degraded "could not install wget (apt-get failed 10 times)"
+      # No apt here: it fails in this container (dpkg error 2; apt cannot write its own logs)
+      # and took the dispatcher down with it. python:3.12-slim already has urllib and the CA
+      # bundle, so fetch_cli below uses python instead of wget. It trusts the system CAs AND
+      # the cluster root CA: wget's --ca-certificate adds to the default store, but python's
+      # cafile= replaces it, and FB_UI_URL is a public host with an ordinary certificate.
       # The CLI binary is larger than a container's writable layer, so it goes on tmpfs (/dev/shm), which is
       # container-local: not the shared, writable /store (anyone with the volume could swap a binary there
       # that this service runs with the workflow token). docs: in-workflow-api-access, "Installing the CLI".
@@ -122,8 +127,7 @@ services:
       chmod 700 "$CLI_DIR"; CLI="$CLI_DIR/fuzzball"
       # the cluster serves a CLI matching its version; arm64 for the GB10 nodes (do not enable set -x: token)
       fetch_cli() {
-        wget -q --ca-certificate /run/fuzzball-substrate/trusted-certs/root-ca.crt \
-          --header "Cookie: fwi.access-token=${FB_TOKEN}" -O "$CLI" "${FB_UI_URL}/api/download/cli/linux/arm64" && test -s "$CLI"
+        CLI_OUT="$CLI" python3 -c 'import os,ssl,urllib.request as u; c=ssl.create_default_context(); ca="/run/fuzzball-substrate/trusted-certs/root-ca.crt"; os.path.exists(ca) and c.load_verify_locations(ca); q=u.Request(os.environ["FB_UI_URL"]+"/api/download/cli/linux/arm64", headers={"Cookie":"fwi.access-token="+os.environ["FB_TOKEN"]}); open(os.environ["CLI_OUT"],"wb").write(u.urlopen(q,context=c,timeout=180).read())' && test -s "$CLI"
       }
       retry 10 15 fetch_cli || degraded "could not download the Fuzzball CLI from FB_UI_URL"
       GOT=$(sha256sum "$CLI" | cut -d' ' -f1)
@@ -138,10 +142,10 @@ services:
       chmod 500 "$CLI"
       # The ward: the open demo by default (nothing after --port 9000). TEMPLATE token, filled by scripts/render_fz.py:
       # for the final cohort (render_fz.py --cohort; fuzzball/ready/t7-twin.fz) it is
-      # "--real-ward --clif-dir /data/dashboard_data --names /data/dashboard_data/name.parquet". These are only
+      # "--real-ward --clif-dir /data/dashboard_data --names fake" (generated names, keyed by room). These are only
       # written into each t7-forecast copy: this service does not mount mimic_clif and cannot read a patient file.
       while true; do
         python /store/code/app/dispatcher.py --fuzzfile /store/code/fuzzball/t7-forecast.fz \
-          --log /store/runs.jsonl --rooms /store/rooms.json --at 07:00 --tz America/Chicago --min-gap 20 --cli "$CLI" --port 9000 --real-ward --clif-dir /data/dashboard_data --names /data/dashboard_data/name.parquet || true
+          --log /store/runs.jsonl --rooms /store/rooms.json --at 07:00 --tz America/Chicago --min-gap 20 --cli "$CLI" --port 9000 --real-ward --clif-dir /data/dashboard_data --names fake || true
         echo "DISPATCHER EXITED: restarting in 5 s (the run log and the gaps are read back from /store/runs.jsonl)"; sleep 5
       done

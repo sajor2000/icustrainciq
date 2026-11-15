@@ -471,7 +471,10 @@ def test_with_model_and_probes_the_predictions_are_filled(demo_run, monkeypatch)
     assert (f["yardstick"] is None) == partial
     assert ls["expected_by"]["vasopressor"]["p50"] is not None
     free = [x for x in r["rooms"] if not x["on_now"]["vasopressor"]]
-    assert free and all(0 <= x["p"]["vasopressor"] <= 1 for x in free)
+    # main's task rule: a pressor started (and stopped) before the cut gets no p
+    ps = [x["p"]["vasopressor"] for x in free]
+    assert any(v is not None for v in ps)
+    assert all(v is None or 0 <= v <= 1 for v in ps)
     for x in r["rooms"]:
         gap = any(x["skipped"][k] for k in aggregate.SUPPORTS)
         assert (x["level"] == "unavailable") == gap

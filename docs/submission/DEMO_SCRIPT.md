@@ -1,9 +1,10 @@
-# Lookahead: five-minute demo script
+# ICU Lookahead: five-minute demo script
 
 Team7 · CIQ × NVIDIA Local AI Hackathon · Chicago · Nov 14–15, 2026
 
 - **Speaker:** [FILL: who speaks]. **Driver (clicks):** [FILL: who drives].
 - The judges are engineers, not clinicians. Say each clinical word in plain words once, in passing, then use it.
+- The five things the judges must hear, and where: **the problem** (0:00), **what we built** (0:30 to 3:05), **how we used CIQ Fuzzball and the stack** (3:15 to 4:20), **what is new scientifically** (4:30), **how it works in a real hospital** (4:50).
 - Lines marked **[FILL]** depend on results that do not exist yet. Fill them or skip them. Never improvise a number.
 
 ## Words to explain once
@@ -22,14 +23,14 @@ Team7 · CIQ × NVIDIA Local AI Hackathon · Chicago · Nov 14–15, 2026
 From `docs/ARCHITECTURE.md` "Before the live demo" and `backend/docs/COMPUTE_PLAN.md` section 7. The cluster owner does this; nobody else starts a workflow.
 
 1. Training has finished (`t7-build`). No `t7-*` workflow is queued or running except `t7-twin`. [FILL: model status]
-2. `t7-fit` has saved the classifiers ("probes").
+2. The classifiers ("probes") are staged: job 4 fits them beside the model; `t7-fit` is only the fallback (`backend/docs/RUNBOOK.md` section 4).
 3. The 25 demo patients are on the volume.
-4. `t7-twin` is up with three services running: Nemotron, board server, dispatcher.
+4. `t7-twin` is up with three services running: Nemotron, board server, dispatcher. `backend/scripts/launch.sh` starts it and prints the link; `launch.sh --link` prints the link again.
 5. One unit forecast has landed. Write down the seconds from button to board: [FILL: forecast time].
 6. On the board, check both tabs, Now and Next 24 h, one room page and one chat question.
 7. Press "Update the unit" at least 20 minutes before the slot, not later. The button refuses a second update of the same scope inside 20 minutes.
-8. Role is "ICU nurse (charge)". "Flag beds at" is 25%. Day board, not Night board. Chat closed.
-9. Set capacity once: Unit strain → "Set tonight's capacity" → the unit's ventilator and CRRT totals → "Save capacity". [FILL: the two totals used on stage]
+8. In Settings (the gear, top right): "Flag beds at" is 25%, light board. Chat closed.
+9. Set capacity once: Settings → Capacity → the unit's ventilator and CRRT totals → "Save capacity". [FILL: the two totals used on stage]
 10. Laptop fallback is running in a second window (below), zoomed to match.
 
 ## Tabs to pre-open, in this order
@@ -44,7 +45,7 @@ From `docs/ARCHITECTURE.md` "Before the live demo" and `backend/docs/COMPUTE_PLA
 
 Fallback server, from the repo root: `python3 -m http.server 8000`.
 
-Deep links that work on both the live board and the fallback: `#when=now` (Now view), `#view=strain` (Unit strain), `#room=20` (one room), `#night` (Night board).
+Deep links that work on both the live board and the fallback: `#when=now` (Now view), `#view=strain` (Unit strain), `#room=20` (one bed), `#night` (dark board), `#settings` (the Settings panel).
 
 Room numbers and percentages below are from the demo data (`#synthetic`). On the live board, use the room that is actually first under "Worry first" and read the numbers on screen. [FILL: the live room number]
 
@@ -52,26 +53,26 @@ Room numbers and percentages below are from the demo data (`#synthetic`). On the
 
 | Time | On screen | Click | Say |
 |---|---|---|---|
-| 0:00 | One-sheet (tab 4), top half | nothing | "An ICU is the hospital unit for the sickest patients. Life support keeps them alive: a breathing machine, drugs that hold blood pressure up, a dialysis machine. A small or rural hospital has only a few of these machines. If three patients need a breathing machine tonight and two are free, one is transferred hours away, and the staff find out when it happens. That hospital has no data-science team and no cloud contract for patient data. Lookahead tells them at 7 am, on two machines the hospital owns." |
+| 0:00 | One-sheet (tab 4), top half | nothing | "An ICU is the hospital unit for the sickest patients. Life support keeps them alive: a breathing machine, drugs that hold blood pressure up, a dialysis machine. A small or rural hospital has only a few of these machines. If three patients need a breathing machine tonight and two are free, one is transferred hours away, and the staff find out when it happens. That hospital has no data-science team and no cloud contract for patient data. ICU Lookahead tells them at 7 am, on two machines the hospital owns." |
 | 0:30 | Live board (tab 1), Bed board | the **Now** side of the **Now \| Next 24 h** switch | "This is the unit at 7 am. Every tile is a bed. Now shows only what is running: this patient is on a breathing machine and a blood-pressure drug, this one is on nothing. This part is not a prediction. It is read straight from the chart tables." |
 | 1:00 | same | point at the header line: "N on life support now" | "Ten patients on life support this morning. That is today's workload. The question is tomorrow's." |
-| 1:15 | Bed board | **Next 24 h** | "Same beds, next 24 hours. Each bed reads left to right: what is on now, then what may start, as a percentage. And one status word per bed: Worsening, Watch, Not improving, Leaving, Steady." |
+| 1:15 | Bed board | **Next 24 h** | "Same beds, next 24 hours. Each bed reads left to right: what is on now, then what may start, as a percentage. And one colour per bed: red is worsening, amber is watch, green is leaving." |
 | 1:35 | Bed board, top row | point at **Worry first** | "The team does not read 25 tiles. Worry first puts the beds to see before rounds at the top. Room 20 has no life support now and a 43% chance of needing a blood-pressure drug by tomorrow morning." |
-| 1:55 | Bed board | **Flag beds at** → **10%**, then back to **25%** | "The team chooses how sensitive the board is. At 10% more beds are flagged. At 25% fewer. It is their line, not ours." |
-| 2:15 | Room page | the room 20 card under Worry first | "One room. Five predictions for this patient: breathing machine, blood-pressure drug, dialysis, leaving the ICU, and death. Next to them, the last 12 hours of the chart, the events the model read. Death is a plain row. It never colours a bed." |
-| 2:40 | Room page | **All rooms** (back link) | (no words) |
+| 1:55 | Settings panel | the **gear** (top right) → **Flag beds at** → **10%**, back to **25%** → **Close** | "The team chooses how sensitive the board is. At 10% more beds are flagged. At 25% fewer. It is their line, not ours." |
+| 2:15 | Bed pop-up | the room 20 card under Worry first | "One bed. Five predictions for this patient: breathing machine, blood-pressure drug, dialysis, leaving the ICU, and death. Under them, the last 12 hours of the chart, the events the model read. On the cluster the pop-up also draws the last 12 hours of vital signs. Death is a plain row. It never colours a bed." |
+| 2:40 | Bed pop-up | **Close bed** | (no words) |
 | 2:45 | Unit strain | the **Unit strain** tab | "Now add the patients up. Unit strain is how stretched the unit will be. Five on a breathing machine now, two more expected, and the range beside it. The unit owns six. The card says SHORT, and it names the beds behind the number. That is the transfer call, a day early." |
-| 3:05 | Unit strain | **Set tonight's capacity** (open it, show the three fields, close it) | "The charge nurse types in how many machines the unit has. That is the only setup." |
+| 3:05 | Settings panel | the **gear** → **Capacity** (show the three fields) → **Close** | "The charge nurse types in how many machines the unit has. That is the only setup." |
 | 3:15 | Unit strain | **Update the unit** (header) | "This button starts a real job on the cluster. The board never touches a GPU itself." If the board refuses ("Updated N minutes ago. You can update again at HH:MM"), say: "It refuses a second run inside 20 minutes, by design," and go straight to the diagram. |
 | 3:25 | Diagram (tab 3) | nothing | "The board asks a small dispatcher service. The dispatcher starts a CIQ Fuzzball workflow: a check, one pass of our model on a GPU, then scoring. Fuzzball places it on the free GPU, writes the results to a volume, and the board redraws. The same job runs by itself at 7 am every day. [FILL: 'It takes about N seconds.'] Patient rows stay on Fuzzball volumes inside these two machines." |
 | 3:50 | Live board (tab 1) | nothing; show the "updating" tag, or the new "Updated HH:MM" | "The last forecast stays on screen while the new one runs." |
-| 4:00 | Bed board | the **Ask Lookahead** button (bottom right), then the suggested question **"Who should we worry about first?"** | "Anyone on the team can ask in plain words. This answer comes from the second model, and it names the rooms. Click a room number and you are there." |
+| 4:00 | Bed board | the **Ask Lookahead** button (the board keeps its current label until the page rename) (bottom right), then the suggested question **"Who should we worry about first?"** | "Anyone on the team can ask in plain words. This answer comes from the second model, and it names the rooms. Click a room number and you are there." |
 | 4:20 | Chat open | **Close** (the X) | (no words) |
-| 4:30 | One-sheet (tab 4), the dark diagram | point at the two model boxes | "Two models, two jobs. The patient model we trained ourselves, on these two Lenovo machines. It reads a patient's chart as a sequence of events, the way a language model reads words. At 7 am we run it once per patient and keep the output of its last layer: one vector that summarises the patient. Then five small classifiers, fitted on past patients with known outcomes, turn that vector into the five percentages. One pass per patient, no simulating thousands of futures. The chat model is NVIDIA Nemotron 3 Nano, used as it is, served with vLLM. It predicts nothing. It answers by calling tools that read the forecast. One knows ICU data. The other knows language." |
-| 4:50 | One-sheet, bottom | point at "What the second machine unlocks" | "The second machine is what makes this work. Training uses both GPUs. In service, the chat keeps one GPU and each forecast takes the other, so the board never goes dark. [FILL: training time on 1 GPU against 2.] On patients it never saw, it ranks the right patient higher 77 to 93 percent of the time: 0.93 for death, 0.88 for CRRT, 0.78 for a ventilator, 0.77 for a vasopressor. Fuzzball runs all of it. Nothing leaves the building." |
-| 5:00 | One-sheet | stop | "Lookahead. Thank you." |
+| 4:30 | One-sheet (tab 4), the dark diagram | point at the two model boxes | "Two models. The patient model is ours, trained from scratch on these two machines. It reads a chart as a sequence of events, the way a language model reads words. That is what is new: one pass per patient and five small classifiers, not thousands of simulated futures. The chat model is NVIDIA Nemotron, used as it is. It only reads the forecast." |
+| 4:50 | One-sheet, bottom | point at "In the real world" | "On patients it never saw, AUROC is 0.77 to 0.93. Every step is a Fuzzball workflow file, and the data is in CLIF, an open format, so another hospital can rerun it on its own records. Nothing leaves the building." |
+| 5:00 | One-sheet | stop | "ICU Lookahead. Thank you." |
 
-Timing notes: the 4:30 block is 20 seconds at a steady pace; rehearse it. If you are behind at 3:15, skip the 1:55 threshold beat next time, not the Fuzzball beat.
+Timing notes: the 4:30 and 4:50 lines are about 60 and 40 words, 40 seconds together at a steady pace, so start the 4:30 line by 4:20 (the chat close at 4:20 has no words). If you are behind at 3:15, skip the 1:55 threshold beat, not the Fuzzball beat. Detail that no longer fits is for questions: the last-layer vector, the GPU split in service, the per-event AUROC table (`docs/RESULTS.md`), training on one GPU against two [FILL], and the next step, a prospective check on one site's data.
 
 ## Fallback plan
 

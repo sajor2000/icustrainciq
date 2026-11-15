@@ -1,10 +1,10 @@
-# Handoff: where Lookahead stands and how to take it over
+# Handoff: where ICU Lookahead stands and how to take it over
 
 Last updated: 2026-11-14, late afternoon. Branch `ui/strain-rooms-chat`, merged to `main` by pull request as work lands.
 
 **Chat (branch `t7/ui-nemotron-chatbot`).** The chat is grounded in one published snapshot of the unit (`context.json`: the same 25 rooms, Now and forecast, one `snapshot_id`), built by `backend/app/demo_context.py` and `scripts/run_cohort.py`. Nemotron picks bounded JSON tools (`chat_agent.py`); the numbers in an answer are rendered from that evidence (`evidence.py`), not from model prose. Unknown observations stay unknown. Its workflows are `backend/fuzzball/t7-lookahead-{prepare,chat,forecast}.fz`; they read packages from `/store/py` like the rest and keep the private roster on a separate restricted volume, `demo-context`. Details and next steps: [CHATBOT_HANDOFF.md](CHATBOT_HANDOFF.md) and [`backend/docs/LOOKAHEAD_DEMO.md`](backend/docs/LOOKAHEAD_DEMO.md).
 
-## What Lookahead is
+## What ICU Lookahead is
 
 A bed board for one ICU. It shows what life support each patient is on **now** and forecasts the **next 24 hours** (07:00 to 07:00): starting a ventilator, a vasopressor or CRRT, leaving the ICU, and death. It adds the patients up into unit strain. It runs on two local Lenovo PGX machines under Fuzzball. Nothing is in the cloud. Story: the rural ICU (`docs/DECISIONS.md` D21).
 
@@ -70,7 +70,7 @@ Files: `backend/fuzzball/ready/` (fully rendered for the final cohort; `README.m
 | 9 | First unit forecast: "Update the unit" on the board (the dispatcher starts it), or `ready/t7-forecast-unit.fz` by hand as `--name t7-forecast-manual` | **Blocked** by 7 |
 | 10 | Open the board: `fuzzball workflow connect --name board --endpoint web <t7-twin id>` | **Blocked** by 8 |
 
-Storage in one line: `mimic_clif` is only read (cohort, model, training tokens); everything Lookahead writes goes to the one new volume `twin-store`; Nemotron is served from `hfcache`.
+Storage in one line: `mimic_clif` is only read (cohort, model, training tokens); everything ICU Lookahead writes goes to the one new volume `twin-store`; Nemotron is served from `hfcache`.
 
 ### Pieces
 
@@ -86,7 +86,7 @@ Storage in one line: `mimic_clif` is only read (cohort, model, training tokens);
 ## Rules that must hold
 
 - **Patient data never enters git.** The 25 demo patients are real MIMIC-IV records. They live in `backend/data/local/` (git-ignored) and on the Fuzzball volume `mimic_clif` (`dashboard_data/`). The repo is public. Logs and reports carry counts only.
-- Names on the board are invented (`name.parquet`, `fake_names.py`), on the cluster too.
+- Names on the board are invented, on the cluster too: `fake_names.py` generates one per room number (`--names fake`); the older `name.parquet` is no longer read.
 - Every POST to the board needs `Content-Type: application/json` and `X-Lookahead: 1`.
 - Only the dispatcher starts forecast runs. One GPU job at a time beside the chat model.
 - Wording: "trained and run on local hardware", never "trained on this hospital's patients".

@@ -1,6 +1,6 @@
 # Architecture: the team's guide
 
-How Lookahead is built, where each part runs, and how to start it. The short version is in the [README](../README.md); the project page is https://sajor2000.github.io/icustrainciq/. Figures follow [`DESIGN.md`](../DESIGN.md) (section "Diagrams") and are written by [`diagrams/make_figures.py`](diagrams/make_figures.py). JSON shapes: [`../backend/docs/CONTRACT.md`](../backend/docs/CONTRACT.md). Runbook: [`../backend/docs/LIVE_DEMO.md`](../backend/docs/LIVE_DEMO.md).
+How ICU Lookahead is built, where each part runs, and how to start it. The short version is in the [README](../README.md); the project page is https://sajor2000.github.io/icustrainciq/. Figures follow [`DESIGN.md`](../DESIGN.md) (section "Diagrams") and are written by [`diagrams/make_figures.py`](diagrams/make_figures.py). JSON shapes: [`../backend/docs/CONTRACT.md`](../backend/docs/CONTRACT.md). Runbook: [`../backend/docs/LIVE_DEMO.md`](../backend/docs/LIVE_DEMO.md).
 
 **Nothing is hosted in the cloud.** The real app runs on two local Lenovo PGX machines, on site, and Fuzzball starts every part of it. A developer laptop can run a demo copy with synthetic data. GitHub holds code only.
 
@@ -19,7 +19,7 @@ Fuzzball places CPU work on either machine; each machine has one GPU. The demo h
 | Forecast run, with the patient model | Local Lenovo PGX, CPU then GPU 2 of 2 then CPU | Fuzzball workflow `t7-forecast`, jobs `precheck`, `extract`, `score` | none | the 25 demo patients, staged tokens, model, probes |
 | Setup workflows | Local Lenovo PGX; `t7-fit` uses one GPU, the others CPU | Fuzzball workflows `t7-code`, `t7-fit`, `t7-ward`, in this order | none | code, training tokens, the 25 demo patients |
 | Volume `mimic_clif` (exists, read only) | Fuzzball storage for team7 | Fuzzball volume | mounted at `/data` | the 25 demo patients and `name.parquet` in `dashboard_data/`, the trained patient model in `model_output/final/`, training tokens |
-| Volume `twin-store` (to create) | Fuzzball storage for team7 | Fuzzball volume | mounted at `/store` | everything Lookahead writes: code, packages, probes, staged tokens, `rooms.json`, `forecast.json`, `capacity.json`, `runs.jsonl` |
+| Volume `twin-store` (to create) | Fuzzball storage for team7 | Fuzzball volume | mounted at `/store` | everything ICU Lookahead writes: code, packages, probes, staged tokens, `rooms.json`, `forecast.json`, `capacity.json`, `runs.jsonl` |
 | Volume `hfcache` (exists) | Fuzzball storage for team7 | Fuzzball volume | mounted at `/cache` | Nemotron weights |
 | Local demo | Developer laptop | `uv run python app/board.py` | `http://localhost:8080` | synthetic `examples/` files |
 | 25 demo patients | Already on the cluster, on `mimic_clif`; a local copy on the laptop | read by `t7-fit`, `t7-ward`, `t7-forecast` | `mimic_clif:/dashboard_data/`; `backend/data/local/unit25/`, git-ignored | real MIMIC-IV rows with fictional names; never in git |
@@ -137,7 +137,7 @@ The demo unit is a CLIF-format extract of 25 real MIMIC-IV hospitalizations (19 
 
 | Where | Holds | Never holds |
 |---|---|---|
-| `mimic_clif` (only read) | the 25 demo patients, training tokens, the trained patient model | anything Lookahead writes |
+| `mimic_clif` (only read) | the 25 demo patients, training tokens, the trained patient model | anything ICU Lookahead writes |
 | `twin-store`, folders `stage/` and `train/` | tokens, features, per-stay scores; treat as restricted | |
 | `rooms.json`, `forecast.json`, board server, Nemotron, browser | unit counts with ranges; room entries by room number, with invented names | patient rows, stay ids, real names |
 | Laptop, GitHub | code, synthetic `examples/`, the open MIMIC-IV Demo in `backend/clif_demo` | anything from the cluster volumes |

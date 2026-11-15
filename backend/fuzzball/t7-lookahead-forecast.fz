@@ -29,13 +29,13 @@ jobs:
       set -euo pipefail
       umask 077
       ROOT=/context/tokenized_output
-      test -f /store/probes/mdl-icutwin/manifest.json || { echo "saved probe prerequisite missing"; exit 1; }
+      test -f /store/probes/probe-mdl-icutwin.joblib || { echo "saved probe prerequisite missing"; exit 1; }
       test -f /store/model/mdl-icutwin/config.json || { echo "trained forecaster prerequisite missing; context stays pending"; exit 1; }
       test -f /context/roster.csv || { echo "private roster prerequisite missing"; exit 1; }
       test -f "$ROOT/vocab.yaml" || { echo "selected25 cache prerequisite missing: run t7-lookahead-prepare once"; exit 1; }
       # --counts-only: 25 stays, so an outcome rate is a clinical value; the log gets stay counts only
       python -c 'from icutwin.scoring.winnower import main; main()' "$ROOT" \
-        -c /store/code/examples/winnow_24h.yaml --demo-clock-hours @HOURS@ --counts-only
+        --demo-clock-hours @HOURS@ --counts-only
       python -c 'from icutwin.scoring.extractor import main; main()' "$ROOT" \
         --model /store/model/mdl-icutwin --stay-ids /context/roster.csv
 
@@ -62,7 +62,7 @@ jobs:
       # --no-extract applies saved probes to the GPU features; no second CPU forward pass.
       python /store/code/scripts/run_cohort.py "$CLIF_DIR" \
         --ward-ids @WARD_IDS@ --tokenized-output "$ROOT" \
-        --model /store/model/mdl-icutwin --probes /store/probes/mdl-icutwin --no-extract \
+        --model /store/model/mdl-icutwin --probes /store/probes/probe-mdl-icutwin.joblib --no-extract \
         --work /context --out /context --context-out /context/context.json \
         --cut-time "$CUT" --tz America/Chicago --data-tz US/Eastern \
         --demo-clock-hours "$HOURS" @WARD_FLAG@ @NAMES@ "${CAP[@]}"

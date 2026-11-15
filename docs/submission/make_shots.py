@@ -64,14 +64,16 @@ async def shots(browser):
     await ctx.close()
 
     # The header strain line with tonight's machines set: 6 ventilators, 3 CRRT machines, staffing covers 14
-    ctx, page = await open_board(browser, 1000, "#synthetic&view=strain")
-    await page.click("#capbox summary")
+    # (capacity lives in the Settings panel; #settings opens it)
+    ctx, page = await open_board(browser, 1000, "#synthetic&view=strain&settings")
     await page.fill("#cap-vt", "6")
     await page.fill("#cap-ct", "3")
     await page.fill("#cap-ls", "14")
     await page.click("#capform button[type=submit]")
     await page.wait_for_timeout(400)
-    await crop(page, "strain-line", "[document.getElementById('sline')]", pad=5)
+    await page.click("#setclose")
+    await page.wait_for_timeout(300)
+    await crop(page, "strain-line", "[document.getElementById('alerts')]", pad=5)
     await ctx.close()
 
 

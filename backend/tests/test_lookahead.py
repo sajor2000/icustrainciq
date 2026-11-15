@@ -3,6 +3,7 @@
 import datetime as dt
 import itertools
 import json
+import pathlib
 
 import numpy as np
 import polars as pl
@@ -437,11 +438,9 @@ def test_rooms_apply_probes_for_one_room_keeps_the_ward_scores(tmp_path, monkeyp
             lab[f"{t}_future"] = x[:, 0] + rng.normal(size=n) > 0
         pl.DataFrame(lab).write_parquet(train / f"{split}_for_inference.parquet")
     cfg = OmegaConf.create({"score": {"target_tokens": ["*"]}})
-    probes = tmp_path / "probes"
     home = _model_dir(tmp_path)
-    rep_based.RepBasedScorer(
-        train, {}, home, cfg, "logistic", save_probes=probes
-    ).save_all(verbose=False)
+    rep_based.RepBasedScorer(train, {}, home, cfg, "logistic").save_all(n_samples=20)
+    probes = train / f"probe-{home.name}.joblib"
     ids = [f"held_out{i}" for i in range(5)]
     stage = tmp_path / "stage"
     stage.mkdir()
@@ -751,13 +750,15 @@ def test_merge_features_keeps_other_stays(tmp_path):
         {"hospitalization_id": ["a", "b"], "features": [[1.0], [2.0]]}
     ).write_parquet(f)
     new = pl.DataFrame({"hospitalization_id": ["b"], "features": [[9.0]]})
-    out = merge_features(f, new, ["b"]).sort("hospitalization_id")
+    out = merge_features(f, new).sort("hospitalization_id")
     assert out["hospitalization_id"].to_list() == ["a", "b"]
     assert out["features"].to_list() == [[1.0], [9.0]]
-    assert merge_features(tmp_path / "none.parquet", new, ["b"]).height == 1
+    assert merge_features(tmp_path / "none.parquet", new).height == 1
 
 
-def test_apply_probes_scores_a_stopped_support(tmp_path):
+def test_apply_probes_leaves_past_events_unscored(tmp_path):
+    """main's task rule: an event already seen before the cut gets no probability,
+    even when the support was stopped by the cut (`at_cut` is display-only)"""
     rng = np.random.default_rng(0)
     train = tmp_path / "train"
     train.mkdir()
@@ -771,10 +772,8 @@ def test_apply_probes_scores_a_stopped_support(tmp_path):
         lab[f"{IMV}_future"] = x[:, 0] + rng.normal(size=n) > 0
         pl.DataFrame(lab).write_parquet(train / f"{split}_for_inference.parquet")
     cfg = OmegaConf.create({"score": {"target_tokens": [IMV]}})
-    probes = tmp_path / "probes"
-    rep_based.RepBasedScorer(
-        train, {}, MODEL, cfg, "logistic", save_probes=probes
-    ).save_all(verbose=False)
+    rep_based.RepBasedScorer(train, {}, MODEL, cfg, "logistic").save_all(n_samples=20)
+    probes = train / f"probe-{pathlib.Path(MODEL).name}.joblib"
     lab = pl.read_parquet(train / "held_out_for_inference.parquet").with_columns(
         pl.Series(f"{IMV}_past", [True] * 3 + [False] * 7),
         pl.Series("LABEL//imv_at_cut", [True, False, False] + [False] * 7),
@@ -788,7 +787,7 @@ def test_apply_probes_scores_a_stopped_support(tmp_path):
     p = scored.sort(pl.col("hospitalization_id").str.replace("held_out", "").cast(int))[
         f"{IMV}_rep_score"
     ].to_numpy()
-    assert np.isnan(p[0]) and not np.isnan(p[1:3]).any()  # stopped is scored again
+    assert np.isnan(p[:3]).all() and not np.isnan(p[3:]).any()
 
 
 def test_demographics_age_band_and_sex(tmp_path):
@@ -1090,10 +1089,8 @@ def _fit_probes(tmp_path, home):
             lab[f"{t}_future"] = x[:, 0] + rng.normal(size=n) > 0
         pl.DataFrame(lab).write_parquet(train / f"{split}_for_inference.parquet")
     cfg = OmegaConf.create({"score": {"target_tokens": ["*"]}})
-    probes = tmp_path / "probes"
-    rep_based.RepBasedScorer(
-        train, {}, home, cfg, "logistic", save_probes=probes
-    ).save_all(verbose=False)
+    rep_based.RepBasedScorer(train, {}, home, cfg, "logistic").save_all(n_samples=20)
+    probes = train / f"probe-{pathlib.Path(home).name}.joblib"
     return train, probes
 
 
@@ -1165,7 +1162,7 @@ def test_one_room_extract_after_a_demo_clock_move_leaves_the_rest_stale(
         .filter(pl.col("hospitalization_id") == "held_out1")
         .with_columns(cut_s=pl.lit(86500.0 + 21600), last_valid=pl.lit(55))
     )
-    merge_features(feats, one, ["held_out1"]).write_parquet(feats)
+    merge_features(feats, one).write_parquet(feats)
 
     monkeypatch.setattr(
         "sys.argv", _rooms_argv(tmp_path, stage, home, probes, "--room", "2")
@@ -1208,7 +1205,7 @@ def test_extractor_stores_each_rows_cut(tmp_path):
             "cut_s": [123.0],
         }
     )
-    out = merge_features(f, new, ["b"]).sort("hospitalization_id")
+    out = merge_features(f, new).sort("hospitalization_id")
     assert out["last_valid"].to_list() == [None, 7]  # kept row has no stored cut
 
 
@@ -1221,7 +1218,7 @@ def test_rooms_no_apply_needs_scores_made_with_these_weights(tmp_path, monkeypat
         _run(monkeypatch, tmp_path, root)
     (tmp_path / MODEL / "model.safetensors").write_bytes(b"w1")
     rep_based.scores_meta_path(root / f"scores-rep-based-{MODEL}.parquet").unlink()
-    with pytest.raises(SystemExit, match="not made by"):
+    with pytest.raises(SystemExit, match="not made for"):
         _run(monkeypatch, tmp_path, root)
 
 
@@ -1391,3 +1388,23 @@ def test_room_combined_forecast_is_unknown_when_a_support_is_skipped():
     # check_first never lists a room without a combined forecast
     df = scores(1, p={IMV: [0.9], CRRT: [float("nan")]}, ids=["a"])
     assert aggregate.check_first(df, aggregate.patient_table(df), {"a": 1}) == []
+
+
+def test_an_event_already_seen_before_the_cut_is_not_missing_data():
+    """the probes give no score to a stay whose event was seen before the cut (the
+    task rule). A vasopressor started and stopped earlier is "not a new start", not
+    "no data": it must not make the unit's count or the room's forecast unknown."""
+    df = scores(
+        2, p={VASO: [float("nan"), 0.3]}, past={VASO: [True, False]}, ids=["a", "b"]
+    ).with_columns(pl.lit(False).alias(aggregate.AT_CUT_COL["vasopressor"]))
+    tab = aggregate.patient_table(df)
+    assert tab["stopped"]["vasopressor"].tolist() == [True, False]
+    assert not tab["skipped"]["vasopressor"].any()
+    fc = aggregate.build_forecast(df, "m", beds=2)
+    assert fc["resources"]["vasopressor"]["available"] is True
+    assert fc["resources"]["vasopressor"]["expected"] == 0.3
+    assert fc["life_support"]["expected_new_patients"]["p50"] is not None
+    cut = dt.datetime(2026, 11, 14, 7, tzinfo=dt.timezone.utc)
+    a, _ = rooms.room_entries(df, {"a": 1, "b": 2}, {}, cut, "now")
+    assert a["p"]["vasopressor"] is None and a["skipped"]["vasopressor"] is False
+    assert a["level"] in ("low", "medium", "high")

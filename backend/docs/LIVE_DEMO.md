@@ -20,7 +20,7 @@ Fuzzball facts below were checked against the 4.3 docs on 2026-11-14: in-workflo
 | Layer | What runs | Where | When |
 |---|---|---|---|
 | Model | `icutwin` decoder, trained by `t7-build` (both GPUs), published to `twin-store` | `twin-store/model`, code in `twin-store/code` | once, before the demo |
-| Probes | one logistic probe per task, **fit once on MIMIC training stays**, saved | `twin-store/probes/mdl-icutwin/` | once, right after training (new, section 1.3) |
+| Probes | one logistic probe per task, **fit once on MIMIC training stays**, saved | `twin-store/train/probe-final.joblib` | once, right after training (new, section 1.3) |
 | Stage ward | 25 open MIMIC-IV Demo stays, rooms 1 to 25, tokenized and cut 24 h after ICU arrival | `clif_work/stage/` (volume, never git) | once; rerun is idempotent |
 | Forecast run | `t7-forecast`: one forward pass per stage-ward room on one GPU, apply the saved probes, write `rooms.json`, then `forecast.json` | GPU 1 for minutes, CPU for the rest | 07:00 (dispatcher), on request (board or chat), or by hand |
 | Twin | `t7-twin`: Nemotron on GPU 2, the board (`app/board.py`, HTTPS endpoint), the dispatcher | always on | up before 07:00 on demo day |
@@ -52,37 +52,37 @@ python app/stage_ward.py /store/code/clif_demo --out /store/stage/stage_ward.csv
 
 Rule, as coded:
 
-1. **Eligible**: the stay has an ICU row in `clif_adt`; at the first ICU arrival plus 24 h (the cut of `examples/winnow_24h.yaml`) it is still in that ICU row and still in hospital.
+1. **Eligible**: the stay has an ICU row in `clif_adt`; at the first ICU arrival plus 24 h (the cut of `icutwin/config/winnowing.yaml`) it is still in that ICU row and still in hospital.
 2. **Score 0 to 8** over the first 24 h after arrival, one point each: any vasopressor dose above zero (angiotensin, dopamine, epinephrine, norepinephrine, phenylephrine, vasopressin), invasive ventilation, any CRRT record, MAP < 65, lactate > 2, creatinine > 2, platelets < 100, and (SpO2 < 90 or FiO2 >= 0.6).
 3. **Band**: scores between the 40th and 60th percentile of the eligible stays (numpy `lower` and `higher` at the edges). If the band holds fewer than 25 patients it widens by 5 percentile points a side and prints that it did.
 4. **One stay per patient** (lowest hospitalization id), then a seeded draw (`numpy.random.default_rng(20261114).permutation`), and **room numbers 1 to 25 follow the draw**.
 
 It prints counts and a 12-digit digest only. The CSV (`room, hospitalization_id, score`) goes to the `clif_work` volume; `*.csv` is in `.gitignore`, and the test checks that no id reaches stdout.
 
-Run on the repo's open `clif_demo/` on 2026-11-14 (counts only): 101 eligible stays from 82 patients; score counts 0..8 = 9, 19, 23, 13, 14, 15, 4, 3, 1; band p40 to p60 is scores 2 to 3 (36 stays, 32 patients); 25 selected (15 with score 2, 10 with score 3); digest `9021f82b3b5d`. Tokenizing the demo and winnowing it with `examples/winnow_24h.yaml` locally kept **25 of 25** selected stays (112 stays winnow in all, because the winnower also keeps stays that move ICU to ICU, which the selection does not).
+Run on the repo's open `clif_demo/` on 2026-11-14 (counts only): 101 eligible stays from 82 patients; score counts 0..8 = 9, 19, 23, 13, 14, 15, 4, 3, 1; band p40 to p60 is scores 2 to 3 (36 stays, 32 patients); 25 selected (15 with score 2, 10 with score 3); digest `9021f82b3b5d`. Tokenizing the demo and winnowing it with `icutwin/config/winnowing.yaml` locally kept **25 of 25** selected stays (112 stays winnow in all, because the winnower also keeps stays that move ICU to ICU, which the selection does not).
 
 **Reconcile with the team-machine list** (lane 3, minutes): print the digest of that list the same way (`stage_ward.digest`). If equal, done. If not, recommendation: adopt the script's list. The data is open, nothing clinical rests on which 25, and a list nobody can regenerate inside the cluster is the weaker claim.
 
-While doing this, one bug on `main` surfaced and is **fixed on this branch** (flag for Vaishvik, hardware-pivot style note): `icutwin-winnow -c examples/winnow_24h.yaml` was refused with `unknown option(s) ['horizon_after_threshold_s']`, because the shipped `winnowing.yaml` only had that key as a comment. That would have stopped `t7-smoke` and `t7-build` at the winnow step. `winnowing.yaml` now lists the key (null), the winnower treats null as unset, and a test loads the example override.
+While doing this, one bug on `main` surfaced and is **fixed on this branch** (flag for Vaishvik, hardware-pivot style note): `icutwin-winnow -c icutwin/config/winnowing.yaml` was refused with `unknown option(s) ['horizon_after_threshold_s']`, because the shipped `winnowing.yaml` only had that key as a comment. That would have stopped `t7-smoke` and `t7-build` at the winnow step. `winnowing.yaml` now lists the key (null), the winnower treats null as unset, and a test loads the example override.
 
 ### 1.3 The per-room scoring path
 
 Today `rep_based.py` fits probes and scores held-out in one go and keeps nothing. Implemented on this branch (`icutwin/scoring/rep_based.py`, tests in `tests/test_rep_probes.py`):
 
-- `icutwin-rep-score <tokenized_output> -m <model> -c examples/probe_tasks.yaml --save-probes /store/probes/mdl-icutwin` saves each fitted probe (`<token>.joblib`, with `__` for `//`) and `manifest.json` (model name, feature size, per task: file, training stays, positives; a task with one class in training is recorded with `file: null` and scores NaN).
-- `icutwin-rep-score <stage tokenized_output> -m <model> --apply-probes /store/probes/mdl-icutwin --stay-ids /store/stage/stage_ward.csv` **never fits**: it reads `features-<split>-<model>.parquet` and `<split>_for_inference.parquet` for every split present, keeps the 25 ids, applies each probe with the same `_past` mask (a task that already happened before the cut is NaN, not a new event), and writes `scores-rep-based-<model>.parquet` in the layout `app/aggregate.py` already reads. It refuses probes saved for a different model name or other weights, and features that were not extracted with the weights now in the model folder (`icutwin-extract` records the weights digest in `features-<split>-<model>.meta.json`; a features file without it is refused: extract again). The test checks the scores equal a direct `predict_proba` of the loaded probe.
+- `icutwin-rep-score <tokenized_output> -m <model> -c examples/probe_tasks.yaml` saves every fitted probe in one `probe-<model>.joblib` (task -> probe; a task with one class in training has no probe and scores NaN), `probe-<model>.meta.json` (weights sha256) and `metrics-rep-based-<model>.json` (training counts and held-out metrics).
+- `icutwin-rep-score <stage tokenized_output> -m <model> --apply-probes /store/train/probe-final.joblib --stay-ids /store/stage/stage_ward.csv` **never fits**: it reads `features-<split>-<model>.parquet` and `<split>_for_inference.parquet` for every split present, keeps the 25 ids, applies each probe with the same `_past` mask (a task that already happened before the cut is NaN, not a new event), and writes `scores-rep-based-<model>.parquet` in the layout `app/aggregate.py` already reads. It refuses probes saved for a different model name or other weights, and features that were not extracted with the weights now in the model folder (`icutwin-extract` records the weights digest in `features-<split>-<model>.meta.json`; a features file without it is refused: extract again). The test checks the scores equal a direct `predict_proba` of the loaded probe.
 - joblib pickles tie the probes to the scikit-learn in `/store/py`; keep `fit` and `apply` on the same `tooling` volume.
 
 Pipeline on the day (all inside the cluster; **proposed job layout**, none of it is in `fuzzball/*.fz` yet, see gaps G2 and G3):
 
 | Step | Command | Runs on | When |
 |---|---|---|---|
-| fit | `icutwin-extract /store/train -m /data/model_output/final` (train, tuning, held_out) then `icutwin-rep-score /store/train -m ... -c examples/probe_tasks.yaml --save-probes /store/probes/mdl-icutwin` | GPU then CPU | **once** after `t7-build`; the slow, MIMIC-sized step, never repeated by a rerun |
+| fit | `icutwin-extract /store/train -m /data/model_output/final` (train, tuning, held_out) then `icutwin-rep-score /store/train -m ... -c examples/probe_tasks.yaml` | GPU then CPU | **once** after `t7-build`; the slow, MIMIC-sized step, never repeated by a rerun |
 | stage-select | `python app/stage_ward.py /store/code/clif_demo --out /store/stage/stage_ward.csv` | CPU | once (deterministic) |
-| stage-tokenize | `printf 'clif_path: /store/code/clif_demo\ntimezone: US/Eastern\nfiletype: parquet\n' > site.yaml; icutwin-tokenize pipeline site.yaml` in `/store/stage`, then `icutwin-winnow tokenized_output -c /store/code/examples/winnow_24h.yaml` | CPU | once (2 s locally for tokenize) |
+| stage-tokenize | `printf 'clif_path: /store/code/clif_demo\ntimezone: US/Eastern\nfiletype: parquet\n' > site.yaml; icutwin-tokenize pipeline site.yaml` in `/store/stage`, then `icutwin-winnow tokenized_output` | CPU | once (2 s locally for tokenize) |
 | vocab check | the stage `vocab.yaml` must equal the training `vocab.yaml` (`cmp`); the vocabulary is fixed by the token spec, so ids match, but check | CPU | once, and as a go/no-go item |
 | **extract (rerun)** | `icutwin-extract /store/stage/tokenized_output -m /data/model_output/final` | **GPU 1**, model load plus about 100 short forward passes | every run |
-| **apply (rerun)** | `icutwin-rep-score /store/stage/tokenized_output -m ... --apply-probes /store/probes/mdl-icutwin --stay-ids /store/stage/stage_ward.csv` | CPU, seconds | every run |
+| **apply (rerun)** | `icutwin-rep-score /store/stage/tokenized_output -m ... --apply-probes /store/train/probe-final.joblib --stay-ids /store/stage/stage_ward.csv` | CPU, seconds | every run |
 | **rooms (rerun)** | `python app/rooms.py` (to build, G4): per room `room`, `age_band`, `on_now`, `risk_24h` (null where on), `recent` (last 12 h) from the stage scores and the open `clif_demo` tables; writes `/store/rooms.json` | CPU | every run, **before** forecast.json |
 | **aggregate (rerun)** | `python /store/code/app/aggregate.py /store/stage/tokenized_output /store/forecast.json --beds 25 --score rep --baseline /store/train` | CPU | every run, **last** (it is the commit marker the page watches) |
 
@@ -149,7 +149,7 @@ python /store/code/app/aggregate.py /store/stage/tokenized_output /store/forecas
 
 ```bash
 python /store/code/app/rooms.py /store/stage/tokenized_output \
-    --model /data/model_output/final --probes /store/probes/mdl-icutwin \
+    --model /data/model_output/final --probes /store/train/probe-final.joblib \
     --stay-ids /store/stage/stage_ward.csv --out /store/rooms.json
 # one room (room scope): rewrite that room only, nothing else (needs the whole-ward rooms.json first)
 python /store/code/app/rooms.py ... --room 7          # or --stay <hospitalization_id>
@@ -158,12 +158,12 @@ python /store/code/app/rooms.py ... --room 7 --recount --forecast /store/forecas
     --baseline /store/train [--capacity /store/capacity.json] --demo-clock-hours 6
 ```
 
-`rooms.py` applies the saved probes itself (`icutwin.scoring.rep_based.apply_probes`, never a refit). Use `--no-apply` when `icutwin-rep-score --apply-probes` already wrote `scores-rep-based-<model>.parquet`. A room-scope run scores only that stay into `scores-rep-room-<N>.parquet`, so the ward's scores file stays whole. It refuses stale features: `icutwin-extract` stores each row's cut (`last_valid`, `cut_s`) in the features file and `rooms.py` / `apply_probes` refuse any row whose stored cut is not the labels' cut (a demo-clock move, or a one-room re-extract that left other rooms at the old cut), so after a clock move the whole ward must be re-extracted. Probes and scores are tied to the model weights, not the folder name: the probe `manifest.json` and a `scores-rep-based-<model>.meta.json` beside each scores file hold a sha256 of the weights, and `apply_probes` / `--no-apply` refuse a mismatch (refit or re-score). `--no-apply` reads `scores-rep-based-<model>.parquet` of the `--model` given, never another model's newest file. The last stdout line is JSON counts: `scope`, `rooms_written`, `rooms_in_file`, `dropped`, `recount`, `high`.
+`rooms.py` applies the saved probes itself (`icutwin.scoring.rep_based.apply_probes`, never a refit). Use `--no-apply` when `apply_probes` already wrote `scores-rep-based-<model>.parquet`. A room-scope run scores only that stay into `scores-rep-room-<N>.parquet`, so the ward's scores file stays whole. It refuses stale features: `icutwin-extract` stores each row's cut (`last_valid`, `cut_s`) in the features file and `rooms.py` / `apply_probes` refuse any row whose stored cut is not the labels' cut (a demo-clock move, or a one-room re-extract that left other rooms at the old cut), so after a clock move the whole ward must be re-extracted. Probes and scores are tied to the model weights, not the folder name: `probe-<model>.meta.json` and a `scores-rep-based-<model>.meta.json` beside each scores file hold a sha256 of the weights, and `apply_probes` / `--no-apply` refuse a mismatch (refit or re-score). `--no-apply` reads `scores-rep-based-<model>.parquet` of the `--model` given, never another model's newest file. The last stdout line is JSON counts: `scope`, `rooms_written`, `rooms_in_file`, `dropped`, `recount`, `high`.
 
 **Demo clock** (move the cut later or earlier than "24 h after ICU arrival"): the cut is made by the winnower, so a new offset is a three-step chain, all on the stage ward only:
 
 ```bash
-icutwin-winnow /store/stage/tokenized_output -c /store/code/examples/winnow_24h.yaml --demo-clock-hours 6
+icutwin-winnow /store/stage/tokenized_output --demo-clock-hours 6
 icutwin-extract /store/stage/tokenized_output -m /data/model_output/final      # GPU, about 100 short passes
 python /store/code/app/rooms.py ... --recount --forecast /store/forecast.json --demo-clock-hours 6
 ```
@@ -317,7 +317,7 @@ fuzzball workflow endpoints <twin-id> board web        # the URL
 fuzzball workflow connect --name board --endpoint web <twin-id>
 ```
 
-Preflight on the volumes (an agent cannot read volumes, so a small CPU workflow prints counts: **to build**, G10): model dir present, `/store/probes/mdl-icutwin/manifest.json` lists the expected tasks, stage CSV has 25 rows and digest `9021f82b3b5d` (or the reconciled one), stage `vocab.yaml` equals the training one, `forecast.json` and `rooms.json` exist and share a `made_at`, stage scores hold 25 of 25 rooms.
+Preflight on the volumes (an agent cannot read volumes, so a small CPU workflow prints counts: **to build**, G10): model dir present, `/store/train/probe-final.joblib` lists the expected tasks, stage CSV has 25 rows and digest `9021f82b3b5d` (or the reconciled one), stage `vocab.yaml` equals the training one, `forecast.json` and `rooms.json` exist and share a `made_at`, stage scores hold 25 of 25 rooms.
 
 ### T-45: rehearsal run on the real path
 
@@ -378,7 +378,7 @@ Size: XS under an hour, S a few hours, M most of a day.
 | # | Gap | Owner lane | Size | State |
 |---|---|---|---|---|
 | G1 | Volume `twin-store` does not exist (checked 2026-11-14); every workflow stops at it. `clif_work` and `tooling` are no longer used | 2 (needs the team's go) | XS | open |
-| G2 | **fit** step after `t7-build`: extract all splits, `icutwin-rep-score --save-probes /store/probes/mdl-icutwin`, drop the per-run refit from `t7-forecast.fz` | 3 + 2 | M | **done**: `fuzzball/t7-fit.fz` (validated), `t7-forecast.fz` only applies probes |
+| G2 | **fit** step after `t7-build`: extract all splits, `icutwin-rep-score`, drop the per-run refit from `t7-forecast.fz` | 3 + 2 | M | **done**: `fuzzball/t7-fit.fz` (validated), `t7-forecast.fz` only applies probes |
 | G3 | **`t7-forecast.fz` v2**: stage-select, stage tokenize+winnow (cached), extract on the stage dir, `--apply-probes`, rooms, aggregate with `--baseline`; install polars/numpy into `/store/py` instead of `pip install` per run | 3 + 2 | M | **done** except the argument spelling of rooms.py and aggregate.py (TODO in the `score` job); no `pip` at run time, deps from `/store/py` |
 | G4 | `app/rooms.py`: writes `rooms.json` (on now, five probabilities, level, last 12 h of readable events from the open demo tokens), rooms before forecast; with test | 3 | M | done (t7/fc-lookahead-forecast), contract in `docs/CONTRACT.md`, flags in section 1.5 |
 | G5 | `app/stage_ward.py` | 3 | done | here, with tests; reconcile digest with team list (XS) |
@@ -417,7 +417,7 @@ Decided by J.C. on 2026-11-14 (`docs/DECISIONS.md` D9). Code: `app/dispatcher.py
 ### 9.1 Order of workflows (one-time, then daily)
 
 1. `t7-build` (both GPUs) publishes model and code.
-2. **`t7-fit`** (once, and again only when the model changes): `stage` (CPU: stage-ward list, tokens, winnow, vocabulary check), `extract` (GPU, train/tuning/held_out), `fit` (CPU: probes saved to `/store/probes/mdl-icutwin`). An update refuses to hold the GPU if the probes or the stage tokens are missing ("run t7-fit first").
+2. **`t7-fit`** (once, and again only when the model changes): `stage` (CPU: stage-ward list, tokens, winnow, vocabulary check), `extract` (GPU, train/tuning/held_out), `fit` (CPU: probes saved to `/store/train/probe-final.joblib`). An update refuses to hold the GPU if the probes or the stage tokens are missing ("run t7-fit first").
 3. `t7-twin` (Nemotron, board, dispatcher). The board no longer waits for Nemotron.
 4. Daily: the dispatcher starts `t7-forecast` at **07:00 sharp** (dispatcher clock, zone-aware `America/Chicago`, so daylight saving moves nothing; window 07:00 to 07:00). If another run is active, the cluster cannot be listed, or the start fails, it retries every minute for 10 minutes and logs every attempt and the outcome to `runs.jsonl`. The 07:00 run ignores the 20 minute gap. A dispatcher that starts after 07:00 with no scheduled run since the cut runs it once (catch-up). Until it lands the board keeps the previous forecast and `/api/runs` says `updating: true`; a failed or missed scheduled run shows in `/api/runs` as `scheduled.state` = `failed` or `missed`: check it after 07:15 on demo day.
 
@@ -472,7 +472,7 @@ Check it with `t7-ward` job `load` (counts only), not by listing files by hand.
 
 1. `t7-fit` (once per model): saves the probes. It stages the open demo ward by default.
 2. `t7-ward`, rendered for the cohort: job `load` checks the folder, the table list, the 25 ids and the names file; job `tokenize` builds the room map and the tokens with the training vocabulary and swaps them into `/store/stage/`.
-3. `t7-twin` from `fuzzball/ready/t7-twin.fz` (its dispatcher line already ends in `--real-ward --clif-dir /data/dashboard_data --names /data/dashboard_data/name.parquet`, and its board line in `--real-ward`: a board without it serves a real ward counts-only).
+3. `t7-twin` from `fuzzball/ready/t7-twin.fz` (its dispatcher line already ends in `--real-ward --clif-dir /data/dashboard_data --names fake`: names are generated per room number, `name.parquet` is no longer read; its board line ends in `--real-ward`: a board without it serves a real ward counts-only).
 4. The first unit forecast ("Update the unit", or 07:00). It writes `rooms.json` and `forecast.json` with `"ward": {"source": "mimic-iv", ...}`.
 
 ```bash

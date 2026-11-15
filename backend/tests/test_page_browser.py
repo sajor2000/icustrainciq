@@ -110,7 +110,7 @@ def test_machine_total_stays_when_use_exceeds_it(browser, tmp_path, size):
         assert "over the total" in label
         assert "4 total" in bar.text_content()
         words = " ".join(card.inner_text().split())
-        assert "free of 4 · 1 over" in words, words
+        assert "Free 0 of 4 · 1 over" in words, words
         # one already over, two flagged: three short, not two
         assert "Ventilators short by 3" in page.inner_text("body")
         page.close()

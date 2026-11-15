@@ -1,5 +1,5 @@
 ---
-name: Lookahead (ICU-Twin)
+name: ICU Lookahead (ICU-Twin)
 description: A picture board for the ICU. Ink means now, blue means the next 24 hours.
 colors:
   board: "#F3F5F9"
@@ -278,7 +278,7 @@ components:
     height: "2.75rem"
 ---
 
-# Design System: Lookahead (ICU-Twin)
+# Design System: ICU Lookahead (ICU-Twin)
 
 ## Overview
 
@@ -449,7 +449,7 @@ A 3px outline in `focus` with a 2px offset and a .5rem radius on every focusable
 State changes only: a .2s ease-out on the board colour swap, a .15s ease-out 1px lift on tile and figure hover, a .15s chevron turn. Nothing pulses or loops. Reduced motion removes all of it.
 
 ### Product title and unit chip
-The H1 is the product, "Lookahead", with the descriptor "ICU forecast · next 24 hours" beside it at 1rem / 600 in secondary ink. The unit ("Medical ICU · 25 beds") is a pill chip in the sub-line next to the data-source tag and is read from the forecast, never written into the page.
+The H1 is the product, "ICU Lookahead", with the descriptor "ICU forecast · next 24 hours" beside it at 1rem / 600 in secondary ink. The unit ("Medical ICU · 25 beds") is a pill chip in the sub-line next to the data-source tag and is read from the forecast, never written into the page.
 
 ### Flag line control (Dema's threshold toggle)
 "Flag beds at" in secondary ink, then a three-part segmented control (50%, 25%, 10%; surface ground, line border, radius .625rem, 2.75rem tall; the chosen part is blue with its on-colour) and an outlined "Thresholds" button. The popover under it (surface, line border, radius 1rem, floating shadow, 24rem wide) has one row per line: icon and name, a 2.75rem − and + stepper, the value at 800, and the beds it catches; then a custom field for all supports and Reset. Hidden in Now. Credit: Dema (deetherese).
@@ -473,7 +473,7 @@ Room, sex and age, and 1.75rem solid icons with their names. Weight is the numbe
 In Next 24 h every tile and the room page carry two captioned columns joined by the arrow: **NOW** over the solid icons (or "no support") and **NEXT 24 H** over the forecast items (or "nothing new", or "leaving <20%" on a Not improving bed). Captions are Label size, 700, capitals, in the tile's secondary ink. On a phone the two columns become two labelled rows and the arrow is dropped. In the Worry first rail and on the room page each forecast item also shows its name ("Vasopressor 43%").
 
 ### Chat widget
-A launcher (a 3.25rem ink circle with the chat icon in board colour, floating shadow, accessible name "Ask Lookahead") and a non-modal panel (surface, line border, radius 1rem, the same floating shadow, no scrim). Header: "Ask Lookahead", a context pill button ("Unit" or "Room 12", `board-2` fill), and minimise and close as 2.75rem icon buttons. Suggested questions are stacked pills shown only while the conversation is empty. The team's messages sit right on `board-2`; answers sit left with a rule border, numbers at 800 and room numbers as blue underlined links. "Thinking…" carries an outlined Stop button. The input is a textarea that grows to four lines beside a 2.75rem send button that is `board-2` when disabled and ink when it can send. A blue dot on the launcher means the forecast changed since the chat was last open. On a phone the sheet has a short handle bar at its top edge.
+A launcher (a 3.25rem ink circle with the chat icon in board colour, floating shadow, accessible name "Ask ICU Lookahead") and a non-modal panel (surface, line border, radius 1rem, the same floating shadow, no scrim). Header: "Ask ICU Lookahead", a context pill button ("Unit" or "Room 12", `board-2` fill), and minimise and close as 2.75rem icon buttons. Suggested questions are stacked pills shown only while the conversation is empty. The team's messages sit right on `board-2`; answers sit left with a rule border, numbers at 800 and room numbers as blue underlined links. "Thinking…" carries an outlined Stop button. The input is a textarea that grows to four lines beside a 2.75rem send button that is `board-2` when disabled and ink when it can send. A blue dot on the launcher means the forecast changed since the chat was last open. On a phone the sheet has a short handle bar at its top edge.
 
 ### Figure legend (tooltip)
 One element for the whole page: ink fill, board text, .8125rem / 600, radius .5rem, at most 19rem wide, floating shadow, `pointer-events: none`. It appears 150ms after hover, at once on keyboard focus, and on touch by tap or long-press; it leaves at once. It sits above its target, or below when there is no room, and is clamped to the viewport. Text only, two short lines at most, the same wording as the key and "How this forecast was made" (one `DEF` map in the page builds all three). It adds to the visible labels and never replaces them.

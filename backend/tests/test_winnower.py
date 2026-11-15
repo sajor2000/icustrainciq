@@ -6,6 +6,7 @@ import polars as pl
 import pytest
 from omegaconf import OmegaConf
 
+from icutwin.common import merge_config
 from icutwin.scoring.winnower import Winnower
 
 LOOKUP = {"BOS": 1, "LAB_RES//potassium//L1": 2, "ADT//TRANSFER_IN//icu": 3, "EOS": 4}
@@ -50,7 +51,7 @@ def test_labels_split_past_future(tmp_path):
     # a label must not change the cut: same past length as tokens
     assert df["tokens_past"].list.len().to_list() == [2, 2]
 
-    # horizon 1h, counted from the last past token: b's 26h hit drops out
+    # horizon 1h, counted from the 24h cut: b's 26h hit drops out
     cfg.horizon_after_threshold_s = 3600
     df = Winnower(tmp_path, cfg, LOOKUP).prepare_winnowed_frame().collect()
     assert df.sort("hospitalization_id")["LABEL//hyperk_init_future"].to_list() == [
@@ -85,6 +86,10 @@ def test_cut_24h_after_icu_arrival(tmp_path):
         ("c", 12, "EOS"),
         ("d", 0, "BOS"),  # never in the ICU
         ("d", 40, "EOS"),
+        ("e", 0, "BOS"),  # ICU at 1 h, quiet until 48 h: cut 25 h, window to 49 h
+        ("e", 1, "ADT//TRANSFER_IN//icu"),
+        ("e", 48, "RESP//device_category//imv"),  # 23 h after the cut: future
+        ("e", 60, "EOS"),
     ]
     pl.DataFrame(
         {
@@ -111,27 +116,20 @@ def test_cut_24h_after_icu_arrival(tmp_path):
         }
     )
     df = Winnower(tmp_path, cfg, lookup).prepare_winnowed_frame().collect()
-    assert df["hospitalization_id"].to_list() == ["a"]
-    assert df["tokens_past"].list.len().to_list() == [3]
-    assert df["RESP//device_category//imv_past"].to_list() == [True]
-    assert df["RESP//device_category//imv_future"].to_list() == [True]
+    df = df.sort("hospitalization_id")
+    assert df["hospitalization_id"].to_list() == ["a", "e"]
+    assert df["tokens_past"].list.len().to_list() == [3, 2]
+    assert df["RESP//device_category//imv_past"].to_list() == [True, False]
+    # the 24 h window starts at the cut, not at e's last token before it (2 h)
+    assert df["RESP//device_category//imv_future"].to_list() == [True, True]
 
 
-def test_shipped_24h_override_is_accepted():
-    # hardware pivot: examples/winnow_24h.yaml used to be refused as "unknown option"
-    # (horizon_after_threshold_s was only a comment in winnowing.yaml), which stopped
-    # t7-smoke and t7-build at the winnow step
-    import pathlib
-
-    from icutwin.common import merge_config
-
-    cfg = merge_config(
-        "winnowing.yaml",
-        pathlib.Path(__file__).parent.parent / "examples/winnow_24h.yaml",
-    )
-    assert cfg.horizon_after_threshold_s == 86400
+def test_default_is_24h_after_icu_arrival():
+    """D3: the shipped config cuts 24 h after ICU arrival, labels the next 24 h"""
+    cfg = merge_config("winnowing.yaml", None)
     assert cfg.threshold.after_first_occurrence.token == "ADT//TRANSFER_IN//icu"
-    assert merge_config("winnowing.yaml", None).horizon_after_threshold_s is None
+    assert cfg.threshold.after_first_occurrence.duration_s == 86400
+    assert cfg.horizon_after_threshold_s == 86400
 
 
 def _after_icu_cfg(offset_s):
@@ -174,36 +172,21 @@ def test_offset_cannot_put_the_cut_before_icu_arrival(tmp_path):
 def test_counts_only_keeps_outcome_rates_out_of_the_log(tmp_path, caplog):
     """CodeRabbit PR #16: a small ward's outcome rates are clinical values; the
     workflows that winnow one ask for counts only"""
+    import test_lookahead as tl
     import yaml
     from typer.testing import CliRunner
 
     from icutwin.scoring import winnower
 
     logger = winnower.logger  # the object the winnower itself logs to
-
-    lookup = {"BOS": 1, "RESP//device_category//imv": 2, "EOS": 3}
-    pl.DataFrame(
-        {
-            "hospitalization_id": ["a", "a", "a", "b", "b"],
-            "token_id": [1, 2, 3, 1, 3],
-            "event_time": [0, 100000, 200000, 0, 200000],
-            "value": [None] * 5,
-            "position_id": [0, 1, 2, 0, 1],
-        },
-        schema_overrides={"event_time": pl.Datetime("us"), "value": pl.Float64},
-    ).write_parquet(tmp_path / "tokens_held_out.parquet")
+    lookup = tl._timeline(tmp_path)  # two stays, cut 24 h after ICU arrival
     for split in ("train", "tuning"):
         pl.DataFrame({"x": [1]}).write_parquet(tmp_path / f"tokens_{split}.parquet")
     (tmp_path / "vocab.yaml").write_text(yaml.safe_dump({"lookup": lookup}))
     cfg = tmp_path / "w.yaml"
     cfg.write_text(
         yaml.safe_dump(
-            {
-                "outcome_tokens": ["RESP//device_category//imv"],
-                "threshold": {"duration_s": 1},
-                "horizon_after_threshold_s": 86400,
-                "splits": ["held_out"],
-            }
+            {"outcome_tokens": ["RESP//device_category//imv"], "splits": ["held_out"]}
         )
     )
     level = logger.level  # another test may have quietened the shared logger

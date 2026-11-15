@@ -80,7 +80,7 @@ before deployment. The Fuzzfiles reference volumes; they do not create them.
 
 | Mount | Persistent volume | Contents and permitted readers |
 |---|---|---|
-| `/store` | `team7/twin-store` | Code at `/store/code`, forecaster at `/store/model/mdl-icutwin`, saved probes at `/store/probes/mdl-icutwin`, staged CLI `/store/bin/fuzzball`. Code/model/probes and approved aggregate counts only; no roster, room rows or clinical context. |
+| `/store` | `team7/twin-store` | Code at `/store/code`, forecaster at `/store/model/mdl-icutwin`, saved probes in one file, `/store/probes/probe-mdl-icutwin.joblib`, with `probe-mdl-icutwin.meta.json` (the weights checksum) beside it, staged CLI `/store/bin/fuzzball`. Code/model/probes and approved aggregate counts only; no roster, room rows or clinical context. |
 | `/models` | `team7/hfcache` | Nemotron weights. This is the LLM service's only persistent mount. |
 | `/context` | `team7/demo-context` | **Restricted:** private `cohort_ids.csv`, approved selected-25 CLIF extract `clif/`, generated `stage_ward.csv`/`roster.csv`, selected-25 `tokenized_output/`, room projections, `context.json`, metadata run log and rendered workflow files. Board routes read the approved context and metadata, never source tables; this is a shared restricted volume, not a per-directory filesystem isolation boundary. |
 | `/rows` | `team7/clif_work` | **Restricted:** existing prepared token/features/scores source, if used by an authorized operator to prepare the selected cache. Never mounted in the new runtime definitions. |
@@ -189,7 +189,7 @@ the same selected cache, extracts last hidden states on one GPU, then invokes:
 python /store/code/scripts/run_cohort.py /context/clif \
   --ward-ids /context/cohort_ids.csv --real-ward \
   --tokenized-output /context/tokenized_output --work /context --out /context \
-  --model /store/model/mdl-icutwin --probes /store/probes/mdl-icutwin --no-extract \
+  --model /store/model/mdl-icutwin --probes /store/probes/probe-mdl-icutwin.joblib --no-extract \
   --context-out /context/context.json --cut-time "$REPLAY_CUT" \
   --demo-clock-hours 0 --tz America/Chicago --data-tz US/Eastern --names fake
 ```

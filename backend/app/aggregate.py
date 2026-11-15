@@ -425,7 +425,9 @@ def patient_table(
     (started before the cut). stopped[support]: started before the cut but not
     running at it, so forecastable again.
     skipped[name]: no score although the stay is scorable (the probe was skipped in
-    training or has no column): no data, which is not the same as "not a new event".
+    training or has no column, or what runs now is unknown): no data, which is not
+    the same as "not a new event". A stay whose event was already seen before the cut
+    (`_past`) is not scorable and so never skipped.
     Two tokens that exclude each other (ward / step-down) add, clipped to 1.
     clif: {stay id: {"imv", "vasopressor", "crrt"}} from app/clif_now.py (`--clif-now`);
     it replaces the token flags for `on` (and so for `stopped` and the exclusion).
@@ -475,7 +477,11 @@ def patient_table(
             excluded = run
             pr = np.where(run | uncertain, np.nan, pr)
         p[name] = pr
-        skipped[name] = (none & ~excluded) | uncertain
+        # No score, although the stay could have a new event: no data. A stay whose
+        # event was already seen before the cut has no score by the task rule (the
+        # probes give it none, rep_based.apply_probes): that is "not a new event",
+        # like a support that is running, and not missing data.
+        skipped[name] = (none & ~excluded & ~flag) | uncertain
     return {
         "p": p,
         "on": on,
