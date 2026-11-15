@@ -75,6 +75,7 @@ class Fig:
         self.slug, self.w, self.h = slug, w, h
         self.title, self.desc, self.eyebrow, self.heading = title, desc, eyebrow, heading
         self.t_title, self.t_sub = (18, 14) if big else (16, 13)
+        self.t_tag, self.t_label, self.t_zone, self.t_cap = 12, 12, 12, 14
         self.zones, self.lines, self.labels, self.nodes, self.foot = [], [], [], [], []
 
     # -- text
@@ -89,12 +90,12 @@ class Fig:
     def zone(self, x, y, w, h, label=None, label_dx=20):
         """The hosting boundary. label_dx moves the label along the top edge, clear of a crossing arrow."""
         label = label or ZONE
-        lw = int(len(label) * 12 * 0.61) + 20
+        lw = int(len(label) * self.t_zone * 0.68) + 20
         self.zones.append(
             f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="16" fill="none" stroke="{INK}" '
             f'stroke-width="1.5" stroke-dasharray="6 5"/>'
-            f'<rect x="{x + label_dx}" y="{y - 8}" width="{lw}" height="16" fill="{BOARD}"/>'
-            + self.text(x + label_dx + 8, y + 4, label, 12, 700, INK, caps=True))
+            f'<rect x="{x + label_dx}" y="{y - self.t_zone // 2 - 2}" width="{lw}" height="{self.t_zone + 4}" fill="{BOARD}"/>'
+            + self.text(x + label_dx + 8, y + self.t_zone // 2 - 2, label, self.t_zone, 700, INK, caps=True))
 
     # -- connectors: orthogonal, corners rounded at r=8
     def arrow(self, pts, color=None, dashed=False, label=None, at=None, side="above"):
@@ -117,7 +118,7 @@ class Fig:
                           f'marker-end="url(#{self.slug}-arrow-{mk})"/>')
         if label:
             cx, cy = at
-            w = caps_w(label) + 8
+            w = caps_w(label, self.t_label) + 8
             if side == "above":
                 bx, by = cx - w // 2, cy - 8 - 16
             elif side == "below":
@@ -127,8 +128,8 @@ class Fig:
             else:
                 bx, by = cx - 8 - w, cy - 8
             self.labels.append(
-                f'<rect x="{bx}" y="{by}" width="{w}" height="16" rx="2" fill="{BOARD}"/>'
-                + self.text(bx + w / 2, by + 12, label, 12, 700, BLUE if color == BLUE else INK2, "middle", caps=True))
+                f'<rect x="{bx}" y="{by - (self.t_label - 12)}" width="{w}" height="{self.t_label + 4}" rx="2" fill="{BOARD}"/>'
+                + self.text(bx + w / 2, by + 12, label, self.t_label, 700, BLUE if color == BLUE else INK2, "middle", caps=True))
 
     # -- nodes
     def icon(self, name, x, y, color, size=22):
@@ -155,7 +156,8 @@ class Fig:
             for i, n in enumerate(icons):
                 o.append(self.icon(n, x + 16 + i * 30, y + 11, c1 if kind != "forecast" else BLUE))
         elif tag:
-            o.append(self.text(x + 16, ty, tag, 12, 700, c2, caps=True))
+            ty = y + 14 + self.t_tag
+            o.append(self.text(x + 16, ty, tag, self.t_tag, 700, c2, caps=True))
         if icon:
             o.append(self.icon(icon, x + w - 38, y + 12, c1))
         ty += self.t_title + 8
@@ -176,7 +178,7 @@ class Fig:
     def caption(self, s, y=None, key=True):
         """One caption line; on diagrams the same colour key sits at its right end."""
         y = y or self.h - 20
-        self.foot.append(self.text(16, y, s, 14, 400, INK2))
+        self.foot.append(self.text(16, y, s, self.t_cap, 400, INK2))
         if not key:
             return
         x = self.w - 16 - sum(w + 38 for _, _, w in KEY) + 18
@@ -362,75 +364,79 @@ def architecture_print():
 
 
 # =============================================================== print: split architecture, training and the live app
+def _print_fonts(f):
+    """Type sized for a figure printed at about half its width on a Letter page."""
+    f.t_title, f.t_sub, f.t_tag, f.t_label, f.t_zone, f.t_cap = 22, 18, 15, 15, 15, 17
+
+
 def arch_train():
-    f = Fig("arch-train", 1200, 436, "Training on CIQ Fuzzball, run once",
-            "Training ran once as four CIQ Fuzzball workflows on two Lenovo ThinkStation PGX workstations, each with one NVIDIA GB10 (20 Arm cores, 128 GB, one GPU). Job 1 copies CLIF records in through the object cache (1 core, 2 GiB). Job 2 tokenizes them into the custom 1,231-token vocabulary (20 cores, 110 GiB). Job 3 trains the GEM, an NVIDIA Nemotron 3.5 Bolt E4B backbone, from scratch with PyTorch distributed data parallel on two nodes with one GPU each (20 cores, 110 GiB per node). Job 3.1 packages and load-tests the checkpoint (2 cores, 4 GiB). Job 4 embeds patients on both GPUs and fits six probes on CPU (20 cores, 90 GiB). Tokens, the GEM and the probes are saved on the 200 GB mimic_clif VAST volume.",
+    f = Fig("arch-train", 1200, 380, "Training on CIQ Fuzzball, run once",
+            "Run once on two Lenovo ThinkStation PGX workstations (node A, CIQ-CHI-SPARK13; node B, CIQ-CHI-SPARK14), each one NVIDIA GB10. Job 1 moves CLIF records in on node A (CPU). Job 2 tokenizes them into the custom 1,231-token vocabulary on node B (CPU). Job 3, the one training workflow, trains the GEM, an NVIDIA Nemotron E4B backbone, from scratch with PyTorch DDP across both nodes, one GPU each. Job 3.1 packages and load-tests the checkpoint on node A. Job 4 embeds patients on both GPUs and fits six linear probes. Tokens, the GEM and the probes are saved on the 200 GB mimic_clif VAST volume.",
             "ICU Horizon · training", "One training workflow, with data prep and probes around it", big=True)
-    f.t_title = 17
-    f.zone(16, 40, 1168, 336, label="Run once: prep, one training workflow, probes · Node A = SPARK13, Node B = SPARK14")
-    xs, w, h, r1, r2 = (40, 270, 500, 730, 960), 200, 128, 72, 248
+    _print_fonts(f)
+    f.zone(16, 40, 1168, 324, label="Run once · node A = SPARK13 · node B = SPARK14")
+    xs, w, h, r1, r2 = (40, 270, 500, 730, 960), 200, 124, 72, 248
     cx = [x + w // 2 for x in xs]
-    f.node(xs[0], r1, w, h, "card", "Job 1 · CPU · Node A", "Move data", ["CLIF records in", "alpine image", "1 core · 2 GiB"])
-    f.node(xs[1], r1, w, h, "card", "Job 2 · CPU · Node B", "Tokenize", ["custom 1,231-token", "vocabulary", "20 cores · 110 GiB"])
-    f.node(xs[2], r1, w, h, "model", "Training · A + B", "Train the GEM", ["Nemotron backbone,", "1 DDP rank per node", "20 cores, 110 GiB ea."])
-    f.node(xs[3], r1, w, h, "card", "Job 3.1 · CPU · Node A", "Package", ["save checkpoint", "load test passes", "2 cores · 4 GiB"])
-    f.node(xs[4], r1, w, h, "card", "Job 4 · 2 GPUs · A + B", "Fit probes", ["embed on both GPUs,", "fit 6 probes on B", "20 cores · 90 GiB"])
-    f.node(xs[0], r2, w, 104, "card", "Fuzzball", "Object cache", ["the only way in", "or out"])
-    f.node(xs[1], r2, 660, 104, "store", "VAST volume · 200 GB", "mimic_clif", ["CLIF records, tokens, the GEM checkpoint and the six probes"])
+    f.node(xs[0], r1, w, h, "card", "Job 1 · node A", "Move data", ["CPU · 1 core", "CLIF records in"])
+    f.node(xs[1], r1, w, h, "card", "Job 2 · node B", "Tokenize", ["CPU · 20 cores", "1,231 tokens"])
+    f.node(xs[2], r1, w, h, "model", "Job 3 · A + B", "Train the GEM", ["2 GPUs, DDP", "Nemotron E4B"])
+    f.node(xs[3], r1, w, h, "card", "Job 3.1 · node A", "Package", ["CPU · 2 cores", "load test"])
+    f.node(xs[4], r1, w, h, "card", "Job 4 · A + B", "Fit probes", ["2 GPUs + CPU", "6 linear probes"])
+    f.node(xs[0], r2, w, 96, "card", "Fuzzball", "Object cache", ["data in"])
+    f.node(xs[1], r2, 660, 96, "store", "VAST volume · 200 GB", "mimic_clif", ["records, tokens, the GEM checkpoint, six probes"])
     m1 = r1 + h // 2
     for i in range(4):
         f.arrow([(xs[i] + w, m1), (xs[i + 1], m1)])
-    f.arrow([(cx[0], r2), (cx[0], r1 + h)], label="Data in", at=(cx[0], 224), side="right")
-    f.arrow([(cx[1], r1 + h), (cx[1], r2)], label="Tokens", at=(cx[1], 224), side="right")
-    f.arrow([(cx[2], r1 + h), (cx[2], r2)], BLUE, label="GEM", at=(cx[2], 224), side="right")
-    f.arrow([(cx[4], r1 + h), (cx[4], 300), (930, 300)], label="Probes", at=(cx[4], 252), side="right")
-    f.caption("Each box: one Fuzzball job, the node Fuzzball placed it on, and its request.", 412)
+    f.arrow([(cx[0], r2), (cx[0], r1 + h)], label="In", at=(cx[0], 222), side="right")
+    f.arrow([(cx[1], r1 + h), (cx[1], r2)], label="Tokens", at=(cx[1], 222), side="right")
+    f.arrow([(cx[2], r1 + h), (cx[2], r2)], BLUE, label="GEM", at=(cx[2], 222), side="right")
+    f.arrow([(cx[4], r1 + h), (cx[4], 296), (930, 296)], label="Probes", at=(cx[4], 252), side="right")
     f.write()
 
 
 def arch_live():
-    f = Fig("arch-live", 1200, 476, "ICU Horizon live on CIQ Fuzzball",
-            "The live app is one CIQ Fuzzball workflow, job 5 (t7-launch), on the same two NVIDIA GB10 workstations. Load checks the code, the GEM and the 25 patients (2 cores, 8 GB, 7 s). Infer runs the GEM and its probes on one GPU (8 cores, 48 GB, 35 s). Score adds up beds and the unit (4 cores, 16 GB, 33 s) and writes the forecast to the 20 GB twin-store VAST volume. Two services stay up: the bed board (python 3.12, 2 cores, 4 GB) serves clinicians over HTTPS, and the chat, NVIDIA Nemotron 3.5 Bolt E4B in 4-bit on llama.cpp (one GPU, 8 cores, 32 GB, weights on hfcache), answers questions through tools.",
+    f = Fig("arch-live", 1200, 412, "ICU Horizon live on CIQ Fuzzball",
+            "The live app is one CIQ Fuzzball workflow, job 5 (t7-launch). Load checks inputs on node B (CPU, 7 s). Infer runs the GEM and its probes on node B's GPU (35 s). Score adds up beds and the unit on node A (CPU, 33 s) and writes the forecast to the twin-store VAST volume. Two services stay up: the bed board on node A (CPU) serves clinicians over HTTPS, and the chat, NVIDIA Nemotron 3.5 Bolt E4B on llama.cpp, runs on node B's GPU with weights on the hfcache volume.",
             "ICU Horizon · live app", "The live app: job 5 and two services", big=True)
-    f.t_title = 17
-    f.zone(16, 40, 1168, 376, label="ICU Horizon live · job 5 (t7-launch) · Node A = SPARK13, Node B = SPARK14 · CIQ Fuzzball 4.3")
-    xs, w, h, r1, r2 = (40, 270, 500, 730, 960), 200, 128, 72, 264
+    _print_fonts(f)
+    f.zone(16, 40, 1168, 356, label="ICU Horizon live · job 5 (t7-launch) · node A = SPARK13 · node B = SPARK14")
+    xs, w, h, r1, r2 = (40, 270, 500, 730, 960), 200, 124, 72, 256
     cx = [x + w // 2 for x in xs]
-    f.node(xs[0], r1, w, h, "card", "Fuzzball", "Object cache", ["code in,", "counts out", "never overwrites"])
-    f.node(xs[1], r1, w, h, "store", "VAST · read only", "mimic_clif", ["the GEM, probes,", "25 patients'", "CLIF records"])
-    f.node(xs[2], r1, w, h, "forecast", "VAST volume · 20 GB", "twin-store", ["staged ward,", "rooms.json,", "forecast.json"])
-    f.node(xs[4], r1, w, h, "store", "VAST volume", "hfcache", ["Nemotron E4B", "4-bit GGUF weights", "pinned revision"])
-    f.node(xs[0], r2, w, h, "card", "Job 5 · CPU · Node B", "Load", ["vocab gate, inputs", "2 cores · 8 GB", "ran 7 s"])
-    f.node(xs[1], r2, w, h, "model", "Job 5 · GPU · Node B", "Infer", ["GEM + probes,", "8 cores · 48 GB", "ran 35 s"])
-    f.node(xs[2], r2, w, h, "card", "Job 5 · CPU · Node A", "Score", ["beds, unit totals", "4 cores · 16 GB", "ran 33 s"])
-    f.node(xs[3], r2, w, h, "card", "Service · CPU · A", "Bed board", ["HTTPS to clinicians", "python:3.12-slim", "2 cores · 4 GB"])
-    f.node(xs[4], r2, w, h, "nvidia", "Service · GPU · B", "Nemotron chat", ["Bolt E4B, llama.cpp", "64k-token context", "8 cores · 32 GB"])
+    f.node(xs[0], r1, w, h, "card", "Fuzzball", "Object cache", ["code in,", "counts out"])
+    f.node(xs[1], r1, w, h, "store", "VAST · read only", "mimic_clif", ["GEM, probes,", "25 patients"])
+    f.node(xs[2], r1, w, h, "forecast", "VAST · 20 GB", "twin-store", ["rooms.json,", "forecast.json"])
+    f.node(xs[4], r1, w, h, "store", "VAST volume", "hfcache", ["Nemotron E4B", "4-bit weights"])
+    f.node(xs[0], r2, w, h, "card", "Job 5 · node B", "Load", ["CPU · 2 cores", "ran 7 s"])
+    f.node(xs[1], r2, w, h, "model", "Job 5 · node B", "Infer", ["GPU · 8 cores", "ran 35 s"])
+    f.node(xs[2], r2, w, h, "card", "Job 5 · node A", "Score", ["CPU · 4 cores", "ran 33 s"])
+    f.node(xs[3], r2, w, h, "card", "Service · A", "Bed board", ["CPU · HTTPS", "to clinicians"])
+    f.node(xs[4], r2, w, h, "nvidia", "Service · B", "Nemotron chat", ["GPU · llama.cpp", "64k context"])
     m2 = r2 + h // 2
     f.arrow([(xs[0] + w, m2), (xs[1], m2)])
     f.arrow([(xs[1] + w, m2), (xs[2], m2)])
     f.arrow([(xs[3] + w, m2), (xs[4], m2)])
-    f.arrow([(cx[0], r1 + h), (cx[0], r2)], label="Code in", at=(cx[0], 232), side="right")
-    f.arrow([(cx[1], r1 + h), (cx[1], r2)], label="GEM", at=(cx[1], 232), side="right")
-    f.arrow([(cx[2], r2), (cx[2], r1 + h)], BLUE, label="Writes", at=(cx[2], 232), side="right")
-    f.arrow([(xs[2] + w, 136), (cx[3], 136), (cx[3], r2)], BLUE, label="Forecast", at=(780, 136))
-    f.arrow([(cx[4], r1 + h), (cx[4], r2)], label="Weights", at=(cx[4], 232), side="right")
-    f.caption("Node: where Fuzzball placed each step in the Nov 15 run. The board and chat stay up.", 452)
+    f.arrow([(cx[0], r1 + h), (cx[0], r2)], label="Code", at=(cx[0], 226), side="right")
+    f.arrow([(cx[1], r1 + h), (cx[1], r2)], label="GEM", at=(cx[1], 226), side="right")
+    f.arrow([(cx[2], r2), (cx[2], r1 + h)], BLUE, label="Writes", at=(cx[2], 226), side="right")
+    f.arrow([(xs[2] + w, 134), (cx[3], 134), (cx[3], r2)], BLUE, label="Forecast", at=(780, 134))
+    f.arrow([(cx[4], r1 + h), (cx[4], r2)], label="Weights", at=(cx[4], 226), side="right")
     f.write()
 
 
 # =============================================================== print: the model in four steps (Steps type)
 def model_steps():
-    steps = [("01", "Train from scratch", ["Nemotron E4B backbone,", "custom 1,231-token vocab"], False),
-             ("02", "Read its hidden layer", ["one pass per patient:", "384-d patient embedding"], True),
-             ("03", "Six linear probes", ["logistic regressions give", "24-h event probabilities"], False),
-             ("04", "Explain, not predict", ["Nemotron E4B chat reads", "the forecast via tools"], False)]
-    W, H = 1200, 248
+    steps = [("01", "Train from scratch", ["Nemotron backbone,", "1,231-token vocab"], False),
+             ("02", "Read hidden layer", ["one pass per patient,", "384-d embedding"], True),
+             ("03", "Six linear probes", ["logistic regressions,", "24-h probabilities"], False),
+             ("04", "Chat explains", ["Nemotron E4B reads", "the forecast via tools"], False)]
+    W, H = 1200, 268
     f = Fig("model-steps", W, H, "The GEM in four steps",
-            "Four steps, left to right. One: train the GEM, a generative event model built on the NVIDIA Nemotron 3.5 Bolt E4B backbone, from scratch, on a custom vocabulary of 1,231 ICU event tokens. Two, highlighted: one forward pass per patient; the last hidden layer is a 384-dimensional patient embedding. Three: six logistic-regression probes turn the embedding into 24-hour event probabilities. Four: the NVIDIA Nemotron 3.5 Bolt E4B chat explains the forecast through read-only tools and predicts nothing.",
+            "Four steps, left to right. One: train the GEM from scratch, an NVIDIA Nemotron backbone with a custom 1,231-token ICU vocabulary. Two, highlighted: one forward pass per patient; the last hidden layer is a 384-dimensional embedding. Three: six logistic-regression probes give 24-hour probabilities. Four: the NVIDIA Nemotron 3.5 Bolt E4B chat explains the forecast through read-only tools and predicts nothing.",
             "ICU Horizon · the model", "The GEM in four steps", big=True)
-    n, stage_w = len(steps), 260
+    f.t_cap = 18
+    n, stage_w = len(steps), 280
     x0 = (W - n * stage_w) // 2
-    rail_y, rail_h, r = 24, 48, 32
+    rail_y, rail_h, r = 20, 52, 34
     for i, (num, title, desc, focal) in enumerate(steps):
         x = x0 + i * stage_w
         cx = x + stage_w // 2
@@ -442,11 +448,11 @@ def model_steps():
         cy = rail_y + rail_h // 2
         mfill, mtext, mstroke = (BLUE, ON_HIGH, BLUE) if focal else (SURFACE, INK, INK)
         f.raw("nodes", f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{mfill}" stroke="{mstroke}" stroke-width="1.5"/>'
-                       + f.text(cx, cy + 8, num, 22, 800, mtext, "middle"))
-        f.raw("nodes", f.text(cx, 128, title, 20, 700, BLUE if focal else INK, "middle"))
+                       + f.text(cx, cy + 9, num, 26, 800, mtext, "middle"))
+        f.raw("nodes", f.text(cx, 132, title, 25, 700, BLUE if focal else INK, "middle"))
         for k, line in enumerate(desc):
-            f.raw("nodes", f.text(cx, 160 + k * 24, line, 16, 400, INK2, "middle"))
-    f.caption("One pass per patient feeds every prediction; a new outcome is a new probe, not a new model.", 232, key=False)
+            f.raw("nodes", f.text(cx, 168 + k * 28, line, 21, 400, INK2, "middle"))
+    f.caption("One pass feeds every prediction; a new outcome is a new probe, not a new model.", 254, key=False)
     f.write()
 
 

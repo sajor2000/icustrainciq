@@ -50,23 +50,25 @@ A bed board the ICU nurse and doctor read at 7 am, before rounds (the daily team
 \end{multicols}
 
 \vspace{2pt}
-{\sffamily\bfseries\color{blue}\small THE FIVE PREDICTIONS\hfill\normalfont\itshape\color{sec} each is the chance it happens in the next 24 hours\par}\vspace{1pt}
-{\par\vspace{3pt}\centering \includegraphics[width=0.78\linewidth]{img/five-cards.png}\par\vspace{2pt}}
-{\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
-AUROC: area under the receiver operating characteristic curve (1.0 is perfect), on held-out patients never seen in training.}
-
-\vspace{5pt}
 {\sffamily\bfseries\color{blue}\small WHAT IS NEW: A NEMOTRON BACKBONE TRAINED FROM SCRATCH\hfill\normalfont\itshape\color{sec} GEM (generative event model): 36M params, 1,231-token vocab\par}\vspace{2pt}
 {\par\vspace{3pt}\centering \includegraphics[width=0.6\linewidth]{../diagrams/model-steps.png}\par\vspace{2pt}}
 \vspace{-6pt}
 
 
 \vspace{2pt}
+
+{\sffamily\bfseries\color{blue}\small THE FIVE PREDICTIONS\hfill\normalfont\itshape\color{sec} each is the chance it happens in the next 24 hours\par}\vspace{1pt}
+{\par\vspace{3pt}\centering \includegraphics[width=0.78\linewidth]{img/five-cards.png}\par\vspace{2pt}}
+{\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
+AUROC: area under the receiver operating characteristic curve (1.0 is perfect), on held-out patients never seen in training.}
+
+\vspace{5pt}
+
 {\sffamily\bfseries\color{blue}\small HOW WE USED THE CIQ STACK \textperiodcentered{} 1 TRAINING\hfill\normalfont\itshape\color{sec} one training workflow on both GB10s, with data prep and probes\par}
-{\par\vspace{3pt}\centering \includegraphics[width=0.62\linewidth]{../diagrams/arch-train.png}\par\vspace{2pt}}
+{\par\vspace{3pt}\centering \includegraphics[width=0.68\linewidth]{../diagrams/arch-train.png}\par\vspace{2pt}}
 
 {\sffamily\bfseries\color{blue}\small 2 ICU HORIZON LIVE\hfill\normalfont\itshape\color{sec} what Fuzzball runs for the bed board and the chat, node by node\par}
-{\par\vspace{3pt}\centering \includegraphics[width=0.62\linewidth]{../diagrams/arch-live.png}\par\vspace{2pt}}
+{\par\vspace{3pt}\centering \includegraphics[width=0.68\linewidth]{../diagrams/arch-live.png}\par\vspace{2pt}}
 \vspace{-4pt}
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
 \textbf{\color{ink}Fuzzball:} Orchestrate schedules, Substrate runs the containers, driven by its MCP (Model Context Protocol) server. DDP: PyTorch distributed data parallel. llama.cpp: an open-source LLM server.\par}

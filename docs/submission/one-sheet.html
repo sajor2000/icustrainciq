@@ -72,7 +72,7 @@ section{margin-top:6px}
 .steps b i{font-style:normal;color:var(--blue);margin-right:4px}
 
 /* the stack: ink band */
-.arch img{display:block;width:62%;margin:0 auto 4px;height:auto;border-radius:8px}
+.arch img{display:block;width:70%;margin:0 auto 4px;height:auto;border-radius:8px}
 .steps-fig img{display:block;width:70%;margin:0 auto;height:auto;border-radius:.5rem}
 .arch-note{margin-top:4px;font-size:11px;line-height:1.38;color:var(--ink-2)}
 .arch-note b{color:var(--ink)}
@@ -123,6 +123,11 @@ section{margin-top:6px}
     </div>
   </section>
 
+  <section class="pad steps-fig" aria-label="The model">
+    <span class="cap">The model we trained <em>a Nemotron backbone, trained from scratch, read through its hidden layer</em></span>
+    <img src="../diagrams/model-steps.png" alt="The GEM in four steps: 1, train the GEM from scratch: an NVIDIA Nemotron 3.5 Bolt E4B backbone with a custom vocabulary of 1,231 ICU event tokens; 2, highlighted, read its hidden layer: one pass per patient gives a 384-dimensional embedding; 3, six logistic-regression probes give 24-hour event probabilities; 4, the Nemotron E4B chat explains the forecast through tools and predicts nothing.">
+  </section>
+
   <section class="pad" aria-label="The five predictions">
     <span class="cap">The five predictions <em>the chance each happens in the next 24 hours, on every bed</em></span>
     <div class="five">
@@ -135,10 +140,7 @@ section{margin-top:6px}
     <p class="note">AUROC: area under the receiver operating characteristic curve, on held-out patients never seen in training; 1.0 is perfect.</p>
   </section>
 
-  <section class="pad steps-fig" aria-label="The model">
-    <span class="cap">The model we trained, and how it predicts</span>
-    <img src="../diagrams/model-steps.png" alt="The GEM in four steps: 1, train the GEM from scratch: an NVIDIA Nemotron 3.5 Bolt E4B backbone with a custom vocabulary of 1,231 ICU event tokens; 2, highlighted, read its hidden layer: one pass per patient gives a 384-dimensional embedding; 3, six logistic-regression probes give 24-hour event probabilities; 4, the Nemotron E4B chat explains the forecast through tools and predicts nothing.">
-  </section>
+  
 
   <section class="pad arch" aria-label="How we used the CIQ stack">
     <span class="cap">How we used the CIQ stack · 1 Training <em>one training workflow on both GB10s, with data prep and probes</em></span>
