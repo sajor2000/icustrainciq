@@ -1,6 +1,14 @@
 # Frontend spec: ICU Lookahead, the ICU board
 
-> **Bed status removed (2026-11-14).** The Bed board no longer has Worsening / Watch / Still on support / Leaving statuses, status colours on tiles, or the "Bed colours" settings. An event (a new ventilator, vasopressor or CRRT, death, discharge) shows on a bed's card as a circle icon with its chance when it is at or above that event's threshold in Settings. When a new life support or death is at its threshold, the person icon on the bed's tile turns red and pulses (the circle icons keep their own colours and do not pulse); discharge alone does not. The plus-in-a-ring combined chance is gone from the board. Where the text below still describes statuses or tile colours, this note wins.
+> **What the page draws (D25, J.C. 2026-11-15).** The board page is Dema's final design (ICU-Twin `55df710`), with bug fixes only. It has **no bed status**: no Worsening / Watch / Still on support / Leaving, no status colour on a tile, no "Worry first" rail, no Staffing card, no 1:1 tag and no role picker. What it draws:
+>
+> - **Bed tile:** a person icon, the bed number, the generated (fictional) name with sex and age, the life support running at 07:00, and under NEXT 24 H each event at or above its threshold in Settings, in a circle with its chance (a new ventilator, vasopressor or CRRT, death, discharge). When a new life support or death is at its threshold the person icon turns red and pulses; discharge alone does not. In Now a bed on two or more supports is marked Critical.
+> - **Settings panel** (the gear): light or dark board, "Flag beds at 50% · 25% · 10%" with a threshold per event (kept on the device), and Capacity (ventilators and CRRT machines on the unit, and optionally the life-support patients tonight's staffing covers).
+> - **Bed pop-up** (`#room=N`): the five predictions, the last 12 hours of vital signs (`vitals_12h`, hourly medians) and the last events the model read; "Update this bed" and "Ask about this forecast".
+> - **Unit strain:** a line with what is short, the three highest-risk beds (they pulse; death never ranks a bed) and "N on life support now · +N new expected in 24 h"; then one event card each for Deaths, Ventilator, Vasopressor, CRRT and Leave the ICU: on now, free machines, "Predicted new*" (beds at the threshold), the unit forecast with its range, the usage bar and the beds to watch. Deaths is a unit count only and lists no bed. An event the forecast skipped (`available: false`) reads "no data" / "not available", never 0, and does not blank the board.
+> - **Now | Next 24 h:** a switch, or a sideways swipe.
+>
+> Staffing (D23) and the yardstick stay in the backend, the API and the chat; capacity is entered in the Settings form. Where the text below still describes statuses, tile colours, the Worry first rail, the role picker or the Staffing card, it is the earlier design and this note wins.
 
 ICU Lookahead ("See the next 24 hours of your ICU. On machines you own.") is the ICU team's board for 07:00 morning rounds. The unit name stays the big title. The backend (forecaster, workflows, dispatcher, `app/board.py`) lives in [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin); this repo holds the frontend design, the mockup, and the contract it must meet. Journeys: [`USER_JOURNEY.md`](USER_JOURNEY.md). Decisions: [`DECISIONS.md`](DECISIONS.md). Words: [`NAMING_AND_WORDING.md`](NAMING_AND_WORDING.md). Visual system: [`../DESIGN.md`](../DESIGN.md).
 
@@ -157,7 +165,7 @@ The board is read at 07:00 by a tired team at a workstation or a wall screen, of
 
 ## Capacity fields (`/api/capacity`)
 
-> **Status (2026-11-14, after merging the team's board):** the current page (`backend/app/static/index.html`, Dema's) does not draw this. It has no Staffing card, no 1:1 tags, no nurses or respiratory-therapist fields and no Check first row. The API and the chat described here are shipped and tested; the page part is a design for a later change. Its Settings capacity form sends `vents_total` and `crrt_total` (with `life_support_patients`), never `vents_free`.
+> **Status (D25):** the page (`backend/app/static/index.html`, Dema's final design) has only the Settings capacity form: ventilators, CRRT machines and, optionally, the life-support patients tonight's staffing covers. It has no nurses or respiratory-therapist fields. The form sends `vents_total` and `crrt_total` (and `life_support_patients` when given), never `vents_free`; a total the user blanks is sent as `null`, a box that was never set is left out. A failed save reads "Not saved" with the reason and leaves the device copy alone; a response that arrives after a newer save is ignored. Served live, `GET /api/capacity` is read on load and on every refresh and its totals win (even `null`); Reset clears the totals on the server too.
 
 
 "Set tonight's capacity" sends `POST /api/capacity` with `role` and **only the fields the user filled in**; an empty field is left out, never sent as `null`:
@@ -175,7 +183,7 @@ The response is `{"ok": true, "capacity": {...}}` (or `{"ok": false, "reason"}`,
 
 ## Staffing (D23)
 
-> **Status (2026-11-14, after merging the team's board):** the current page (`backend/app/static/index.html`, Dema's) does not draw this. It has no Staffing card, no 1:1 tags, no nurses or respiratory-therapist fields and no Check first row. The API and the chat described here are shipped and tested; the page part is a design for a later change. Its Settings capacity form sends `vents_total` and `crrt_total` (with `life_support_patients`), never `vents_free`.
+> **Status (D25):** the page (`backend/app/static/index.html`, Dema's final design) does not draw this: no Staffing card, no 1:1 tags, no Check first row. Staffing stays in the backend: the API and the chat described here are shipped and tested.
 
 
 Rules: a nurse is **1:1** for a patient on CRRT or on **two or more vasoactive infusions**, **1:2** for everyone else; one **respiratory therapist per six ventilated patients**, rounded up.
