@@ -1,6 +1,6 @@
 # Frontend spec: ICU Lookahead, the ICU board
 
-ICU Lookahead ("The next 24 hours, in one place.") is the ICU team's board for 07:00 morning rounds. The unit name stays the big title. The backend (forecaster, workflows, dispatcher, `app/board.py`) lives in [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin); this repo holds the frontend design, the mockup, and the contract it must meet. Journeys: [`USER_JOURNEY.md`](USER_JOURNEY.md). Decisions: [`DECISIONS.md`](DECISIONS.md). Words: [`NAMING_AND_WORDING.md`](NAMING_AND_WORDING.md). Visual system: [`../DESIGN.md`](../DESIGN.md).
+ICU Lookahead ("See the next 24 hours of your ICU. On machines you own.") is the ICU team's board for 07:00 morning rounds. The unit name stays the big title. The backend (forecaster, workflows, dispatcher, `app/board.py`) lives in [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin); this repo holds the frontend design, the mockup, and the contract it must meet. Journeys: [`USER_JOURNEY.md`](USER_JOURNEY.md). Decisions: [`DECISIONS.md`](DECISIONS.md). Words: [`NAMING_AND_WORDING.md`](NAMING_AND_WORDING.md). Visual system: [`../DESIGN.md`](../DESIGN.md).
 
 ## How it runs
 
