@@ -145,7 +145,7 @@ section{margin-top:7px}
     </div>
     <div>
       <h2>What is new for healthcare AI</h2>
-      <ul class="new"><li><b>Speaks EHR, not English:</b> our own model, trained from scratch on two desk-side GPUs.</li><li><b>One pass, many outcomes:</b> probes on its hidden layer; no retraining.</li><li><b>Patient to unit:</b> chances add up to resource strain a day ahead.</li><li><b>Private, portable:</b> runs locally on any hospital's CLIF data.</li></ul>
+      <ul class="new"><li><b>Speaks EHR, not English:</b> our own model, trained from scratch on two desk-side GPUs.</li><li><b>One pass, many outcomes:</b> small classifiers read its hidden layer; no retraining.</li><li><b>Patient to unit:</b> chances add up to resource strain a day ahead.</li><li><b>Private, portable:</b> runs locally on a hospital's own clinical data.</li></ul>
     </div>
   </section>
 
@@ -158,12 +158,12 @@ section{margin-top:7px}
       <div class="p"><svg class="ic"><use href="#i-leave"/></svg><p class="t"><b>Leaves the ICU</b></p><p class="what">to a ward or step-down · for bed managers</p><p class="score">AUROC <b style="white-space:nowrap">0.80<span class="dim" style="font-weight:600"> / </span>0.89</b></p></div>
       <div class="p unit"><svg class="ic" style="color:var(--ink-2)"><use href="#i-person"/></svg><p class="t"><b>Death</b></p><p class="what">a unit count, never on a bed</p><p class="score">AUROC <b>0.93</b></p></div>
     </div>
-    <p class="note" style="white-space:nowrap">AUROC on held-out MIMIC-IV patients: 0.5 is a coin toss, 1.0 perfect. Leaving = two classifiers (ward, step-down): six give five.</p>
+    <p class="note" style="white-space:nowrap">AUROC on past ICU patients the model never saw: 0.5 is a coin toss, 1.0 perfect. Leaving the ICU combines ward and step-down.</p>
   </section>
 
   <section class="pad" aria-label="Screens from the board">
     <div class="frame">
-      <span class="cap">The whole unit, on the board <em>25 beds added up against the machines on hand: a shortage a day ahead · demo data</em></span>
+      <span class="cap">The whole unit, on the board <em>25 beds added up against the machines on hand: a shortage, a day ahead · demo data</em></span>
       <img src="img/strain-line.png" alt="Alert line: ventilators short by 2; deaths expected 1, range 0 to 3; highest-risk beds 20, 6 and 13; 10 on life support now, plus 5 new expected in 24 hours, SHORT">
     </div>
   </section>
@@ -171,7 +171,7 @@ section{margin-top:7px}
   <section class="pad" aria-label="The model">
     <span class="cap">The model we trained, and how it predicts</span>
     <ol class="steps">
-      <li><b><i>1</i>It speaks EHR, not English</b>Its 1,231 words are clinical events (labs, vitals, drugs, machines); it learned to guess the next one. 36M parameters, trained from scratch.</li>
+      <li><b><i>1</i>It speaks EHR, not English</b>Its 1,231 words are events from the health record (labs, vitals, drugs, machines); it learned to guess the next one. 36M parameters, trained from scratch.</li>
       <li><b><i>2</i>Read its hidden layer</b>One pass over each patient's first 24 h in the ICU; its last hidden layer holds 384 numbers that sum up the patient.</li>
       <li><b><i>3</i>Six small classifiers</b>Logistic regressions fitted on past patients turn them into five chances. NVIDIA Nemotron 3 Nano explains them in English.</li>
     </ol>
@@ -180,12 +180,12 @@ section{margin-top:7px}
   <section class="pad arch" aria-label="Architecture">
     <span class="cap">How we used the CIQ stack <em>the Fuzzball workflow on two local Lenovo ThinkStation PGX machines, one NVIDIA GB10 each</em></span>
     <img src="../diagrams/architecture-print.png" alt="Architecture: the clinician's browser reaches the board server inside CIQ Fuzzball on two Lenovo PGX machines. The board server asks NVIDIA Nemotron 3 Nano, whose weights are on the hfcache volume. Jobs 1 to 4 train our model on both GPUs and save it with six probes to the mimic_clif volume; job 5 runs our model on one GPU and writes the forecast to the twin-store volume, which the board server reads. The volumes are on VAST storage.">
-    <p class="arch-note"><b>Fuzzball:</b> Orchestrate schedules every job, image and VAST volume; Substrate runs the NGC containers; we drove it with the Fuzzball MCP server and CLI. <b>All four tracks:</b> multi-node training (job 3, both GB10s) · inference (job 5, Nemotron) · scientific AI · cluster scheduling (five workflows).</p>
+    <p class="arch-note"><b>Fuzzball:</b> Orchestrate schedules every job, image and VAST volume; Substrate runs the NVIDIA containers; we drove it with the Fuzzball MCP server and CLI. <b>All four tracks:</b> multi-node training (job 3, both GB10s) · inference (job 5, Nemotron) · scientific AI · cluster scheduling (five workflows).</p>
   </section>
 
   <footer class="foot pad">
     <div class="in">
-      <span>Code <b>github.com/vaishvikc/ICU-Twin</b> · docs <b>github.com/sajor2000/icustrainciq</b><br>Trained on one hospital's data (MIMIC-IV in CLIF), retrospective. Research prototype, not a medical device; recommends no treatment.</span>
+      <span>Code <b>github.com/vaishvikc/ICU-Twin</b> · docs <b>github.com/sajor2000/icustrainciq</b><br>Trained on de-identified clinical data from one hospital's ICU, retrospective. Research prototype, not a medical device; recommends no treatment.</span>
       <span class="last">Nothing leaves the building.</span>
     </div>
   </footer>

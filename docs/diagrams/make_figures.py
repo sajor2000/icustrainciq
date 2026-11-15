@@ -331,10 +331,10 @@ def architecture_print():
     f.node(xs[0], r1, w, h, "card", "CPU service", "Board server", ["page, API and", "chat tools"])
     f.node(xs[1], r1, w, h, "nvidia", "GPU service", "Nemotron 3 Nano", ["NVIDIA chat, vLLM", "plain-word answers"])
     f.node(xs[2], r1, w, h, "store", "VAST volume", "hfcache", ["Nemotron weights"])
-    f.node(xs[3], r1, w, h, "card", "Jobs 1–4 · 2 GPUs", "Train once", ["tokenize, train,", "fit six probes"])
+    f.node(xs[3], r1, w, h, "card", "Jobs 1–4 · 2 GPUs", "Train once", ["tokenize, train,", "fit six classifiers"])
     f.node(xs[0], r2, w, h, "forecast", "VAST volume", "twin-store", ["rooms.json,", "forecast.json"])
     f.node(xs[1], r2, w, h, "model", "Job 5 · 1 GPU", "Our model", ["load, infer, score:", "one pass each"])
-    f.node(xs[2], r2, w, h, "store", "VAST volume", "mimic_clif", ["CLIF patients,", "model, probes"])
+    f.node(xs[2], r2, w, h, "store", "VAST volume", "mimic_clif", ["patient records,", "model, classifiers"])
     c1, c2 = r1 + h // 2, r2 + h // 2
     f.arrow([(176, c1), (xs[0], c1)])
     f.arrow([(xs[0] + w, c1), (xs[1], c1)])

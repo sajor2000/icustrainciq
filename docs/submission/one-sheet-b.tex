@@ -53,9 +53,9 @@ A bed board for 07:00 rounds: each patient's life support now and the chance of 
 \sh{What is new for healthcare AI}
 \begin{itemize}[leftmargin=8pt,itemsep=1pt,topsep=0pt,parsep=0pt,label={\color{blue}\textbullet}]
 \item \textbf{Speaks EHR, not English:} our own model, from scratch, on two GPUs.
-\item \textbf{One pass, many outcomes:} hidden-layer probes.
+\item \textbf{One pass, many outcomes:} new ones need no retraining.
 \item \textbf{Patient to unit:} strain a day ahead.
-\item \textbf{Private, portable:} local, on any CLIF data.
+\item \textbf{Private, portable:} on a hospital's own data.
 \end{itemize}
 \end{multicols}
 
@@ -74,7 +74,7 @@ Dies & counted for the unit, never on a bed & \textbf{0.930} (0.912--0.946) & IC
 \bottomrule
 \end{tabular*}}\\[1pt]
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
-AUROC, held-out patients, MIMIC-IV in CLIF, cut 24 h after ICU arrival: 0.5 is a coin toss, 1.0 is perfect. Range: 95\% bootstrap. CRRT: continuous renal replacement therapy. Six classifiers, five predictions. A patient already on a support gets no prediction for starting it.}
+AUROC on past ICU patients the model never saw, 24 h after ICU arrival: 0.5 is a coin toss, 1.0 is perfect. Range: 95\% bootstrap. CRRT: continuous renal replacement therapy. Six classifiers, five predictions. A patient already on a support gets no prediction for starting it.}
 
 \vspace{5pt}
 \begin{tcolorbox}[colback=board,colframe=blue,boxrule=0.9pt,arc=0pt,left=6pt,right=6pt,top=3pt,bottom=3pt,
@@ -99,13 +99,13 @@ AUROC, held-out patients, MIMIC-IV in CLIF, cut 24 h after ICU arrival: 0.5 is a
 \end{center}
 \vspace{-4pt}
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
-\textbf{\color{ink}Fuzzball:} Orchestrate schedules every job, image and VAST volume; Substrate runs the NGC containers (PyTorch, vLLM); we drove it with the Fuzzball MCP server and CLI, data in by ingress and out by egress through the object cache. \textbf{\color{ink}All four tracks:} multi-node training (job 3 DDP on both GB10s) \textperiodcentered{} inference (job 5, Nemotron on vLLM) \textperiodcentered{} scientific AI (a clinical model trained from scratch) \textperiodcentered{} cluster and scheduling (five workflows; inference frees its GPU before Nemotron starts).\par}
+\textbf{\color{ink}Fuzzball:} Orchestrate schedules every job, image and VAST volume; Substrate runs the NVIDIA containers (PyTorch, vLLM); we drove it with the Fuzzball MCP server and CLI, data in by ingress and out by egress through the object cache. \textbf{\color{ink}All four tracks:} multi-node training (job 3 DDP on both GB10s) \textperiodcentered{} inference (job 5, Nemotron on vLLM) \textperiodcentered{} scientific AI (a clinical model trained from scratch) \textperiodcentered{} cluster and scheduling (five workflows; inference frees its GPU before Nemotron starts).\par}
 
 \vfill
 {\color{ink}\rule{\textwidth}{0.9pt}}\\[2pt]
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
 \begin{minipage}[t]{0.74\textwidth}
-Code \textbf{\color{ink}github.com/vaishvikc/ICU-Twin} \textperiodcentered{} docs \textbf{\color{ink}github.com/sajor2000/icustrainciq}. Trained on one hospital's data (MIMIC-IV in CLIF), retrospective. Research prototype, not a medical device; recommends no treatment.
+Code \textbf{\color{ink}github.com/vaishvikc/ICU-Twin} \textperiodcentered{} docs \textbf{\color{ink}github.com/sajor2000/icustrainciq}. De-identified data from one hospital's ICU, retrospective. Research prototype, not a medical device; no treatment advice.
 \end{minipage}\hfill
 \begin{minipage}[t]{0.25\textwidth}\raggedleft{\normalsize\bfseries\color{ink}\rmfamily Nothing leaves the building.}\end{minipage}}
 \end{document}
