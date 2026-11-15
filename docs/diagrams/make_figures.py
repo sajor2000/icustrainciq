@@ -361,6 +361,38 @@ def architecture_print():
     f.write()
 
 
+# =============================================================== print: the model in four steps (Steps type)
+def model_steps():
+    steps = [("01", "Train the GEM", ["36M-param decoder, from", "scratch, 1,231 ICU tokens"], False),
+             ("02", "Read its hidden layer", ["one pass per patient:", "384-d patient embedding"], True),
+             ("03", "Six linear probes", ["logistic regressions give", "24-h event probabilities"], False),
+             ("04", "Explain, not predict", ["Nemotron E4B chat reads", "the forecast via tools"], False)]
+    W, H = 1200, 248
+    f = Fig("model-steps", W, H, "The GEM in four steps",
+            "Four steps, left to right. One: train the GEM, a generative event model, a 36-million-parameter decoder trained from scratch on 1,231 ICU event tokens. Two, highlighted: one forward pass per patient; the last hidden layer is a 384-dimensional patient embedding. Three: six logistic-regression probes turn the embedding into 24-hour event probabilities. Four: the NVIDIA Nemotron 3.5 Bolt E4B chat explains the forecast through read-only tools and predicts nothing.",
+            "ICU Horizon · the model", "The GEM in four steps", big=True)
+    n, stage_w = len(steps), 260
+    x0 = (W - n * stage_w) // 2
+    rail_y, rail_h, r = 24, 48, 32
+    for i, (num, title, desc, focal) in enumerate(steps):
+        x = x0 + i * stage_w
+        cx = x + stage_w // 2
+        fill = LV_MEDIUM if focal else (BOARD2 if i % 2 else SURFACE)
+        f.raw("zones", f'<rect x="{x}" y="{rail_y}" width="{stage_w}" height="{rail_h}" fill="{fill}" stroke="{LINE}" stroke-width="1"/>')
+        if focal:
+            f.raw("zones", f'<line x1="{x}" y1="{rail_y}" x2="{x + stage_w}" y2="{rail_y}" stroke="{BLUE}" stroke-width="2"/>'
+                           f'<line x1="{x}" y1="{rail_y + rail_h}" x2="{x + stage_w}" y2="{rail_y + rail_h}" stroke="{BLUE}" stroke-width="2"/>')
+        cy = rail_y + rail_h // 2
+        mfill, mtext, mstroke = (BLUE, ON_HIGH, BLUE) if focal else (SURFACE, INK, INK)
+        f.raw("nodes", f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{mfill}" stroke="{mstroke}" stroke-width="1.5"/>'
+                       + f.text(cx, cy + 8, num, 22, 800, mtext, "middle"))
+        f.raw("nodes", f.text(cx, 128, title, 20, 700, BLUE if focal else INK, "middle"))
+        for k, line in enumerate(desc):
+            f.raw("nodes", f.text(cx, 160 + k * 24, line, 16, 400, INK2, "middle"))
+    f.caption("One pass per patient feeds every prediction; a new outcome is a new probe, not a new model.", 232, key=False)
+    f.write()
+
+
 # =============================================================== detail: how to run it on the cluster
 def workflow():
     f = Fig("workflow", 1280, 424, "How to run it on the cluster",
@@ -518,7 +550,7 @@ def results_auroc():
     f.write()
 
 
-FIGURES = (stack, flow, architecture, architecture_print, workflow, api, trigger, data_boundary, results_auroc)
+FIGURES = (stack, flow, architecture, architecture_print, model_steps, workflow, api, trigger, data_boundary, results_auroc)
 
 if __name__ == "__main__":
     if "--night" in sys.argv:

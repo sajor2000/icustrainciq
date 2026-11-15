@@ -53,45 +53,24 @@ A bed board the ICU nurse and doctor read at 7 am, before rounds (the daily team
 
 \vspace{2pt}
 {\sffamily\bfseries\color{blue}\small THE FIVE PREDICTIONS\hfill\normalfont\itshape\color{sec} each is the chance it happens in the next 24 hours\par}\vspace{1pt}
-{\sffamily\fontsize{8.6}{10.4}\selectfont
-\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lll@{}}
-\toprule
-\textbf{Prediction} & \textbf{Who plans for it} & \textbf{AUROC (95\% range)} \\
-\midrule
-Starts a ventilator {\color{sec}(a machine breathes for the patient)} & respiratory therapy & \textbf{0.78} (0.75--0.81) \\
-Starts a vasopressor {\color{sec}(a drug given into a vein that raises blood pressure)} & pharmacy & \textbf{0.77} (0.74--0.80) \\
-Starts CRRT {\color{sec}(continuous renal replacement therapy: dialysis)} & ICU team & \textbf{0.88} (0.85--0.91) \\
-Transfers to a ward {\color{sec}(leaves the ICU, freeing the bed)} & bed manager & \textbf{0.80} (0.79--0.81) \\
-Dies {\color{sec}(a unit count, never shown on a bed)} & ICU team & \textbf{0.93} (0.91--0.95) \\
-\bottomrule
-\end{tabular*}}\\[1pt]
+\begin{center}\includegraphics[width=0.88\linewidth]{img/five-cards.png}\end{center}\vspace{-8pt}
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
-AUROC: area under the receiver operating characteristic curve (1.0 is perfect), on held-out patients, with 95\% bootstrap ranges.}
+AUROC: area under the receiver operating characteristic curve (1.0 is perfect), on held-out patients never seen in training.}
 
 \vspace{5pt}
-\begin{tcolorbox}[colback=board,colframe=blue,boxrule=0.9pt,arc=0pt,left=6pt,right=6pt,top=3pt,bottom=3pt,
- title={\sffamily\bfseries What is new for healthcare AI: the GEM (generative event model) and its hidden layer},coltitle=white,colbacktitle=blue,fonttitle=\small,toptitle=1pt,bottomtitle=1pt]
-\fontsize{8.4}{9.8}\selectfont\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000
-\begin{multicols}{2}
-\textbf{1. Train the GEM.} A decoder-only transformer, 36.2M parameters, trained from scratch on CLIF-MIMIC (see Data, below) across both GB10 GPUs with PyTorch distributed data parallel (DDP), using the NVIDIA Nemotron 3.5 Bolt E4B layer design without its weights. Vocabulary: 1,231 ICU event tokens. Loss: next token plus time to next event.
+{\sffamily\bfseries\color{blue}\small WHAT IS NEW FOR HEALTHCARE AI\hfill\normalfont\itshape\color{sec} the GEM (generative event model) and its hidden layer, in four steps\par}\vspace{2pt}
+\begin{center}\includegraphics[width=0.8\linewidth]{../diagrams/model-steps.png}\end{center}
+\vspace{-6pt}
 
-\textbf{2. Read its hidden layer.} One forward pass over the patient's first 24 hours in the ICU. The last layer's hidden state at the final token, a \textbf{384-dimensional vector}, is the patient embedding.
-
-\columnbreak
-\textbf{3. Linear probes.} Six logistic regressions with L2 (ridge) regularization on the embedding, fit once on training patients, output 24-hour event probabilities. A new outcome is a new probe, not a new model. Probabilities sum into unit counts with an 80\% interval.
-
-\textbf{4. LLM for explanation only.} NVIDIA Nemotron 3.5 Bolt E4B, 4-bit, on llama.cpp (an open-source LLM server) answers questions by calling read-only tools on the forecast. It predicts nothing.
-\end{multicols}
-\end{tcolorbox}
 
 \vspace{2pt}
 {\sffamily\bfseries\color{blue}\small HOW WE USED THE CIQ STACK\hfill\normalfont\itshape\color{sec} every Fuzzball job on two Lenovo PGX workstations, one NVIDIA GB10 chip (Arm CPU + GPU) each\par}
 \begin{center}
-\includegraphics[width=0.84\linewidth]{../diagrams/architecture-print.png}
+\includegraphics[width=0.78\linewidth]{../diagrams/architecture-print.png}
 \end{center}
 \vspace{-4pt}
 {\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
-\textbf{\color{ink}Fuzzball:} Orchestrate schedules, Substrate runs the containers, VAST Data storage holds the volumes; we drove it with the Fuzzball MCP (Model Context Protocol) server. \textbf{\color{ink}Tracks:} multi-node training \textperiodcentered{} inference \textperiodcentered{} scientific AI \textperiodcentered{} cluster scheduling.\par}
+\textbf{\color{ink}Fuzzball:} Orchestrate schedules, Substrate runs the containers, VAST Data storage holds the volumes; we drove it with the Fuzzball MCP (Model Context Protocol) server. \textbf{\color{ink}Tracks:} multi-node training (PyTorch DDP: distributed data parallel) \textperiodcentered{} inference (chat on llama.cpp, an open-source LLM server) \textperiodcentered{} scientific AI \textperiodcentered{} cluster scheduling.\par}
 
 \vfill
 {\color{ink}\rule{\textwidth}{0.9pt}}\\[2pt]

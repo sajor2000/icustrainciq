@@ -72,7 +72,8 @@ section{margin-top:6px}
 .steps b i{font-style:normal;color:var(--blue);margin-right:4px}
 
 /* the stack: ink band */
-.arch img{display:block;width:85%;margin:0 auto;height:auto;border-radius:8px}
+.arch img{display:block;width:81%;margin:0 auto;height:auto;border-radius:8px}
+.steps-fig img{display:block;width:86%;margin:0 auto;height:auto;border-radius:.5rem}
 .arch-note{margin-top:4px;font-size:11px;line-height:1.38;color:var(--ink-2)}
 .arch-note b{color:var(--ink)}
 
@@ -128,25 +129,21 @@ section{margin-top:6px}
       <div class="p"><svg class="ic" style="color:var(--vent)"><use href="#i-vent"/></svg><p class="t"><b>Ventilator start</b></p><p class="what">a machine breathes for the patient</p><p class="score">AUROC <b>0.78</b></p></div>
       <div class="p"><svg class="ic" style="color:var(--press)"><use href="#i-pump"/></svg><p class="t"><b>Vasopressor start</b></p><p class="what">a drug given into a vein that raises blood pressure</p><p class="score">AUROC <b>0.77</b></p></div>
       <div class="p"><svg class="ic" style="color:var(--crrt)"><use href="#i-crrt"/></svg><p class="t"><b>CRRT start</b></p><p class="what">continuous renal replacement therapy (dialysis)</p><p class="score">AUROC <b>0.88</b></p></div>
-      <div class="p"><svg class="ic"><use href="#i-leave"/></svg><p class="t"><b>Transfer to ward</b></p><p class="what">leaves the ICU for a regular ward, freeing the bed</p><p class="score">AUROC <b>0.80</b></p></div>
+      <div class="p"><svg class="ic"><use href="#i-leave"/></svg><p class="t"><b>Transfer to ward</b></p><p class="what">healthier tomorrow: leaves the ICU, freeing the bed</p><p class="score">AUROC <b>0.80</b></p></div>
       <div class="p unit"><svg class="ic" style="color:var(--ink-2)"><use href="#i-person"/></svg><p class="t"><b>Death</b></p><p class="what">shown as a unit count only</p><p class="score">AUROC <b>0.93</b></p></div>
     </div>
     <p class="note">AUROC: area under the receiver operating characteristic curve, on held-out patients never seen in training; 1.0 is perfect.</p>
   </section>
 
-  <section class="pad" aria-label="The model">
+  <section class="pad steps-fig" aria-label="The model">
     <span class="cap">The model we trained, and how it predicts</span>
-    <ol class="steps">
-      <li><b><i>1</i>Train the GEM</b>Decoder-only transformer, 36M parameters, from scratch on CLIF-MIMIC (see Data, below), using the NVIDIA Nemotron 3.5 Bolt E4B layer design (not its weights). 1,231 ICU event tokens.</li>
-      <li><b><i>2</i>Read its hidden layer</b>One forward pass over a patient's first 24 h in the ICU; the last hidden state, a 384-dimensional vector, is the patient embedding.</li>
-      <li><b><i>3</i>Probe, then explain</b>One logistic-regression probe per event gives a 24-h probability. The chat, Nemotron 3.5 Bolt E4B on llama.cpp (an open-source LLM server), explains via tool calls and predicts nothing.</li>
-    </ol>
+    <img src="../diagrams/model-steps.png" alt="The GEM in four steps: 1, train the GEM, a 36-million-parameter decoder trained from scratch on 1,231 ICU event tokens; 2, highlighted, read its hidden layer: one pass per patient gives a 384-dimensional embedding; 3, six logistic-regression probes give 24-hour event probabilities; 4, the Nemotron E4B chat explains the forecast through tools and predicts nothing.">
   </section>
 
   <section class="pad arch" aria-label="Architecture">
     <span class="cap">How we used the CIQ stack <em>every Fuzzball job on two Lenovo PGX workstations, each one NVIDIA GB10 (Arm CPU + GPU)</em></span>
     <img src="../diagrams/architecture-print.png" alt="Every Fuzzball job on two Lenovo PGX machines. Train once: job 1 moves data in (CPU), job 2 tokenizes (CPU), job 3 trains the GEM on two GPUs, job 3.1 packages it (CPU), job 4 fits six probes (two GPUs, then CPU), saved to the mimic_clif VAST volume. Job 5: load (CPU), infer with the GEM and probes (one GPU), score (CPU) to the twin-store VAST volume; the bed board service (CPU) reads it and NVIDIA Nemotron 3.5 Bolt E4B on llama.cpp (one GPU, weights on hfcache) answers chat.">
-    <p class="arch-note"><b>Fuzzball:</b> Orchestrate schedules jobs, images and VAST Data storage volumes; Substrate runs the containers (NVIDIA NGC PyTorch, llama.cpp); we drove it with the Fuzzball MCP (Model Context Protocol) server and command line. <b>Tracks:</b> multi-node training (job 3, PyTorch DDP: distributed data parallel) · inference · scientific AI · cluster scheduling.</p>
+    <p class="arch-note"><b>Fuzzball:</b> Orchestrate schedules jobs, images and VAST Data storage volumes; Substrate runs the containers (NVIDIA NGC PyTorch; llama.cpp, an open-source LLM server); we drove it with the Fuzzball MCP (Model Context Protocol) server and command line. <b>Tracks:</b> multi-node training (job 3, PyTorch DDP: distributed data parallel) · inference · scientific AI · cluster scheduling.</p>
   </section>
 
   <footer class="foot pad">
