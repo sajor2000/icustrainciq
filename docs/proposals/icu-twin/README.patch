@@ -55,7 +55,7 @@
 +|---|---|---|
 +| `job_1_data_move` | Copies the CLIF parquet files onto the `mimic_clif` volume | CPU |
 +| `job_2_tokenize` | Tokenizes, splits train / tuning / held-out, removes the demo cohort | CPU, 20 cores |
-+| `job_3_train` | Trains on 2 nodes with PyTorch DDP (Fuzzball `multinode`) | 2 GPUs |
++| `job_3_train` | Trains on 2 nodes as a distributed workflow (Fuzzball generic `multinode`) | 2 GPUs |
 +| `job_3_1_package` | Packages the newest checkpoint into `final/` and load-tests it | CPU |
 +| `job_4_probe` | Extracts patient vectors on both GPUs, fits the six classifiers, scores held-out patients | 2 GPUs |
 +| `job_5_launch` | Infers the 25-patient ward, writes the forecast, serves the board and Nemotron | 1 GPU, then 1 GPU |
