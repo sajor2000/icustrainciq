@@ -1,0 +1,82 @@
+\documentclass[10pt]{extarticle}
+\usepackage[letterpaper,margin=0.42in,top=0.36in,bottom=0.3in]{geometry}
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\setsansfont{Arial}
+\usepackage{xcolor,graphicx,booktabs,array,multicol,microtype,tikz,tcolorbox}
+\usepackage[hidelinks]{hyperref}
+\usetikzlibrary{positioning,arrows.meta,calc}
+\definecolor{ink}{HTML}{111827}
+\definecolor{sec}{HTML}{5B6474}
+\definecolor{blue}{HTML}{2563EB}
+\definecolor{board}{HTML}{F6F7F9}
+\definecolor{rule}{HTML}{CDD3DC}
+\color{ink}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}\setlength{\parskip}{2pt}
+\linespread{1.0}
+\setlength{\columnsep}{16pt}
+\setlength{\columnseprule}{0.4pt}\def\columnseprulecolor{\color{rule}}
+\newcommand{\sh}[1]{{\sffamily\bfseries\color{blue}\small\MakeUppercase{#1}}\par\vspace{1pt}}
+\newcommand{\gl}[1]{{\color{sec}#1}}
+\renewcommand{\arraystretch}{1.04}
+\usepackage{ragged2e}\usepackage{enumitem}
+\begin{document}
+\RaggedRight
+\fontsize{9}{10.8}\selectfont
+% masthead
+\begin{minipage}[b]{0.38\textwidth}
+\includegraphics[width=\linewidth]{../brand/icu-horizon-logo-light.png}\\[1pt]
+{\large\itshape\color{sec} From bench to bedside}
+\end{minipage}\hfill
+\begin{minipage}[b]{0.61\textwidth}\raggedleft\sffamily\fontsize{7.6}{9.4}\selectfont\color{sec}
+\textbf{\color{ink}Team 7 \textperiodcentered{} CLIF} \textperiodcentered{} CIQ $\times$ NVIDIA $\times$ Lenovo Local AI Hackathon \textperiodcentered{} Chicago, Nov 14--15, 2026\\
+Rush University: J.C. Rojas, MD, MS \textperiodcentered{} Vaishvik Chaudhari, MS\\
+UChicago Medicine: Kaveri Chhikara, MS \textperiodcentered{} Dema Therese, MS \textperiodcentered{} Zewei (`Whiskey') Liao, MS
+\end{minipage}
+
+\vspace{2pt}{\color{ink}\rule{\textwidth}{1.1pt}}\vspace{3pt}
+
+{\raggedright\fontsize{14.5}{17}\selectfont\bfseries Five 24-hour predictions for every patient in an intensive care unit (ICU), \color{blue}from a model we trained and run inside the hospital.\par}
+
+\vspace{2pt}
+\begin{multicols}{2}
+\sh{The problem}
+Resource-constrained ICUs have only a few life-support machines. When those run out, patients must be transferred, often hours away. These units have no data-science team, and their data cannot leave the building, so they learn they are short too late.
+
+\columnbreak
+\sh{What we built}
+A bed board the ICU nurse and doctor read at 7 am, before rounds (the daily team review): life support now, each event's 24-h probability, and unit totals against the machines. A large language model (LLM) chat answers questions.
+\end{multicols}
+
+\vspace{2pt}
+{\sffamily\bfseries\color{blue}\small WHAT IS NEW: A NEMOTRON BACKBONE TRAINED FROM SCRATCH\hfill\normalfont\itshape\color{sec} GEM (generative event model): 36M params, 1,231-token vocab\par}\vspace{2pt}
+{\par\vspace{3pt}\centering \includegraphics[width=0.52\linewidth]{../diagrams/model-steps.png}\par\vspace{2pt}}
+\vspace{-4pt}
+{\fontsize{8.6}{10.2}\selectfont \textbf{One model, many tasks.} Most healthcare AI trains one model per prediction. The GEM is read once per patient and linear probes on its hidden state predict many tasks; a new task is a new probe, not a new model. \textbf{Privacy-preserving, on-premises:} it trains and runs on the hospital's own machines, and patient records never leave.\par}
+\vspace{3pt}
+
+{\sffamily\bfseries\color{blue}\small THE FIVE PREDICTIONS\hfill\normalfont\itshape\color{sec} five an ICU physician finds clinically meaningful; each is a 24-hour chance\par}\vspace{1pt}
+{\par\vspace{3pt}\centering \includegraphics[width=0.72\linewidth]{img/five-cards.png}\par\vspace{2pt}}
+{\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
+AUROC: area under the receiver operating characteristic curve (1.0 is perfect), on held-out patients never seen in training.}
+
+\vspace{5pt}
+
+{\sffamily\bfseries\color{blue}\small HOW WE USED THE CIQ STACK\par}\vspace{1pt}{\sffamily\fontsize{8.6}{10.4}\selectfont\color{sec}\textbf{\color{ink}1 \textperiodcentered{} Training.} One training workflow on both NVIDIA GB10s, with data prep and probe fitting around it.\par}
+{\par\vspace{3pt}\centering \includegraphics[width=0.56\linewidth]{../diagrams/arch-train.png}\par\vspace{2pt}}
+
+{\sffamily\fontsize{8.6}{10.4}\selectfont\color{sec}\textbf{\color{ink}2 \textperiodcentered{} ICU Horizon live.} How the chat gets its context: Nemotron sees the GEM's forecast, never patient records.\par}
+{\par\vspace{3pt}\centering \includegraphics[width=0.56\linewidth]{../diagrams/arch-live.png}\par\vspace{2pt}}
+\vspace{-4pt}
+{\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
+\textbf{\color{ink}How the chat knows the patients:} the board's chat agent reads the GEM's forecast on twin-store and passes it to Nemotron as tool results; Nemotron never reads patient records. \textbf{\color{ink}Fuzzball:} Orchestrate schedules, Substrate runs the containers (llama.cpp: an open-source LLM server). Training runs as a distributed workflow with Fuzzball's generic multinode.\par}
+
+\vfill
+{\color{ink}\rule{\textwidth}{0.9pt}}\\[2pt]
+{\sffamily\fontsize{8}{9.6}\selectfont\color{sec}
+\begin{minipage}[t]{0.74\textwidth}
+\textbf{\color{ink}Data:} CLIF-MIMIC, our electronic health record (EHR) dataset: MIMIC-IV, a public de-identified ICU database, in CLIF (Common Longitudinal ICU data Format), \href{https://clif-icu.com}{\textbf{\color{ink}clif-icu.com}}. Code: \href{https://github.com/vaishvikc/ICU-Twin}{\textbf{\color{ink}github.com/vaishvikc/ICU-Twin}}. Research prototype; not a medical device.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.25\textwidth}\raggedleft{\normalsize\bfseries\color{ink}\rmfamily Nothing leaves the building.}\end{minipage}}
+\end{document}

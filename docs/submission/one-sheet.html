@@ -3,112 +3,91 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ICU Horizon · one-sheet · Team7</title>
+<title>ICU Horizon · one-sheet · Team 7</title>
 <!--
   One US Letter page. Export PDF and PNG:
-    uv run --with playwright python docs/submission/make_shots.py
-  Numbers not measured yet are empty <span class="fill" data-fill="..."></span> slots.
-  Type the measured value between the tags, then export again. The list is in FILL_IN.md.
-  The icons are the board's own drawn family, copied from mockups/command-center.html.
+    uv run --with playwright python docs/submission/make_shots.py export
+  Content follows the team's demo code: github.com/vaishvikc/ICU-Twin, branch t7/fb-job5-launch
+  (jobs 1-4 train; job 5, workflow t7-launch, runs the board). Numbers come from docs/RESULTS.md and
+  workflows/job_3_1_package (36,232,032 parameters). The icons are the board's own drawn family.
 -->
-<!-- impeccable-disable tiny-text: printed Letter sheet. Body copy is 12px (9pt); only captions, the flow row and the footer are 11px and the one demo-data line is 10px, the floor the team set for this page. Text inside the screenshots is image content, not page text. -->
-<!-- impeccable-disable design-system-font-size: DESIGN.md's ramp is the board's rem scale for screens; this print page adds 11px captions and one 10px smallprint line under the same floor. -->
+<!-- impeccable-disable tiny-text: printed Letter sheet. Body copy is 12px (9pt); captions and the footer are 11px, the floor the team set for this page. Text inside the screenshots is image content, not page text. -->
+<!-- impeccable-disable design-system-font-size: DESIGN.md's ramp is the board's rem scale for screens; this print page adds 11px captions under the same floor. -->
 <style>
 @page{size:8.5in 11in;margin:0}
 :root{
-  --board:#F3F5F9;--board-2:#E8ECF2;--surface:#fff;--ink:#111827;--ink-2:#4A5567;--rule:rgba(17,24,39,.12);
-  --blue:#1E5BB8;--ok:#18794E;
+  --board:#F6F7F9;--board-2:#EEF0F4;--surface:#fff;--ink:#111827;--ink-2:#5B6474;--rule:rgba(17,24,39,.12);
+  --blue:#2563EB;--blue-soft:#DBE7FE;--vent:#0891B2;--press:#BE185D;--crrt:#7C3AED;
   --n-ink:#E6E9EF;--n-ink-2:#A3ADBD;--n-rule:rgba(230,233,239,.18);--n-blue:#8DBBFF;--n-surface:#1C2533;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-body{background:var(--board-2);color:var(--ink);font:400 12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-feature-settings:"tnum" 1;-webkit-font-smoothing:antialiased}
-::selection{background:rgba(30,91,184,.22)}
+body{background:var(--board-2);color:var(--ink);font:400 12px/1.42 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-feature-settings:"tnum" 1;-webkit-font-smoothing:antialiased}
+::selection{background:rgba(37,99,235,.22)}
 .sheet{width:8.5in;height:11in;margin:24px auto;background:var(--surface);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(16,24,40,.06),0 8px 28px rgba(16,24,40,.1)}
 @media print{body{background:#fff}.sheet{margin:0;box-shadow:none}}
 .pad{padding-left:.5in;padding-right:.5in}
-svg.ic{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.17em}
+svg.ic{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 b{font-weight:700}
 h2{font-size:15px;line-height:1.3;font-weight:800;letter-spacing:-.01em;margin-bottom:3px}
-.cap{font-size:11px;line-height:1.3;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.cap{display:block;font-size:11px;line-height:1.3;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--blue);margin-bottom:5px}
 .cap em{font-style:normal;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink-2);margin-left:5px}
-.dim{color:var(--ink-2)}
+section{margin-top:6px}
 
 /* masthead */
-.mast{padding-top:.29in}
-.mast .row{display:flex;align-items:flex-end}
-.mast h1{font-size:40px;white-space:nowrap;line-height:1;font-weight:800;letter-spacing:-.035em}
-.mast .event{margin-left:auto;text-align:right;font-size:11px;line-height:1.35;color:var(--ink-2);font-weight:600}
+.mast{padding-top:.17in;display:flex;align-items:flex-end;gap:16px}
+.mast h1 .logo{display:block;width:240px;height:auto}
+.mast h1{font-size:34px;line-height:1;font-weight:800;letter-spacing:-.035em;white-space:nowrap}
+.mast .tag{font-size:17px;line-height:1.3;font-weight:600;letter-spacing:-.015em;margin-top:3px;color:var(--ink-2)}
+.mast .event{margin-left:auto;text-align:right;font-size:11px;line-height:1.4;color:var(--ink-2);font-weight:600}
 .mast .event b{color:var(--ink);font-weight:800}
-.mast .tag{font-size:22px;line-height:1.3;font-weight:600;letter-spacing:-.015em;margin-top:4px}
-/* problem + what the board shows */
-.plain{margin-top:9px;line-height:1.5}
-.plain>span{margin-right:7px}
-.plain span:nth-child(n+3){white-space:nowrap}
-.plain svg{font-size:15px;margin-right:3px}
-.plain b{margin-right:3px}
-.intro{display:grid;grid-template-columns:1fr 1fr;column-gap:26px;margin-top:8px}
+.lead{margin-top:8px;font-size:14px;line-height:1.35;font-weight:700;letter-spacing:-.01em}
+.lead span{color:var(--blue)}
+.three{display:grid;grid-template-columns:.92fr .92fr 1.16fr;column-gap:16px}
+.three h2{font-size:13px;margin-bottom:2px}
+.three h2 i,.steps b i{font-style:normal;color:var(--blue);margin-right:5px}
+.three p{font-size:11px;line-height:1.38}
+.new{list-style:none;font-size:11px;line-height:1.36}
+.new li{padding-left:9px;position:relative;margin-bottom:1px}
+.new li::before{content:'';position:absolute;left:0;top:.55em;width:4px;height:4px;border-radius:50%;background:var(--blue)}
+.lead span{color:var(--blue)}
+
+/* the five predictions */
+.five{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.p{border:1px solid var(--rule);border-radius:.625rem;padding:6px 9px 6px;display:flex;flex-direction:column;background:var(--surface)}
+.p>.ic{font-size:20px;color:var(--blue)}
+.p .t{font-size:12.5px;line-height:1.25;margin-top:4px;white-space:nowrap}
+.p .t b{font-weight:800}
+.p .what{color:var(--ink-2);font-size:11px;line-height:1.3;margin-top:3px}
+.p .score{margin-top:auto;padding-top:4px;display:flex;gap:6px;justify-content:space-between;align-items:baseline;font-size:11px;color:var(--ink-2)}
+.p .score b{font-size:14px;color:var(--ink);font-weight:800}
+.p.unit{background:var(--board)}
+.note{margin-top:4px;font-size:11px;line-height:1.35;color:var(--ink-2)}
 
 /* screens */
-.screens{margin-top:10px}
-.frame{background:var(--board);border-radius:10px;border:1px solid var(--rule)}
-.frame img{display:block;width:100%;height:auto}
-.axis{padding:7px 10px 8px}
-.axis .cap{display:block;color:var(--blue);margin-left:4px}
-.axis .step+.step{margin-top:2px}
-.axis img{width:100%}
-.duo{display:grid;grid-template-columns:17% 1fr;column-gap:10px}
-.duo img{width:100%}
-.duo p{margin:5px 8px 0 8px}
+
+/* how it works */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);column-gap:18px}
+.steps li{list-style:none;border-top:3px solid var(--blue);padding-top:4px;font-size:11px;line-height:1.38}
+.steps b{display:block;font-size:13px;line-height:1.35;font-weight:800}
+.steps b i{font-style:normal;color:var(--blue);margin-right:4px}
 
 /* the stack: ink band */
-.stack{background:var(--ink);color:var(--n-ink);margin-top:8px;padding-top:7px;padding-bottom:6px}
-.stack ::selection{background:rgba(141,187,255,.3)}
-.stack .head{display:flex;align-items:baseline;gap:12px;white-space:nowrap}
-.stack h2{font-size:16px;margin:0;color:#fff}
-.stack .head p{color:var(--n-ink-2)}
-.dg{position:relative;height:231px;margin-top:4px;font-size:11px;line-height:1.3;color:var(--n-ink)}
-.dg .wires{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.dg .edge{fill:none;stroke:var(--n-ink-2);stroke-width:1.25;stroke-dasharray:5 4}
-.dg .w,.dg .br{fill:none;stroke:var(--n-ink-2);stroke-width:1.5;stroke-linecap:round}
-.dg .w.fc{stroke:var(--n-blue)}
-.dg .br{stroke-width:1.25}
-.dg .on{position:absolute;background:var(--ink);padding:0 7px;font-weight:700;color:#fff;white-space:nowrap}
-.dg .b,.dg .g{position:absolute;border-radius:8px}
-.dg .b{border:1px solid var(--n-rule);background:var(--n-surface);padding:5px 8px}
-.dg .g{border:1px solid var(--n-rule);padding:5px 10px}
-.dg b{display:block;font-size:12px;line-height:1.35;font-weight:800;color:#fff}
-.dg .c{display:block;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--n-ink-2)}
-.dg .c.t{position:absolute;text-align:center}
-.dg .lbl{position:absolute;color:var(--n-ink-2);white-space:nowrap}
-.dg .lbl.fc,.dg .job .c{color:var(--n-blue)}
-.dg .job{border-color:var(--n-blue)}
-.dg .row{display:flex;align-items:center;gap:6px;margin:1px 0 2px}
-.dg .chips{display:flex;align-items:center;gap:5px;color:var(--n-blue);font-weight:600;font-size:11px}
-.dg .chips i{font-style:normal;white-space:nowrap;padding:1px 5px;border:1px solid rgba(141,187,255,.45);border-radius:6px}
-.dg .chips svg{font-size:11px}
-.dg .vol{display:flex;align-items:baseline;gap:8px;padding:4px 10px}
-.dg .vol b{display:inline}
-.how{margin-top:7px;font-size:11px;line-height:1.35;color:var(--n-ink)}
-.how .c{display:block;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--n-blue)}
-.how ol{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);column-gap:18px;margin-top:2px}
-.how b{display:block;font-size:12px;line-height:1.4;font-weight:800;color:#fff}
+.arch img{display:block;width:60%;margin:0 auto 4px;height:auto;border-radius:8px}
+.steps-fig img{display:block;width:68%;margin:0 auto;height:auto;border-radius:.5rem}
+.sub{font-size:12px;line-height:1.35;color:var(--ink-2);margin:2px 0 3px}
+.sub b{color:var(--ink);font-weight:800}
+.arch-note{margin-top:4px;font-size:11px;line-height:1.38;color:var(--ink-2)}
+.arch-note b{color:var(--ink)}
 
-/* second machine, built, next */
-.tail{margin-top:8px}
-.two{display:grid;grid-template-columns:1fr 1fr;column-gap:26px}
-.meas{display:grid;grid-template-columns:repeat(3,1fr);column-gap:22px;margin-top:6px;border-top:1px solid var(--rule);padding-top:5px}
-.meas div{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
-.meas dt{color:var(--ink-2)}
-.meas dd{font-weight:700;white-space:nowrap}
-.fill:empty::before{content:"\2014\00a0" attr(data-empty);font-weight:600;color:var(--blue)}
+/* facts */
 
 /* footer */
-.foot{margin-top:auto;padding-bottom:.26in}
-.foot .in{display:flex;align-items:baseline;gap:14px;border-top:1.5px solid var(--ink);padding-top:6px;font-size:11px;line-height:1.35;color:var(--ink-2)}
+.foot{margin-top:auto;padding-bottom:.08in}
+.foot .in{display:flex;align-items:baseline;gap:14px;border-top:1.5px solid var(--ink);padding-top:6px;font-size:11px;line-height:1.4;color:var(--ink-2)}
 .foot b{color:var(--ink)}
-.foot .last{margin-left:auto;font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.01em}
-.fine{font-size:11px;line-height:1.35;color:var(--ink-2);font-weight:400}
+.foot a{color:inherit;text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--rule)}
+.foot .last{margin-left:auto;font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.01em;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -117,103 +96,67 @@ h2{font-size:15px;line-height:1.3;font-weight:800;letter-spacing:-.01em;margin-b
 <symbol id="i-pump" viewBox="0 0 24 24"><g transform="rotate(45 12 12)"><path d="M9 1.5h6M12 1.5v4M8 5.5h8M12 15.5v2.7"/><rect x="9.2" y="5.5" width="5.6" height="10" rx="1"/><path d="M9.2 10.2h2.3"/></g><path d="M4.2 17.6c1.1 1.3 1.8 2.1 1.8 3a1.8 1.8 0 0 1-3.6 0c0-.9.7-1.7 1.8-3z"/></symbol>
 <symbol id="i-crrt" viewBox="0 0 24 24"><rect x="8" y="2.5" width="8" height="3.4" rx="1.2"/><rect x="8" y="18.1" width="8" height="3.4" rx="1.2"/><path d="M9.5 5.9v12.2M14.5 5.9v12.2M12 8.5v7"/><path d="M9.5 16H6.5a3 3 0 0 1-3-3V9.5M1.7 11.3 3.5 9.5l1.8 1.8"/><path d="M14.5 8h3a3 3 0 0 1 3 3v3.5M18.7 12.7l1.8 1.8 1.8-1.8"/></symbol>
 <symbol id="i-leave" viewBox="0 0 24 24"><path d="M2.5 9.5v10M2.5 16.5H18v3"/><path d="M8.5 16.5v-3.2h6.3a3.2 3.2 0 0 1 3.2 3.2"/><circle cx="5.6" cy="13.6" r="1.5"/><path d="M12.5 6h9M18.5 3l3 3-3 3"/></symbol>
-<symbol id="i-up" viewBox="0 0 24 24"><path fill="currentColor" d="M12 4.5 21 19.5H3z"/></symbol>
-<symbol id="i-watch" viewBox="0 0 24 24"><path d="M12 6.5 19.5 19h-15z" stroke-width="2.5"/></symbol>
-<symbol id="i-hold" viewBox="0 0 24 24"><path d="M4 8.5h16M4 15.5h16" stroke-width="3.5"/></symbol>
-<symbol id="i-steady" viewBox="0 0 24 24"><circle fill="currentColor" cx="12" cy="12" r="3.5" stroke="none"/></symbol>
-<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M3.5 12h16M14 6.5l5.5 5.5-5.5 5.5" stroke-width="2.25"/></symbol>
-<symbol id="i-vent-on" viewBox="0 0 24 24"><path d="M6.5 5.5V3h11v2.5M12 3v9l-2 1.8M12 12l2 1.8"/><path fill="currentColor" d="M9.6 14.2V9.6c0-1.6-1.9-2-3-.5C4.5 12 3 15.2 3 18.1c0 1.8 1.1 2.9 2.9 2.9 2.2 0 3.7-1.1 3.7-3.2v-3.6z"/><path fill="currentColor" d="M14.4 14.2V9.6c0-1.6 1.9-2 3-.5 2.1 2.9 3.6 6.1 3.6 9 0 1.8-1.1 2.9-2.9 2.9-2.2 0-3.7-1.1-3.7-3.2v-3.6z"/></symbol>
-<symbol id="i-pump-on" viewBox="0 0 24 24"><g transform="rotate(45 12 12)"><path d="M9 1.5h6M12 1.5v4M8 5.5h8M12 15.5v2.7"/><rect fill="currentColor" x="9.2" y="5.5" width="5.6" height="10" rx="1"/></g><path fill="currentColor" d="M4.2 17.6c1.1 1.3 1.8 2.1 1.8 3a1.8 1.8 0 0 1-3.6 0c0-.9.7-1.7 1.8-3z"/></symbol>
-<symbol id="i-crrt-on" viewBox="0 0 24 24"><rect fill="currentColor" x="8" y="2.5" width="8" height="3.2" rx="1.2"/><rect fill="currentColor" x="8" y="18.3" width="8" height="3.2" rx="1.2"/><rect fill="currentColor" stroke-width="1" x="9.6" y="7.4" width="4.8" height="9.2" rx=".6"/><path style="stroke:var(--ic-k,var(--surface))" stroke-width="1.3" d="M12 9.3v5.4"/><path d="M9.5 16H6.5a3 3 0 0 1-3-3V9.5M1.7 11.3 3.5 9.5l1.8 1.8"/><path d="M14.5 8h3a3 3 0 0 1 3 3v3.5M18.7 12.7l1.8 1.8 1.8-1.8"/></symbol>
+<symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="7.2" r="3.9"/><path d="M4.5 21v-1.4c0-3.5 3.2-5.9 7.5-5.9s7.5 2.4 7.5 5.9V21z"/></symbol>
+<symbol id="i-beds" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
 </svg>
 <main class="sheet">
 
   <header class="mast pad">
-    <div class="row">
-      <h1>ICU Horizon</h1>
-      <p class="event"><b>Team 7 · CLIF</b> · CIQ × NVIDIA Local AI Hackathon · Chicago · Nov 14–15, 2026<br>J.C. Rojas · Kaveri Chhikara · Vaishvik Chaudhari<br>Dema Therese · Zewei ('Whiskey') Liao<br><span class="fine">Demo data, made-up names. Not a medical device; for unit planning.</span></p>
+    <div>
+      <h1><img class="logo" src="../brand/icu-horizon-logo-light.svg" alt="ICU Horizon" width="240" height="39"></h1>
+      <p class="tag">From bench to bedside</p>
     </div>
-    <p class="tag">From bench to bedside</p>
+    <p class="event"><b>Team 7 · CLIF</b> · CIQ × NVIDIA × Lenovo Local AI Hackathon<br>Chicago · Nov 14–15, 2026<br>J.C. Rojas, MD, MS · Kaveri Chhikara, MS · Vaishvik Chaudhari, MS<br>Dema Therese, MS · Zewei ('Whiskey') Liao, MS</p>
   </header>
 
-  <p class="plain pad"><span><b>ICU</b> the hospital unit for the sickest patients.</span> <span><b>Life support</b> keeps them alive:</span> <span><svg class="ic"><use href="#i-vent-on"/></svg><b>ventilator</b> a breathing machine</span> <span><svg class="ic"><use href="#i-pump-on"/></svg><b>vasopressors</b> drugs that hold blood pressure up</span> <span><svg class="ic"><use href="#i-crrt-on"/></svg><b>CRRT</b> continuous dialysis, a machine doing the kidneys' work</span></p>
+  <p class="lead pad">Five 24-hour predictions for every patient in an intensive care unit (ICU), summed into what the unit will need, <span>from a model we trained and run inside the hospital.</span></p>
 
-  <section class="intro pad">
+  <section class="three pad">
     <div>
-      <h2>The problem: a small or rural ICU</h2>
-      <p>A small hospital has few of these machines, no data-science team and no cloud contract. Three patients need a breathing machine, two are free: one is transferred hours away.</p>
+      <h2>The problem</h2>
+      <p>Resource-constrained ICUs have only a few life-support machines. When those run out, patients must be transferred, often hours away. These units have no data-science team, and their data cannot leave the building, so they learn they are short too late.</p>
     </div>
     <div>
-      <h2>What we built: local compute</h2>
-      <p>Two machines the hospital owns run everything. At 7 am the board shows five predictions per patient for the next 24 hours: ventilator, vasopressors, CRRT, leaving the ICU, death.</p>
+      <h2>What we built</h2>
+      <p>A bed board the ICU nurse and doctor read at 7 am, before rounds (the daily team review): life support now, each event's 24-h probability, and unit totals against the machines. A large language model (LLM) chat answers questions.</p>
+    </div>
+    <div>
+      <h2>What is new for healthcare AI</h2>
+      <ul class="new"><li><b>One model, many tasks:</b> most healthcare AI trains one model per prediction. Our GEM (generative event model), a Nemotron E4B backbone trained from scratch, serves them all from one pass.</li><li><b>New task:</b> a new linear probe, no retraining.</li><li><b>Privacy-preserving, on-premises:</b> records never leave the hospital.</li></ul>
     </div>
   </section>
 
-  <section class="screens pad" aria-label="Screens from the board">
-    <div class="frame axis">
-      <div class="step fc"><span class="cap">Next 24 h <em>life support now, then what may start, at the thresholds the team sets.</em></span><img src="img/beds-next.png" alt="Three beds in the Next 24 h view: bed 1 no life support, nothing new; bed 2 on a ventilator and a vasopressor, nothing new; bed 3 no life support, 66% chance of leaving the ICU"></div>
-      <div class="step fc duo">
-        <div><span class="cap">Event card</span><img src="img/event-card.png" alt="Ventilator card, SHORT: 5 on now, 1 free of 6, 3 predicted new; unit forecast 2, range 1 to 4"></div>
-        <div><span class="cap">Unit strain <em>how stretched the unit is</em></span><img src="img/strain-line.png" alt="Alert line: ventilators short by 2; deaths expected 1, range 0 to 3; highest-risk beds 20, 6 and 13; 10 on life support now, plus 5 new expected in 24 hours, SHORT">
-          <p><b>The unit:</b> six ventilators, five in use, three beds flagged at 20% or more: SHORT by 2, a day ahead. <b>Beds 20, 6 and 13</b> are the ones to see first. A bed's person icon turns red at the team's threshold; a tap opens its five chances and 12 hours of vital signs.</p></div>
-      </div>
-    </div>
+  <section class="pad steps-fig" aria-label="The model">
+    <span class="cap">The model we trained <em>Nemotron backbone from scratch · 36M parameters · custom 1,231-token vocabulary</em></span>
+    <img src="../diagrams/model-steps.png" alt="The GEM in four steps: 1, train the GEM from scratch: an NVIDIA Nemotron 3.5 Bolt E4B backbone with a custom vocabulary of 1,231 ICU event tokens; 2, highlighted, read its hidden layer: one pass per patient gives a 384-dimensional embedding; 3, six logistic-regression probes give 24-hour event probabilities; 4, the Nemotron E4B chat explains the forecast through tools and predicts nothing.">
   </section>
 
-  <section class="stack pad">
-    <div class="head"><h2>How we used CIQ Fuzzball and the stack: two models, two jobs</h2><p>Every step is a Fuzzball workflow file.</p></div>
-    <div class="dg" role="img" aria-label="Diagram: the board in the clinician's browser talks to a board server on two Lenovo ThinkStation PGX machines run by CIQ Fuzzball 4.3. Always-on Fuzzball services: board server and dispatcher. GPU 1 holds the chat model, NVIDIA Nemotron 3 Nano on vLLM, used as it is. The dispatcher starts the forecast workflow on GPU 2, which runs the patient model we trained: precheck, model pass, score. Fuzzball volumes hold patient data, the model and results. Patient data never leaves the two machines.">
-      <svg class="wires" viewBox="0 0 720 231" aria-hidden="true">
-        <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1l6 3-6 3" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
-        <rect class="edge" x="130.5" y="8.5" width="589" height="214" rx="12"/>
-        <path class="w" d="M108 66H150" marker-end="url(#ah)"/>
-        <path class="w" d="M274 66H327" marker-end="url(#ah)"/>
-        <path class="w fc" d="M274 140H327" marker-end="url(#ah)"/>
-        <path class="w fc" d="M585 172V186" marker-end="url(#ah)"/>
-        <path class="w" d="M212 187V172" marker-end="url(#ah)"/>
-      </svg>
-      <span class="on" style="left:146px;top:0">2 × Lenovo ThinkStation PGX · NVIDIA GB10 · run by CIQ Fuzzball 4.3</span>
-      <span class="on" style="right:14px;top:215px">Patient data never leaves these two machines</span>
-      <div class="b" style="left:0;top:38px;width:108px;height:58px"><b>The board</b>in the clinician's browser</div>
-      <div class="g" style="left:140px;top:26px;width:144px;height:144px"><span class="c" style="letter-spacing:0;text-transform:none;font-size:12px;color:#fff">Fuzzball services</span>
-        <div class="b" style="left:10px;top:25px;width:124px;height:46px"><b>Board server</b>serves the page</div>
-        <div class="b" style="left:10px;top:88px;width:124px;height:46px"><b>Dispatcher</b>starts every job</div></div>
-      <span class="lbl" style="left:291px;top:48px">asks</span>
-      <span class="lbl fc" style="left:288px;top:122px">starts</span>
-      <div class="b" style="left:328px;top:26px;width:378px;height:70px"><span class="c">GPU 1 · Chat model · NVIDIA, off the shelf</span><b>Nemotron 3 Nano, served with vLLM</b>Used as it is, not trained by us. It predicts nothing: it answers in plain words by calling tools that read the forecast.</div>
-      <div class="b job" style="left:328px;top:102px;width:378px;height:70px"><span class="c">GPU 2 · Patient model · trained by us</span><b class="row"><span style="white-space:nowrap">Workflow t7-forecast</span><span class="chips"><i>precheck</i><svg class="ic"><use href="#i-arrow"/></svg><i>model pass</i><svg class="ic"><use href="#i-arrow"/></svg><i>score</i></span></b>A small decoder with Gemma 4 text layers, trained from scratch.</div>
-      <span class="lbl fc" style="left:593px;top:172px">writes results</span>
-      <span class="lbl" style="left:220px;top:172px">reads results</span>
-      <div class="b vol" style="left:140px;top:188px;width:566px;height:25px"><b>Fuzzball volumes</b>patient data in CLIF, an open ICU data format · the trained model · results</div>
+  <section class="pad" aria-label="The five predictions">
+    <span class="cap">The five predictions <em>five an ICU physician finds clinically meaningful; each is the chance in the next 24 hours</em></span>
+    <div class="five">
+      <div class="p"><svg class="ic" style="color:var(--vent)"><use href="#i-vent"/></svg><p class="t"><b>Ventilator start</b></p><p class="what">a machine breathes for the patient</p><p class="score">AUROC <b>0.78</b></p></div>
+      <div class="p"><svg class="ic" style="color:var(--press)"><use href="#i-pump"/></svg><p class="t"><b>Vasopressor start</b></p><p class="what">a drug given into a vein that raises blood pressure</p><p class="score">AUROC <b>0.77</b></p></div>
+      <div class="p"><svg class="ic" style="color:var(--crrt)"><use href="#i-crrt"/></svg><p class="t"><b>CRRT start</b></p><p class="what">continuous renal replacement therapy (dialysis)</p><p class="score">AUROC <b>0.88</b></p></div>
+      <div class="p"><svg class="ic"><use href="#i-leave"/></svg><p class="t"><b>Transfer to ward</b></p><p class="what">healthier tomorrow: leaves the ICU, freeing the bed</p><p class="score">AUROC <b>0.80</b></p></div>
+      <div class="p unit"><svg class="ic" style="color:var(--ink-2)"><use href="#i-person"/></svg><p class="t"><b>Death</b></p><p class="what">shown as a unit count only</p><p class="score">AUROC <b>0.93</b></p></div>
     </div>
-    <div class="how">
-      <span class="c">How the patient model predicts</span>
-      <ol>
-        <li><b>1 · Learn the ICU's language</b>Trained to predict the next event in a chart (labs, vital signs, drugs, machines), like a language model predicts the next word.</li>
-        <li><b>2 · Take its last layer</b>At 07:00, one pass over each patient's chart so far. Keep the last layer's output: one vector for the patient's state.</li>
-        <li><b>3 · Five small classifiers</b>One per event clinicians plan around, fitted once in training on past patients with known outcomes. Each gives a percentage.</li>
-      </ol>
-    </div>
+    <p class="note">AUROC: area under the receiver operating characteristic curve, on held-out patients never seen in training; 1.0 is perfect.</p>
   </section>
 
-  <section class="tail pad">
-    <div class="two">
-      <div><h2>What is new</h2><p>A patient model small enough to train from scratch on two desk-side GPUs. One pass and five small classifiers per patient, not thousands of simulated futures.</p></div>
-      <div><h2>In the real world</h2><p>Ran end to end on the two Lenovo machines under Fuzzball with one launch script. A hospital with CLIF tables can rerun it. <b>459</b> tests · held-out AUROC 0.77–0.93.</p></div>
-    </div>
-    <dl class="meas">
-      <div><dt>Patient model size</dt><dd><span class="fill" data-fill="model-size" data-empty="confirm"></span></dd></div>
-      <div><dt>Training, 1 GPU against 2</dt><dd><span class="fill" data-fill="train-scaling" data-empty="on site"></span></dd></div>
-      <div><dt>One unit forecast</dt><dd><span class="fill" data-fill="forecast-time" data-empty="on site"></span></dd></div>
-      <div><dt>Model status</dt><dd><span class="fill" data-fill="model-status" data-empty="confirm"></span></dd></div>
-      <div><dt>Held-out accuracy</dt><dd><span class="fill" data-fill="heldout-accuracy" data-empty="after training">AUROC 0.77–0.93</span></dd></div>
-      <div><dt>Chat, tokens per second</dt><dd><span class="fill" data-fill="chat-tokens-per-sec" data-empty="on site"></span></dd></div>
-    </dl>
+  
+
+  <section class="pad arch" aria-label="How we used the CIQ stack">
+    <span class="cap">How we used the CIQ stack</span>
+    <p class="sub"><b>1 · Training.</b> One training workflow on both NVIDIA GB10s, with data prep and probe fitting around it.</p>
+    <img src="../diagrams/arch-train.png" alt="Training on CIQ Fuzzball, run once: job 1 moves CLIF records in on node A (CPU); job 2 tokenizes them into the custom 1,231-token vocabulary on node B (CPU); job 3 trains the GEM, a Nemotron backbone, from scratch as a Fuzzball distributed workflow (generic multinode), one GPU per node; job 3.1 packages the checkpoint on node A; job 4 embeds patients on both GPUs and fits six probes on node B. Tokens, the GEM and the probes are saved on the 200 GB mimic_clif VAST volume.">
+    <p class="sub"><b>2 · ICU Horizon live.</b> How the chat gets its context: Nemotron sees the GEM's forecast, never patient records.</p>
+    <img src="../diagrams/arch-live.png" alt="ICU Horizon live, job 5 on CIQ Fuzzball: load (CPU, node B), infer with the GEM and probes (GPU, node B, 35 s), score (CPU, node A) writes the forecast to twin-store; the bed board service (CPU, node A) serves clinicians over HTTPS; the Nemotron 3.5 Bolt E4B chat on llama.cpp (GPU, node B) answers questions, with weights on hfcache.">
+    <p class="arch-note"><b>How the chat knows the patients:</b> the board's chat agent reads the GEM's forecast on twin-store and passes it to Nemotron as tool results; Nemotron never reads patient records. <b>Fuzzball:</b> Orchestrate schedules, Substrate runs the containers (NVIDIA NGC PyTorch; llama.cpp, an open-source LLM server). Training runs as a distributed workflow with Fuzzball's generic multinode.</p>
   </section>
 
   <footer class="foot pad">
     <div class="in">
-      <span>Open-source tools, an open data format, public code: <b>github.com/sajor2000/icustrainciq</b></span>
+      <span><b>Data:</b> CLIF-MIMIC, our electronic health record (EHR) dataset: MIMIC-IV, a public de-identified ICU database, in CLIF (Common Longitudinal ICU data Format), <a href="https://clif-icu.com"><b>clif-icu.com</b></a>. Code: <a href="https://github.com/vaishvikc/ICU-Twin"><b>github.com/vaishvikc/ICU-Twin</b></a>. Research prototype; not a medical device.</span>
       <span class="last">Nothing leaves the building.</span>
     </div>
   </footer>
