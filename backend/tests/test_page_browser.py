@@ -54,7 +54,7 @@ def unit_files(tmp_path, edit):
     )
 
 
-def open_page(browser, base, size, fragment="fast", storage=None):
+def open_page(browser, base, size, fragment="fast", storage=None, wait=None):
     page = browser.new_page(viewport={"width": size[0], "height": size[1]})
     if storage:
         page.add_init_script(
@@ -64,7 +64,7 @@ def open_page(browser, base, size, fragment="fast", storage=None):
             )
         )
     page.goto(f"{base}/#{fragment}")
-    page.wait_for_selector('button.bed[data-room="1"]', state="attached")
+    page.wait_for_selector(wait or 'button.bed[data-room="1"]', state="attached")
     return page
 
 
@@ -145,3 +145,72 @@ def test_close_discards_pending_answers(browser, tmp_path, size, questions):
             page.close()
     finally:
         model.close()
+
+
+@pytest.mark.parametrize("size", WIDTHS)
+def test_a_stopped_support_keeps_the_available_forecast(browser, tmp_path, size):
+    """CodeRabbit PR #16: a vasopressor started and stopped before the cut has no
+    score by the task rule; the bed still has a forecast (Steady), not No estimate"""
+
+    def edit(room):
+        room[7]["p"]["vasopressor"] = None
+        room[7]["stopped_before_cut"] = {
+            "imv": False,
+            "vasopressor": True,
+            "crrt": False,
+        }
+        room[8]["p"]["vasopressor"] = None  # no score and no reason: unknown
+
+    unit_files(tmp_path, edit)
+    with running_board(tmp_path, static_path=PAGE) as base:
+        page = open_page(browser, base, size)
+        state = lambda n: page.get_attribute(  # noqa: E731
+            f'button.bed[data-room="{n}"]', "data-state"
+        )
+        assert state(7) == "steady" and state(8) == "unknown"
+        page.close()
+
+
+@pytest.mark.parametrize("size", WIDTHS)
+def test_an_ended_slot_shows_no_vitals_from_the_room_before(browser, tmp_path, size):
+    def edit(room):
+        room[7]["vitals_12h"] = {"heart_rate": [{"h": h, "v": 80 + h} for h in (1, 2)]}
+        room[8].update(present=False)
+
+    unit_files(tmp_path, edit)
+    with running_board(tmp_path, static_path=PAGE) as base:
+        page = open_page(browser, base, size, "room=7&fast")
+        page.wait_for_selector("#rv-vit:not([hidden])")
+        page.evaluate("location.hash = 'room=8&fast'")
+        page.wait_for_function(
+            "document.getElementById('rv-risk-h').textContent.includes('Not in the ICU')"
+        )
+        assert page.is_hidden("#rv-vit")
+        assert page.inner_html("#vits") == ""
+        page.close()
+
+
+@pytest.mark.parametrize("size", WIDTHS)
+def test_machines_in_use_come_from_unit_counts_when_rooms_are_withheld(
+    browser, tmp_path, size
+):
+    """a counts-only ward: no room records, 5 ventilators in use by the unit count,
+    saved total 4. Never 4 free; the capacity POST says 0."""
+    unit_files(tmp_path, lambda room: None)
+    (tmp_path / "rooms.json").write_text(json.dumps({"rooms": [], "counts_only": True}))
+    with running_board(tmp_path, static_path=PAGE) as base:
+        page = open_page(
+            browser,
+            base,
+            size,
+            "view=strain&fast",
+            {"lookahead-machines": {"imv": 4, "crrt": None}},
+            wait="#sline:not([hidden])",
+        )
+        assert "Ventilators short by 1" in page.inner_text("body")
+        page.click("#gear")
+        page.fill("#cap-ls", "12")
+        with page.expect_request("**/api/capacity") as sent:
+            page.press("#cap-ls", "Enter")
+        assert json.loads(sent.value.post_data)["vents_free"] == 0
+        page.close()

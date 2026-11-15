@@ -1017,7 +1017,9 @@ details.more summary:hover{color:var(--blue)}
   const unknownList = r => SUP.filter(k=>r.on_now[k]===null);
   /* a support whose current state is unknown (null) is not "off": it cannot start "new", and it leaves the combined chance unknown */
   const nextList = r => SUP.filter(k=>r.on_now[k]===false && r.p[k]!=null && r.p[k]>=lines[k]).sort((a,b)=>r.p[b]-r.p[a]);
-  const anyNew = r => SUP.some(k=>r.on_now[k]==null || (r.on_now[k]===false && r.p[k]==null))?null:1-SUP.reduce((m,k)=>m*(r.on_now[k]===true?1:1-r.p[k]),1);
+  /* no score for a support that is off: missing data, unless it was started and stopped before the cut (the task rule gives that no score: not a new start, and the rest of the forecast stands) */
+  const noScore = (r,k) => r.on_now[k]===false && r.p[k]==null && !r.stopped_before_cut[k];
+  const anyNew = r => SUP.some(k=>r.on_now[k]==null || noScore(r,k))?null:1-SUP.reduce((m,k)=>m*(r.on_now[k]===true||r.p[k]==null?1:1-r.p[k]),1);
   function traj(r){ if(r.present===false) return "ended"; if(isPending()) return "unknown"; const a=anyNew(r), dep=r.p.icu_departure;
     if((a!=null && a>=worseLine(lines.base)) || SUP.some(k=>r.on_now[k]===false && r.p[k]!=null && r.p[k]>=worseLine(lines[k]))) return "worse";
     if((a!=null && a>=lines.base) || nextList(r).length) return "watch";
@@ -1308,7 +1310,7 @@ details.more summary:hover{color:var(--blue)}
     if(ids.length<2){ pa.hidden=na.hidden=true; } else { const pv=ids[(i-1+ids.length)%ids.length], nx=ids[(i+1)%ids.length]; pa.hidden=na.hidden=false;
       pa.href=`#room=${pv}`; pa.innerHTML=svg("arrow","","flip")+`Bed ${pv}`; na.href=`#room=${nx}`; na.innerHTML=`Bed ${nx}`+svg("arrow"); }
     const p=r.p, on=r.on_now;
-    if(r.present===false){ $("rv-risk-h").textContent="Not in the ICU at this replay time"; $("rv-risks").textContent="No current patient or forecast in this stable room slot."; $("past").textContent=""; $("pastmore").hidden=true; paintScope(); return; }
+    if(r.present===false){ $("rv-risk-h").textContent="Not in the ICU at this replay time"; $("rv-risks").textContent="No current patient or forecast in this stable room slot."; $("past").textContent=""; $("pastmore").hidden=true; $("rv-vit").hidden=true; $("vits").innerHTML=""; paintScope(); return; }
     if(nowM) $("rv-risks").innerHTML = (isPending() ? `<p class="stopped">${PEND_LINE}</p>` : "") + `<ul class="risks now">${SUP.map(k=>`<li><span class="nm">${ic(k,on[k]===true)}${SHORTN[k]}</span><span class="lw2${on[k]===true?" on":""}">${on[k]===true?"On now":on[k]===false?"Not running":"Unknown"}</span></li>`).join("")}</ul>${stoppedNote(r)}`;
     else $("rv-risks").innerHTML = `<ul class="risks">${SUP.map(k=>rrow(ROWN[k],p[k],on[k],ic(k,on[k]),p[k]!=null?DEF.start(k,p[k]):"")).join("")}</ul>${stoppedNote(r)}
       <ul class="risks solo">${rrow("Leaves the ICU (ward or step-down)",p.icu_departure,false,ic("leave",false),p.icu_departure!=null?DEF.out(p.icu_departure):"")}${rrow("Dies in hospital",p.death,false,svg("death"),p.death!=null?`${pct(p.death)} chance of death in hospital in the next 24 h`:"")}</ul>`;
@@ -1445,10 +1447,11 @@ details.more summary:hover{color:var(--blue)}
   let machines = {imv:null, crrt:null};
   try{ const m=JSON.parse(localStorage.getItem("lookahead-machines")||"null"); if(m && typeof m==="object") for(const k of ["imv","crrt"]) if(Number.isInteger(m[k]) && m[k]>=0 && m[k]<=50) machines[k]=m[k]; }catch(e){ /* no storage */ }
   const saveMachines = () => { try{ localStorage.setItem("lookahead-machines", JSON.stringify(machines)); }catch(e){ /* storage blocked: totals last for this page */ } };
-  const inUse = k => RM.rooms.filter(r=>r.on_now[k]).length;
+  /* machines in use now: counted from the rooms; when the room records are withheld (a counts-only ward), from the unit's own count; null when neither says */
+  const inUse = k => RM.rooms.length ? RM.rooms.filter(r=>r.on_now[k]).length : fin(FC?.life_support?.now_by?.[k]) ? FC.life_support.now_by[k] : null;
   /* spare = total - in use now, negative when more are in use than the saved total (a deficit that must stay visible);
      free = spare, never below 0; total = the saved total, or in use + free when only a number free is known. */
-  function machSpare(k){ if(k!=="imv" && k!=="crrt") return null; if(RM.rooms.some(r=>r.present!==false && r.on_now[k]===null)) return null; if(machines[k]!=null) return machines[k]-inUse(k);
+  function machSpare(k){ if(k!=="imv" && k!=="crrt") return null; if(RM.rooms.some(r=>r.present!==false && r.on_now[k]===null)) return null; if(machines[k]!=null){ const u=inUse(k); return u==null ? null : machines[k]-u; }
     const y=Y(); return k==="imv" && y && y.kind==="capacity" && y.vf!=null ? y.vf : null; }      // a ventilators-free number saved on the server still counts
   const machFree = k => { const sp=machSpare(k); return sp==null ? null : Math.max(0, sp); };
   const machTotal = k => machines[k]!=null ? machines[k] : inUse(k)+machFree(k);
