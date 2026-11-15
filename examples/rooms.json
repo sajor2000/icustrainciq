@@ -1852,9 +1852,6 @@
       ]
     }
   ],
-  "ward": {
-    "source": "open-demo",
-    "label": "MIMIC-IV Demo"
-  },
+  "ward": {"source": "synthetic", "label": "Demo data"},
   "dropped": 0
 }

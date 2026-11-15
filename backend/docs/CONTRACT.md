@@ -1,4 +1,33 @@
-# Lookahead JSON contract
+# ICU Lookahead JSON contract
+
+Read this if you build against `forecast.json`, `rooms.json` or the board's API and need the exact fields.
+
+Changes with PR #20: capacity gains `vents_total`, `crrt_total`, `nurses_on_shift` and `rt_on_shift`. This file describes the shapes on `main`.
+
+## Selected-cohort publication
+
+The selected-25 workflow publishes one atomic `context.json`. With `board.py
+--context PATH`, `GET /api/context` returns `{schema_version: 1, snapshot_id,
+cohort_id, published_at, source, roster_size: 25, clock_mode: "research_replay",
+forecast_state, forecast, rooms, provenance}`. `source.kind` is `mimic-iv` for the
+approved private cohort; `--require-real-data` refuses a missing, invalid or
+open-demo context. Missing dataset versions remain unknown. The provenance
+records the actual model/probe fingerprints for ready forecasts; a pending
+publication has no model fingerprints or invented estimates.
+
+`forecast` and `rooms` carry matching publication/cohort identities. Existing
+`GET /api/forecast` and `/api/rooms` return those projections. `POST /api/ask`
+accepts the existing question, optional role, room and seen_made_at fields;
+the response adds `snapshot_id`, `cohort_id`, `source`, `clock_mode` and
+`forecast_state`. Every answer pins one context before any model tool calls.
+
+For CLIF current support, null means unknown rather than off. Incomplete unit
+counts are null, with `now_known_patients`, `now_unknown_patients`,
+`now_known_by` and `now_unknown_by` making the lower bound explicit. A pending
+forecast retains observed Now but every future probability/count is unavailable.
+`present: false` retains an ended stay's fixed room slot with no current patient
+or prediction. The shared display clock aligns a research replay; the stays
+retain individual clinical timelines. Details: [LOOKAHEAD_DEMO.md](LOOKAHEAD_DEMO.md).
 
 What `app/aggregate.py` writes to `forecast.json` (unit scope) and `app/rooms.py` writes to `rooms.json` (one ward: the open demo by default, or a real MIMIC-IV ward with `--real-ward`, see "ward block"). The frontend and the services build to this. Flags: `docs/LIVE_DEMO.md` section 1.5. Decisions: `docs/DECISIONS.md` D8.
 
@@ -33,9 +62,19 @@ All times are ISO 8601 with a UTC offset (the default site zone is `America/Chic
     "kind": "capacity",
     "words": "TIGHT",
     "level": "amber",
-    "capacity": {"life_support_patients": 11, "vents_free": 2, "set_at": "...", "set_by_role": "charge nurse",
-                 "load": {"p10": 10, "p50": 11, "p90": 13}},
+    "capacity": {"life_support_patients": 11, "vents_free": 2, "vents_total": 7, "crrt_total": 2,
+                 "set_at": "...", "set_by_role": "charge nurse", "load": {"p10": 10, "p50": 11, "p90": 13}},
     "typical": null
+  },
+  "machines": {
+    "imv":  {"total": 7, "in_use": 5, "free": 2, "flag_at": 0.25, "flagged": 3, "short_by": 1, "words": "SHORT", "level": "red"},
+    "crrt": {"total": 2, "in_use": 1, "free": 1, "flag_at": 0.25, "flagged": 1, "short_by": 0, "words": "AT LIMIT", "level": "amber"}
+  },
+  "staffing_now": {"nurses": 15, "one_to_one": 4, "one_to_two": 21, "rt": 1, "vented": 5, "vasoactives_known": true,
+                   "rules": {"nurse_ratio": 2, "one_to_one_crrt": true, "one_to_one_vasoactives": 2, "rt_ratio": 6}},
+  "staffing_next_24h": {
+    "nurses": {"available": true, "p10": 15, "p50": 15, "p90": 16, "one_to_one": {"p10": 4, "p50": 5, "p90": 6}},
+    "rt":     {"available": true, "p10": 1, "p50": 2, "p90": 2, "vented": {"p10": 6, "p50": 7, "p90": 9}}
   },
   "check_first": [{"room": 7, "any_life_support": 0.62, "level": "high"}],
   "levels": {"medium": 0.2, "high": 0.4},
@@ -49,10 +88,12 @@ All times are ISO 8601 with a UTC offset (the default site zone is `America/Chic
 - `unit_name`: the unit's name for the page header (`--unit-name` on `aggregate.py`, `rooms.py --recount` and `scripts/run_cohort.py`; default "Medical ICU"; at most 60 characters).
 - `forecast_state`: `"ready"` or `"pending-model"`, in both files. See "forecast_state" below. A key missing from an older file means `"ready"`.
 - `cut_time` / `window`: the scheduled cut (`demo_clock_hours` 0) is the 07:00 nearest to the run in `--tz`. With a demo clock H the ward is replayed H hours after the morning cut, so `cut_time` is the last 07:00 at or before the run plus H hours (as the dispatcher counts `demo_clock_hours`) and `window` is the 24 h from it. An explicit `--cut-time` is taken as given (it must carry a UTC offset; a naive time is refused) and is not moved again by the demo clock.
-- `resources.<name>`: `{team, available, p10, p50, p90, expected}`, exact Poisson-binomial over the unit's patients; a patient with that support running at the cut is not a new start (one that stopped before the cut is forecastable again). `p10/p50/p90` = the smallest count whose cumulative probability reaches 10 / 50 / 90%. `icu_departure` adds the ward and step-down probabilities (they exclude each other), clipped to 1; the other resources take the largest token probability. **`available: false` means the probe for that task was skipped in training (one class): `p10`, `p50`, `p90` and `expected` are then `null`, never 0** (a consumer must show "no data"). Stays already past the event do not make a resource unavailable. `life_support.expected_by.<support>` has the same shape for a skipped probe; the any-life-support figures treat a skipped support as 0, so they are a lower bound in that case.
+- `resources.<name>`: `{team, available, p10, p50, p90, expected}`, exact Poisson-binomial over the unit's patients; a patient with that support running at the cut is not a new start (one that stopped before the cut is forecastable again). `p10/p50/p90` = the smallest count whose cumulative probability reaches 10 / 50 / 90%. `icu_departure` adds the ward and step-down probabilities (they exclude each other), clipped to 1; the other resources take the largest token probability. **`available: false` means the task has no score for at least one stay that could have a new event** (its probe was skipped in training, or what runs now is unknown in CLIF; a stay whose event was already seen before the cut has no score by the task rule and counts as "not a new event", not as missing): `p10`, `p50`, `p90` and `expected` are then `null`, never 0 and never a count over the stays that do have a score (a consumer must show "no data"). Stays already past the event do not make a resource unavailable. `life_support.expected_by.<support>` has the same shape. When any of the three supports is unavailable, `life_support.expected_new_patients` is unavailable too (same shape, `available: false`), `yardstick` is `null`, and `strain` leaves that task out.
 - `life_support.now_patients`: patients with IMV, vasopressor or CRRT on at the cut (running at the cut: from the last record before it, see `docs/LIVE_DEMO.md` section 1.5; with `on_now_source` `tokens` CRRT uses a documented fallback, a CRRT row in the last 24 h, because the tokens have no stop signal; with `clif` see "on_now_source"). `now_by.ecmo` is always `null` = not available: no ECMO or mechanical circulatory support token reaches the model (`icutwin/config/tokens/` has none), so it is never invented.
 - `expected_new_patients`: patients on none of the three at the cut who start at least one in the window. Per patient `any_life_support = 1 - prod(1 - p_k)` over IMV, vasopressor, CRRT not already on. `expected_by.<support>`: new starts of that one support.
 - `yardstick`: load = `now_patients + expected_new_patients` (80% range in `load`). `kind: "capacity"` when a capacity file was given and readable (`life_support_patients` must be a JSON number from 0 to 50, not a bool or a string; anything else prints "capacity file unreadable" and the typical yardstick applies): ON TRACK (p90 <= capacity), TIGHT (p90 > capacity >= p50), SHORT (p50 > capacity); level ok / amber / red. Otherwise `kind: "typical"`: `typical.life_support_patients` = beds x the training share of stays on, or starting, life support in a 24 h window (`typical.load` as above); load p50 / typical <= 1.0 USUAL (ok), <= 1.3 BUSY (amber), above VERY BUSY (red). `yardstick` is `null` when there is no capacity and no training baseline.
+- `machines`: ventilators (`imv`) and CRRT machines (`crrt`) against the unit's totals; see "capacity.json and /api/capacity" below. `null` when no total is set; a key missing from an older file means the same.
+- `staffing_now`, `staffing_next_24h`: nurses and respiratory therapists by the unit's ratio rule; see "staffing" below. Keys missing from an older file mean "not available".
 - `check_first`: up to 3 rooms whose new-start chance is High, largest first; stage ward only, `[]` otherwise (never stay ids). It ranks the same quantity `expected_new_patients` counts: a patient already on a support is 0 here and is not listed, even though that patient's room tile still shows `any_life_support` over the supports not on.
 - `levels`, `out_tag`: the thresholds in use (a patient is `high` at `any_life_support >= 0.40`, `medium` at `>= 0.20`, else `low`; tagged "out" when `icu_departure >= 0.60`).
 - `strain.per_task` / the typical baseline use the same definition as the forecast: a life support "running at the cut" is not a new start, one that stopped before the cut still is. A task with no data (`available: false`) is left out of the typical day.
@@ -79,6 +120,7 @@ All times are ISO 8601 with a UTC offset (the default site zone is `America/Chic
       "window": {"start": "...", "end": "..."},
       "scope": "room",
       "on_now": {"imv": true, "vasopressor": false, "crrt": false, "ecmo": null},
+      "on_now_detail": {"vasoactives": 0},   // vasoactive infusions running at the cut; null without raw CLIF
       "p": {"imv": null, "vasopressor": 0.31, "crrt": 0.02, "icu_departure": 0.1, "death": 0.04},
       "skipped": {"imv": false, "vasopressor": false, "crrt": false, "icu_departure": false, "death": false},
       "on_life_support": false,
@@ -94,11 +136,45 @@ All times are ISO 8601 with a UTC offset (the default site zone is `America/Chic
 
 - `on_now.<support>` is true when that support is running at the cut. `on_life_support` is true when two or more are running (the board shows "On life support" with a dark-ink border instead of the level word); `level` is still computed. `stopped_before_cut.<support>` is true when it started before the cut but is not running at it (the room page's faint "V off" note).
 - `dropped`: ward rooms with no entry (their record ends before a moved demo-clock cut); rooms for them are omitted. Computed as the ward's room numbers minus the rooms in the file: never negative.
-- `p.<support>` is `null` where that support is running at the cut (not a new event) or its probe was skipped. `skipped.<name>` is `true` only for the second case: no score although the stay could have a new event (the probe was skipped in training, one class). A consumer shows "no data" for it, not 0 and not "on". `icu_departure` is the ward plus step-down probability, clipped to 1; the "out" tag reads that value. `any_life_support` is the new-start chance over the supports not already on, so a room with every support running reads 0.
+- `p.<support>` is `null` where that support is running at the cut (not a new event) or its probe was skipped. `skipped.<name>` is `true` only for the second case: no score although the stay could have a new event (the probe was skipped in training, one class). A consumer shows "no data" for it, not 0 and not "on". `icu_departure` is the ward plus step-down probability, clipped to 1; the "out" tag reads that value. `any_life_support` is the new-start chance over the supports not already on, so a room with every support running reads 0. When any of the three supports is `skipped` for the room, `any_life_support` is `null` and `level` is `"unavailable"` (not 0, not "low"), and the room is never in `check_first`.
 - `vitals_12h` (only when the job runs with `--clif-now`, and only for a stay with readings): `{heart_rate, map, spo2, respiratory_rate}`, each a list of `{"h": 1..12, "v": value}`: the hourly median from the ward folder's `clif_vitals` table in the 12 h before the stay's cut (`app/clif_now.py`). `h` is hours before the cut, as in `past_12h`, so no date is written. These are the only measured values in the file; the board's room view draws them, and the chat's `get_room` leaves them out.
 - `past_12h`: at most 8 readable events from the 12 h before the cut, most recent first; `h` is hours before the cut, rounded up and at least 1 (an event 3601 s before the cut is in hour 2; 12 h exactly is hour 12; older events are not listed). Plain text mapped from the tokens (labs and vitals read "low", "normal" or "high" against the reference range, and the bin is left out when the token has no reference range); event kinds only, with no values, dates or ids.
 - Room scope (`--room N`) replaces that room only, keeps every other room and the file's `made_at`; a room whose stay ended before a moved cut is removed. It edits an existing whole-ward file and refuses when there is none (run the whole ward first) or when the file's `ward` is not the ward of this run. A full run rewrites the file.
 - Rooms hold room numbers only: no stay ids, patient ids or dates of the source data. A `name`, when present, is invented ("names" below).
+
+### capacity.json and /api/capacity
+
+`capacity.json` sits beside `forecast.json`. `POST /api/capacity` replaces it; `aggregate.py --capacity` reads it on the next run.
+
+| Field | Meaning |
+|---|---|
+| `life_support_patients` | life-support patients tonight's staffing covers (the ON TRACK / TIGHT / SHORT yardstick). Optional |
+| `vents_total` | ventilators on the unit. Optional |
+| `crrt_total` | CRRT machines on the unit. Optional |
+| `nurses_on_shift`, `rt_on_shift` | nurses and respiratory therapists on shift. Optional; saved and returned as entered |
+| `vents_free` | ventilators free: derived on read (total − on now), never stored. An older file's entered number is used only when the file has no `vents_total`; a POST of it is ignored |
+| `updated_at`, `set_at`, `set_by_role` | written by the server: the time (twice, the second for `aggregate.py`) and the role, never a name |
+
+- **POST** body: `role` plus any of the numbers, each a whole number 0 to 50 (a JSON integer, not a string). At least one of `life_support_patients`, `vents_total`, `crrt_total`, `nurses_on_shift`, `rt_on_shift` must be there; otherwise 400 `{"ok": false, "reason": "enter whole numbers from 0 to 50"}`. A field left out keeps its saved value (the request is merged into the file under a lock, so one role's staffing save does not wipe another role's totals); a field sent as `null` clears it. The answer is `{"ok": true, "capacity": {...}}` with the stored fields plus `vents_free` and `crrt_free` as GET gives them. A body with only `life_support_patients` and `vents_free` works as before.
+- **GET** gives `{"life_support_patients", "vents_total", "vents_free", "crrt_total", "crrt_free", "nurses_on_shift", "rt_on_shift", "updated_at", "set_by_role"}`; `null` = not set.
+- **Free machines are never stored.** free = total − patients on that support at the cut (`life_support.now_by.imv` / `.crrt` of the current `forecast.json`), never below 0, worked out on every read; so it follows a new forecast. `vents_free` is the entered number only for an older file that has one and no `vents_total`; a new save never writes it. With a total but no forecast file yet, free is `null`.
+- An older file (`life_support_patients`, `vents_free` only) still loads: the totals read as `null`. A file that is not JSON reads as not set.
+- **`machines` in `forecast.json`**, per `imv` and `crrt` (`null` for a machine with no total; for `imv` an entered `vents_free` alone is enough, `total` is then `null`): `total`, `in_use` (on at the cut), `free`, `flag_at` (0.25, the page's default line), `flagged` = rooms not on that support whose chance of starting it is `flag_at` or more, `short_by` = max(0, flagged − free), and the word, the same rule as the page's cards: **SHORT** (red) when flagged > free; **AT LIMIT** (amber) when flagged = free and at least one bed is flagged; otherwise **ON TRACK** (ok). With no forecast for that support (`pending-model`, or its probe was skipped) `flagged`, `short_by`, `words` and `level` are `null`; `total`, `in_use` and `free` stay real. The page may still apply its own line (the Thresholds button); the block is the answer at the default line, for the chat and for a page with no stored line. When raw CLIF cannot say whether a room is on the support, `in_use` is `null`, and so are `free` (unless a number free was entered) and the status: an unknown state is never counted as off. When a room that could start the support has no score, `flagged`, `short_by`, the word and the level are `null`: a missing score is never 0. With `--context`, `GET` and `POST /api/capacity` work out the free machines from the context's forecast, the one the page is served.
+- `yardstick.capacity` (only with a staffing number) also carries `vents_total`, `crrt_total` and the derived `vents_free`.
+- The chat's `get_capacity` tool returns the GET fields plus `machines`.
+
+### staffing
+
+The rule (defaults; `aggregate.py` and `scripts/run_cohort.py` take `--nurse-ratio N`, `--one-to-one-vasoactives N` (0 = never), `--no-one-to-one-crrt`, `--rt-ratio N`, and the rule in use is written to `staffing_now.rules`):
+
+- **Nurses.** 1:1 for a patient on CRRT or on two or more vasoactive infusions at the cut; 1:2 for everyone else. `nurses` = `one_to_one` + ceil(`one_to_two` / 2).
+- **Respiratory therapists.** One per six ventilated patients: `rt` = ceil(`vented` / 6).
+- **Vasoactive set** (CLIF `med_category`, continuous infusions): the six vasopressors norepinephrine, epinephrine, phenylephrine, vasopressin, dopamine, angiotensin, plus the inotropes dobutamine and milrinone. The open demo's CLIF has all of them except angiotensin. `on_now.vasopressor` is unchanged: it still means one of the six vasopressors.
+- **`rooms[].on_now_detail.vasoactives`**: how many different agents of that set are running at the cut, by the same per-agent rule as the vasopressor flag (the last row in the 24 h before the cut is start / dose_change / going with a dose above 0; a null dose carries the last non-null dose since the last stop; `stop` = off). `0` when none runs. `null` when raw CLIF was not read (`on_now_source` `tokens`): the tokens cannot count agents. A key missing from an older file means `null`.
+- **`staffing_now`**: `{"nurses", "one_to_one", "one_to_two", "rt", "vented", "vasoactives_known", "unknown", "rules"}` over the rooms in the file, from what is on at the cut. `unknown` is `{"crrt", "imv"}`: the rooms whose state for that support raw CLIF could not say. An unknown support is never counted as off: with an unknown CRRT state for a room that is not 1:1 already (and CRRT deciding the ratio) `nurses`, `one_to_one` and `one_to_two` are null and the next-24-h nurse count is unavailable; with an unknown ventilator state `vented` and `rt` are null and the next-24-h RT count is unavailable. With `vasoactives_known` false (no raw CLIF) no patient is 1:1 for vasoactives, so `nurses` is a lower bound. Real in `pending-model` too.
+- **`staffing_next_24h`**: `nurses` and `rt`, each `{"available", "p10", "p50", "p90"}` (the same 80% range as the unit counts, exact Poisson-binomial over the rooms), plus the counts behind them (`nurses.one_to_one`, `rt.vented`). A room is 1:1 in the window when it is 1:1 now or starts CRRT (`p.crrt`); `rt` = ceil((ventilated now + IMV starts) / 6). `available: false` with null counts in `pending-model`, or when a room whose start would change the count has no score: for `nurses`, a room that is not 1:1 already without a CRRT score (rooms already 1:1 do not matter); for `rt`, a room not on a ventilator without an IMV score. A missing score is never counted as 0.
+- **Approximations in the next 24 h**: every bed stays filled and nobody comes off a support (leaving the ICU and death do not lower the count), and a second vasoactive started in the window is not forecast, so only patients already on two or more now are 1:1 for that reason. The numbers are a count by the rule, not a staffing order.
+- The chat's `get_staffing` tool returns `now` and `next_24h` (these two blocks).
 
 ### forecast_state
 
@@ -114,6 +190,9 @@ All times are ISO 8601 with a UTC offset (the default site zone is `America/Chic
 | `life_support.now_patients`, `now_by` | real |
 | `resources.<name>`, `life_support.expected_new_patients`, `life_support.expected_by.<support>` | `{"available": false, "p10": null, "p50": null, "p90": null, "expected": null}` (`resources` keeps `team`) |
 | `yardstick` | `null` |
+| `rooms[].on_now_detail`, `staffing_now` | real, as in `ready` |
+| `staffing_next_24h.nurses`, `.rt` | `{"available": false, "p10": null, "p50": null, "p90": null}` |
+| `machines` | `total`, `in_use`, `free` real; `flagged`, `short_by`, `words`, `level` `null` |
 | `check_first` | `[]` |
 | `model` | `"pending"` |
 
@@ -152,3 +231,5 @@ Real MIMIC-IV per-patient room views are approved, with all patient data kept lo
 - Default: `rooms.py` and `aggregate.py --stage-csv` work on the open demo ward and write `"ward": {"source": "open-demo", "label": "Open MIMIC-IV Demo"}`. If any stay id in the room map is not in the git-tracked `clif_demo/clif_hospitalization.parquet`, they refuse (the message gives counts, never ids).
 - `--real-ward` (on `rooms.py` and on `aggregate.py`) allows a non-demo ward and writes `"ward": {"source": "mimic-iv", "label": "Real MIMIC-IV · local only"}` in `rooms.json` and `forecast.json`. `rooms.py --demographics` may then point at the real CLIF folder. The page should show the label wherever the ward is shown.
 - stdout and logs hold counts only in both modes; rooms still carry room numbers only.
+- The board server needs the flag too: `app/board.py --real-ward` (`--require-real-data` implies it; `t7-twin.fz` passes it through `@WARD_FLAG@`). Without it a file or context whose ward is `"mimic-iv"` is served counts-only: `/api/rooms` and the `rooms` part of `/api/context` return `{"rooms": [], "counts_only": true, "note": ...}` with the `ward` block, `check_first` is `[]`, and the chat's `get_room` tool refuses. Unit counts are unchanged.
+- Chat in real-ward mode: the room's fields are sent to the local Nemotron only for a room the request is about (the open room, or a room number in the question). The payload has the room number and an invented name only: no stay or hospitalization id, no dates and no clock fields (`updated_at`, `cut_time`, `window`, `made_at` are left out). Questions and answers are never logged.

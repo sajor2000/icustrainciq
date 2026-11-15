@@ -1,15 +1,23 @@
-# Demo day: how ICU-Twin runs live, end to end
+# Demo day: how ICU Lookahead runs live, end to end
 
-> **Updated 2026-11-14 (storage change).** Paths in this file were brought in line with the workflow files; where an older paragraph still disagrees, `FUZZBALL_VALIDATION.md` and `../../HANDOFF.md` ("To run it on the cluster") win.
-> - One volume to create, `twin-store`, not three: `clif_work` and `tooling` are gone. Packages are at `/store/py`, the stage ward at `/store/stage`, training features at `/store/train`.
-> - `mimic_clif` is mounted at `/data` and only read: the model is `/data/model_output/final`, the training tokens `/data/tokenized_output`, the cohort `/data/dashboard_data`.
-> - The cohort is **already on the cluster**; there is no copy step.
-> - Code is published by `t7-code` from this repo (`backend/`), not by `t7-build` or `t7-smoke`. There is no `t7-build` in this repo: read it as "training" (ICU-Twin repo, workflows `job-3-*`).
-> - Do not render by hand or with `sed`: start the files in `fuzzball/ready/` (`scripts/make_ready.sh`).
+Read this if you want the demo-day design: what is real on stage, the minute-by-minute plan, the fallbacks and the forecast CLI flags. To start or relaunch the app, use [`RUNBOOK.md`](RUNBOOK.md).
 
-Status: design plus the code that already exists (2026-11-14, branch `t7/fb-live-demo`; the "Lookahead" decisions are in section 9 and win where they differ: 07:00 run, unit and room updates, demo clock, capacity). It answers one question: **after the model is trained, what happens on the day, minute by minute, and what is still missing?** Section 7 is the gap list. Section 8 is what J.C. must decide.
+**Status:** The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked. Not run: the chat-grounding workflows `t7-lookahead-prepare`, `-forecast` and `-chat`, and `t7-twin` without Nemotron.
 
-Companions: `docs/DECISIONS.md` (D2 probe scoring, D3 cut at 24 h after ICU arrival, D6 privacy line, D9 dispatcher, D10 which unit), `docs/CLUSTER_FACTS.md`, `.claude/skills/fuzzball-ops/SKILL.md`, and the frontend repo (`docs/INTEGRATION.md`, `FRONTEND_SPEC.md`, `FRONTEND_PLAN.md`, `ARCHITECTURE.md`). The chat agent (`app/chat_agent.py`) and the board server changes (`app/board.py`) are **in progress** on `t7/ui-chat-agent`; this file only states what they need from the backend.
+Sections 0 to 8 are the design as written on 2026-11-14; section 9 holds the later decisions and wins where they differ. Where a paragraph disagrees with this table, the table wins.
+
+| Topic | Current state (code on `main`) |
+|---|---|
+| How to run | `scripts/launch.sh` first ([`RUNBOOK.md`](RUNBOOK.md)); the manual workflow steps are the fallback |
+| Volumes | `twin-store` is the one volume ICU Lookahead writes (code, packages, stage ward, forecast files). `mimic_clif` is only read, at `/data`. `hfcache` holds the Nemotron weights. `clif_work` and `tooling` are not used |
+| Probe | Fitted by job 4 in vaishvikc/ICU-Twin and staged at `/store/train/probe-final.joblib` with `probe-final.meta.json`. `t7-fit` is the fallback |
+| Names | Generated per room number by `app/fake_names.py` (`--names fake`). `name.parquet` is no longer read |
+| Code on the cluster | Published by `t7-code` from this repo's `backend/` at a pinned commit. Training (`job_2` to `job_4`) is in vaishvikc/ICU-Twin; there is no `t7-build` here |
+| Schedule and cut | One run at 07:00; each patient is cut 24 h after ICU arrival; five predictions on the board |
+
+Status: design plus the code that already exists (2026-11-14, branch `t7/fb-live-demo`; the later decisions are in section 9 and win where they differ: 07:00 run, unit and room updates, demo clock, capacity). It answers one question: **after the model is trained, what happens on the day, minute by minute, and what is still missing?** Section 7 is the gap list. Section 8 is what J.C. must decide.
+
+Companions: `docs/DECISIONS.md` (D2 probe scoring, D3 cut at 24 h after ICU arrival, D6 privacy line, D9 dispatcher, D10 which unit), `docs/CLUSTER_FACTS.md`, `.claude/skills/fuzzball-ops/SKILL.md`, and the frontend repo (`docs/INTEGRATION.md`, `FRONTEND_SPEC.md`, `FRONTEND_PLAN.md`, `ARCHITECTURE.md`). The chat agent (`app/chat_agent.py`) and the board server (`app/board.py`) are on `main`; this file states what they need from the backend.
 
 Fuzzball facts below were checked against the 4.3 docs on 2026-11-14: in-workflow API access (`https://docs.ciq.com/fuzzball/4.3/advanced-features/in-workflow-api-access`), workflow endpoints (`.../workflow-endpoints`) and connecting to services (`.../workflow-connect`). Cluster state was read with read-only calls only (`workflow list`, `volume list`, `node list`).
 
@@ -21,7 +29,7 @@ Fuzzball facts below were checked against the 4.3 docs on 2026-11-14: in-workflo
 |---|---|---|---|
 | Model | `icutwin` decoder, trained by `t7-build` (both GPUs), published to `twin-store` | `twin-store/model`, code in `twin-store/code` | once, before the demo |
 | Probes | one logistic probe per task, **fit once on MIMIC training stays**, saved | `twin-store/train/probe-final.joblib` | once, right after training (new, section 1.3) |
-| Stage ward | 25 open MIMIC-IV Demo stays, rooms 1 to 25, tokenized and cut 24 h after ICU arrival | `clif_work/stage/` (volume, never git) | once; rerun is idempotent |
+| Stage ward | 25 open MIMIC-IV Demo stays, rooms 1 to 25, tokenized and cut 24 h after ICU arrival | `/store/stage/` on `twin-store` (volume, never git) | once; rerun is idempotent |
 | Forecast run | `t7-forecast`: one forward pass per stage-ward room on one GPU, apply the saved probes, write `rooms.json`, then `forecast.json` | GPU 1 for minutes, CPU for the rest | 07:00 (dispatcher), on request (board or chat), or by hand |
 | Twin | `t7-twin`: Nemotron on GPU 2, the board (`app/board.py`, HTTPS endpoint), the dispatcher | always on | up before 07:00 on demo day |
 | Browser | one static page served by the board | presenter laptop, team devices | during the demo |
@@ -36,7 +44,7 @@ What the audience sees: a 25-room board, the unit rows with 80% ranges, a strain
 
 | Thing | Source | On screen | Notes |
 |---|---|---|---|
-| Training, tuning, held-out evaluation | credentialed MIMIC-IV-Ext-CLIF on `mimic_clif`, tokens on `clif_work` | **counts only** (D6): how many stays, held-out AUROC and calibration per task, the typical-day baseline | never a row, a timeline or a per-patient score |
+| Training, tuning, held-out evaluation | credentialed MIMIC-IV-Ext-CLIF on `mimic_clif`, training tokens in `mimic_clif:/tokenized_output` | **counts only** (D6): how many stays, held-out AUROC and calibration per task, the typical-day baseline | never a row, a timeline or a per-patient score |
 | Stage ward (rooms 1 to 25) | open MIMIC-IV Demo in CLIF (`clif_demo/`, openly licensed, tracked in the repo; 100 patients, 310 hospitalizations) | **per room** (probabilities, tags, last 12 h of events, chat) | the demo patients are removed from every training split by `icutwin.exclude_demo` (in `t7-build`, by patient), so the model and probes have never seen them |
 | The unit (strain index, unit rows, margin) | the same 25 rooms (D10 option A, recommended) | counts with 80% ranges | one population on one screen |
 | "07:00" | notional | labels say 07:00 to 07:00 | each stay's cut is 24 h after its own ICU arrival, on different calendar dates; the board is a **replay**, not a live census. Label it so (section 8, decision 4) |
@@ -57,7 +65,7 @@ Rule, as coded:
 3. **Band**: scores between the 40th and 60th percentile of the eligible stays (numpy `lower` and `higher` at the edges). If the band holds fewer than 25 patients it widens by 5 percentile points a side and prints that it did.
 4. **One stay per patient** (lowest hospitalization id), then a seeded draw (`numpy.random.default_rng(20261114).permutation`), and **room numbers 1 to 25 follow the draw**.
 
-It prints counts and a 12-digit digest only. The CSV (`room, hospitalization_id, score`) goes to the `clif_work` volume; `*.csv` is in `.gitignore`, and the test checks that no id reaches stdout.
+It prints counts and a 12-digit digest only. The CSV (`room, hospitalization_id, score`) goes to `/store/stage` on `twin-store`; `*.csv` is in `.gitignore`, and the test checks that no id reaches stdout.
 
 Run on the repo's open `clif_demo/` on 2026-11-14 (counts only): 101 eligible stays from 82 patients; score counts 0..8 = 9, 19, 23, 13, 14, 15, 4, 3, 1; band p40 to p60 is scores 2 to 3 (36 stays, 32 patients); 25 selected (15 with score 2, 10 with score 3); digest `9021f82b3b5d`. Tokenizing the demo and winnowing it with `icutwin/config/winnowing.yaml` locally kept **25 of 25** selected stays (112 stays winnow in all, because the winnower also keeps stays that move ICU to ICU, which the selection does not).
 
@@ -70,10 +78,10 @@ While doing this, one bug on `main` surfaced and is **fixed on this branch** (fl
 Today `rep_based.py` fits probes and scores held-out in one go and keeps nothing. Implemented on this branch (`icutwin/scoring/rep_based.py`, tests in `tests/test_rep_probes.py`):
 
 - `icutwin-rep-score <tokenized_output> -m <model> -c examples/probe_tasks.yaml` saves every fitted probe in one `probe-<model>.joblib` (task -> probe; a task with one class in training has no probe and scores NaN), `probe-<model>.meta.json` (weights sha256) and `metrics-rep-based-<model>.json` (training counts and held-out metrics).
-- `icutwin-rep-score <stage tokenized_output> -m <model> --apply-probes /store/train/probe-final.joblib --stay-ids /store/stage/stage_ward.csv` **never fits**: it reads `features-<split>-<model>.parquet` and `<split>_for_inference.parquet` for every split present, keeps the 25 ids, applies each probe with the same `_past` mask (a task that already happened before the cut is NaN, not a new event), and writes `scores-rep-based-<model>.parquet` in the layout `app/aggregate.py` already reads. It refuses probes saved for a different model name. The test checks the scores equal a direct `predict_proba` of the loaded probe.
-- joblib pickles tie the probes to the scikit-learn in `/store/py`; keep `fit` and `apply` on the same `tooling` volume.
+- `icutwin-rep-score <stage tokenized_output> -m <model> --apply-probes /store/train/probe-final.joblib --stay-ids /store/stage/stage_ward.csv` **never fits**: it reads `features-<split>-<model>.parquet` and `<split>_for_inference.parquet` for every split present, keeps the 25 ids, applies each probe with the same `_past` mask (a task that already happened before the cut is NaN, not a new event), and writes `scores-rep-based-<model>.parquet` in the layout `app/aggregate.py` already reads. It refuses probes saved for a different model name or other weights, and features that were not extracted with the weights now in the model folder (`icutwin-extract` records the weights digest in `features-<split>-<model>.meta.json`; a features file without it is refused: extract again). The test checks the scores equal a direct `predict_proba` of the loaded probe.
+- joblib pickles tie the probes to the scikit-learn in `/store/py`; keep `fit` and `apply` on the same packages (`/store/py`).
 
-Pipeline on the day (all inside the cluster; **proposed job layout**, none of it is in `fuzzball/*.fz` yet, see gaps G2 and G3):
+Pipeline on the day (all inside the cluster; this layout is now `fuzzball/t7-ward.fz` and `fuzzball/t7-forecast.fz`, gaps G2 and G3 are closed):
 
 | Step | Command | Runs on | When |
 |---|---|---|---|
@@ -94,8 +102,8 @@ Pipeline on the day (all inside the cluster; **proposed job layout**, none of it
 
 **Strain index** (implemented in `app/aggregate.py`, `strain_index`, tests in `tests/test_app.py`):
 
-- `typical_day` = beds x the sum over the six board tasks of the training rate of a **new** event: the share of training stays (`train_for_inference.parquet`, cut 24 h after ICU arrival) with `<task>_future` true and no `<task>_past`, i.e. the mean `_future` rate among stays not already on. This is the same "already on is not new" rule the forecast uses, so numerator and denominator count the same thing. A multi-token task (leaving the ICU = ward or step-down) uses "any token".
-- `ratio` = simulated total new events over the six tasks (independent Bernoulli draws, 10,000) divided by `typical_day`; p10, p50, p90.
+- `typical_day` = beds x the sum over the five board tasks of the training rate of a **new** event: the share of training stays (`train_for_inference.parquet`, cut 24 h after ICU arrival) with `<task>_future` true and no `<task>_past`, i.e. the mean `_future` rate among stays not already on. This is the same "already on is not new" rule the forecast uses, so numerator and denominator count the same thing. A multi-token task (leaving the ICU = ward or step-down) uses "any token".
+- `ratio` = simulated total new events over the five tasks (independent Bernoulli draws, 10,000) divided by `typical_day`; p10, p50, p90.
 - `band` from the p50 ratio, as in the board mockup: QUIET below 0.8, USUAL below 1.2, BUSY below 1.6, VERY BUSY above.
 - `above_usual` = tasks whose forecast over typical reaches 1.25, largest first.
 - If the baseline file is missing the key is **omitted** (the page shows "pending run"), not guessed.
@@ -124,7 +132,7 @@ One thing to check before the demo (G13): in the open demo stays, 95% already me
 
 ### 1.5 Forecast CLI
 
-The Lookahead forecast (five predictions, life support, yardstick; JSON in `docs/CONTRACT.md`) is written by two scripts. Both print counts only and write atomically. Paths below are examples on the cluster volumes.
+The ICU Lookahead forecast (five predictions, life support, yardstick; JSON in `docs/CONTRACT.md`) is written by two scripts. Both print counts only and write atomically. Paths below are examples on the cluster volumes.
 
 **Unit run** (every run, last step; `forecast.json` is the commit marker the page watches):
 
@@ -279,7 +287,7 @@ The agent loop lives in `app/chat_agent.py` with the board changes in `app/board
 
 | Tool or context | Source | Content | Privacy |
 |---|---|---|---|
-| unit forecast | `/store/forecast.json` | the six `resources` (`team`, `p10`, `p50`, `p90`, `expected`), `already_started`, `made_at`, `beds`, `range`, `horizon`, `model`, `method` | counts only |
+| unit forecast | `/store/forecast.json` | the five `resources` (`team`, `p10`, `p50`, `p90`, `expected`), `already_started`, `made_at`, `beds`, `range`, `horizon`, `model`, `method` | counts only |
 | strain | `forecast.json` `strain` | `typical_day`, `ratio` p10/p50/p90, `band`, `above_usual`, `per_task` | counts only; if absent say "pending run" |
 | other tasks | `forecast.json` `other_tasks` | the eight research forecasts (`icu_transfer_in`, potassium, sodium, anemia, tachycardia, hypertension), team `research` | answer only when asked; never as staffing |
 | one room | `/store/rooms.json`, selected by `room` | `risk_24h` (six, null = on now), `on_now`, `age_band`, `recent` (last 12 h) | stage ward only (D6); no identifiers by construction |
@@ -367,7 +375,7 @@ Close other workflows that hold a GPU (`workflow list --status started`), open t
 
 ### T+5
 
-Record workflow ids and the three timings for the slides (every number from a run). Do **not** stop `t7-twin` until judging ends. After judging: stop workflows, delete volumes that hold patient rows (`clif_work`, `mimic_clif`) per the wipe checklist in `docs/FUZZBALL_PLAN.md`; keep code, figures, aggregate results and the open stage-ward files.
+Record workflow ids and the three timings for the slides (every number from a run). Do **not** stop `t7-twin` until judging ends. After judging: stop workflows, delete what holds patient rows (`mimic_clif`, and `stage/` and `train/` on `twin-store`) per the wipe checklist in `docs/FUZZBALL_PLAN.md`; keep code, figures, aggregate results and the open stage-ward files.
 
 ---
 
@@ -377,7 +385,7 @@ Size: XS under an hour, S a few hours, M most of a day.
 
 | # | Gap | Owner lane | Size | State |
 |---|---|---|---|---|
-| G1 | Volume `twin-store` does not exist (checked 2026-11-14); every workflow stops at it. `clif_work` and `tooling` are no longer used | 2 (needs the team's go) | XS | open |
+| G1 | Volume `twin-store` did not exist when checked on 2026-11-14 afternoon; every workflow stops without it. `clif_work` and `tooling` are no longer used | 2 | XS | create it once: `RUNBOOK.md`, section 1 |
 | G2 | **fit** step after `t7-build`: extract all splits, `icutwin-rep-score`, drop the per-run refit from `t7-forecast.fz` | 3 + 2 | M | **done**: `fuzzball/t7-fit.fz` (validated), `t7-forecast.fz` only applies probes |
 | G3 | **`t7-forecast.fz` v2**: stage-select, stage tokenize+winnow (cached), extract on the stage dir, `--apply-probes`, rooms, aggregate with `--baseline`; install polars/numpy into `/store/py` instead of `pip install` per run | 3 + 2 | M | **done** except the argument spelling of rooms.py and aggregate.py (TODO in the `score` job); no `pip` at run time, deps from `/store/py` |
 | G4 | `app/rooms.py`: writes `rooms.json` (on now, five probabilities, level, last 12 h of readable events from the open demo tokens), rooms before forecast; with test | 3 | M | done (t7/fc-lookahead-forecast), contract in `docs/CONTRACT.md`, flags in section 1.5 |
@@ -404,20 +412,20 @@ Size: XS under an hour, S a few hours, M most of a day.
 3. **Stage-ward list**: adopt `app/stage_ward.py`'s selection (digest `9021f82b3b5d`) if it differs from the team-machine list.
 4. **Honest framing**: label the board "replay of open demo patients" and say that a rerun repeats numbers unless the model changes. Or build a visible change (not planned).
 5. **Hypotension row** (G13) once the MIMIC training rate is known.
-6. **Strain definition**: six tasks including death and leaving the ICU in the sum; mockup band cut-offs (0.8, 1.2, 1.6); "forecast summary, not a validated score".
-7. **Go-ahead to create the three volumes** (G1) and to run the fit step on the GPU after training.
+6. **Strain definition**: five board tasks including death and leaving the ICU in the sum; mockup band cut-offs (0.8, 1.2, 1.6); "forecast summary, not a validated score".
+7. **Go-ahead to create the volume `twin-store`** (G1; one volume, not three) and to run the fit step on the GPU after training.
 8. **Who opens the board**: presenter laptop through `workflow connect` only, or a verified way for other devices (G16).
 
 ---
 
-## 9. Lookahead: 07:00 run, unit and room updates, demo clock, capacity (runbook)
+## 9. Later decisions: 07:00 run, unit and room updates, demo clock, capacity (runbook)
 
 Decided by J.C. on 2026-11-14 (`docs/DECISIONS.md` D9). Code: `app/dispatcher.py`, `app/board.py`, `app/chat_agent.py`, `fuzzball/t7-forecast.fz`, `fuzzball/t7-fit.fz`, `fuzzball/t7-twin.fz`.
 
 ### 9.1 Order of workflows (one-time, then daily)
 
-1. `t7-build` (both GPUs) publishes model and code.
-2. **`t7-fit`** (once, and again only when the model changes): `stage` (CPU: stage-ward list, tokens, winnow, vocabulary check), `extract` (GPU, train/tuning/held_out), `fit` (CPU: probes saved to `/store/train/probe-final.joblib`). An update refuses to hold the GPU if the probes or the stage tokens are missing ("run t7-fit first").
+1. Training (vaishvikc/ICU-Twin, both GPUs) writes the model to `mimic_clif:/model_output/final/`; job 4 fits the probe; `t7-code` publishes this repo's `backend/`.
+2. **`t7-fit`** (fallback, only when job 4 has not staged a probe): `stage` (CPU: stage-ward list, tokens, winnow, vocabulary check), `extract` (GPU, train/tuning/held_out), `fit` (CPU: probes saved to `/store/train/probe-final.joblib`). An update refuses to hold the GPU if the probes or the stage tokens are missing ("run t7-fit first").
 3. `t7-twin` (Nemotron, board, dispatcher). The board no longer waits for Nemotron.
 4. Daily: the dispatcher starts `t7-forecast` at **07:00 sharp** (dispatcher clock, zone-aware `America/Chicago`, so daylight saving moves nothing; window 07:00 to 07:00). If another run is active, the cluster cannot be listed, or the start fails, it retries every minute for 10 minutes and logs every attempt and the outcome to `runs.jsonl`. The 07:00 run ignores the 20 minute gap. A dispatcher that starts after 07:00 with no scheduled run since the cut runs it once (catch-up). Until it lands the board keeps the previous forecast and `/api/runs` says `updating: true`; a failed or missed scheduled run shows in `/api/runs` as `scheduled.state` = `failed` or `missed`: check it after 07:15 on demo day.
 
@@ -460,7 +468,7 @@ Always pass `--name t7-forecast-...`: the dispatcher's one-run-at-a-time guard g
 
 Nothing in this section is started until training (`t7-build`) has finished. Step by step, with commands: `FUZZBALL_TEST_PLAN.md`.
 
-**What it is.** A CLIF extract of 25 real MIMIC-IV stays: 19 `clif_*.parquet` tables, `dashboard_patients_unit25.parquet` (one column, `hospitalization_id`) and `name.parquet` (made-up names; it holds real ids). On the laptop it is `backend/data/local/unit25/`, which git ignores. It never goes into the repo, a commit, a log, a screenshot or a public host.
+**What it is.** A CLIF extract of 25 real MIMIC-IV stays: 19 `clif_*.parquet` tables, `dashboard_patients_unit25.parquet` (one column, `hospitalization_id`) and `name.parquet` (made-up names; it holds real ids; no longer read, names are generated per room number). On the laptop it is `backend/data/local/unit25/`, which git ignores. It never goes into the repo, a commit, a log, a screenshot or a public host.
 
 **Where it is on the cluster.** `/data/dashboard_data/` on the team volume `mimic_clif`, since 2026-11-14 (19 tables, the id file, `name.parquet`). The workflows only read it. Never the code tree.
 
@@ -472,7 +480,7 @@ Check it with `t7-ward` job `load` (counts only), not by listing files by hand.
 
 1. `t7-fit` (once per model): saves the probes. It stages the open demo ward by default.
 2. `t7-ward`, rendered for the cohort: job `load` checks the folder, the table list, the 25 ids and the names file; job `tokenize` builds the room map and the tokens with the training vocabulary and swaps them into `/store/stage/`.
-3. `t7-twin` from `fuzzball/ready/t7-twin.fz` (its dispatcher line already ends in `--real-ward --clif-dir /data/dashboard_data --names fake`: names are generated per room number, `name.parquet` is no longer read).
+3. `t7-twin` from `fuzzball/ready/t7-twin.fz` (its dispatcher line already ends in `--real-ward --clif-dir /data/dashboard_data --names fake`: names are generated per room number, `name.parquet` is no longer read; its board line ends in `--real-ward`: a board without it serves a real ward counts-only).
 4. The first unit forecast ("Update the unit", or 07:00). It writes `rooms.json` and `forecast.json` with `"ward": {"source": "mimic-iv", ...}`.
 
 ```bash

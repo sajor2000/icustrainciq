@@ -5,7 +5,7 @@ import json
 import threading
 import urllib.error
 import urllib.request
-from http.server import ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
@@ -73,6 +73,66 @@ def test_page_is_read_from_disk_on_every_request(stack):
     assert call(base, "/")[0] == 503
 
 
+def test_healthy_chat_can_reach_the_dispatcher_with_its_timeout(tmp_path):
+    from tests.test_chat_agent import Fake, text
+
+    fake = FakeCli(tmp_path)
+    disp, dbase = serve(dsp.make_handler(fake))
+    model = Fake([text("Sure.")])
+    forecast = tmp_path / "forecast.json"
+    forecast.write_text(json.dumps({"resources": {}}))
+    web, base = serve(board.make_handler(forecast, model.url, dbase))
+    try:
+        code, result = jcall(
+            base, "/api/ask", {"question": "update the unit", "role": "ICU nurse"}
+        )
+        assert code == 200
+        assert result["answer"].startswith("Started ")
+    finally:
+        web.shutdown()
+        model.close()
+        disp.shutdown()
+
+
+def test_lost_dispatch_response_is_unknown_not_not_started(tmp_path):
+    class LostReply(BaseHTTPRequestHandler):
+        def do_POST(self):
+            self.rfile.read(int(self.headers.get("Content-Length", "0")))
+            self.close_connection = True
+            self.connection.close()
+
+        def log_message(self, *args):
+            pass
+
+    disp, dbase = serve(LostReply)
+    web, base = serve(
+        board.make_handler(tmp_path / "forecast.json", "http://127.0.0.1:9", dbase)
+    )
+    try:
+        _, result = jcall(base, "/api/rerun", {"role": "ICU nurse", "scope": "unit"})
+        assert result["outcome"] == "unknown"
+        assert result["started"] is None
+    finally:
+        web.shutdown()
+        disp.shutdown()
+
+
+@pytest.mark.parametrize(
+    "path,body",
+    [
+        ("/api/rerun", {"role": "ICU team", "scope": "unit"}),
+        ("/api/capacity", {"role": "ICU team", "life_support_patients": 12}),
+    ],
+)
+def test_shared_team_attribution_does_not_require_a_professional_persona(
+    stack, path, body
+):
+    base, _, _, _ = stack
+    code, result = jcall(base, path, body)
+    assert code == 200
+    assert result.get("started", True) is not False
+
+
 def test_the_shipped_placeholder_page_exists():
     assert b"<html" in board.STATIC.read_bytes()
 
@@ -127,12 +187,12 @@ def test_runs_when_the_dispatcher_is_down(tmp_path):
 def test_capacity_validates_saves_and_logs_role_only(stack, caplog):
     base, tmp, fake, page = stack
     assert jcall(base, "/api/capacity")[1]["vents_free"] is None
-    good = {"life_support_patients": 12, "vents_free": 3, "role": "ICU nurse"}
+    good = {"life_support_patients": 12, "role": "ICU nurse"}
     with caplog.at_level("INFO", logger="board"):
         c, r = jcall(base, "/api/capacity", good)
-    assert c == 200 and r["ok"] and r["capacity"]["vents_free"] == 3
+    assert c == 200 and r["ok"] and r["capacity"]["life_support_patients"] == 12
     saved = json.loads((tmp / "capacity.json").read_text())
-    assert saved["life_support_patients"] == 12 and saved["vents_free"] == 3
+    assert saved["life_support_patients"] == 12 and "vents_free" not in saved
     assert jcall(base, "/api/capacity")[1]["life_support_patients"] == 12
     msg = " ".join(x.getMessage() for x in caplog.records)
     assert "role=ICU nurse" in msg
@@ -145,11 +205,8 @@ def test_capacity_validates_saves_and_logs_role_only(stack, caplog):
         "capacity.json"
     ]
     for bad in (
-        {**good, "vents_free": 51},
-        {**good, "vents_free": -1},
         {**good, "life_support_patients": 3.5},
         {**good, "life_support_patients": "7"},
-        {**good, "vents_free": True},
         {**good, "role": "visitor"},
         {"role": "ICU nurse"},
     ):
@@ -158,32 +215,26 @@ def test_capacity_validates_saves_and_logs_role_only(stack, caplog):
     assert (
         json.loads((tmp / "capacity.json").read_text()) == saved
     )  # bad input changed nothing
-    assert (
-        jcall(
-            base,
-            "/api/capacity",
-            {**good, "vents_free": 0, "life_support_patients": 50},
-        )[0]
-        == 200
-    )
+    assert jcall(base, "/api/capacity", {**good, "life_support_patients": 50})[0] == 200
 
 
 def test_ask_degrades_without_nemotron_and_update_asks_still_work(stack):
     base, tmp, fake, page = stack
     c, r = jcall(base, "/api/ask", {"question": "vents?", "role": "ICU nurse"})
-    assert "not answering" in r["answer"]
+    assert "2 ventilator starts (80% range 1 to 3)" in r["answer"]
     c, r = jcall(
         base, "/api/ask", {"question": "please update room 12", "role": "ICU physician"}
     )
     assert (
-        r["answer"].startswith("Started t7-forecast-room12-")
+        r["answer"].startswith("Started t7-lookahead-forecast-room12-")
         and "room 12" in r["answer"]
     )
     c, r = jcall(
         base, "/api/ask", {"question": "update the unit", "role": "ICU physician"}
     )
     assert (
-        r["answer"].startswith("Started t7-forecast-1114") and "the unit" in r["answer"]
+        r["answer"].startswith("Started t7-lookahead-forecast-unit-1114")
+        and "the unit" in r["answer"]
     )
     c, r = jcall(
         base, "/api/ask", {"question": "update the unit", "role": "ICU physician"}
@@ -195,16 +246,31 @@ def test_ask_degrades_without_nemotron_and_update_asks_still_work(stack):
     assert r["made_at"] == "2026-11-14T07:00:00-06:00"
 
 
-def test_capacity_vents_free_is_optional(stack):
+def test_capacity_post_ignores_a_vents_free_number(stack):
     base, tmp, fake, page = stack
-    c, r = jcall(
-        base, "/api/capacity", {"life_support_patients": 9, "role": "ICU nurse"}
-    )
+    body = {"life_support_patients": 9, "vents_free": 3, "role": "ICU nurse"}
+    c, r = jcall(base, "/api/capacity", body)
     assert c == 200 and r["ok"] and r["capacity"]["vents_free"] is None
+    assert "vents_free" not in json.loads((tmp / "capacity.json").read_text())
     saved = json.loads((tmp / "capacity.json").read_text())
     assert (
         saved["set_by_role"] == "ICU nurse" and saved["set_at"]
     )  # keys aggregate.py reads
+
+
+def test_capacity_post_can_only_clear_a_saved_field(stack):
+    """CodeRabbit PR 20: an explicit null clears a field without another number;
+    a body with no capacity key at all is still refused"""
+    base, tmp, fake, page = stack
+    body = {"life_support_patients": 9, "vents_total": 8, "role": "ICU nurse"}
+    assert jcall(base, "/api/capacity", body)[0] == 200
+    c, r = jcall(base, "/api/capacity", {"role": "ICU nurse", "vents_total": None})
+    assert c == 200 and r["ok"] and r["capacity"]["vents_total"] is None
+    saved = json.loads((tmp / "capacity.json").read_text())
+    assert saved["vents_total"] is None and saved["life_support_patients"] == 9
+    assert jcall(base, "/api/capacity", {"role": "ICU nurse"})[0] == 400
+    bad = {"role": "ICU nurse", "vents_total": None, "crrt_total": 51}
+    assert jcall(base, "/api/capacity", bad)[0] == 400
 
 
 # ---- review fixes (2026-11-14): CSRF rule, headers, strict bodies, HEAD ---------------------

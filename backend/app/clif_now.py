@@ -13,6 +13,10 @@ Rules, per stay, looking back from its cut:
                (a null dose carries the last non-null dose since the last stop; none
                at all counts as running, the charted action says it was). True when
                any pressor runs; no pressor rows in 24 h -> False
+  vasoactives  how many different vasoactive agents run at the cut, by the same
+               per-agent rule: the six vasopressors plus the inotropes dobutamine
+               and milrinone (VASOACTIVES). 0 when none runs. The vasopressor flag
+               above still counts the six vasopressors only
   crrt         a crrt_therapy row in the 6 h up to the cut with blood_flow_rate > 0,
                or a null rate with a mode -> True; else False
 
@@ -36,6 +40,8 @@ PRESSORS = (
     "phenylephrine",
     "vasopressin",
 )  # same list as aggregate.PRESSORS / app/stage_ward.py
+INOTROPES = ("dobutamine", "milrinone")
+VASOACTIVES = PRESSORS + INOTROPES  # counted for the 1:1 nursing rule (CONTRACT.md)
 LOOKBACK = dt.timedelta(hours=24)
 CRRT_LOOKBACK = dt.timedelta(hours=6)
 SUPPORTS = ("imv", "vasopressor", "crrt")
@@ -97,13 +103,14 @@ def _imv(clif, cuts: pl.LazyFrame) -> dict[str, bool]:
     }
 
 
-def _pressor(clif, cuts: pl.LazyFrame) -> dict[str, bool]:
+def _infusions(clif, cuts: pl.LazyFrame) -> dict[str, tuple[bool, int]]:
+    """{id: (a vasopressor runs at the cut, vasoactive agents running at the cut)}"""
     m = _read(
         clif,
         "medication_admin_continuous",
         [HOSP, "admin_dttm", "med_category", "mar_action_category", "med_dose"],
         ["admin_dttm"],
-    ).filter(pl.col("med_category").str.to_lowercase().is_in(PRESSORS))
+    ).filter(pl.col("med_category").str.to_lowercase().is_in(VASOACTIVES))
     rows = (
         _window(m, cuts, "admin_dttm", LOOKBACK)
         .with_columns(
@@ -132,10 +139,18 @@ def _pressor(clif, cuts: pl.LazyFrame) -> dict[str, bool]:
             & (pl.col("dose").is_null() | (pl.col("dose") > 0))
         )
         .group_by(HOSP)
-        .agg(pl.col("running").any())
+        .agg(
+            (pl.col("running") & pl.col("med_category").is_in(PRESSORS))
+            .any()
+            .alias("pressor"),
+            pl.col("running").sum().alias("agents"),
+        )
         .collect()
     )
-    return dict(zip(rows[HOSP], rows["running"]))
+    return {
+        h: (bool(p), int(n))
+        for h, p, n in zip(rows[HOSP], rows["pressor"], rows["agents"])
+    }
 
 
 def _crrt(clif, cuts: pl.LazyFrame) -> dict[str, bool]:
@@ -162,23 +177,25 @@ def _crrt(clif, cuts: pl.LazyFrame) -> dict[str, bool]:
 
 
 def running_at_cut(clif_dir, stays: dict) -> dict[str, dict]:
-    """{id: {"imv": bool|None, "vasopressor": bool|None, "crrt": bool|None}} for
-    each id in `stays` ({hospitalization_id: cut datetime}); see the module doc.
-    Vasopressor and CRRT are always a bool (no rows means not running); IMV is None
-    when the stay has no device record in the 24 h before its cut."""
+    """{id: {"imv": bool|None, "vasopressor": bool, "crrt": bool, "vasoactives": int}}
+    for each id in `stays` ({hospitalization_id: cut datetime}); see the module doc.
+    Vasopressor and CRRT are always a bool and vasoactives a count (no rows means
+    not running, 0); IMV is None when the stay has no device record in the 24 h
+    before its cut."""
     if not stays:
         return {}
     cuts = _cuts_frame(stays).lazy()
-    imv, pressor, crrt = (
+    imv, infusions, crrt = (
         _imv(clif_dir, cuts),
-        _pressor(clif_dir, cuts),
+        _infusions(clif_dir, cuts),
         _crrt(clif_dir, cuts),
     )
     return {
         str(k): {
             "imv": imv.get(str(k)),
-            "vasopressor": bool(pressor.get(str(k), False)),
+            "vasopressor": infusions.get(str(k), (False, 0))[0],
             "crrt": bool(crrt.get(str(k), False)),
+            "vasoactives": infusions.get(str(k), (False, 0))[1],
         }
         for k in stays
     }
@@ -192,8 +209,10 @@ def stay_cuts(
     not in clif_hospitalization (counts only, never ids)."""
     clif = pathlib.Path(clif_dir)
     hosp = set(
-        pl.read_parquet(clif / "clif_hospitalization.parquet", columns=[HOSP])[HOSP]
-        .cast(pl.String)
+        pl.scan_parquet(clif / "clif_hospitalization.parquet")
+        .select(pl.col(HOSP).cast(pl.String))
+        .filter(pl.col(HOSP).is_in(ids))
+        .collect()[HOSP]
         .to_list()
     )
     missing = sum(i not in hosp for i in ids)
@@ -272,3 +291,36 @@ def running_for_stays(clif_dir, ids: list[str], demo_clock_hours: float = 0) -> 
     """running_at_cut at each stay's own cut (`stay_cuts`)"""
     ids = list(dict.fromkeys(ids))
     return running_at_cut(clif_dir, stay_cuts(clif_dir, ids, demo_clock_hours))
+
+
+def present_at_cut(clif_dir: pathlib.Path, cuts: dict) -> dict[str, bool]:
+    """per stay, on its own clock: is its cut after ICU arrival, inside an ICU stay
+    of clif_adt (in <= cut < out) and before hospital discharge? A stay that left
+    the ICU, died or was discharged before the cut is not present."""
+    if not cuts:
+        return {}
+    c = _cuts_frame(cuts).lazy()
+    adt = _read(
+        clif_dir,
+        "adt",
+        [HOSP, "in_dttm", "out_dttm", "location_category"],
+        ["in_dttm", "out_dttm"],
+    ).filter(pl.col("location_category").str.to_lowercase() == "icu")
+    in_icu = set(
+        adt.join(c, on=HOSP)
+        .filter(pl.col("in_dttm") <= pl.col("cut"))  # in <= cut < out
+        .filter(pl.col("out_dttm").is_null() | (pl.col("out_dttm") > pl.col("cut")))
+        .select(HOSP)
+        .unique()
+        .collect()[HOSP]
+    )
+    hosp = _read(
+        clif_dir, "hospitalization", [HOSP, "discharge_dttm"], ["discharge_dttm"]
+    )
+    gone = set(
+        hosp.join(c, on=HOSP)
+        .filter(pl.col("discharge_dttm") <= pl.col("cut"))
+        .select(HOSP)
+        .collect()[HOSP]
+    )
+    return {str(k): (str(k) in in_icu and str(k) not in gone) for k in cuts}

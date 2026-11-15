@@ -76,7 +76,7 @@ jobs:
         echo "winnow: skipped (t7-ward cut this ward at the same 07:00 clock)"
       else
         python -c "from icutwin.scoring.winnower import main; main()" /store/stage/tokenized_output \
-          --demo-clock-hours "$HOURS"
+          --demo-clock-hours "$HOURS" --counts-only   # a ward of 25: no outcome rates in the log
       fi
       # one short forward pass per stage-ward stay (25 in the final cohort)
       python -c "from icutwin.scoring.extractor import main; main()" /store/stage/tokenized_output -m /data/model_output/final

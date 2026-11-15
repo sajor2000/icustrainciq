@@ -113,8 +113,5 @@
     "high": 0.4
   },
   "out_tag": 0.6,
-  "ward": {
-    "source": "open-demo",
-    "label": "MIMIC-IV Demo"
-  }
+  "ward": {"source": "synthetic", "label": "Demo data"}
 }

@@ -57,7 +57,7 @@ h2{font-size:15px;line-height:1.3;font-weight:800;letter-spacing:-.01em;margin-b
 .axis .cap{display:block;color:var(--blue);margin-left:4px}
 .axis .step+.step{margin-top:2px}
 .axis img{width:100%}
-.duo{display:grid;grid-template-columns:35% 1fr;column-gap:10px}
+.duo{display:grid;grid-template-columns:17% 1fr;column-gap:10px}
 .duo img{width:100%}
 .duo p{margin:5px 8px 0 8px}
 
@@ -151,11 +151,11 @@ h2{font-size:15px;line-height:1.3;font-weight:800;letter-spacing:-.01em;margin-b
 
   <section class="screens pad" aria-label="Screens from the board">
     <div class="frame axis">
-      <div class="step fc"><span class="cap">Next 24 h <em>life support now, then what may start. One colour per bed.</em></span><img src="img/beds-next.png" alt="Three beds in the Next 24 h view: room 1 Watch 26%, room 2 Not improving, room 3 Leaving 66%"></div>
+      <div class="step fc"><span class="cap">Next 24 h <em>life support now, then what may start, at the thresholds the team sets.</em></span><img src="img/beds-next.png" alt="Three beds in the Next 24 h view: bed 1 no life support, nothing new; bed 2 on a ventilator and a vasopressor, nothing new; bed 3 no life support, 66% chance of leaving the ICU"></div>
       <div class="step fc duo">
-        <div><span class="cap">Worry first <em>who to see before rounds</em></span><img src="img/worry-1.png" alt="Room 20, Worsening: vasopressor 43%, ventilator 40%"></div>
-        <div><span class="cap">Unit strain <em>how stretched the unit is</em></span><img src="img/strain-line.png" alt="Header line: 10 on life support now, plus 5 new expected in 24 hours, SHORT, ventilators short by 1">
-          <p><b>Room 20:</b> no life support now, 43% chance of needing blood-pressure drugs in 24 h. See this patient first. <b>The unit:</b> six ventilators, five in use, two more expected. SHORT, a day ahead.</p></div>
+        <div><span class="cap">Event card</span><img src="img/event-card.png" alt="Ventilator card, SHORT: 5 on now, 1 free of 6, 2 predicted new; unit forecast 2, range 1 to 4"></div>
+        <div><span class="cap">Unit strain <em>how stretched the unit is</em></span><img src="img/strain-line.png" alt="Alert line: ventilators short by 1; highest-risk beds 20, 6 and 13; 10 on life support now, plus 5 new expected in 24 hours, SHORT">
+          <p><b>The unit:</b> six ventilators, five in use, two beds at 25% or more to need one. SHORT by 1, a day ahead. <b>Beds 20, 6 and 13</b> carry the highest risk: a bed's person icon turns red at the team's thresholds, and a tap opens its five chances and 12 hours of vital signs.</p></div>
       </div>
     </div>
   </section>
@@ -191,7 +191,7 @@ h2{font-size:15px;line-height:1.3;font-weight:800;letter-spacing:-.01em;margin-b
       <ol>
         <li><b>1 · Learn the ICU's language</b>Trained to predict the next event in a chart (labs, vital signs, drugs, machines), like a language model predicts the next word.</li>
         <li><b>2 · Take its last layer</b>At 07:00, one pass over each patient's chart so far. Keep the last layer's output: one vector for the patient's state.</li>
-        <li><b>3 · Fit five small classifiers</b>One per event clinicians plan around, fitted on past patients with known outcomes. Each gives a percentage.</li>
+        <li><b>3 · Five small classifiers</b>One per event clinicians plan around, fitted once in training on past patients with known outcomes. Each gives a percentage.</li>
       </ol>
     </div>
   </section>
@@ -199,7 +199,7 @@ h2{font-size:15px;line-height:1.3;font-weight:800;letter-spacing:-.01em;margin-b
   <section class="tail pad">
     <div class="two">
       <div><h2>What is new</h2><p>A patient model small enough to train from scratch on two desk-side GPUs. One pass and five small classifiers per patient, not thousands of simulated futures.</p></div>
-      <div><h2>In the real world</h2><p>A hospital with CLIF tables (an open ICU format) can rerun the same Fuzzball files on its own records. <b>255</b> tests · <b><span data-fill="workflow-count">6</span></b> workflows · held-out AUROC 0.77 to 0.93.</p></div>
+      <div><h2>In the real world</h2><p>A hospital with CLIF tables (an open ICU format) can rerun the same Fuzzball files on its own records. <b>282</b> tests · <b><span data-fill="workflow-count">6</span></b> workflows · held-out AUROC 0.77 to 0.93.</p></div>
     </div>
     <dl class="meas">
       <div><dt>Patient model size</dt><dd><span class="fill" data-fill="model-size" data-empty="confirm"></span></dd></div>

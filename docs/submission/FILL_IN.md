@@ -28,7 +28,7 @@ Keep values short (about 14 characters fit in a slot on the sheet).
 
 | Count | Value on Nov 14 | Recheck with |
 |---|---|---|
-| Backend tests passing | 255 | `cd backend && uv run --extra dev --extra model pytest -q` |
+| Backend tests passing | 282 | `cd backend && uv run --extra dev --extra model pytest -q` |
 
 ## Statements to confirm on site
 

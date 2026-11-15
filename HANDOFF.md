@@ -1,100 +1,99 @@
-# Handoff: where ICU Lookahead stands and how to take it over
+# Handoff
 
-Last updated: 2026-11-14, late afternoon. Branch `ui/strain-rooms-chat`, merged to `main` by pull request as work lands.
+Read this if you are taking over ICU Lookahead and need its state, its owners and the next steps.
 
-## What ICU Lookahead is
+Last updated: 2026-11-14. `main` holds the team's merged work (PR #19), the name ICU Lookahead (D24) and the chat grounded in a shared ICU snapshot (PR #16). One pull request is open: #20 (staffing and capacity in the backend, final board page).
 
-A bed board for one ICU. It shows what life support each patient is on **now** and forecasts the **next 24 hours** (07:00 to 07:00): starting a ventilator, a vasopressor or CRRT, leaving the ICU, and death. It adds the patients up into unit strain. It runs on two local Lenovo PGX machines under Fuzzball. Nothing is in the cloud. Story: the rural ICU (`docs/DECISIONS.md` D21).
+## What it is
+
+A bed board for one ICU. It shows the life support each patient is on now and forecasts the next 24 hours (07:00 to 07:00): starting a ventilator, a vasopressor or CRRT, leaving the ICU, and death. It adds the patients up into unit strain. It runs on two local Lenovo ThinkStation PGX machines under CIQ Fuzzball 4.3. Nothing is in the cloud.
 
 ## Read in this order
 
 | Read | For |
 |---|---|
-| [`README.md`](README.md) | screenshots and the overview |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | what runs where, tech stack, endpoints, every diagram, run steps |
-| [`docs/DECISIONS.md`](docs/DECISIONS.md) | why it is built this way (D12 to D22 are the final design) |
-| [`docs/FRONTEND_SPEC.md`](docs/FRONTEND_SPEC.md), [`DESIGN.md`](DESIGN.md) | the board: screens, data it reads, look |
+| [`README.md`](README.md) | the overview and screenshots |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | what runs where, tech stack, endpoints, data boundary, every figure |
+| [`docs/RESULTS.md`](docs/RESULTS.md) | held-out results per task |
+| [`backend/docs/RUNBOOK.md`](backend/docs/RUNBOOK.md) | set up, publish code and relaunch on the cluster |
 | [`backend/README.md`](backend/README.md), [`backend/docs/CONTRACT.md`](backend/docs/CONTRACT.md) | the backend and the JSON shapes |
-| [`backend/docs/LIVE_DEMO.md`](backend/docs/LIVE_DEMO.md) | the cluster runbook |
-| [`backend/docs/COMPUTE_PLAN.md`](backend/docs/COMPUTE_PLAN.md) | which machine and GPU runs what |
-| [`backend/docs/FUZZBALL_43_REVIEW.md`](backend/docs/FUZZBALL_43_REVIEW.md) | workflow files checked against the Fuzzball 4.3 docs |
-| `backend/docs/FUZZBALL_VALIDATION.md`, `backend/docs/FUZZBALL_TEST_PLAN.md` | what was checked against the live cluster and the storage map; the step-by-step test |
+| [`backend/docs/CHAT_AGENT.md`](backend/docs/CHAT_AGENT.md), [`backend/docs/LOOKAHEAD_DEMO.md`](backend/docs/LOOKAHEAD_DEMO.md), [`CHATBOT_HANDOFF.md`](CHATBOT_HANDOFF.md) | the chat: its tools, the shared ICU snapshot, its workflows and next steps |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | why it is built this way |
+| [`docs/FRONTEND_SPEC.md`](docs/FRONTEND_SPEC.md), [`DESIGN.md`](DESIGN.md) | the board: screens, states, look |
+
+## Team
+
+Names and affiliations as listed by the [CLIF Consortium](https://clif-icu.com/team).
+
+| Name | Affiliation | Owns |
+|---|---|---|
+| J.C. Rojas, MD | Rush University | product, board and chat, Fuzzball workflows, docs |
+| Kaveri Chhikara, MS | UChicago Medicine | forecast pipeline on the cluster, dispatcher, `launch.sh`, runbook |
+| Vaishvik Chaudhari, MS | Rush University | the patient model: tokenizer, training, the ICU + 24 h cut, probes |
+| Dema Therese, MS | UChicago Medicine | board design and the capacity model |
+| Zewei ('Whiskey') Liao, MS | UChicago Medicine | team member |
 
 ## Where the code is
 
-| Part | Path | Owner going forward |
-|---|---|---|
-| Board page (one HTML file, no build step) | `mockups/command-center.html`; served copy `backend/app/static/index.html` | Frontend (J.C., Dema) |
-| Board server, dispatcher, chat agent | `backend/app/board.py`, `dispatcher.py`, `chat_agent.py` | Services lane |
-| Forecast builders, life support now | `backend/app/rooms.py`, `aggregate.py`, `clif_now.py`, `stage_ward.py` | Forecast lane |
-| Tokenizer, model definition, probe scoring | `backend/icutwin/` | Vaishvik (training stays in the ICU-Twin repo) |
-| Fuzzball workflows | `backend/fuzzball/*.fz` | Fuzzball lane |
-| Diagrams (editable HTML + PNG) | `docs/diagrams/` | anyone; use the diagram-design skill |
+| Part | Path |
+|---|---|
+| Board page (one HTML file, no build step) | `mockups/command-center.html`; served copy `backend/app/static/index.html` |
+| Board server, dispatcher, chat agent | `backend/app/board.py`, `dispatcher.py`, `chat_agent.py` |
+| Chat grounding: the shared ICU snapshot and the evidence answers are rendered from | `backend/app/demo_context.py`, `evidence.py`; workflows `backend/fuzzball/t7-lookahead-prepare.fz`, `-forecast.fz`, `-chat.fz`; volume `demo-context` |
+| Forecast builders, life support now, generated names | `backend/app/rooms.py`, `aggregate.py`, `clif_now.py`, `stage_ward.py`, `fake_names.py` |
+| Tokenizer, model definition, probe scoring | `backend/icutwin/` |
+| Fuzzball workflows | `backend/fuzzball/*.fz`; rendered for a pinned commit in `backend/fuzzball/ready/` |
+| Launch and render scripts | `backend/scripts/launch.sh`, `make_ready.sh`, `render_fz.py` |
+| Training workflows (jobs 2 to 4) | [vaishvikc/ICU-Twin](https://github.com/vaishvikc/ICU-Twin), `workflows/` |
+| Figures | `docs/diagrams/make_figures.py` writes the HTML; PNGs sit beside it, night copies in `docs/site/night/` |
 
 ## Run it
 
-```bash
-# the board with made-up data, no backend
-python3 -m http.server 8000      # open http://localhost:8000/mockups/command-center.html#synthetic
-
-# the backend tests
-cd backend && uv run --extra dev --extra model pytest -q
-
-# the board server on example data
-cd backend && uv run python app/board.py --forecast ../examples/forecast.json \
-  --static ../mockups/command-center.html --port 8080
-```
-
-On the cluster: the numbered list under Status, below.
+| Where | Command |
+|---|---|
+| Cluster | `cd backend && bash scripts/launch.sh` (variants `--all`, `--restart`, `--forecast`, `--link`, `--no-open`) |
+| Laptop, the page with made-up data | `python3 -m http.server 8000`, then open `http://localhost:8000/mockups/command-center.html#synthetic` |
+| Laptop, the board server on example data | `cd backend && uv run python app/board.py --forecast ../examples/forecast.json --static ../mockups/command-center.html --port 8080` |
+| Tests | `cd backend && uv run --extra dev --extra model pytest -q` and `ruff check app tests` |
 
 ## Status
 
-Facts as of 2026-11-14, late afternoon. Record of the cluster checks: [`backend/docs/FUZZBALL_VALIDATION.md`](backend/docs/FUZZBALL_VALIDATION.md).
-
-### To run it on the cluster
-
-Files: `backend/fuzzball/ready/` (fully rendered for the final cohort; `README.md` there). Each step: `fuzzball workflow validate <file> && fuzzball workflow start <file> --name <name>`. Nothing below has been started by anyone yet except step 1.
-
-| # | Step | State |
-|---|---|---|
-| 1 | The cohort and the names are on the cluster: `mimic_clif:/dashboard_data/` holds the 19 CLIF tables, `dashboard_patients_unit25.parquet` and `name.parquet` | **Done.** The folder was made by a teammate's workflow (`t7-fc-dashboard-patients.fz`); `name.parquet` was placed by two one-core `fuzzball run` jobs from J.C.'s session (checksums match the local copy). The names are fictional |
-| 2 | Create the one missing volume: `fuzzball volume create team7 twin-store --size 50GiB` | **Ready to run** (needs the team's go-ahead). Until then every file fails `validate` on this volume only |
-| 3 | Merge this branch to `main`, then `cd backend && scripts/make_ready.sh` and commit `fuzzball/ready/` | **Ready to run.** Needed because the commit pinned in `ready/t7-code.fz` today predates the storage change (`fuzzball/ready/README.md`) |
-| 4 | Publish the code and the Python packages: `ready/t7-code.fz` (CPU only) | **Blocked** by 2 and 3 |
-| 5 | Confirm the trained model | **Found, not yet loaded by our code.** Training packaged checkpoint 2616 of run `ep2-20261114c` to `mimic_clif:/model_output/final/` and its own load test passed. Unverified: that our extractor loads it with our pinned packages, and that `tokenized_output/` has the three token files and the same vocabulary. `t7-fit` checks both first |
-| 6 | `ready/t7-fit.fz`: features and probes, once per model (one GPU) | **Blocked** by 4 |
-| 7 | `ready/t7-ward.fz`: checks the cohort and the names file, stages the 25 rooms | **Blocked** by 6 |
-| 8 | `ready/t7-twin.fz`: board, dispatcher, Nemotron (one GPU) | **Blocked** by 4; useful after 7 |
-| 9 | First unit forecast: "Update the unit" on the board (the dispatcher starts it), or `ready/t7-forecast-unit.fz` by hand as `--name t7-forecast-manual` | **Blocked** by 7 |
-| 10 | Open the board: `fuzzball workflow connect --name board --endpoint web <t7-twin id>` | **Blocked** by 8 |
-
-Storage in one line: `mimic_clif` is only read (cohort, model, training tokens); everything ICU Lookahead writes goes to the one new volume `twin-store`; Nemotron is served from `hfcache`.
-
-### Pieces
+The team ran ICU Lookahead end to end on the two Lenovo machines under Fuzzball with `scripts/launch.sh` on 2026-11-14, and it worked.
 
 | Piece | State |
 |---|---|
-| Board design, Dema's figure and threshold toggle, forecast-not-ready state | Done, on `main` |
-| Final page served by the backend (`backend/app/static/index.html`) | Done |
-| Backend services, life support at 07:00 from raw CLIF, cohort pipeline, fictional names | Done; 249 tests pass, ruff clean |
-| Workflow files match the real cluster; `t7-code` publishes this repo's `backend/` | Done; all six ready files pass `fuzzball workflow validate` once `twin-store` exists (checked with a stand-in volume) |
-| Anything of ours run on the real cluster | **Not done.** Only read-only calls and the two small jobs that placed `name.parquet` |
-| Model predictions on the 25 demo patients | Waiting for steps 2 to 9. Until then the board shows the Now side and "forecast not ready" |
+| The whole app on the cluster: `t7-code`, `t7-ward`, `t7-forecast`, `t7-twin` | Ran end to end with `launch.sh` |
+| Patient model | Trained on both GPUs; checkpoint 2616 of 4351 packaged at `mimic_clif:/model_output/final/` |
+| Probes | Fitted by job 4 beside the model; held-out results in `docs/RESULTS.md`. The forecast reads the staged copy at `/store/train/probe-final.joblib` with its `probe-final.meta.json` |
+| Board page, served by the backend | On `main`. The final page with staffing lands with PR #20 |
+| Board server, dispatcher, chat agent, life support now, generated names | On `main`, with tests |
+| Chat grounded in a shared ICU snapshot (`demo_context.py`, `evidence.py`, `t7-lookahead-*.fz`, volume `demo-context`) | On `main`, with tests on synthetic data. Its workflows have not been run on the cluster |
+| `t7-twin` without Nemotron (the no-chat fallback) | Not run |
+| Launch path (`launch.sh`, `RUNBOOK.md`) | On `main`; the path the team ran |
+| `backend/fuzzball/ready/` | Pins commit `617edc0`, older than the templates. Render again before publishing from this repo |
+
+## Next steps on the cluster
+
+1. Merge the open pull request, then `cd backend && scripts/make_ready.sh $(git rev-parse HEAD)` and commit `fuzzball/ready/`.
+2. Check the ingress line names this repo: `grep -h "uri:.*http" fuzzball/ready/*.fz | sort -u`.
+3. If `twin-store` was recreated, stage job 4's probe again (`RUNBOOK.md` section 4).
+4. `bash scripts/launch.sh --all`, then `--restart` after any later code publish.
 
 ## Rules that must hold
 
-- **Patient data never enters git.** The 25 demo patients are real MIMIC-IV records. They live in `backend/data/local/` (git-ignored) and on the Fuzzball volume `mimic_clif` (`dashboard_data/`). The repo is public. Logs and reports carry counts only.
-- Names on the board are invented, on the cluster too: `fake_names.py` generates one per room number (`--names fake`); the older `name.parquet` is no longer read.
+- Patient data never enters git. The 25 demo patients are MIMIC-IV records. They live in `backend/data/local/` (git-ignored) and on the Fuzzball volume `mimic_clif`. The repo is public. Logs and reports carry counts only.
+- Names on the board are generated per room number by `fake_names.py` (`--names fake`), on the cluster too.
 - Every POST to the board needs `Content-Type: application/json` and `X-Lookahead: 1`.
 - Only the dispatcher starts forecast runs. One GPU job at a time beside the chat model.
+- Do not start, stop or delete anything on the cluster without the team's go-ahead.
 - Wording: "trained and run on local hardware", never "trained on this hospital's patients".
 
-## Open decisions for the team
+## Open decisions
 
-1. Who creates `twin-store`, and when (step 2). If the `team7` storage is node-local, it must sit where jobs can also mount `mimic_clif` (`FUZZBALL_VALIDATION.md`).
-2. One volume now holds the board's files and the staged patient tokens. Accept that for the demo (treat `twin-store` as restricted and clear it after judging), or go back to a second, restricted volume.
-3. Is checkpoint 2616 (60% of one epoch of the second run, the one training packaged as `final`) the model to demo, or will training package another? A new model means `t7-fit` again.
-4. The demo clock: at 24 h after ICU arrival no patient in the cohort is on CRRT. Pick the clock setting once the cut table is in `LIVE_DEMO.md`.
-5. First live check: does a forecast start while `t7-twin` is up? (`COMPUTE_PLAN.md`.)
-6. ECMO: one cohort patient has ECMO records; the board leaves ECMO out.
-7. "Not improving" is derived on the page. A real "comes off support" prediction would need a new model task.
+| # | Question |
+|---|---|
+| 1 | `twin-store` holds the board's files and the staged patient tokens. Keep one restricted volume and clear it after judging, or adopt the separate `demo-context` volume the `t7-lookahead-*` workflows use? |
+| 2 | Is checkpoint 2616 (60% of one epoch) the model to demo? A new model means job 4 again and a newly staged probe |
+| 3 | The demo clock: at 24 h after ICU arrival no patient in the cohort is on CRRT. Pick the clock setting for the demo |
+| 4 | ECMO: one cohort patient has ECMO records; the board leaves ECMO out |
+| 5 | "Not improving" is derived on the page. A "comes off support" prediction would need a new model task |
